@@ -30,7 +30,7 @@
 
     <section class="toolbar">
       <input id="searchBox" type="search" placeholder="Search jobs" data-feature="search">
-      <select id="statusFilter" hidden><option value="">All statuses</option></select>
+      <select id="statusFilter" aria-label="Filter jobs" data-feature="status-filter" hidden><option value="">All statuses</option></select>
       <button id="searchJobsButton" type="button" data-feature="job-search-trigger">Pull new jobs</button>
       <button id="toggleCaptureButton" type="button" aria-expanded="false" aria-controls="captureForm">Add job</button>
       <form id="captureForm" class="url-capture" data-feature="capture-form" hidden>
@@ -51,6 +51,6 @@
   <script src="./snapshot.js?v=20260918-0518"></script>
   <script src="./config.js?v=5"></script>
   <script src="./raven-api.js?v=5"></script>
-  <script src="./app.js?v=4"></script>
+  <script src="./app.js?v=6"></script>
 </body>
 </html>
