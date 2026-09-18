@@ -228,6 +228,15 @@
       "notes": "Background search candidate not yet saved to the Google Sheet"
     },
     {
+      "key": "Interested",
+      "label": "Bookmarked",
+      "colorToken": "status-interested",
+      "order": 8,
+      "visible": true,
+      "terminal": false,
+      "notes": "Saved for later review"
+    },
+    {
       "key": "Saved",
       "label": "Saved",
       "colorToken": "status-saved",
