@@ -1,8 +1,15 @@
 {
-  "sources": [
+  "mode": "background",
+  "runtime_owner": "Supabase Edge Function: raven-search",
+  "active_backend_sources": [
+    "LinkedIn public job feed",
+    "Remotive",
+    "RemoteOK",
+    "Arbeitnow"
+  ],
+  "target_source_pool": [
     "LinkedIn Jobs",
     "Indeed",
-    "Google Jobs / general web search",
     "Greenhouse",
     "Lever",
     "Workday",
@@ -12,18 +19,43 @@
     "Colorado state and local government job boards",
     "Direct employer career pages"
   ],
+  "behavior": {
+    "discovered_results": "Stored in Supabase and displayed in Raven as Discovered",
+    "canonical_jobs": "Google Sheet JobTrack Database",
+    "promotion": "Save to tracker writes a discovered job to the Google Sheet with the active Track",
+    "automatic_save": false
+  },
   "tracks": {
-    "Professional": {
-      "label": "Professional",
-      "prompt": "Search for current non-game professional jobs for me. Focus on Project Manager, Project Coordinator, Implementation, Program, Operations, Training/Enablement, and adjacent leadership/coordination roles where my existing experience gives me a realistic chance of passing the initial resume screen. Exclude video game and 3D art roles. Prioritize fit over salary, with remote roles and Fort Collins/Colorado opportunities. Search LinkedIn Jobs, Indeed, Google Jobs/general web search, Greenhouse, Lever, Workday, Built In, Wellfound, USAJOBS, Colorado state/local government job boards, and direct employer career pages. Verify postings are live, give direct application links, and add strong matches to Raven with Track=Professional."
-    },
-    "Labor": {
-      "label": "Labor",
-      "prompt": "Search for current non-game labor and hands-on jobs for me around Fort Collins, Colorado, plus strong nearby options. Prioritize full-time work I could realistically start without a new degree or long certification path, including maintenance, facilities, parks/trails, pressure washing, painting, warehouse, production, field service, and similar hands-on roles. Search LinkedIn Jobs, Indeed, Google Jobs/general web search, Greenhouse, Lever, Workday, Built In, USAJOBS, Colorado state/local government job boards, and direct employer career pages. Verify postings are live, give direct application links, and add strong matches to Raven with Track=Labor."
-    },
-    "Wildcard": {
-      "label": "Wildcard",
-      "prompt": "Search for current non-game wildcard jobs I may be overlooking. Use my leadership, mentoring, project delivery, troubleshooting, training, maintenance, creative-production, and cross-functional experience to find realistic roles outside my obvious career paths. Include remote and Fort Collins/Colorado opportunities. Search LinkedIn Jobs, Indeed, Google Jobs/general web search, Greenhouse, Lever, Workday, Built In, Wellfound, USAJOBS, Colorado state/local government job boards, and direct employer career pages. Verify postings are live, give direct application links, and add strong matches to Raven with Track=Wildcard."
-    }
+    "Professional": [
+      "Project Manager",
+      "Project Coordinator",
+      "Implementation",
+      "Program",
+      "Operations",
+      "Training",
+      "Enablement",
+      "Customer Success",
+      "Onboarding"
+    ],
+    "Labor": [
+      "Maintenance",
+      "Facilities",
+      "Grounds/Parks/Trails",
+      "Painting/Pressure Washing",
+      "Warehouse",
+      "Production",
+      "Field Service",
+      "Repair/Assembly"
+    ],
+    "Wildcard": [
+      "Operations",
+      "Training",
+      "Implementation",
+      "Customer Success",
+      "Production",
+      "Field Service",
+      "Project/Program Coordination",
+      "Onboarding"
+    ]
   }
 }
