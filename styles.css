@@ -1219,3 +1219,59 @@ main {
 .card-topline {
   justify-content: flex-end;
 }
+
+
+/* Fixed-height New marker and right-edge ignore control */
+.card-topline {
+  position: absolute;
+  top: 8px;
+  right: 42px;
+  z-index: 2;
+  width: auto;
+  padding: 0;
+}
+
+.card-main {
+  padding-right: 30px;
+}
+
+.ignore-job-button {
+  position: absolute;
+  top: 38px;
+  right: 8px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.ignore-job-button:hover,
+.ignore-job-button:focus-visible {
+  color: var(--danger);
+  background: rgba(255, 88, 118, .1);
+}
+
+.ignore-job-button.is-restore:hover,
+.ignore-job-button.is-restore:focus-visible {
+  color: var(--success);
+  background: rgba(66, 245, 158, .1);
+}
+
+.job-card.is-ignored {
+  opacity: .68;
+  border-left-color: var(--text-muted);
+}
+
+.job-card.is-ignored:hover,
+.job-card.is-ignored:focus-within {
+  opacity: 1;
+}
