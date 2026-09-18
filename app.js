@@ -18,9 +18,6 @@
   const queueList = document.getElementById("queueList");
   const trackTabs = [...document.querySelectorAll(".track-tab")];
   const searchJobsButton = document.getElementById("searchJobsButton");
-  const statApplied = document.getElementById("statApplied");
-  const statInterviews = document.getElementById("statInterviews");
-  const statBestMatch = document.getElementById("statBestMatch");
 
   const CACHE_JOBS_KEY="ravenJobsCacheV1";
   const CACHE_DISCOVERED_KEY="ravenDiscoveredCacheV1";
@@ -383,15 +380,7 @@
     if(days<30) return Math.floor(days/7)+"w ago";
     return Math.floor(days/30)+"mo ago";
   }
-  function renderMetrics() {
-    const all=state.jobs.filter((job)=>job.id||job.url);
-    statApplied.textContent=String(all.filter((job)=>String(job.status||"").toLowerCase().includes("applied")).length);
-    statInterviews.textContent=String(all.filter((job)=>String(job.status||"").toLowerCase().includes("interview")).length);
-    const best=all.length?Math.max(...all.map(matchScore)):0;
-    statBestMatch.textContent=String(best);
-  }
   function render() {
-    renderMetrics();
     renderJobs();
     renderQueue();
   }
@@ -538,23 +527,17 @@
     localStorage.setItem("ravenQueue",JSON.stringify(state.queue));
     renderQueue();
   }
-  async function saveCapture(title,url) {
-    setStatus("Saving captured job...");
+  async function saveCapture(url) {
+    setStatus("Adding job…");
     try {
       const parsed=new URL(url);
-      if (!["https:","http:"].includes(parsed.protocol)) throw new Error("Enter a web address starting with https:// or http://.");
-      const saved=await callGateway({action:"addJob",title:String(title||"").trim(),url,track:state.activeTrack});
-      if (!saved.id) throw new Error("Google did not confirm a saved job.");
-      document.getElementById("jobTitle").value="";
+      if (!["https:","http:"].includes(parsed.protocol)) throw new Error("Paste a valid job URL.");
+      const saved=await callGateway({action:"addJob",title:"",url,track:state.activeTrack});
+      if (!saved.id && !saved.ok) throw new Error("Google did not confirm a saved job.");
       document.getElementById("jobUrl").value="";
-      const capture=document.getElementById("capture");
-      const toggle=document.getElementById("toggleCaptureButton");
-      capture.hidden=true;
-      toggle.setAttribute("aria-expanded","false");
-      toggle.textContent="+ Add job";
       await loadJobs();
     } catch (error) {
-      setStatus("Capture needs review: "+error.message);
+      setStatus("Add failed: "+error.message);
     }
   }
   function escapeHtml(value) {
@@ -581,34 +564,19 @@
       });
     });
     searchJobsButton.addEventListener("click",runJobSearch);
-    const toggleCaptureButton=document.getElementById("toggleCaptureButton");
-    const capture=document.getElementById("capture");
-    toggleCaptureButton.addEventListener("click",()=>{
-      const opening=capture.hidden;
-      capture.hidden=!opening;
-      toggleCaptureButton.setAttribute("aria-expanded",String(opening));
-      toggleCaptureButton.textContent=opening?"− Hide add job":"+ Add job";
-      if(opening) document.getElementById("jobTitle").focus();
-    });
     searchBox.addEventListener("input",render);
     statusFilter.addEventListener("change",render);
     document.getElementById("captureForm").addEventListener("submit",(event)=>{
       event.preventDefault();
-      saveCapture(document.getElementById("jobTitle").value.trim(),document.getElementById("jobUrl").value.trim());
+      saveCapture(document.getElementById("jobUrl").value.trim());
     });
   }
   function applySharedParams() {
     const params=new URLSearchParams(window.location.search);
     const sharedUrl=params.get("url");
-    const sharedTitle=params.get("title");
-    if (sharedTitle) document.getElementById("jobTitle").value=sharedTitle.trim();
     if (sharedUrl) {
       const parts=sharedUrl.split(/\s+/);
       document.getElementById("jobUrl").value=parts.find((part)=>/^https?:\/\//.test(part))||sharedUrl;
-      if (!sharedTitle) {
-        const inferred=parts.filter((part)=>!/^https?:\/\//.test(part)).join(" ").trim();
-        if (inferred) document.getElementById("jobTitle").value=inferred;
-      }
     }
   }
   async function refreshCurrentTrack() {
