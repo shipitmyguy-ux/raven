@@ -15,24 +15,6 @@
 
   <main>
 
-    <section class="stats-grid" aria-label="Application pipeline summary">
-      <article class="stat-card">
-        <span>Applications sent</span>
-        <strong id="statApplied">0</strong>
-        <small>across all roles</small>
-      </article>
-      <article class="stat-card">
-        <span>Interviews</span>
-        <strong id="statInterviews">0</strong>
-        <small>currently active</small>
-      </article>
-      <article class="stat-card accent-stat">
-        <span>Best match</span>
-        <strong><span id="statBestMatch">0</span><em>%</em></strong>
-        <small>based on your profile</small>
-      </article>
-    </section>
-
     <section class="track-tabs" id="jobs" role="tablist" aria-label="Job tracks">
       <button type="button" class="track-tab active" data-track="Professional" role="tab" aria-selected="true">Professional</button>
       <button type="button" class="track-tab" data-track="Labor" role="tab" aria-selected="false">Labor</button>
@@ -44,16 +26,9 @@
       <input id="searchBox" type="search" placeholder="Search jobs" data-feature="search">
       <select id="statusFilter" hidden><option value="">All statuses</option></select>
       <button id="searchJobsButton" type="button" data-feature="job-search-trigger">Pull new jobs</button>
-      <button id="toggleCaptureButton" type="button" aria-expanded="false" aria-controls="capture">+ Add job</button>
-    </section>
-
-    <section class="capture capture-compact" id="capture" data-feature="capture-form" hidden>
-      <form id="captureForm">
-        <input id="jobTitle" name="title" type="text" autocomplete="off" placeholder="Job title">
-        <div class="capture-row">
-          <input id="jobUrl" name="url" type="url" autocomplete="off" placeholder="Add job URL" required>
-          <button type="submit">Add job</button>
-        </div>
+      <form id="captureForm" class="url-capture" data-feature="capture-form">
+        <input id="jobUrl" name="url" type="url" autocomplete="off" placeholder="Paste job URL" required>
+        <button type="submit">Add</button>
       </form>
     </section>
 
