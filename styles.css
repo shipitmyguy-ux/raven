@@ -860,3 +860,44 @@ main {
   font-size:.66rem;
   line-height:1;
 }
+
+
+/* Compact application workflow controls */
+.detail-actions {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.bookmark-action {
+  min-height: 40px;
+}
+
+.workflow-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 44px);
+  grid-auto-rows: 44px;
+  gap: 8px;
+  width: max-content;
+}
+
+.workflow-actions .workflow-action {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: var(--font-weight-heavy);
+  line-height: 1;
+  text-decoration: none;
+}
+
+.workflow-actions .workflow-action.is-applied {
+  color: var(--success);
+  border-color: var(--success);
+  background: rgba(66, 245, 158, 0.12);
+}
