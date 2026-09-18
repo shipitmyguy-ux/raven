@@ -1889,3 +1889,123 @@ main {
   min-width:150px;
   max-width:150px;
 }
+
+
+/* Master resumes */
+.options-help {
+  color:var(--text-muted);
+  font-size:.7rem;
+  line-height:1.4;
+}
+
+.master-resume-list {
+  display:grid;
+  gap:6px;
+}
+
+.master-resume-item {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:6px 10px;
+  align-items:center;
+  padding:8px 9px;
+  background:var(--surface-raised);
+  border:1px solid var(--border-subtle);
+  border-radius:var(--radius-sm);
+}
+
+.master-resume-item strong {
+  display:block;
+  color:var(--text);
+  font-size:.72rem;
+}
+
+.master-resume-item small {
+  display:block;
+  margin-top:2px;
+  color:var(--text-muted);
+  font-size:.64rem;
+  line-height:1.35;
+}
+
+.master-resume-item-actions {
+  display:flex;
+  gap:4px;
+}
+
+.master-resume-item-actions button {
+  min-height:26px;
+  padding:2px 6px;
+  font-size:.64rem;
+}
+
+.master-resume-add {
+  justify-self:start;
+  min-height:30px;
+  padding:4px 8px;
+  font-size:.68rem;
+}
+
+.master-resume-editor {
+  display:grid;
+  gap:8px;
+  margin-top:2px;
+  padding-top:9px;
+  border-top:1px solid var(--border-subtle);
+}
+
+.master-resume-editor[hidden] {
+  display:none;
+}
+
+.master-resume-field {
+  display:grid;
+  gap:4px;
+  color:var(--text-soft);
+  font-size:.68rem;
+}
+
+.master-resume-field input,
+.master-resume-field select {
+  width:100%;
+  min-width:0;
+  max-width:none;
+}
+
+.master-resume-field small {
+  color:var(--text-muted);
+  font-size:.62rem;
+}
+
+.master-resume-tracks {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:5px 8px;
+  margin:0;
+  padding:8px;
+  border:1px solid var(--border-subtle);
+  border-radius:var(--radius-sm);
+}
+
+.master-resume-tracks legend {
+  padding:0 4px;
+  color:var(--text-muted);
+  font-size:.64rem;
+}
+
+.master-resume-tracks label {
+  display:flex;
+  align-items:center;
+  gap:5px;
+  color:var(--text-soft);
+  font-size:.66rem;
+}
+
+.master-resume-tracks input {
+  width:auto;
+}
+
+.master-resume-actions {
+  display:flex;
+  gap:6px;
+}
