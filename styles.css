@@ -1698,3 +1698,148 @@ main {
   color:var(--text-muted);
   background:transparent;
 }
+
+
+/* Sliding Options category navigation */
+.options-dialog form {
+  overflow:hidden;
+}
+
+.options-viewport {
+  position:relative;
+  min-height:190px;
+  overflow:hidden;
+}
+
+.options-screen {
+  width:100%;
+}
+
+.options-home {
+  display:grid;
+  gap:8px;
+}
+
+.options-category {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  width:100%;
+  min-height:40px;
+  padding:8px 10px;
+  color:var(--text-soft);
+  background:var(--surface);
+  border:1px solid var(--border-subtle);
+  border-radius:var(--radius-sm);
+  text-align:left;
+  cursor:pointer;
+}
+
+.options-category:hover,
+.options-category:focus-visible {
+  color:var(--text);
+  background:var(--surface-hover);
+  border-color:var(--border-color);
+}
+
+.options-card {
+  position:absolute;
+  inset:0;
+  display:grid;
+  align-content:start;
+  gap:10px;
+  padding:0;
+  background:var(--surface-raised);
+  transform:translateX(-105%);
+  opacity:0;
+  pointer-events:none;
+}
+
+.options-card[hidden] {
+  display:grid;
+}
+
+.options-card.is-entering {
+  animation:optionsSlideIn 180ms ease forwards;
+  pointer-events:auto;
+}
+
+.options-card.is-leaving {
+  animation:optionsSlideOut 160ms ease forwards;
+  pointer-events:none;
+}
+
+.options-card.is-active {
+  transform:translateX(0);
+  opacity:1;
+  pointer-events:auto;
+}
+
+.options-card-header {
+  display:grid !important;
+  grid-template-columns:30px minmax(0,1fr) 30px;
+  align-items:center;
+  gap:8px;
+  min-height:34px;
+}
+
+.options-card-header::after {
+  content:"";
+}
+
+.options-card-header h3 {
+  margin:0;
+  color:var(--text);
+  font-size:.82rem;
+  text-align:center;
+}
+
+.options-back {
+  display:grid;
+  place-items:center;
+  width:28px;
+  height:28px;
+  min-height:28px;
+  padding:0;
+  color:var(--text-soft);
+  background:transparent;
+  border:0;
+  border-radius:50%;
+  font-size:1rem;
+}
+
+.options-back:hover,
+.options-back:focus-visible {
+  color:var(--text);
+  background:var(--surface-hover);
+}
+
+.options-card-panel {
+  display:grid;
+  gap:7px;
+  padding:10px;
+  background:var(--surface);
+  border:1px solid var(--border-subtle);
+  border-radius:var(--radius-sm);
+}
+
+.options-card-panel[hidden] {
+  display:none;
+}
+
+@keyframes optionsSlideIn {
+  from { transform:translateX(-105%); opacity:0; }
+  to { transform:translateX(0); opacity:1; }
+}
+
+@keyframes optionsSlideOut {
+  from { transform:translateX(0); opacity:1; }
+  to { transform:translateX(-105%); opacity:0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .options-card.is-entering,
+  .options-card.is-leaving {
+    animation-duration:1ms;
+  }
+}
