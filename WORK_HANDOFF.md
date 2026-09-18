@@ -15,6 +15,12 @@ Current known priorities:
 4. Real resume/cover-letter generation verification.
 5. Reduce unnecessary model polling.
 
+## Usage failsafe
+At the beginning of substantial Work, apply the Raven usage guard from `AGENTS.md`:
+- block starting substantial work at <=2% remaining usage when refresh is >5 minutes away,
+- allow work when refresh is <=5 minutes away,
+- never claim a usage check if the Work environment does not expose usage state.
+
 ## Rules for the next Work session
 - Pull/read GitHub first.
 - Read `AGENTS.md`, `RAVEN_STATUS.md`, `TASKS.md`, and this file.
