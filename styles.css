@@ -2112,3 +2112,33 @@ body.options-open > :not(main):not(.options-dialog) {
   position:relative;
   inset:auto;
 }
+
+
+/* Resume generation progress */
+.workflow-action.is-generating {
+  cursor:wait;
+  opacity:.9;
+  border-color:var(--accent-border);
+  box-shadow:var(--glow-accent);
+}
+
+.workflow-action.is-generating:disabled {
+  color:var(--accent-strong);
+}
+
+.generation-spinner {
+  width:13px;
+  height:13px;
+  border:2px solid currentColor;
+  border-right-color:transparent;
+  border-radius:50%;
+  animation:ravenSpin .65s linear infinite;
+}
+
+@keyframes ravenSpin {
+  to { transform:rotate(360deg); }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .generation-spinner { animation-duration:1.4s; }
+}
