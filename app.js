@@ -230,11 +230,16 @@
   }
   function sortedJobs(jobs) {
     const mode = state.runtime.settings["default-sort"] || "added-desc";
-    const copy=[...jobs];
-    if (mode==="added-asc") return copy.sort((a,b)=>parseDate(a.added)-parseDate(b.added));
-    if (mode==="title-asc") return copy.sort((a,b)=>String(a.title||"").localeCompare(String(b.title||"")));
-    if (mode==="company-asc") return copy.sort((a,b)=>String(a.company||"").localeCompare(String(b.company||"")));
-    return copy.sort((a,b)=>parseDate(b.added)-parseDate(a.added));
+    const compareWithinGroup=(a,b)=>{
+      if (mode==="added-asc") return parseDate(a.added)-parseDate(b.added);
+      if (mode==="title-asc") return String(a.title||"").localeCompare(String(b.title||""));
+      if (mode==="company-asc") return String(a.company||"").localeCompare(String(b.company||""));
+      return parseDate(b.added)-parseDate(a.added);
+    };
+    return [...jobs].sort((a,b)=>{
+      const remoteOrder=Number(isRemoteJob(b))-Number(isRemoteJob(a));
+      return remoteOrder || compareWithinGroup(a,b);
+    });
   }
   function preferredDescription(primary, fallback) {
     const current = String(primary || "").trim();
@@ -387,7 +392,6 @@
           const company=job.company||"Company not captured";
           const location=[job.location,job.remote].filter(Boolean).join(" · ")||"Location not captured";
           const salary=job.salaryText||"";
-          const score=matchScore(job);
           const rawStatus=String(job.status||"Saved");
           const meaningfulStatus=!/^(saved|discovered)$/i.test(rawStatus);
           const statusLabel=rawStatus.toLowerCase()==="interested"?"Bookmarked":rawStatus;
@@ -400,7 +404,7 @@
           card.innerHTML=
             '<button class="job-card-summary" type="button" aria-expanded="'+String(job.id===state.selectedId)+'">'+
               '<span class="card-main">'+
-                '<span class="card-topline"><span class="match-line"><strong>'+score+'%</strong> match</span>'+attentionIndicator+'</span>'+
+                (attentionIndicator?'<span class="card-topline">'+attentionIndicator+'</span>':'')+
                 '<span class="job-title">'+escapeHtml(job.title||"Untitled job")+'</span>'+
                 '<span class="company-name">'+escapeHtml(company)+'</span>'+
                 '<span class="job-location">'+escapeHtml(location)+'</span>'+
