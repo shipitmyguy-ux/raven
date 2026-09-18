@@ -20,10 +20,10 @@
     "Direct employer career pages"
   ],
   "behavior": {
-    "discovered_results": "Stored in Supabase and displayed in Raven as Discovered",
+    "discovered_results": "Stored in Supabase and automatically saved to the Google Sheet",
     "canonical_jobs": "Google Sheet JobTrack Database",
-    "promotion": "Save to tracker writes a discovered job to the Google Sheet with the active Track",
-    "automatic_save": false
+    "promotion": "All discovered jobs are written automatically to the Google Sheet with the active Track",
+    "automatic_save": true
   },
   "tracks": {
     "Professional": [
