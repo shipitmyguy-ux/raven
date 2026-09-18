@@ -1194,3 +1194,22 @@ main {
   padding: 3px 8px;
   font-size: .66rem;
 }
+
+
+/* New-versus-viewed job attention states */
+.job-card.is-new {
+  border-left: 3px solid var(--secondary);
+  background: color-mix(in srgb, var(--surface-raised) 88%, var(--secondary) 12%);
+}
+
+.job-status.is-new-status {
+  color: var(--secondary);
+  border: 1px solid color-mix(in srgb, var(--secondary) 55%, transparent);
+  background: var(--secondary-dim);
+  font-weight: var(--font-weight-heavy);
+  text-transform: uppercase;
+}
+
+.job-card.is-viewed:not(.is-applied):not(.is-interested) {
+  border-left-color: var(--border-subtle);
+}
