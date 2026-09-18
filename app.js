@@ -298,7 +298,6 @@
       coverLetter: "",
       notes: job.snippet || "",
       lastUpdated: job.last_seen || "",
-      fitScore: Math.max(55, Math.min(96, 50 + Number(job.score || 7) * 3)),
       _discovered: true
     })).filter((job)=>job.url);
   }
@@ -393,7 +392,6 @@
           salaryText:job.salaryText||extra.salaryText,
           source:job.source||extra.source,
           notes:extra.notes||job.notes,
-          fitScore:job.fitScore||extra.fitScore
         };
       });
     const savedUrls = new Set(saved.map((job)=>normalizeComparableUrl(job.url)).filter(Boolean));

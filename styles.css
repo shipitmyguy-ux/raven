@@ -101,8 +101,6 @@ button,input,select { width:auto; }
 .job-title { font-size:.95rem; line-height:1.3; }
 .company-name { font-size:.8rem; }
 .job-location,.job-salary,.job-age { font-size:.72rem; line-height:1.3; }
-.match-line { font-size:.66rem; }
-.match-line strong { font-size:.82rem; }
 
 .job-card-expanded {
   grid-column:1 / -1;
