@@ -192,17 +192,16 @@
     const response = await fetch(config.searchApiUrl, {
       method: "POST",
       headers: {
+        "Authorization": "Bearer " + config.searchAnonKey,
         "apikey": config.searchAnonKey,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({...payload,apiKey:config.searchAnonKey})
+      body: JSON.stringify(payload)
     });
     const text = await response.text();
     let data;
-    try { data = JSON.parse(text); } catch { throw new Error("Search backend returned an unreadable response (" + response.status + ")."); }
-    if (!response.ok || data.ok === false || data.error) {
-      throw new Error(data.error || data.message || data.msg || data.code || ("Search backend failed (" + response.status + ")."));
-    }
+    try { data = JSON.parse(text); } catch { throw new Error("Search backend returned an unreadable response."); }
+    if (!response.ok || data.ok === false || data.error) throw new Error(data.error || "Search backend failed.");
     return data;
   }
 
