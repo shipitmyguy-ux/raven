@@ -273,7 +273,7 @@
   function render() {
     renderJobs();
     renderQueue();
-    const selected=combinedJobs().find((job)=>job.id===state.selectedId)||filteredJobs()[0];
+    const selected=combinedJobs().find((job)=>job.id===state.selectedId)||null;
     renderDetail(selected);
   }
   function fallbackCardRows() {
@@ -348,10 +348,9 @@
   }
   function fallbackActions() {
     return [
-      {key:"posting",label:"Open posting",format:"external-link",visible:true,position:1},
-      {key:"resume",label:"Draft resume",format:"queue",visible:true,position:2},
-      {key:"coverLetter",label:"Draft cover letter",format:"queue",visible:true,position:3},
-      {key:"applicationReview",label:"Application review",format:"queue",visible:true,position:4}
+      {key:"apply",label:"Apply",format:"external-link",visible:true,position:1},
+      {key:"resume",label:"Generate resume",format:"queue",visible:true,position:2},
+      {key:"coverLetter",label:"Generate cover letter",format:"queue",visible:true,position:3}
     ];
   }
   function actionFeatureKey(key) {
@@ -359,7 +358,7 @@
   }
   function renderDetail(job) {
     if (!job) {
-      detail.innerHTML='<h2>'+escapeHtml(state.runtime.settings["empty-detail-title"]||"Select a job")+'</h2><p>'+escapeHtml(state.runtime.settings["empty-detail-text"]||"Choose a row to review source data, notes, document links, and next actions.")+'</p>';
+      detail.innerHTML='<h2>'+escapeHtml(state.runtime.settings["empty-detail-title"]||"Select a job")+'</h2><p>'+escapeHtml(state.runtime.settings["empty-detail-text"]||"Tap a job to view its description and actions.")+'</p>';
       return;
     }
     state.selectedId=job.id;
@@ -386,7 +385,8 @@
         }
         return '<button type="button" data-queue="'+escapeAttr(item.key)+'">'+escapeHtml(item.label||item.key)+'</button>';
       }).join("");
-    detail.innerHTML='<h2>'+escapeHtml(job.title||"Untitled job")+'</h2><p>'+escapeHtml([job.company,job.location,settingEnabled("show-remote",true)?job.remote:""].filter(Boolean).join(" | "))+'</p><dl>'+detailHtml+'</dl><div class="detail-actions">'+actions+'</div>';
+    const description = job.notes || "Job description not yet available.";
+    detail.innerHTML='<h2>'+escapeHtml(job.title||"Untitled job")+'</h2><p>'+escapeHtml([job.company,job.location,settingEnabled("show-remote",true)?job.remote:""].filter(Boolean).join(" | "))+'</p><section class="job-description"><h3>Job description</h3><p>'+escapeHtml(description)+'</p></section><dl>'+detailHtml+'</dl><div class="detail-actions">'+actions+'</div>';
     detail.querySelectorAll("[data-queue]").forEach((button)=>{
       button.addEventListener("click",()=>enqueue(job,button.dataset.queue));
     });
@@ -448,6 +448,7 @@
           item.setAttribute("aria-selected",String(active));
         });
         await loadDiscovered(state.activeTrack);
+        state.selectedId=null;
         render();
       });
     });
