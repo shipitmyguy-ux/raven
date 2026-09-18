@@ -455,6 +455,28 @@
                 enqueue(job,button.dataset.queue);
               });
             });
+            expanded.querySelectorAll("[data-document-menu]").forEach((button)=>{
+              button.addEventListener("click",(event)=>{
+                event.stopPropagation();
+                const menu=button.nextElementSibling;
+                const opening=menu.hidden;
+                expanded.querySelectorAll(".document-menu").forEach((item)=>{ item.hidden=true; });
+                menu.hidden=!opening;
+                button.setAttribute("aria-expanded",String(opening));
+              });
+            });
+            expanded.querySelectorAll("[data-document-revise]").forEach((button)=>{
+              button.addEventListener("click",(event)=>{
+                event.stopPropagation();
+                openDocumentReview(job,button.dataset.documentRevise);
+              });
+            });
+            expanded.querySelectorAll("[data-document-delete]").forEach((button)=>{
+              button.addEventListener("click",(event)=>{
+                event.stopPropagation();
+                deleteGeneratedDocument(job,button.dataset.documentDelete);
+              });
+            });
             expanded.querySelectorAll("[data-description-toggle]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
@@ -811,17 +833,34 @@
     return String(value||"").replace(/[&<>"']/g,(char)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
   }
   function escapeAttr(value) { return escapeHtml(value).replace(/`/g,"&#96;"); }
+  async function deleteGeneratedDocument(job,key) {
+    const label=documentLabel(key);
+    if(!window.confirm("Delete this "+label+" from the job?")) return;
+    setStatus("Deleting "+label+"...");
+    try{
+      await window.RavenAPI.updateJob(job.id,{[key]:""});
+      await loadJobs();
+      setStatus(label[0].toUpperCase()+label.slice(1)+" deleted");
+    }catch(error){
+      setStatus("Could not delete "+label+": "+error.message);
+    }
+  }
   function documentControl(job,key,label) {
     const value=job[key];
     const fileLabel=String(label||"file").toLowerCase();
-    const file=value
-      ? (/^https?:\/\//.test(value)
-          ? '<a href="'+escapeAttr(value)+'" target="_blank" rel="noopener">Open '+escapeHtml(fileLabel)+'</a>'
-          : '<span>'+escapeHtml(value)+'</span>')
-      : '<span class="document-empty">Not generated</span>';
-    return '<span class="document-control">'+file+
-      '<span class="document-buttons">'+
-        '<button type="button" data-queue="'+escapeAttr(key)+'" title="'+(value?'Review ':'Generate ')+escapeAttr(fileLabel)+'">'+(value?'Review':'Generate')+'</button>'+
+    if(!value){
+      return '<span class="document-control is-empty">'+
+        '<button class="document-primary" type="button" data-queue="'+escapeAttr(key)+'">Generate</button>'+
+      '</span>';
+    }
+    return '<span class="document-control has-file">'+
+      '<button class="document-primary" type="button" data-queue="'+escapeAttr(key)+'">Review</button>'+
+      '<span class="document-overflow">'+
+        '<button class="document-menu-button" type="button" data-document-menu aria-haspopup="menu" aria-expanded="false" aria-label="More '+escapeAttr(fileLabel)+' options" title="More options">…</button>'+
+        '<span class="document-menu" role="menu" hidden>'+
+          '<button type="button" role="menuitem" data-document-revise="'+escapeAttr(key)+'">Request changes</button>'+
+          '<button class="danger-action" type="button" role="menuitem" data-document-delete="'+escapeAttr(key)+'">Delete</button>'+
+        '</span>'+
       '</span>'+
     '</span>';
   }
