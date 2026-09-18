@@ -62,7 +62,8 @@
     "transition-normal": "180ms ease",
     "job-row-min-height": "70px",
     "panel-padding": "16px",
-    "detail-label-width": "110px"
+    "detail-label-width": "110px",
+    "status-discovered": "var(--secondary)"
   },
   "settings": {
     "default-sort": "added-desc",
@@ -217,6 +218,15 @@
     }
   ],
   "statuses": [
+    {
+      "key": "Discovered",
+      "label": "Discovered",
+      "colorToken": "status-discovered",
+      "order": 5,
+      "visible": true,
+      "terminal": false,
+      "notes": "Background search candidate not yet saved to the Google Sheet"
+    },
     {
       "key": "Saved",
       "label": "Saved",
