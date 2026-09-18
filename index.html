@@ -54,7 +54,62 @@
           <button type="submit" class="options-close" aria-label="Close options" title="Close">×</button>
         </header>
         <div class="options-panel-body">
-          <p>Raven options will appear here.</p>
+          <details class="options-group">
+            <summary>Layout</summary>
+            <div class="options-group-content">
+              <label class="option-row">
+                <span>Card density</span>
+                <select data-setting-key="card-density">
+                  <option value="compact">Compact</option>
+                  <option value="comfortable">Comfortable</option>
+                </select>
+              </label>
+              <label class="option-row">
+                <span>Sidebar width</span>
+                <select data-setting-key="sidebar-width">
+                  <option value="300px">Narrow</option>
+                  <option value="360px">Default</option>
+                  <option value="420px">Wide</option>
+                </select>
+              </label>
+              <label class="option-row">
+                <span>Detail width</span>
+                <select data-setting-key="detail-panel-width">
+                  <option value="0.8fr">Narrow</option>
+                  <option value="1fr">Default</option>
+                  <option value="1.25fr">Wide</option>
+                </select>
+              </label>
+            </div>
+          </details>
+
+          <details class="options-group">
+            <summary>Job information</summary>
+            <div class="options-group-content">
+              <label class="option-toggle"><input type="checkbox" data-setting-key="show-salary"><span>Show salary</span></label>
+              <label class="option-toggle"><input type="checkbox" data-setting-key="show-remote"><span>Show remote status</span></label>
+              <label class="option-toggle"><input type="checkbox" data-setting-key="show-source"><span>Show source</span></label>
+              <label class="option-toggle"><input type="checkbox" data-setting-key="show-notes"><span>Show notes</span></label>
+              <label class="option-toggle"><input type="checkbox" data-setting-key="show-sync-status"><span>Show sync status</span></label>
+            </div>
+          </details>
+
+          <details class="options-group">
+            <summary>Behavior</summary>
+            <div class="options-group-content">
+              <label class="option-row">
+                <span>Default sort</span>
+                <select data-setting-key="default-sort">
+                  <option value="added-desc">Newest first</option>
+                  <option value="added-asc">Oldest first</option>
+                  <option value="title-asc">Title A–Z</option>
+                  <option value="company-asc">Company A–Z</option>
+                </select>
+              </label>
+            </div>
+          </details>
+
+          <button id="resetOptionsButton" class="options-reset" type="button">Reset to defaults</button>
         </div>
       </form>
     </dialog>
@@ -76,6 +131,6 @@
   <script src="./snapshot.js?v=20260918-0518"></script>
   <script src="./config.js?v=5"></script>
   <script src="./raven-api.js?v=5"></script>
-  <script src="./app.js?v=23"></script>
+  <script src="./app.js?v=24"></script>
 </body>
 </html>
