@@ -86,3 +86,18 @@ Polished Options navigation:
 
 File changed: `styles.css`.
 Commit: `f051cc74`.
+
+
+## Chat implementation update - 2026-09-18
+Added Master resumes to the top of the Options list:
+- supports multiple master resumes,
+- source can be Google Drive URL or local file,
+- local files are stored in browser IndexedDB on that device,
+- each master resume can be assigned to Games / 3D, Professional, Labor, and/or Wildcard,
+- resume-generation task input now includes the master resume assigned to the job's track,
+- master resumes can be edited or deleted.
+
+Files changed: `index.html`, `styles.css`, `app.js`.
+Commits: `102bf53c`, `2c5a84eb`, `66335184`.
+
+Important: generation workers still need to consume the new `input.masterResume` payload for the source resume to actually shape generated output end-to-end.
