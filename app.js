@@ -10,6 +10,8 @@
     commutes: {},
     descriptionCache: {},
     descriptionLoading: {},
+    knownJobs: new Set(),
+    newJobs: new Set(),
     returnScrollY: null
   };
   const columns = ["id","added","track","title","company","location","remote","salaryMin","salaryMax","salaryText","url","source","status","viewed","appliedDate","followUp","resume","coverLetter","notes","lastUpdated"];
@@ -25,6 +27,8 @@
   const CACHE_JOBS_KEY="ravenJobsCacheV1";
   const CACHE_DISCOVERED_KEY="ravenDiscoveredCacheV1";
   const CACHE_DESCRIPTION_KEY="ravenDescriptionCacheV1";
+  const KNOWN_JOBS_KEY="ravenKnownJobUrlsV1";
+  const NEW_JOBS_KEY="ravenNewJobUrlsV1";
 
   function setStatus(message) { status.textContent = message; }
   function readCache(key,fallback){
@@ -36,6 +40,44 @@
   function writeCache(key,value){
     try{ localStorage.setItem(key,JSON.stringify(value)); }catch{}
   }
+  function jobKey(job){
+    return normalizeComparableUrl(job?.url) || String(job?.id||"");
+  }
+
+  function persistJobAwareness(){
+    writeCache(KNOWN_JOBS_KEY,[...state.knownJobs]);
+    writeCache(NEW_JOBS_KEY,[...state.newJobs]);
+  }
+
+  function registerIncomingJobs(jobs,{seed=false}={}){
+    const keys=(jobs||[]).map(jobKey).filter(Boolean);
+    if(seed || state.knownJobs.size===0){
+      keys.forEach((key)=>state.knownJobs.add(key));
+      persistJobAwareness();
+      return;
+    }
+    let changed=false;
+    keys.forEach((key)=>{
+      if(!state.knownJobs.has(key)){
+        state.knownJobs.add(key);
+        state.newJobs.add(key);
+        changed=true;
+      }
+    });
+    if(changed) persistJobAwareness();
+  }
+
+  function isNewJob(job){
+    return state.newJobs.has(jobKey(job));
+  }
+
+  function markJobSeen(job){
+    const key=jobKey(job);
+    if(!key || !state.newJobs.has(key)) return;
+    state.newJobs.delete(key);
+    persistJobAwareness();
+  }
+
   function hydrateImmediateData(){
     const cachedJobs=readCache(CACHE_JOBS_KEY,null);
     if(Array.isArray(cachedJobs) && cachedJobs.length){
@@ -52,6 +94,16 @@
       Object.keys(state.discovered).forEach((track)=>{
         if(Array.isArray(cachedDiscovered[track])) state.discovered[track]=cachedDiscovered[track];
       });
+    }
+
+    const known=readCache(KNOWN_JOBS_KEY,null);
+    const unread=readCache(NEW_JOBS_KEY,[]);
+    if(Array.isArray(known)){
+      state.knownJobs=new Set(known);
+      state.newJobs=new Set(Array.isArray(unread)?unread:[]);
+    } else {
+      const initial=[...state.jobs,...Object.values(state.discovered).flat()];
+      registerIncomingJobs(initial,{seed:true});
     }
     render();
   }
@@ -279,6 +331,7 @@
     try {
       const payload = await callSearchApi({ action: "listResults", track });
       state.discovered[track] = normalizeDiscovered(payload.results);
+      registerIncomingJobs(state.discovered[track]);
       writeCache(CACHE_DISCOVERED_KEY,state.discovered);
       render();
       return true;
@@ -297,6 +350,7 @@
     try {
       const payload = await callSearchApi({ action: "search", track });
       state.discovered[track] = normalizeDiscovered(payload.results);
+      registerIncomingJobs(state.discovered[track]);
       writeCache(CACHE_DISCOVERED_KEY,state.discovered);
       state.selectedId = null;
       render();
@@ -320,6 +374,7 @@
     try {
       const payload = await callGateway({ action: "listJobs" });
       state.jobs = normalizeJobs(payload);
+      registerIncomingJobs(state.jobs);
       writeCache(CACHE_JOBS_KEY,state.jobs);
       setStatus("Up to date");
       render();
@@ -335,10 +390,16 @@
   function sortedJobs(jobs) {
     const mode = state.runtime.settings["default-sort"] || "added-desc";
     const copy=[...jobs];
-    if (mode==="added-asc") return copy.sort((a,b)=>parseDate(a.added)-parseDate(b.added));
-    if (mode==="title-asc") return copy.sort((a,b)=>String(a.title||"").localeCompare(String(b.title||"")));
-    if (mode==="company-asc") return copy.sort((a,b)=>String(a.company||"").localeCompare(String(b.company||"")));
-    return copy.sort((a,b)=>parseDate(b.added)-parseDate(a.added));
+    const baseCompare=(a,b)=>{
+      if (mode==="added-asc") return parseDate(a.added)-parseDate(b.added);
+      if (mode==="title-asc") return String(a.title||"").localeCompare(String(b.title||""));
+      if (mode==="company-asc") return String(a.company||"").localeCompare(String(b.company||""));
+      return parseDate(b.added)-parseDate(a.added);
+    };
+    return copy.sort((a,b)=>{
+      const newDelta=Number(isNewJob(b))-Number(isNewJob(a));
+      return newDelta || baseCompare(a,b);
+    });
   }
   function combinedJobs() {
     const discovered = state.discovered[state.activeTrack] || [];
@@ -479,7 +540,7 @@
       groupJobs.forEach((job)=>{
           const card=document.createElement("button");
           card.type="button";
-          card.className="job-card"+(job.id===state.selectedId?" active":"")+(isRemoteJob(job)?" is-remote":"");
+          card.className="job-card"+(job.id===state.selectedId?" active":"")+(isRemoteJob(job)?" is-remote":"")+(isNewJob(job)?" is-new":"");
           card.dataset.status=statusToken(job.status);
           const company=job.company||"Company not captured";
           const location=[job.location,job.remote].filter(Boolean).join(" · ")||"Location not captured";
@@ -487,6 +548,7 @@
           const score=matchScore(job);
           card.innerHTML=
             '<span class="card-main">'+
+              (isNewJob(job)?'<span class="new-job-badge">NEW</span>':'')+
               '<span class="match-line"><strong>'+score+'%</strong> match</span>'+
               '<span class="job-title">'+escapeHtml(job.title||"Untitled job")+'</span>'+
               '<span class="company-name">'+escapeHtml(company)+'</span>'+
@@ -510,7 +572,10 @@
           }
           card.addEventListener("click",()=>{
             const opening=state.selectedId!==job.id;
-            if(opening) state.returnScrollY=window.scrollY;
+            if(opening) {
+              state.returnScrollY=window.scrollY;
+              markJobSeen(job);
+            }
             state.selectedId = opening ? job.id : null;
             render();
             if(opening) ensureDescription(job);
