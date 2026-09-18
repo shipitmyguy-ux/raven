@@ -931,13 +931,59 @@
     const optionsButton=document.getElementById("optionsButton");
     const optionsDialog=document.getElementById("optionsDialog");
     if(optionsButton && optionsDialog){
+      const optionsHome=document.getElementById("optionsHome");
+      const optionsCard=document.getElementById("optionsCard");
+      const optionsCardTitle=document.getElementById("optionsCardTitle");
+      const optionsBackButton=document.getElementById("optionsBackButton");
+      const categoryTitles={layout:"Layout","job-info":"Job information",behavior:"Behavior"};
+
+      const showOptionsHome=()=>{
+        if(!optionsCard || optionsCard.hidden) return;
+        optionsCard.classList.remove("is-entering","is-active");
+        optionsCard.classList.add("is-leaving");
+        const finish=()=>{
+          optionsCard.classList.remove("is-leaving");
+          optionsCard.hidden=true;
+          optionsHome.hidden=false;
+          optionsCard.removeEventListener("animationend",finish);
+        };
+        optionsCard.addEventListener("animationend",finish);
+        setTimeout(finish,220);
+      };
+
+      const showOptionsCard=(key)=>{
+        const panel=optionsDialog.querySelector('[data-options-panel="'+key+'"]');
+        if(!panel) return;
+        optionsDialog.querySelectorAll("[data-options-panel]").forEach((item)=>item.hidden=item!==panel);
+        optionsCardTitle.textContent=categoryTitles[key]||"Options";
+        optionsHome.hidden=true;
+        optionsCard.hidden=false;
+        optionsCard.classList.remove("is-leaving","is-active");
+        void optionsCard.offsetWidth;
+        optionsCard.classList.add("is-entering");
+        const finish=()=>{
+          optionsCard.classList.remove("is-entering");
+          optionsCard.classList.add("is-active");
+          optionsCard.removeEventListener("animationend",finish);
+        };
+        optionsCard.addEventListener("animationend",finish);
+        setTimeout(finish,220);
+      };
+
       optionsButton.addEventListener("click",()=>{
         syncOptionsControls();
+        optionsHome.hidden=false;
+        optionsCard.hidden=true;
+        optionsCard.classList.remove("is-entering","is-leaving","is-active");
         optionsDialog.showModal();
       });
       optionsDialog.addEventListener("click",(event)=>{
         if(event.target===optionsDialog) optionsDialog.close();
       });
+      optionsDialog.querySelectorAll("[data-options-target]").forEach((button)=>{
+        button.addEventListener("click",()=>showOptionsCard(button.dataset.optionsTarget));
+      });
+      if(optionsBackButton) optionsBackButton.addEventListener("click",showOptionsHome);
       optionsDialog.querySelectorAll("[data-setting-key]").forEach((control)=>{
         control.addEventListener("change",()=>{
           const value=control.type==="checkbox" ? control.checked : control.value;
