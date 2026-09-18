@@ -128,13 +128,32 @@ nav a {
 }
 nav a:hover,a:hover { color: var(--accent-strong); text-shadow: 0 0 12px rgba(49,244,255,.28); }
 nav a:hover { border-bottom-color: var(--accent); }
-.capture,.toolbar,.layout,.panels article,.detail {
+.capture,.track-tabs,.toolbar,.layout,.panels article,.detail {
   background: linear-gradient(180deg, rgba(16,24,36,.94), rgba(12,17,25,.96));
   border: var(--border-width) solid var(--border-color);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-panel);
 }
 .capture,.toolbar,.panels article { position: relative; }
+.track-tabs {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.track-tab {
+  background: var(--surface-input);
+  border-color: var(--border-color);
+  color: var(--text-soft);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  font-size: var(--font-size-xs);
+}
+.track-tab.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent-strong);
+  box-shadow: var(--glow-accent);
+}
 .capture::before,.toolbar::before,.panels article::before {
   content: "";
   position: absolute;
