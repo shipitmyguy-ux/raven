@@ -357,14 +357,13 @@
     const role=String(job.title||"Role").trim();
     const company=String(job.company||"").trim();
     const remote=isRemoteJob(job)?"Remote ":"";
-    const salary=String(job.salaryText||"").trim();
     let description=String(job.notes||"")
       .replace(/\[JOBTRACK_DATA\][\s\S]*$/i,"")
       .replace(/Employer posting re-verified[^.]*\.\s*/i,"")
       .replace(/\s+/g," ")
       .trim();
     const sentence=(description.match(/^.*?[.!?](?:\s|$)/)||[])[0]||description;
-    const context=[remote+role+(company?" at "+company:""),salary].filter(Boolean).join(" · ");
+    const context=remote+role+(company?" at "+company:"");
     const detail=sentence && !context.toLowerCase().includes(sentence.toLowerCase()) ? sentence : "";
     const combined=[context,detail].filter(Boolean).join(". ");
     return combined.length>190 ? combined.slice(0,187).replace(/\s+\S*$/,"")+"..." : combined;
