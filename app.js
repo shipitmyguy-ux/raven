@@ -101,7 +101,7 @@
   function buildStatusFilter() {
     const current = statusFilter.value;
     const statuses = state.runtime.statuses.filter((item) => parseBool(item.visible, true));
-    statusFilter.innerHTML = '<option value="">All statuses</option>';
+    statusFilter.innerHTML = '<option value="">All jobs</option>';
     statuses.sort((a,b)=>Number(a.order||0)-Number(b.order||0)).forEach((item)=>{
       const option=document.createElement("option");
       option.value=item.key||item.label||"";
@@ -307,6 +307,7 @@
     if (s.includes("offer")) return "Offer";
     if (s.includes("interview")) return "Interview";
     if (s.includes("applied")) return "Applied";
+    if (s.includes("interested")) return "Interested";
     if (s.includes("ready") || s.includes("tailor")) return "Tailoring";
     return "Saved";
   }
@@ -357,6 +358,7 @@
     list.innerHTML="";
     const jobs=filteredJobs();
     const groups=[
+      {bucket:"Interested",label:"Bookmarked"},
       {bucket:"Saved",label:"Active jobs"},
       {bucket:"Tailoring",label:"Tailoring"},
       {bucket:"Applied",label:"Applied"},
@@ -374,7 +376,7 @@
       groupJobs.forEach((job)=>{
           const card=document.createElement("button");
           card.type="button";
-          card.className="job-card"+(job.id===state.selectedId?" active":"")+(isRemoteJob(job)?" is-remote":"");
+          card.className="job-card"+(job.id===state.selectedId?" active":"")+(isRemoteJob(job)?" is-remote":"")+(job.status==="Applied"?" is-applied":"")+(job.status==="Interested"?" is-interested":"");
           card.dataset.status=statusToken(job.status);
           const company=job.company||"Company not captured";
           const location=[job.location,job.remote].filter(Boolean).join(" · ")||"Location not captured";
@@ -382,7 +384,7 @@
           const score=matchScore(job);
           card.innerHTML=
             '<span class="card-main">'+
-              '<span class="match-line"><strong>'+score+'%</strong> match</span>'+
+              '<span class="card-topline"><span class="match-line"><strong>'+score+'%</strong> match</span><span class="job-status">'+escapeHtml(job.status||"Saved")+'</span></span>'+
               '<span class="job-title">'+escapeHtml(job.title||"Untitled job")+'</span>'+
               '<span class="company-name">'+escapeHtml(company)+'</span>'+
               '<span class="job-location">'+escapeHtml(location)+'</span>'+
@@ -395,6 +397,12 @@
             expanded.className="job-card-expanded";
             expanded.innerHTML=renderInlineDetail(job);
             card.appendChild(expanded);
+            expanded.querySelectorAll("[data-bookmark]").forEach((button)=>{
+              button.addEventListener("click",(event)=>{
+                event.stopPropagation();
+                toggleBookmark(job);
+              });
+            });
             expanded.querySelectorAll("[data-queue]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
@@ -472,6 +480,9 @@
       return '<dt>'+escapeHtml(item.label||item.key)+'</dt><dd>'+rendered+'</dd>';
     }).join("");
 
+    const bookmarkAction=String(job.status||"").toLowerCase()==="interested"
+      ? '<button type="button" data-bookmark="remove">★ Bookmarked</button>'
+      : (String(job.status||"").toLowerCase()==="applied" ? "" : '<button type="button" data-bookmark="add">☆ Bookmark</button>');
     const configuredActions=uiRows("detail-action");
     const actions=(configuredActions.length?configuredActions:fallbackActions())
       .filter((item)=>{
@@ -490,8 +501,37 @@
     return '<section class="inline-job-detail">'+
       '<section class="job-description"><h3>Job description</h3><p>'+escapeHtml(description)+'</p></section>'+
       '<dl>'+detailHtml+'</dl>'+
-      '<div class="detail-actions">'+actions+'</div>'+
+      '<div class="detail-actions">'+bookmarkAction+actions+'</div>'+
     '</section>';
+  }
+
+  async function toggleBookmark(job) {
+    const interested=String(job.status||"").toLowerCase()==="interested";
+    const nextStatus=interested?"Saved":"Interested";
+    setStatus(interested?"Removing bookmark...":"Saving bookmark...");
+    try{
+      if(job._discovered){
+        await window.RavenAPI.addJob({
+          track:job.track||state.activeTrack,
+          title:job.title||"",
+          company:job.company||"",
+          location:job.location||"",
+          remote:isRemoteJob(job),
+          salaryText:job.salaryText||"",
+          url:job.url||"",
+          source:job.source||"",
+          status:nextStatus,
+          notes:job.notes||""
+        });
+      }else{
+        await window.RavenAPI.updateJob(job.id,{status:nextStatus});
+      }
+      state.selectedId=null;
+      await loadJobs();
+      setStatus(interested?"Bookmark removed":"Bookmarked");
+    }catch(error){
+      setStatus("Bookmark failed: "+error.message);
+    }
   }
 
   function escapeHtml(value) {
