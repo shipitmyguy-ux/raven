@@ -192,7 +192,6 @@
     const response = await fetch(config.searchApiUrl, {
       method: "POST",
       headers: {
-        "Authorization": "Bearer " + config.searchAnonKey,
         "apikey": config.searchAnonKey,
         "Content-Type": "application/json"
       },
