@@ -15,9 +15,9 @@
     return parse(response);
   }
 
-  async function write(action, payload = {}) {
-    if (!config.searchApiUrl) throw new Error("Raven API is not configured.");
-    const response = await fetch(config.searchApiUrl, {
+  async function write(baseUrl, action, payload = {}) {
+    if (!baseUrl) throw new Error("Raven API is not configured.");
+    const response = await fetch(baseUrl, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=UTF-8" },
       body: JSON.stringify({ action, ...payload }),
@@ -69,14 +69,14 @@
     searchJobs(track) { return read(config.searchApiUrl, "search", { track }); },
     listResults(track) { return read(config.searchApiUrl, "listResults", { track }); },
     async listJobs() {
-      const data = await read(config.searchApiUrl, "jobs");
+      const data = await read(config.dataApiUrl, "jobs");
       return { ...data, jobs: (data.jobs || []).map(normalizeJob) };
     },
-    addJob(job) { return write("addJob", job); },
-    updateJob(id, patch) { return write("updateJob", { id, ...patch }); },
-    async listTasks() { return read(config.searchApiUrl, "tasks"); },
-    enqueueTask(task) { return write("enqueueTask", task); },
-    updateTask(taskId, patch) { return write("updateTask", { taskId, ...patch }); },
+    addJob(job) { return write(config.dataApiUrl, "addJob", job); },
+    updateJob(id, patch) { return write(config.dataApiUrl, "updateJob", { id, ...patch }); },
+    async listTasks() { return read(config.tasksApiUrl, "tasks"); },
+    enqueueTask(task) { return write(config.tasksApiUrl, "enqueueTask", task); },
+    updateTask(taskId, patch) { return write(config.tasksApiUrl, "updateTask", { taskId, ...patch }); },
     describeJob(job) { return read(config.enrichApiUrl, "describe", job || {}); },
     commute(location) { return read(config.commuteApiUrl, "commute", { location }); }
   });
