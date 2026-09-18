@@ -3,6 +3,16 @@ name: Deploy Raven to GitHub Pages
 on:
   push:
     branches: ["main"]
+    paths:
+      - "index.html"
+      - "app.js"
+      - "config.js"
+      - "runtime-config.json"
+      - "snapshot.js"
+      - "styles.css"
+      - "theme.css"
+      - "extension/**"
+      - ".github/workflows/pages.yml"
   workflow_dispatch:
 
 permissions:
@@ -23,19 +33,34 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:
           enablement: true
+
+      - name: Check extension changes
+        id: extension_changes
+        shell: bash
+        run: |
+          if git diff --quiet HEAD^ HEAD -- extension/ 2>/dev/null; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build extension ZIP
+        if: steps.extension_changes.outputs.changed == 'true'
         run: |
           mkdir -p extension
           cd extension/src
           zip -r ../raven-capture-extension.zip .
+
       - name: Upload static site
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
+
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
