@@ -16,7 +16,10 @@
 <body>
   <header class="topbar">
     <h1>Raven</h1>
-    <p id="syncStatus">Loading jobs...</p>
+    <div class="topbar-actions">
+      <p id="syncStatus">Loading jobs...</p>
+      <button id="optionsButton" class="options-button" type="button" aria-haspopup="dialog" aria-controls="optionsDialog" aria-label="Open options" title="Options">⚙</button>
+    </div>
   </header>
 
   <main>
@@ -44,6 +47,18 @@
     </section>
     <ul id="queueList" hidden></ul>
 
+    <dialog id="optionsDialog" class="options-dialog">
+      <form method="dialog">
+        <header>
+          <h2>Options</h2>
+          <button type="submit" class="options-close" aria-label="Close options" title="Close">×</button>
+        </header>
+        <div class="options-panel-body">
+          <p>Raven options will appear here.</p>
+        </div>
+      </form>
+    </dialog>
+
     <dialog id="documentReviewDialog" class="document-review-dialog">
       <form id="documentReviewForm" method="dialog">
         <header><div><h2 id="reviewTitle">Review document</h2><p id="reviewContext"></p></div><button type="button" data-review-close aria-label="Close and save" title="Close and save">×</button></header>
@@ -61,6 +76,6 @@
   <script src="./snapshot.js?v=20260918-0518"></script>
   <script src="./config.js?v=5"></script>
   <script src="./raven-api.js?v=5"></script>
-  <script src="./app.js?v=22"></script>
+  <script src="./app.js?v=23"></script>
 </body>
 </html>
