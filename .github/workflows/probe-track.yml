@@ -1,0 +1,17 @@
+name: Probe Raven track passthrough
+
+on:
+  push:
+    paths:
+      - ".github/workflows/probe-track.yml"
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe
+        run: |
+          curl -sS -X POST "https://umvmilulnqnmeqvfoxxc.supabase.co/functions/v1/raven-search" \
+            -H "Content-Type: application/json" \
+            --data '{"action":"probeTrack"}'
