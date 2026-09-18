@@ -17,7 +17,6 @@
   const queueList = document.getElementById("queueList");
   const trackTabs = [...document.querySelectorAll(".track-tab")];
   const searchJobsButton = document.getElementById("searchJobsButton");
-  const statTracked = document.getElementById("statTracked");
   const statApplied = document.getElementById("statApplied");
   const statInterviews = document.getElementById("statInterviews");
   const statBestMatch = document.getElementById("statBestMatch");
@@ -319,7 +318,6 @@
   }
   function renderMetrics() {
     const all=state.jobs.filter((job)=>job.id||job.url);
-    statTracked.textContent=String(all.length);
     statApplied.textContent=String(all.filter((job)=>String(job.status||"").toLowerCase().includes("applied")).length);
     statInterviews.textContent=String(all.filter((job)=>String(job.status||"").toLowerCase().includes("interview")).length);
     const best=all.length?Math.max(...all.map(matchScore)):0;
@@ -477,6 +475,11 @@
       if (!saved.id) throw new Error("Google did not confirm a saved job.");
       document.getElementById("jobTitle").value="";
       document.getElementById("jobUrl").value="";
+      const capture=document.getElementById("capture");
+      const toggle=document.getElementById("toggleCaptureButton");
+      capture.hidden=true;
+      toggle.setAttribute("aria-expanded","false");
+      toggle.textContent="+ Add job";
       await loadJobs();
     } catch (error) {
       setStatus("Capture needs review: "+error.message);
@@ -507,7 +510,15 @@
       });
     });
     searchJobsButton.addEventListener("click",runJobSearch);
-    document.getElementById("refreshButton").addEventListener("click",async()=>{ await loadRuntimeConfig(); await loadJobs(); await loadDiscovered(state.activeTrack); render(); });
+    const toggleCaptureButton=document.getElementById("toggleCaptureButton");
+    const capture=document.getElementById("capture");
+    toggleCaptureButton.addEventListener("click",()=>{
+      const opening=capture.hidden;
+      capture.hidden=!opening;
+      toggleCaptureButton.setAttribute("aria-expanded",String(opening));
+      toggleCaptureButton.textContent=opening?"− Hide add job":"+ Add job";
+      if(opening) document.getElementById("jobTitle").focus();
+    });
     searchBox.addEventListener("input",render);
     statusFilter.addEventListener("change",render);
     document.getElementById("captureForm").addEventListener("submit",(event)=>{
@@ -529,13 +540,23 @@
       }
     }
   }
+  async function refreshCurrentTrack() {
+    await loadJobs();
+    await loadDiscovered(state.activeTrack);
+    render();
+  }
   async function boot() {
     bindEvents();
     applySharedParams();
     await loadRuntimeConfig();
-    await loadJobs();
-    await loadDiscovered(state.activeTrack);
-    render();
+    await refreshCurrentTrack();
+    let lastRefresh=Date.now();
+    document.addEventListener("visibilitychange",async()=>{
+      if(!document.hidden && Date.now()-lastRefresh>60000){
+        lastRefresh=Date.now();
+        await refreshCurrentTrack();
+      }
+    });
   }
   boot();
 }());
