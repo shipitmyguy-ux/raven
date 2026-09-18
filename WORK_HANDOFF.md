@@ -38,3 +38,16 @@ At the beginning of substantial Work, apply the Raven usage guard from `AGENTS.m
 
 ## Verification note
 The previous document queue could accept requests, but successful generation must still be proven with a real output linked to the correct job and surviving refresh.
+
+
+## Chat implementation update - 2026-09-18
+Implemented the first Options UI step directly through GitHub:
+- added a small gear button at the upper-right of the top bar,
+- moved sync/status text immediately to its left inside a shared topbar action wrapper,
+- added a compact Options dialog shell,
+- wired the gear to open the dialog and backdrop click to close,
+- preserved responsive header layout with compact sizing.
+
+Files changed: `index.html`, `styles.css`, `app.js`.
+Commits: `26fbd636`, `782c6ef2`, `de6811ba`.
+Next: populate the panel with the existing runtime-config settings.
