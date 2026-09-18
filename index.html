@@ -56,6 +56,9 @@
 
         <div class="options-viewport">
           <section id="optionsHome" class="options-screen options-home" aria-label="Option categories">
+            <button type="button" class="options-category" data-options-target="master-resumes">
+              <span>Master resumes</span><span aria-hidden="true">›</span>
+            </button>
             <button type="button" class="options-category" data-options-target="layout">
               <span>Layout</span><span aria-hidden="true">›</span>
             </button>
@@ -73,6 +76,51 @@
               <button id="optionsBackButton" class="options-back" type="button" aria-label="Back to option categories" title="Back">←</button>
               <h3 id="optionsCardTitle">Options</h3>
             </header>
+
+            <div class="options-card-panel master-resumes-panel" data-options-panel="master-resumes" hidden>
+              <p class="options-help">Add one or more source resumes, then assign each to the tracks it should drive.</p>
+              <div id="masterResumeList" class="master-resume-list"></div>
+              <button id="addMasterResumeButton" class="master-resume-add" type="button">+ Add master resume</button>
+
+              <section id="masterResumeEditor" class="master-resume-editor" hidden>
+                <label class="master-resume-field">
+                  <span>Name</span>
+                  <input id="masterResumeName" type="text" placeholder="e.g. 3D master">
+                </label>
+
+                <label class="master-resume-field">
+                  <span>Source</span>
+                  <select id="masterResumeSource">
+                    <option value="drive">Google Drive</option>
+                    <option value="local">Local file</option>
+                  </select>
+                </label>
+
+                <label id="masterResumeDriveRow" class="master-resume-field">
+                  <span>Google Drive URL</span>
+                  <input id="masterResumeDriveUrl" type="url" placeholder="https://drive.google.com/...">
+                </label>
+
+                <label id="masterResumeLocalRow" class="master-resume-field" hidden>
+                  <span>Local file</span>
+                  <input id="masterResumeFile" type="file" accept=".pdf,.doc,.docx,.txt,.rtf">
+                  <small id="masterResumeLocalStatus">Stored on this device.</small>
+                </label>
+
+                <fieldset class="master-resume-tracks">
+                  <legend>Use for</legend>
+                  <label><input type="checkbox" value="Games / 3D"> Games / 3D</label>
+                  <label><input type="checkbox" value="Professional"> Professional</label>
+                  <label><input type="checkbox" value="Labor"> Labor</label>
+                  <label><input type="checkbox" value="Wildcard"> Wildcard</label>
+                </fieldset>
+
+                <div class="master-resume-actions">
+                  <button id="saveMasterResumeButton" type="button">Save</button>
+                  <button id="cancelMasterResumeButton" type="button">Cancel</button>
+                </div>
+              </section>
+            </div>
 
             <div class="options-card-panel" data-options-panel="layout" hidden>
               <label class="option-row">
@@ -141,6 +189,6 @@
   <script src="./snapshot.js?v=20260918-0518"></script>
   <script src="./config.js?v=5"></script>
   <script src="./raven-api.js?v=5"></script>
-  <script src="./app.js?v=25"></script>
+  <script src="./app.js?v=26"></script>
 </body>
 </html>
