@@ -464,3 +464,31 @@ button,input,select { width:auto; }
     font-size: 1.4rem;
   }
 }
+
+
+/* Minimal commute indicator for non-remote jobs */
+.commute-footer {
+  grid-column: 1 / -1;
+  justify-self: end;
+  margin-top: 6px;
+  padding-top: 6px;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: .66rem;
+  letter-spacing: .05em;
+  line-height: 1;
+  text-transform: lowercase;
+}
+
+.job-card.active .commute-footer {
+  margin-top: 8px;
+}
+
+@media (max-width:480px) {
+  .commute-footer {
+    grid-column: 2;
+    justify-self: end;
+    margin-top: 2px;
+    padding-top: 2px;
+  }
+}
