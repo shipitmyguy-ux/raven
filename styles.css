@@ -1075,3 +1075,95 @@ main {
     width: 100%;
   }
 }
+
+
+/* Collapsed-card bookmark and document review controls */
+.job-card {
+  position: relative;
+}
+
+.job-card-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  font: inherit;
+  text-align: left;
+}
+
+.job-card-summary:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.card-topline {
+  padding-right: 30px;
+}
+
+.bookmark-star {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.bookmark-star:hover,
+.bookmark-star:focus-visible,
+.bookmark-star.is-bookmarked {
+  color: var(--warning);
+  background: rgba(255, 216, 74, .09);
+}
+
+.detail-actions {
+  display: block;
+}
+
+.workflow-actions {
+  margin: 0;
+}
+
+.document-control {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.document-buttons {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.document-buttons button {
+  min-height: 26px;
+  padding: 2px 7px;
+  font-size: .66rem;
+}
+
+.document-buttons .is-approved {
+  color: var(--success);
+  border-color: var(--success);
+  background: rgba(66, 245, 158, .1);
+}
+
+.document-empty {
+  color: var(--text-muted);
+}
