@@ -679,21 +679,24 @@
     const label=documentLabel(type);
     setStatus("Queueing "+label+"...");
     try {
+      const taskType=type==="resume"?"tailored_resume":"cover_letter";
       await window.RavenAPI.enqueueTask({
-        type,
-        taskType:type==="resume"?"Generate Resume":"Generate Cover Letter",
         jobId:job.id,
-        jobTitle:job.title||"",
-        company:job.company||"",
-        track:job.track||state.activeTrack,
-        sourceUrl:job.url||"",
-        description:job.notes||"",
-        currentFile:job[type]||"",
-        instructions:String(instructions||"").trim(),
-        mode:job[type]?"revise":"tailor",
-        autonomy:"high",
-        preserveFacts:true,
-        status:"Queued"
+        type:taskType,
+        idempotencyKey:job.id+":"+taskType+":"+Date.now(),
+        input:{
+          documentType:type,
+          jobTitle:job.title||"",
+          company:job.company||"",
+          track:job.track||state.activeTrack,
+          sourceUrl:job.url||"",
+          description:job.notes||"",
+          currentFile:job[type]||"",
+          instructions:String(instructions||"").trim(),
+          mode:job[type]?"revise":"tailor",
+          autonomy:"high",
+          preserveFacts:true
+        }
       });
       setStatus((job[type]?"Revision":"Generation")+" queued");
     } catch(error) {
