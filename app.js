@@ -4,7 +4,6 @@
     jobs: [],
     selectedId: null,
     activeTrack: "Games / 3D",
-    queue: JSON.parse(localStorage.getItem("ravenQueue") || localStorage.getItem("jobtrackQueue") || "[]"),
     runtime: { theme: {}, settings: {}, ui: [], statuses: [], features: {} },
     discovered: { Professional: [], Labor: [], Wildcard: [], "Games / 3D": [] },
     commutes: {},
@@ -16,7 +15,6 @@
   const template = document.getElementById("jobTemplate");
   const searchBox = document.getElementById("searchBox");
   const statusFilter = document.getElementById("statusFilter");
-  const queueList = document.getElementById("queueList");
   const trackTabs = [...document.querySelectorAll(".track-tab")];
   const searchJobsButton = document.getElementById("searchJobsButton");
 
@@ -49,31 +47,6 @@
       });
     }
     render();
-  }
-  function gatewayUrl(params = {}) {
-    const url = new URL(config.gatewayUrl);
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "") url.searchParams.set(key, value);
-    });
-    return url.toString();
-  }
-  async function callGateway(params) {
-    const getActions = new Set(["listJobs"]);
-    const response = getActions.has(params.action)
-      ? await fetch(gatewayUrl(params), { cache: "no-store" })
-      : await fetch(config.gatewayUrl, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=UTF-8" },
-          body: JSON.stringify(params)
-        });
-    const text = await response.text();
-    try {
-      const payload = JSON.parse(text);
-      if (!response.ok || payload.ok === false) throw new Error(payload.error || "Google could not complete this request.");
-      return payload;
-    } catch (error) {
-      throw new Error(error instanceof SyntaxError ? "Google returned an unreadable response." : error.message);
-    }
   }
   function parseBool(value, fallback = false) {
     if (typeof value === "boolean") return value;
@@ -233,9 +206,9 @@
   }
 
   async function loadJobs() {
-    setStatus("Syncing with Google Sheet...");
+    setStatus("Syncing jobs...");
     try {
-      const payload = await callGateway({ action: "listJobs" });
+      const payload = await window.RavenAPI.listJobs();
       state.jobs = normalizeJobs(payload);
       writeCache(CACHE_JOBS_KEY,state.jobs);
       setStatus("Up to date");
@@ -373,7 +346,6 @@
   }
   function render() {
     renderJobs();
-    renderQueue();
   }
   function renderJobs() {
     list.innerHTML="";
@@ -516,46 +488,6 @@
     '</section>';
   }
 
-  function renderQueue() {
-    queueList.innerHTML="";
-    if (!state.queue.length) { queueList.innerHTML="<li>No pending tasks.</li>"; return; }
-    state.queue.forEach((task)=>{
-      const item=document.createElement("li");
-      item.textContent=task.type+": "+task.title+" ("+task.status+")";
-      queueList.appendChild(item);
-    });
-  }
-  function enqueue(job,type) {
-    const task={
-      id:Date.now()+"-"+type+"-"+(job.id||"job"),
-      jobId:job.id,
-      title:job.title||job.url||"Untitled job",
-      type,
-      status:"needs worker",
-      createdAt:new Date().toISOString()
-    };
-    state.queue.unshift(task);
-    localStorage.setItem("ravenQueue",JSON.stringify(state.queue));
-    renderQueue();
-  }
-  async function saveCapture(url) {
-    setStatus("Adding job…");
-    try {
-      const parsed=new URL(url);
-      if (!["https:","http:"].includes(parsed.protocol)) throw new Error("Paste a valid job URL.");
-      const saved=await callGateway({action:"addJob",title:"",url,track:state.activeTrack});
-      if (!saved.id && !saved.ok) throw new Error("Google did not confirm a saved job.");
-      document.getElementById("jobUrl").value="";
-      const captureForm=document.getElementById("captureForm");
-      const toggleCaptureButton=document.getElementById("toggleCaptureButton");
-      captureForm.hidden=true;
-      toggleCaptureButton.setAttribute("aria-expanded","false");
-      toggleCaptureButton.textContent="Add job";
-      await loadJobs();
-    } catch (error) {
-      setStatus("Add failed: "+error.message);
-    }
-  }
   function escapeHtml(value) {
     return String(value||"").replace(/[&<>"']/g,(char)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
   }
