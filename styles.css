@@ -1275,3 +1275,26 @@ main {
 .job-card.is-ignored:focus-within {
   opacity: 1;
 }
+
+
+/* Concise enriched summary in collapsed job cards */
+.job-summary {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-soft);
+  font-size: .72rem;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* Two primary application actions after moving document generation inline */
+.workflow-actions {
+  grid-template-columns: repeat(2, minmax(118px, 1fr));
+}
+
+.document-buttons button {
+  height: 26px;
+  min-height: 26px;
+}
