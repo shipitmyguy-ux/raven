@@ -811,3 +811,34 @@ main {
     grid-column:1 / -1;
   }
 }
+
+
+/* Collapsed add-job control */
+.url-capture[hidden] {
+  display:none !important;
+}
+
+.toolbar {
+  grid-template-columns:minmax(220px,1fr) auto auto;
+}
+
+.url-capture {
+  grid-column:1 / -1;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:6px;
+}
+
+@media (max-width:820px) {
+  .toolbar {
+    grid-template-columns:1fr 1fr;
+  }
+
+  .toolbar #searchBox {
+    grid-column:1 / -1;
+  }
+
+  .url-capture {
+    grid-column:1 / -1;
+  }
+}
