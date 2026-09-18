@@ -44,55 +44,12 @@
     </section>
     <ul id="queueList" hidden></ul>
 
-    <dialog id="generatorDialog" class="generator-dialog">
-      <form id="generatorForm" method="dialog">
-        <header>
-          <div>
-            <h2 id="generatorTitle">Generate document</h2>
-            <p id="generatorContext"></p>
-          </div>
-          <button id="generatorCancel" type="button" data-generator-cancel aria-label="Close" title="Close">×</button>
-        </header>
-
-        <label class="generator-field">
-          <span>Tone</span>
-          <select id="generatorTone">
-            <option value="direct">Direct and professional</option>
-            <option value="warm">Warm and conversational</option>
-            <option value="technical">Technical and precise</option>
-            <option value="leadership">Leadership focused</option>
-          </select>
-        </label>
-
-        <label class="generator-field">
-          <span>Length</span>
-          <select id="generatorLength">
-            <option value="one-page">One page</option>
-            <option value="two-page">Up to two pages</option>
-            <option value="concise">Concise</option>
-            <option value="detailed">Detailed</option>
-          </select>
-        </label>
-
-        <fieldset>
-          <legend>Include and tailor</legend>
-          <div id="generatorSections" class="generator-sections"></div>
-        </fieldset>
-
-        <label class="generator-field">
-          <span>Customization instructions</span>
-          <textarea id="generatorInstructions" rows="4" placeholder="Emphasize specific experience, preserve a section, adjust tone, or request another revision."></textarea>
-        </label>
-
-        <label class="truth-check">
-          <input id="generatorTruth" type="checkbox" required checked>
-          <span>Use only verified experience and qualifications. Do not invent claims.</span>
-        </label>
-
-        <footer>
-          <button type="button" id="generatorCancelFooter" data-generator-cancel>Cancel</button>
-          <button type="submit" id="generatorSubmit">Queue generation</button>
-        </footer>
+    <dialog id="documentReviewDialog" class="document-review-dialog">
+      <form id="documentReviewForm" method="dialog">
+        <header><div><h2 id="reviewTitle">Review document</h2><p id="reviewContext"></p></div><button type="button" data-review-close aria-label="Close and save" title="Close and save">×</button></header>
+        <div class="document-preview"><iframe id="reviewFrame" title="Generated document preview"></iframe><a id="reviewOpenFile" href="#" target="_blank" rel="noopener">Open file in a new tab</a></div>
+        <label class="review-prompt"><span>Ask AI for a change</span><textarea id="reviewInstructions" rows="3" placeholder="Optional: Make the summary shorter, emphasize specific experience, or adjust the tone."></textarea></label>
+        <footer><button type="button" data-review-close>Close and save</button><button type="submit" id="reviewSubmit">Apply requested changes</button></footer>
       </form>
     </dialog>
 
@@ -104,6 +61,6 @@
   <script src="./snapshot.js?v=20260918-0518"></script>
   <script src="./config.js?v=5"></script>
   <script src="./raven-api.js?v=5"></script>
-  <script src="./app.js?v=18"></script>
+  <script src="./app.js?v=19"></script>
 </body>
 </html>
