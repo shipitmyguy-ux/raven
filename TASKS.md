@@ -3,7 +3,7 @@
 Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verification
 
 ## P0 - Core reliability
-- [ ] Add user-facing Options/Settings panel using existing runtime-config settings.
+- [~] Add user-facing Options/Settings panel using existing runtime-config settings. Header gear + panel shell are implemented; settings controls remain.
 - [ ] Audit job descriptions across every Raven tab.
 - [ ] Fix LinkedIn and other source extraction failures/truncation.
 - [ ] Verify source -> parser -> Supabase -> UI ingestion path.
