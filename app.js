@@ -500,7 +500,7 @@
     const bookmarkAction=String(job.status||"").toLowerCase()==="interested"
       ? '<button type="button" data-bookmark="remove">★ Bookmarked</button>'
       : (isApplied ? "" : '<button type="button" data-bookmark="add">☆ Bookmark</button>');
-    const appliedAction='<button class="workflow-action'+(isApplied?' is-applied':'')+'" type="button" data-apply-status="'+(isApplied?'saved':'applied')+'" aria-pressed="'+String(isApplied)+'" aria-label="'+(isApplied?'Unmark as applied':'Mark as applied')+'" title="'+(isApplied?'Unmark as applied':'Mark as applied')+'">✓</button>';
+    const appliedAction='<button class="workflow-action'+(isApplied?' is-applied':'')+'" type="button" data-apply-status="'+(isApplied?'saved':'applied')+'" aria-pressed="'+String(isApplied)+'" aria-label="'+(isApplied?'Unmark as applied':'Mark as applied')+'" title="'+(isApplied?'Unmark as applied':'Mark as applied')+'"><span class="workflow-icon" aria-hidden="true">✓</span><span>Applied</span></button>';
     const configuredActions=uiRows("detail-action");
     const actions=(configuredActions.length?configuredActions:fallbackActions())
       .filter((item)=>{
@@ -511,10 +511,11 @@
       .map((item)=>{
         const label=item.label||item.key;
         if (item.format==="external-link" || item.key==="posting" || item.key==="apply") {
-          return '<a class="workflow-action" href="'+escapeAttr(job.url)+'" target="_blank" rel="noopener" aria-label="'+escapeAttr(label)+'" title="'+escapeAttr(label)+'">↗</a>';
+          return '<a class="workflow-action" href="'+escapeAttr(job.url)+'" target="_blank" rel="noopener" aria-label="'+escapeAttr(label)+'" title="'+escapeAttr(label)+'"><span class="workflow-icon" aria-hidden="true">↗</span><span>'+escapeHtml(label)+'</span></a>';
         }
         const icon=item.key==="resume"?"R":item.key==="coverLetter"?"✉":"＋";
-        return '<button class="workflow-action" type="button" data-queue="'+escapeAttr(item.key)+'" aria-label="'+escapeAttr(label)+'" title="'+escapeAttr(label)+'">'+icon+'</button>';
+        const shortLabel=item.key==="resume"?"Resume":item.key==="coverLetter"?"Cover letter":label;
+        return '<button class="workflow-action" type="button" data-queue="'+escapeAttr(item.key)+'" aria-label="'+escapeAttr(label)+'" title="'+escapeAttr(label)+'"><span class="workflow-icon" aria-hidden="true">'+icon+'</span><span>'+escapeHtml(shortLabel)+'</span></button>';
       }).join("");
 
     const description=job.notes||"Job description not yet available.";
