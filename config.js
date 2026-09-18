@@ -4,4 +4,3 @@ window.RAVEN_CONFIG = {
   searchAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtdm1pbHVsbnFubWVxdmZveHhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2OTExMDMsImV4cCI6MjEwNTI2NzEwM30.M73kpySfNuWuOTNF8QNPwdtS58Ezpj0lpM0ljKWqRJU",
   chromeExtensionArchiveName: "raven-capture-extension.zip"
 };
-window.JOBTRACK_CONFIG = window.RAVEN_CONFIG;

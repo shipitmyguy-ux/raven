@@ -1,11 +1,11 @@
 (function () {
-  const config = window.RAVEN_CONFIG || window.JOBTRACK_CONFIG;
+  const config = window.RAVEN_CONFIG;
   const state = {
     jobs: [],
     selectedId: null,
     activeTrack: "Games / 3D",
     queue: JSON.parse(localStorage.getItem("ravenQueue") || localStorage.getItem("jobtrackQueue") || "[]"),
-    runtime: { theme: {}, settings: {}, ui: [], statuses: [], features: {} },
+    runtime: { settings: {}, ui: [], features: {} },
     discovered: { Professional: [], Labor: [], Wildcard: [], "Games / 3D": [] },
     commutes: {},
     descriptionCache: {},
@@ -17,9 +17,7 @@
   const columns = ["id","added","track","title","company","location","remote","salaryMin","salaryMax","salaryText","url","source","status","viewed","appliedDate","followUp","resume","coverLetter","notes","lastUpdated"];
   const status = document.getElementById("syncStatus");
   const list = document.getElementById("jobList");
-  const template = document.getElementById("jobTemplate");
   const searchBox = document.getElementById("searchBox");
-  const statusFilter = document.getElementById("statusFilter");
   const queueList = document.getElementById("queueList");
   const trackTabs = [...document.querySelectorAll(".track-tab")];
   const searchJobsButton = document.getElementById("searchJobsButton");
@@ -142,23 +140,15 @@
   }
   function applyRuntimeConfig(runtime) {
     state.runtime = {
-      theme: runtime.theme || {},
       settings: runtime.settings || {},
       ui: Array.isArray(runtime.ui) ? runtime.ui : [],
-      statuses: Array.isArray(runtime.statuses) ? runtime.statuses : [],
       features: runtime.features || {}
     };
-    Object.entries(state.runtime.theme).forEach(([key, value]) => {
-      if (value !== "" && value !== null && value !== undefined) {
-        document.documentElement.style.setProperty("--" + key, String(value));
-      }
-    });
     const settings = state.runtime.settings;
     if (settings["sidebar-width"]) document.documentElement.style.setProperty("--sidebar-width", settings["sidebar-width"]);
     if (settings["detail-panel-width"]) document.documentElement.style.setProperty("--detail-panel-width", settings["detail-panel-width"]);
     document.documentElement.dataset.cardDensity = settings["card-density"] || "compact";
     applyFeatureFlags();
-    buildStatusFilter();
   }
   function featureEnabled(key, fallback = true) {
     const feature = state.runtime.features[key];
@@ -181,18 +171,6 @@
       element.hidden = !featureEnabled(element.dataset.feature, true);
     });
     status.hidden = !settingEnabled("show-sync-status", true);
-  }
-  function buildStatusFilter() {
-    const current = statusFilter.value;
-    const statuses = state.runtime.statuses.filter((item) => parseBool(item.visible, true));
-    statusFilter.innerHTML = '<option value="">All statuses</option>';
-    statuses.sort((a,b)=>Number(a.order||0)-Number(b.order||0)).forEach((item)=>{
-      const option=document.createElement("option");
-      option.value=item.key||item.label||"";
-      option.textContent=item.label||item.key||"";
-      statusFilter.appendChild(option);
-    });
-    if ([...statusFilter.options].some((o)=>o.value===current)) statusFilter.value=current;
   }
   async function loadRuntimeConfig() {
     try {
@@ -426,10 +404,9 @@
   }
   function filteredJobs() {
     const query=searchBox.value.trim().toLowerCase();
-    const selectedStatus=statusFilter.value;
     return sortedJobs(combinedJobs().filter((job)=>{
       const haystack=[job.title,job.company,job.location,job.notes,job.url].join(" ").toLowerCase();
-      return (!query||haystack.includes(query)) && (!selectedStatus||job.status===selectedStatus);
+      return !query||haystack.includes(query);
     }));
   }
   function uiRows(surface) {
@@ -546,7 +523,6 @@
           const card=document.createElement("button");
           card.type="button";
           card.className="job-card"+(job.id===state.selectedId?" active":"")+(isRemoteJob(job)?" is-remote":"")+(isNewJob(job)?" is-new":"")+(isAppliedJob(job)?" is-applied":"");
-          card.dataset.status=statusToken(job.status);
           const company=job.company||"Company not captured";
           const location=[job.location,job.remote].filter(Boolean).join(" · ")||"Location not captured";
           const salary=job.salaryText||"";
@@ -615,9 +591,6 @@
       section.appendChild(cards);
       list.appendChild(section);
     });
-  }
-  function statusToken(value) {
-    return String(value||"saved").trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"saved";
   }
   function fallbackDetailRows() {
     return [
@@ -746,7 +719,6 @@
       if(opening) document.getElementById("jobUrl").focus();
     });
     searchBox.addEventListener("input",render);
-    statusFilter.addEventListener("change",render);
     document.getElementById("captureForm").addEventListener("submit",(event)=>{
       event.preventDefault();
       saveCapture(document.getElementById("jobUrl").value.trim());

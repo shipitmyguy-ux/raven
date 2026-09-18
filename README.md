@@ -35,7 +35,7 @@ That file controls:
 - Statuses
 - Feature flags
 
-Changing it triggers the normal GitHub Pages deployment automatically.
+Changing settings, UI fields, or feature flags triggers the normal GitHub Pages deployment automatically. Visual styling lives only in `theme.css`.
 
 Apps Script does not need a `getRuntimeConfig` route. It remains only as the existing job-data gateway for actions such as `listJobs` and `addJob`.
 
@@ -51,8 +51,8 @@ The previous ChatGPT Site is retired from canonical use.
 
 ## Background job search
 
-The **Search jobs now** button calls the Supabase `raven-search` Edge Function directly. No ChatGPT window or visible prompt is opened.
+The **Pull new jobs** button calls the Supabase `raven-search` Edge Function directly. No ChatGPT window or visible prompt is opened.
 
 Current automated discovery sources are LinkedIn's public job feed plus Remotive, RemoteOK, and Arbeitnow. The broader target source pool remains documented in `job-search-config.json` for future source adapters.
 
-Search results are parsed, ranked, deduplicated, and stored as **Discovered** candidates in Supabase. They appear inside the Professional, Labor, or Wildcard tab. A discovered candidate is written to the canonical Google Sheet only when **Save to tracker** is used.
+Search results are parsed, ranked, deduplicated, and stored as **Discovered** candidates in Supabase. They appear inside the Games / 3D, Professional, Labor, or Wildcard tab. The deep search pass automatically writes discovered candidates to the canonical Google Sheet; duplicate URLs are rejected by the gateway.
