@@ -356,12 +356,35 @@
     });
   }
 
+  function cleanJobDescription(value) {
+    return String(value||"")
+      .replace(/\[JOBTRACK_DATA\][\s\S]*?\[\/JOBTRACK_DATA\]/gi,"")
+      .replace(/\[JOBTRACK_DATA\][\s\S]*$/gi,"")
+      .trim();
+  }
+  function jobDetailSummary(job) {
+    const description=cleanJobDescription(job.notes).replace(/\s+/g," ").trim();
+    const role=String(job.title||"This role").trim();
+    const company=String(job.company||"the employer").trim();
+    const context=(isRemoteJob(job)?"This is a remote ":"This is a ")+role+" position at "+company+".";
+    const sentences=description.match(/[^.!?]+[.!?]+(?:["')\]]+)?/g)||[];
+    const useful=sentences
+      .map((sentence)=>sentence.trim())
+      .filter((sentence)=>sentence.length>35)
+      .filter((sentence)=>!/^Employer posting re-verified/i.test(sentence))
+      .slice(0,3);
+    if(useful.length<2 && description){
+      const remainder=description.slice(0,520).replace(/\s+\S*$/,"").trim();
+      if(remainder) useful.push(remainder+(remainder.endsWith(".")?"":"."));
+    }
+    return [context,...useful].slice(0,4).join(" ");
+  }
+
   function jobSummary(job) {
     const role=String(job.title||"Role").trim();
     const company=String(job.company||"").trim();
     const remote=isRemoteJob(job)?"Remote ":"";
-    let description=String(job.notes||"")
-      .replace(/\[JOBTRACK_DATA\][\s\S]*$/i,"")
+    let description=cleanJobDescription(job.notes)
       .replace(/Employer posting re-verified[^.]*\.\s*/i,"")
       .replace(/\s+/g," ")
       .trim();
@@ -480,11 +503,14 @@
             expanded.querySelectorAll("[data-description-toggle]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
-                const description=button.previousElementSibling;
+                const section=button.closest(".job-description");
+                const summary=section.querySelector("[data-description-summary]");
+                const full=section.querySelector("[data-description-full]");
                 const expanding=button.getAttribute("aria-expanded")!=="true";
-                description.classList.toggle("is-truncated",!expanding);
+                summary.hidden=expanding;
+                full.hidden=!expanding;
                 button.setAttribute("aria-expanded",String(expanding));
-                button.textContent=expanding?"Show less":"Show more";
+                button.textContent=expanding?"Show summary":"Show more";
               });
             });
             expanded.querySelectorAll("[data-document-edit]").forEach((button)=>{
@@ -626,11 +652,13 @@
         return '<button class="workflow-action" type="button" data-queue="'+escapeAttr(item.key)+'" aria-label="'+escapeAttr(label)+'" title="'+escapeAttr(label)+'"><span class="workflow-icon" aria-hidden="true">'+icon+'</span><span>'+escapeHtml(shortLabel)+'</span></button>';
       }).join("");
 
-    const description=job.notes||"Job description not yet available.";
-    const canExpand=description.length>320;
+    const fullDescription=cleanJobDescription(job.notes)||"Full job description not yet available.";
+    const summary=jobDetailSummary(job);
+    const canExpand=fullDescription.length>summary.length+40;
     return '<section class="inline-job-detail">'+
-      '<section class="job-description"><h3>Job description</h3>'+
-        '<p class="job-description-text'+(canExpand?' is-truncated':'')+'">'+escapeHtml(description)+'</p>'+
+      '<section class="job-description"><h3>Job summary</h3>'+
+        '<p class="job-description-text" data-description-summary>'+escapeHtml(summary)+'</p>'+
+        (canExpand?'<p class="job-description-text full-description" data-description-full hidden>'+escapeHtml(fullDescription)+'</p>':'')+
         (canExpand?'<button class="description-toggle" type="button" data-description-toggle aria-expanded="false">Show more</button>':'')+
       '</section>'+
       '<dl>'+detailHtml+'</dl>'+
