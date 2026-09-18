@@ -85,7 +85,6 @@
     "cover-letter-generation": true,
     "extension-download": true,
     "capture-form": true,
-    "search": true,
     "job-search-trigger": true
   }
 }

@@ -176,8 +176,7 @@ button,input,select { width:auto; }
     padding:3px;
   }
   .toolbar { grid-template-columns:1fr 1fr; padding:0; }
-  .toolbar #searchBox { grid-column:1 / -1; }
-  .url-capture { grid-column:1 / -1; }
+    .url-capture { grid-column:1 / -1; }
   .pipeline-board {
     grid-template-columns:1fr;
     overflow:visible;

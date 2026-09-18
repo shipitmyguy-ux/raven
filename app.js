@@ -16,7 +16,6 @@
   const columns = ["id","added","track","title","company","location","remote","salaryMin","salaryMax","salaryText","url","source","status","viewed","appliedDate","followUp","resume","coverLetter","notes","lastUpdated"];
   const status = document.getElementById("syncStatus");
   const list = document.getElementById("jobList");
-  const searchBox = document.getElementById("searchBox");
   const trackTabs = [...document.querySelectorAll(".track-tab")];
   const searchJobsButton = document.getElementById("searchJobsButton");
 
@@ -399,11 +398,7 @@
     return [...saved, ...unsaved].map(applyCachedDescription);
   }
   function filteredJobs() {
-    const query=searchBox.value.trim().toLowerCase();
-    return sortedJobs(combinedJobs().filter((job)=>{
-      const haystack=[job.title,job.company,job.location,job.notes,job.url].join(" ").toLowerCase();
-      return !query||haystack.includes(query);
-    }));
+    return sortedJobs(combinedJobs());
   }
   function uiRows(surface) {
     return state.runtime.ui.filter((item)=>item.surface===surface && parseBool(item.visible,true))
@@ -715,7 +710,6 @@
       toggleCaptureButton.textContent=opening?"Cancel":"Add job";
       if(opening) document.getElementById("jobUrl").focus();
     });
-    searchBox.addEventListener("input",render);
     document.getElementById("captureForm").addEventListener("submit",(event)=>{
       event.preventDefault();
       saveCapture(document.getElementById("jobUrl").value.trim());
