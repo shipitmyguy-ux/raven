@@ -406,7 +406,7 @@
             expanded.querySelectorAll("[data-apply-status]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
-                markApplied(job);
+                toggleApplied(job);
               });
             });
             expanded.querySelectorAll("[data-queue]").forEach((button)=>{
@@ -481,17 +481,16 @@
     const detailHtml=detailRows.map((item)=>{
       const value=job[item.key];
       let rendered="Unknown";
-      if (item.format==="link") rendered=linkOrText(value);
+      if (item.format==="link") rendered=documentLink(value,item.label||item.key);
       else if (value!==undefined && value!==null && value!=="") rendered=escapeHtml(value);
       return '<dt>'+escapeHtml(item.label||item.key)+'</dt><dd>'+rendered+'</dd>';
     }).join("");
 
+    const isApplied=String(job.status||"").toLowerCase()==="applied";
     const bookmarkAction=String(job.status||"").toLowerCase()==="interested"
       ? '<button type="button" data-bookmark="remove">★ Bookmarked</button>'
-      : (String(job.status||"").toLowerCase()==="applied" ? "" : '<button type="button" data-bookmark="add">☆ Bookmark</button>');
-    const appliedAction=String(job.status||"").toLowerCase()==="applied"
-      ? '<button type="button" disabled>✓ Applied</button>'
-      : '<button type="button" data-apply-status="applied">Mark applied</button>';
+      : (isApplied ? "" : '<button type="button" data-bookmark="add">☆ Bookmark</button>');
+    const appliedAction='<button class="workflow-action'+(isApplied?' is-applied':'')+'" type="button" data-apply-status="'+(isApplied?'saved':'applied')+'" aria-pressed="'+String(isApplied)+'" aria-label="'+(isApplied?'Unmark as applied':'Mark as applied')+'" title="'+(isApplied?'Unmark as applied':'Mark as applied')+'">✓</button>';
     const configuredActions=uiRows("detail-action");
     const actions=(configuredActions.length?configuredActions:fallbackActions())
       .filter((item)=>{
@@ -500,23 +499,30 @@
         return !feature || featureEnabled(feature,true);
       })
       .map((item)=>{
+        const label=item.label||item.key;
         if (item.format==="external-link" || item.key==="posting" || item.key==="apply") {
-          return '<a href="'+escapeAttr(job.url)+'" target="_blank" rel="noopener">'+escapeHtml(item.label||"Apply")+'</a>';
+          return '<a class="workflow-action" href="'+escapeAttr(job.url)+'" target="_blank" rel="noopener" aria-label="'+escapeAttr(label)+'" title="'+escapeAttr(label)+'">↗</a>';
         }
-        return '<button type="button" data-queue="'+escapeAttr(item.key)+'">'+escapeHtml(item.label||item.key)+'</button>';
+        const icon=item.key==="resume"?"R":item.key==="coverLetter"?"✉":"＋";
+        return '<button class="workflow-action" type="button" data-queue="'+escapeAttr(item.key)+'" aria-label="'+escapeAttr(label)+'" title="'+escapeAttr(label)+'">'+icon+'</button>';
       }).join("");
 
     const description=job.notes||"Job description not yet available.";
     return '<section class="inline-job-detail">'+
       '<section class="job-description"><h3>Job description</h3><p>'+escapeHtml(description)+'</p></section>'+
       '<dl>'+detailHtml+'</dl>'+
-      '<div class="detail-actions">'+bookmarkAction+appliedAction+actions+'</div>'+
+      '<div class="detail-actions">'+
+        (bookmarkAction?'<div class="bookmark-action">'+bookmarkAction+'</div>':'')+
+        '<div class="workflow-actions" aria-label="Application actions">'+appliedAction+actions+'</div>'+
+      '</div>'+
     '</section>';
   }
 
-  async function markApplied(job) {
-    const appliedDate=new Date().toISOString();
-    setStatus("Marking applied...");
+  async function toggleApplied(job) {
+    const isApplied=String(job.status||"").toLowerCase()==="applied";
+    const nextStatus=isApplied?"Saved":"Applied";
+    const appliedDate=isApplied?null:new Date().toISOString();
+    setStatus(isApplied?"Unmarking applied...":"Marking applied...");
     try{
       if(job._discovered){
         await window.RavenAPI.addJob({
@@ -528,16 +534,16 @@
           salaryText:job.salaryText||"",
           url:job.url||"",
           source:job.source||"",
-          status:"Applied",
+          status:nextStatus,
           appliedDate,
           notes:job.notes||""
         });
       }else{
-        await window.RavenAPI.updateJob(job.id,{status:"Applied",appliedDate});
+        await window.RavenAPI.updateJob(job.id,{status:nextStatus,appliedDate});
       }
       state.selectedId=null;
       await loadJobs();
-      setStatus("Marked applied");
+      setStatus(isApplied?"Marked not applied":"Marked applied");
     }catch(error){
       setStatus("Update failed: "+error.message);
     }
@@ -576,9 +582,9 @@
     return String(value||"").replace(/[&<>"']/g,(char)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
   }
   function escapeAttr(value) { return escapeHtml(value).replace(/`/g,"&#96;"); }
-  function linkOrText(value) {
+  function documentLink(value,label) {
     if (!value) return "Not generated";
-    if (/^https?:\/\//.test(value)) return '<a href="'+escapeAttr(value)+'" target="_blank" rel="noopener">Open file</a>';
+    if (/^https?:\/\//.test(value)) return '<a href="'+escapeAttr(value)+'" target="_blank" rel="noopener">Open '+escapeHtml(String(label||"file").toLowerCase())+'</a>';
     return escapeHtml(value);
   }
   function bindEvents() {
