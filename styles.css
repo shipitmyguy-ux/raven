@@ -1609,3 +1609,92 @@ main {
     min-height:26px;
   }
 }
+
+
+/* Collapsible Raven options */
+.options-panel-body {
+  display:grid;
+  gap:8px;
+}
+
+.options-group {
+  border:1px solid var(--border-subtle);
+  border-radius:var(--radius-sm);
+  background:var(--surface);
+  overflow:hidden;
+}
+
+.options-group summary {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  min-height:38px;
+  padding:8px 10px;
+  cursor:pointer;
+  color:var(--text-soft);
+  font-size:.76rem;
+  font-weight:var(--font-weight-strong);
+  list-style:none;
+  user-select:none;
+}
+
+.options-group summary::-webkit-details-marker {
+  display:none;
+}
+
+.options-group summary::after {
+  content:"›";
+  color:var(--text-muted);
+  font-size:1rem;
+  transform:rotate(0deg);
+  transition:transform var(--transition-fast);
+}
+
+.options-group[open] summary::after {
+  transform:rotate(90deg);
+}
+
+.options-group[open] summary {
+  border-bottom:1px solid var(--border-subtle);
+}
+
+.options-group-content {
+  display:grid;
+  gap:7px;
+  padding:9px 10px 10px;
+}
+
+.option-row,
+.option-toggle {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  min-height:32px;
+  color:var(--text-soft);
+  font-size:.72rem;
+}
+
+.option-row select {
+  max-width:150px;
+  min-height:30px;
+  padding:3px 7px;
+}
+
+.option-toggle {
+  justify-content:flex-start;
+}
+
+.option-toggle input {
+  flex:0 0 auto;
+  width:auto;
+}
+
+.options-reset {
+  justify-self:start;
+  min-height:30px;
+  padding:4px 8px;
+  font-size:.68rem;
+  color:var(--text-muted);
+  background:transparent;
+}
