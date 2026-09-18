@@ -1199,7 +1199,7 @@ main {
 /* New-versus-viewed job attention states */
 .job-card.is-new {
   border-left: 3px solid var(--secondary);
-  background: color-mix(in srgb, var(--surface-raised) 88%, var(--secondary) 12%);
+  background: color-mix(in srgb, var(--surface-raised) 96%, var(--secondary) 4%);
 }
 
 .job-status.is-new-status {
