@@ -8,6 +8,7 @@
     discovered: { Professional: [], Labor: [], Wildcard: [], "Games / 3D": [] },
     commutes: {},
     documentApprovals: {},
+    viewedJobs: {},
     returnScrollY: null
   };
   const columns = ["id","added","track","title","company","location","remote","salaryMin","salaryMax","salaryText","url","source","status","viewed","appliedDate","followUp","resume","coverLetter","notes","lastUpdated"];
@@ -22,6 +23,7 @@
   const CACHE_JOBS_KEY="ravenJobsCacheV1";
   const CACHE_DISCOVERED_KEY="ravenDiscoveredCacheV1";
   const DOCUMENT_APPROVALS_KEY="ravenDocumentApprovalsV1";
+  const VIEWED_JOBS_KEY="ravenViewedJobsV1";
 
   function setStatus(message) { status.textContent = message; }
   function readCache(key,fallback){
@@ -43,6 +45,7 @@
       setStatus("Refreshing…");
     }
     state.documentApprovals=readCache(DOCUMENT_APPROVALS_KEY,{})||{};
+    state.viewedJobs=readCache(VIEWED_JOBS_KEY,{})||{};
     const cachedDiscovered=readCache(CACHE_DISCOVERED_KEY,{});
     if(cachedDiscovered && typeof cachedDiscovered==="object"){
       Object.keys(state.discovered).forEach((track)=>{
@@ -378,19 +381,26 @@
       cards.className="stage-cards";
       groupJobs.forEach((job)=>{
           const card=document.createElement("article");
-          card.className="job-card"+(job.id===state.selectedId?" active":"")+(isRemoteJob(job)?" is-remote":"")+(job.status==="Applied"?" is-applied":"")+(job.status==="Interested"?" is-interested":"");
+          const viewed=hasViewed(job);
+          card.className="job-card"+(job.id===state.selectedId?" active":"")+(isRemoteJob(job)?" is-remote":"")+(job.status==="Applied"?" is-applied":"")+(job.status==="Interested"?" is-interested":"")+(viewed?" is-viewed":" is-new");
           card.dataset.status=statusToken(job.status);
           const company=job.company||"Company not captured";
           const location=[job.location,job.remote].filter(Boolean).join(" · ")||"Location not captured";
           const salary=job.salaryText||"";
           const score=matchScore(job);
-          const isBookmarked=String(job.status||"").toLowerCase()==="interested";
+          const rawStatus=String(job.status||"Saved");
+          const meaningfulStatus=!/^(saved|discovered)$/i.test(rawStatus);
+          const statusLabel=rawStatus.toLowerCase()==="interested"?"Bookmarked":rawStatus;
+          const attentionIndicator=!viewed
+            ? '<span class="job-status is-new-status">New</span>'
+            : (meaningfulStatus?'<span class="job-status">'+escapeHtml(statusLabel)+'</span>':'');
+          const isBookmarked=rawStatus.toLowerCase()==="interested";
           const bookmarkStar=String(job.status||"").toLowerCase()==="applied" ? "" :
             '<button class="bookmark-star'+(isBookmarked?' is-bookmarked':'')+'" type="button" data-card-bookmark aria-pressed="'+String(isBookmarked)+'" aria-label="'+(isBookmarked?'Remove bookmark':'Bookmark job')+'" title="'+(isBookmarked?'Remove bookmark':'Bookmark job')+'">'+(isBookmarked?'★':'☆')+'</button>';
           card.innerHTML=
             '<button class="job-card-summary" type="button" aria-expanded="'+String(job.id===state.selectedId)+'">'+
               '<span class="card-main">'+
-                '<span class="card-topline"><span class="match-line"><strong>'+score+'%</strong> match</span><span class="job-status">'+escapeHtml(job.status||"Saved")+'</span></span>'+
+                '<span class="card-topline"><span class="match-line"><strong>'+score+'%</strong> match</span>'+attentionIndicator+'</span>'+
                 '<span class="job-title">'+escapeHtml(job.title||"Untitled job")+'</span>'+
                 '<span class="company-name">'+escapeHtml(company)+'</span>'+
                 '<span class="job-location">'+escapeHtml(location)+'</span>'+
@@ -459,7 +469,10 @@
           const summary=card.querySelector(".job-card-summary");
           summary.addEventListener("click",()=>{
             const opening=state.selectedId!==job.id;
-            if(opening) state.returnScrollY=window.scrollY;
+            if(opening) {
+              state.returnScrollY=window.scrollY;
+              markViewed(job);
+            }
             state.selectedId = opening ? job.id : null;
             render();
 
@@ -590,6 +603,32 @@
       setStatus(isApplied?"Marked not applied":"Marked applied");
     }catch(error){
       setStatus("Update failed: "+error.message);
+    }
+  }
+
+  function viewedKey(job) {
+    return normalizeComparableUrl(job.url)||String(job.id||"");
+  }
+  function hasViewed(job) {
+    const statusValue=String(job.status||"").toLowerCase();
+    if(!["saved","discovered","interested",""].includes(statusValue)) return true;
+    return parseBool(job.viewed,false) || Boolean(state.viewedJobs[viewedKey(job)]);
+  }
+  function markViewed(job) {
+    if(hasViewed(job)) return;
+    const key=viewedKey(job);
+    if(key){
+      state.viewedJobs[key]=true;
+      writeCache(VIEWED_JOBS_KEY,state.viewedJobs);
+    }
+    job.viewed=true;
+    if(!job._discovered){
+      const saved=state.jobs.find((item)=>item.id===job.id);
+      if(saved) saved.viewed=true;
+      writeCache(CACHE_JOBS_KEY,state.jobs);
+      window.RavenAPI.updateJob(job.id,{viewed:true}).catch((error)=>{
+        console.warn("Viewed state could not be synced.",error);
+      });
     }
   }
 
