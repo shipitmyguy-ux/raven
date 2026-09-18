@@ -154,8 +154,6 @@ button,input,select { width:auto; }
   text-transform:lowercase;
 }
 
-#queueList { display:none !important; }
-
 .app-footer {
   display:flex;
   justify-content:flex-end;

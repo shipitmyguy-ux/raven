@@ -4,7 +4,6 @@
     jobs: [],
     selectedId: null,
     activeTrack: "Games / 3D",
-    queue: JSON.parse(localStorage.getItem("ravenQueue") || localStorage.getItem("jobtrackQueue") || "[]"),
     runtime: { settings: {}, ui: [], features: {} },
     discovered: { Professional: [], Labor: [], Wildcard: [], "Games / 3D": [] },
     commutes: {},
@@ -18,7 +17,6 @@
   const status = document.getElementById("syncStatus");
   const list = document.getElementById("jobList");
   const searchBox = document.getElementById("searchBox");
-  const queueList = document.getElementById("queueList");
   const trackTabs = [...document.querySelectorAll(".track-tab")];
   const searchJobsButton = document.getElementById("searchJobsButton");
 
@@ -499,7 +497,6 @@
   }
   function render() {
     renderJobs();
-    renderQueue();
   }
   function renderJobs() {
     list.innerHTML="";
@@ -645,28 +642,56 @@
     '</section>';
   }
 
-  function renderQueue() {
-    queueList.innerHTML="";
-    if (!state.queue.length) { queueList.innerHTML="<li>No pending tasks.</li>"; return; }
-    state.queue.forEach((task)=>{
-      const item=document.createElement("li");
-      item.textContent=task.type+": "+task.title+" ("+task.status+")";
-      queueList.appendChild(item);
+  async function resolveCanonicalJobId(job) {
+    if(job.id && !String(job.id).startsWith("DISC-")) return job.id;
+
+    await loadJobs();
+    let existing=state.jobs.find((item)=>normalizeComparableUrl(item.url)===normalizeComparableUrl(job.url));
+    if(existing?.id) return existing.id;
+
+    const saved=await callGateway({
+      action:"addJob",
+      title:job.title||"",
+      url:job.url||"",
+      track:job.track||state.activeTrack,
+      company:job.company||"",
+      location:job.location||"",
+      remote:job.remote||"",
+      salaryText:job.salaryText||"",
+      source:job.source||"",
+      notes:job.notes||""
     });
+
+    if(saved?.id) return saved.id;
+
+    if(saved?.duplicate){
+      await loadJobs();
+      existing=state.jobs.find((item)=>normalizeComparableUrl(item.url)===normalizeComparableUrl(job.url));
+      if(existing?.id) return existing.id;
+    }
+
+    throw new Error(saved?.error||"Could not resolve the tracker job ID.");
   }
-  function enqueue(job,type) {
-    const task={
-      id:Date.now()+"-"+type+"-"+(job.id||"job"),
-      jobId:job.id,
-      title:job.title||job.url||"Untitled job",
-      type,
-      status:"needs worker",
-      createdAt:new Date().toISOString()
+
+  async function enqueue(job,type) {
+    const typeMap={
+      resume:"tailored_resume",
+      coverLetter:"cover_letter",
+      applicationReview:"assisted_application",
+      enrich:"enrich"
     };
-    state.queue.unshift(task);
-    localStorage.setItem("ravenQueue",JSON.stringify(state.queue));
-    renderQueue();
+    const backendType=typeMap[type]||type;
+    setStatus("Queuing task…");
+    try{
+      const jobId=await resolveCanonicalJobId(job);
+      const result=await callGateway({action:"enqueueTask",jobId,type:backendType});
+      if(!result?.ok) throw new Error(result?.error||"Task queue rejected the request.");
+      setStatus(result.existing ? "Task already queued" : "Task queued");
+    }catch(error){
+      setStatus("Queue failed: "+error.message);
+    }
   }
+
   async function saveCapture(url) {
     setStatus("Adding job…");
     try {
