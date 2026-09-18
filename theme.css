@@ -19,28 +19,28 @@
   --tracking-ui: 0;
   --tracking-label: .02em;
 
-  --bg: #0f1115;
-  --surface: #151820;
-  --surface-raised: #1a1e27;
-  --surface-hover: #202531;
-  --surface-active: #252b38;
-  --surface-input: #12151c;
+  --bg: #111111;
+  --surface: #171717;
+  --surface-raised: #1d1d1d;
+  --surface-hover: #242424;
+  --surface-active: #2b2b2b;
+  --surface-input: #131313;
 
-  --text: #f4f6f8;
-  --text-soft: #c4cad3;
-  --text-muted: #7f8792;
+  --text: #f2f2f2;
+  --text-soft: #c7c7c7;
+  --text-muted: #8b8b8b;
   --text-inverse: #0f1115;
 
-  --accent: #6ea8fe;
-  --accent-strong: #9bc2ff;
-  --accent-dim: rgba(110,168,254,.10);
-  --accent-border: rgba(110,168,254,.30);
+  --accent: #d6d6d6;
+  --accent-strong: #f0f0f0;
+  --accent-dim: rgba(255,255,255,.10);
+  --accent-border: rgba(255,255,255,.30);
 
-  --secondary: #72d6c9;
-  --success: #62d394;
-  --warning: #e9c46a;
-  --danger: #f28482;
-  --info: #6ea8fe;
+  --secondary: #bdbdbd;
+  --success: #d0d0d0;
+  --warning: #c3c3c3;
+  --danger: #9f9f9f;
+  --info: #b8b8b8;
 
   --status-discovered: var(--info);
   --status-saved: #9aa4b2;
@@ -98,7 +98,7 @@ body::after {
 }
 
 ::selection {
-  background: rgba(110,168,254,.28);
+  background: rgba(255,255,255,.28);
   color: var(--text);
 }
 
@@ -150,7 +150,7 @@ a {
   font-weight: var(--font-weight-strong);
 }
 
-a:hover { color: #c1d9ff; }
+a:hover { color: #ffffff; }
 
 .capture,.track-tabs,.toolbar,.layout,.panels article,.detail {
   position: relative;
@@ -218,8 +218,8 @@ input::placeholder { color: var(--text-muted); }
 
 input:focus,select:focus {
   border-color: var(--accent-border);
-  background: #151922;
-  box-shadow: 0 0 0 3px rgba(110,168,254,.10);
+  background: #1a1a1a;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.10);
 }
 
 button,.detail-actions a {
@@ -238,7 +238,7 @@ button,.detail-actions a {
 
 button:hover,.detail-actions a:hover {
   background: var(--surface-hover);
-  border-color: #343b48;
+  border-color: #353535;
   color: var(--text);
   box-shadow: none;
 }
@@ -297,7 +297,7 @@ button:active,.detail-actions a:active { transform: translateY(1px); }
   align-items: center;
   justify-content: center;
   border: 0;
-  background: #1f2430;
+  background: #222222;
   color: var(--text-muted);
   border-radius: 999px;
   min-width: 22px;
@@ -319,14 +319,14 @@ button:active,.detail-actions a:active { transform: translateY(1px); }
 
 .job-card:hover {
   background: var(--surface-hover);
-  border-color: #333a47;
+  border-color: #333333;
   box-shadow: none;
 }
 
 .job-card.active {
   border-color: var(--accent-border);
-  background: #1b202a;
-  box-shadow: 0 0 0 3px rgba(110,168,254,.07);
+  background: #202020;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.07);
 }
 
 .match-line strong {
@@ -346,7 +346,7 @@ button:active,.detail-actions a:active { transform: translateY(1px); }
   padding: 12px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
-  background: #12161d;
+  background: #141414;
   clip-path: none;
 }
 
@@ -387,4 +387,35 @@ button:active,.detail-actions a:active { transform: translateY(1px); }
   }
 
   .job-card:hover { background: var(--surface); }
+}
+
+
+/* Grayscale remote indicator */
+.job-card.is-remote {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.055), rgba(255,255,255,.015)),
+    var(--surface);
+  border-color: #3a3a3a;
+}
+
+.job-card.is-remote:hover {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.075), rgba(255,255,255,.025)),
+    var(--surface-hover);
+}
+
+.job-card.is-remote.active {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.095), rgba(255,255,255,.035)),
+    #202020;
+  border-color: #4a4a4a;
+}
+
+.job-card.is-remote::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 3px 0 0 rgba(255,255,255,.28);
 }
