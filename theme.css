@@ -1,0 +1,248 @@
+/*
+  RAVEN VISUAL CONTROL PANEL
+  -----------------------------
+  Edit this file for almost all visual changes.
+  app.js should control behavior/data only.
+  styles.css should control document structure/layout only.
+*/
+
+:root {
+  color-scheme: dark;
+  --font-ui: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --font-size-xs: 0.72rem;
+  --font-size-sm: 0.82rem;
+  --font-size-md: 0.95rem;
+  --font-size-lg: 1.08rem;
+  --font-size-xl: 1.55rem;
+  --font-weight-normal: 500;
+  --font-weight-strong: 720;
+  --font-weight-heavy: 850;
+  --line-height: 1.45;
+  --tracking-ui: 0.01em;
+  --tracking-label: 0.08em;
+  --bg: #07090e;
+  --bg-grid: rgba(49, 244, 255, 0.035);
+  --surface: #0c1119;
+  --surface-raised: #101824;
+  --surface-hover: #14202c;
+  --surface-active: #172936;
+  --surface-input: #090e15;
+  --text: #dff8f7;
+  --text-soft: #a3b9bc;
+  --text-muted: #70868b;
+  --text-inverse: #020607;
+  --accent: #31f4ff;
+  --accent-strong: #84fbff;
+  --accent-dim: rgba(49, 244, 255, 0.14);
+  --accent-border: rgba(49, 244, 255, 0.34);
+  --secondary: #ff3bd5;
+  --secondary-dim: rgba(255, 59, 213, 0.12);
+  --success: #42f59e;
+  --warning: #ffd84a;
+  --danger: #ff5876;
+  --info: #7bb8ff;
+  --status-saved: var(--accent);
+  --status-ready: #9a8cff;
+  --status-applied: var(--success);
+  --status-interview: var(--warning);
+  --status-offer: #87ff62;
+  --status-rejected: var(--danger);
+  --status-default: var(--text-muted);
+  --border-color: #1d303b;
+  --border-subtle: rgba(130, 176, 188, 0.16);
+  --border-active: var(--accent-border);
+  --border-width: 1px;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 7px;
+  --radius-lg: 10px;
+  --corner-cut: 10px;
+  --shadow-panel: 0 16px 50px rgba(0, 0, 0, 0.28);
+  --glow-accent: 0 0 22px rgba(49, 244, 255, 0.16);
+  --glow-active: 0 0 0 1px rgba(49, 244, 255, 0.25), 0 0 22px rgba(49, 244, 255, 0.12);
+  --scanline-opacity: 0.025;
+  --grid-size: 32px;
+  --control-height: 40px;
+  --button-height: 40px;
+  --control-pad-x: 12px;
+  --transition-fast: 120ms ease;
+  --transition-normal: 180ms ease;
+  --job-row-min-height: 70px;
+  --panel-padding: 16px;
+  --detail-label-width: 110px;
+}
+* { scrollbar-color: var(--border-color) var(--bg); }
+html { background: var(--bg); }
+body {
+  background:
+    linear-gradient(var(--bg-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px),
+    var(--bg);
+  background-size: var(--grid-size) var(--grid-size);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-normal);
+  letter-spacing: var(--tracking-ui);
+  line-height: var(--line-height);
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom, transparent 0, transparent 3px, rgba(255,255,255,var(--scanline-opacity)) 4px);
+}
+::selection { background: var(--accent); color: var(--text-inverse); }
+h1,h2,.job-title,.job-status,label,nav a,button { font-family: var(--font-display); }
+h1 {
+  color: var(--accent-strong);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-heavy);
+  letter-spacing: -0.025em;
+  text-shadow: 0 0 18px rgba(49,244,255,.2);
+}
+h2 { color: var(--text); font-size: var(--font-size-lg); font-weight: var(--font-weight-heavy); letter-spacing: -0.015em; }
+p,.job-meta,.detail dt,#documents p,#syncStatus { color: var(--text-soft); }
+#syncStatus { font-size: var(--font-size-sm); }
+.topbar {
+  background: rgba(7,9,14,.92);
+  border-bottom: var(--border-width) solid var(--border-color);
+  box-shadow: 0 8px 30px rgba(0,0,0,.22);
+  backdrop-filter: blur(12px);
+}
+nav a,a {
+  color: var(--accent);
+  font-weight: var(--font-weight-strong);
+  text-decoration: none;
+  transition: color var(--transition-fast), text-shadow var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+nav a {
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  border-bottom: 1px solid transparent;
+}
+nav a:hover,a:hover { color: var(--accent-strong); text-shadow: 0 0 12px rgba(49,244,255,.28); }
+nav a:hover { border-bottom-color: var(--accent); }
+.capture,.toolbar,.layout,.panels article,.detail {
+  background: linear-gradient(180deg, rgba(16,24,36,.94), rgba(12,17,25,.96));
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+}
+.capture,.toolbar,.panels article { position: relative; }
+.capture::before,.toolbar::before,.panels article::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 14px;
+  width: 52px;
+  height: 1px;
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(49,244,255,.35);
+}
+label {
+  color: var(--text-soft);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-heavy);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+input,select {
+  min-height: var(--control-height);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding-inline: var(--control-pad-x);
+  background: var(--surface-input);
+  color: var(--text);
+  caret-color: var(--accent);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+input::placeholder { color: var(--text-muted); }
+input:focus,select:focus { border-color: var(--accent); background: #0b121b; box-shadow: var(--glow-active); }
+select { color-scheme: dark; }
+button,.detail-actions a {
+  min-height: var(--button-height);
+  border: var(--border-width) solid var(--accent-border);
+  border-radius: var(--radius-sm);
+  background: var(--accent-dim);
+  color: var(--accent-strong);
+  font-weight: var(--font-weight-heavy);
+  letter-spacing: .02em;
+  cursor: pointer;
+  transition: transform var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+}
+button:hover,.detail-actions a:hover {
+  background: rgba(49,244,255,.22);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: var(--glow-accent);
+}
+button:active,.detail-actions a:active { transform: translateY(1px); }
+.job-list { border-right-color: var(--border-color); }
+.job-row {
+  min-height: var(--job-row-min-height);
+  border-bottom: var(--border-width) solid var(--border-subtle);
+  background: transparent;
+  color: var(--text);
+  border-radius: 0;
+  position: relative;
+}
+.job-row::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 12px; bottom: 12px;
+  width: 2px;
+  background: var(--status-color,var(--status-default));
+  opacity: .45;
+  transition: opacity var(--transition-fast), box-shadow var(--transition-fast);
+}
+.job-row:hover { background: var(--surface-hover); }
+.job-row.active {
+  background: linear-gradient(90deg, var(--accent-dim), var(--surface-active) 38%, var(--surface-raised));
+  box-shadow: inset 0 0 0 1px rgba(49,244,255,.08);
+}
+.job-row:hover::before,.job-row.active::before { opacity: 1; box-shadow: 0 0 12px var(--status-color,var(--accent)); }
+.job-title { color: var(--text); font-weight: var(--font-weight-heavy); }
+.job-meta { font-size: var(--font-size-sm); }
+.job-status {
+  color: var(--status-color,var(--status-default));
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-heavy);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+.job-row[data-status="saved"] { --status-color: var(--status-saved); }
+.job-row[data-status="ready"] { --status-color: var(--status-ready); }
+.job-row[data-status="applied"] { --status-color: var(--status-applied); }
+.job-row[data-status="interview"] { --status-color: var(--status-interview); }
+.job-row[data-status="offer"] { --status-color: var(--status-offer); }
+.job-row[data-status="rejected"] { --status-color: var(--status-rejected); }
+.detail { background: linear-gradient(180deg, rgba(11,17,26,.96), rgba(8,13,20,.98)); }
+.detail dt {
+  font-size: var(--font-size-xs);
+  font-family: var(--font-display);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+.detail dd { color: var(--text); }
+.detail-actions a { background: var(--surface-input); }
+#queueList li {
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--surface-input);
+  color: var(--text-soft);
+}
+.empty { color: var(--text-muted); font-family: var(--font-display); font-size: var(--font-size-sm); }
+@media (prefers-reduced-motion: reduce) {
+  *,*::before,*::after {
+    transition-duration: .001ms !important;
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
