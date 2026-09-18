@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Raven</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./theme.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Raven</h1>
+      <p id="syncStatus">Loading saved jobs...</p>
+    </div>
+    <nav>
+      <a href="#jobs">Jobs</a>
+      <a href="#queue" data-feature="queue-panel">Queue</a>
+      <a href="#documents">Documents</a>
+      <a href="./extension/raven-capture-extension.zip" id="extensionLink" data-feature="extension-download">Chrome extension</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="capture" id="capture" data-feature="capture-form">
+      <form id="captureForm">
+        <label for="jobTitle">Job title</label>
+        <input id="jobTitle" name="title" type="text" autocomplete="off" placeholder="Job title">
+        <label for="jobUrl">Job URL</label>
+        <div class="capture-row">
+          <input id="jobUrl" name="url" type="url" autocomplete="off" placeholder="https://..." required>
+          <button type="submit">Save</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="toolbar" id="jobs">
+      <input id="searchBox" type="search" placeholder="Search jobs" data-feature="search">
+      <select id="statusFilter" data-feature="status-filter"><option value="">All statuses</option></select>
+      <button id="refreshButton" type="button">Refresh</button>
+    </section>
+
+    <section class="layout">
+      <div class="job-list" id="jobList" aria-live="polite"></div>
+      <aside class="detail" id="jobDetail">
+        <h2>Select a job</h2>
+        <p>Choose a row to review source data, notes, document links, and next actions.</p>
+      </aside>
+    </section>
+
+    <section class="panels">
+      <article id="queue" data-feature="queue-panel">
+        <h2>Task queue</h2>
+        <ul id="queueList"></ul>
+      </article>
+      <article id="documents">
+        <h2>Generated files</h2>
+        <p>Resume and cover-letter links stay in the Sheet. New drafts must be based only on verified resume facts and require review before use.</p>
+      </article>
+    </section>
+  </main>
+
+  <template id="jobTemplate">
+    <button class="job-row" type="button">
+      <span class="job-row-content"></span>
+      <span class="job-status" hidden></span>
+    </button>
+  </template>
+
+  <script src="./config.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
