@@ -58,7 +58,7 @@ main {
 
 .stats-grid {
   display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-template-columns:repeat(3,minmax(0,1fr));
   gap:10px;
 }
 .stat-card {
@@ -92,7 +92,7 @@ main {
 
 .toolbar {
   display:grid;
-  grid-template-columns:minmax(220px,1fr) 190px auto auto;
+  grid-template-columns:minmax(220px,1fr) auto auto;
   gap:9px;
   padding:10px;
 }
@@ -391,5 +391,76 @@ button,input,select { width:auto; }
   .job-card-expanded {
     margin-top: 8px;
     padding-top: 10px;
+  }
+}
+
+
+/* Simplified primary interface */
+.topbar {
+  padding-bottom: 14px;
+}
+
+.toolbar > #statusFilter[hidden] {
+  display: none !important;
+}
+
+.capture[hidden] {
+  display: none !important;
+}
+
+.app-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 4px 12px;
+  font-size: .7rem;
+}
+
+.app-footer a {
+  opacity: .5;
+}
+
+.app-footer a:hover {
+  opacity: 1;
+}
+
+@media (max-width:820px) {
+  .stats-grid {
+    grid-template-columns: repeat(3,minmax(0,1fr));
+  }
+
+  .stat-card {
+    min-width: 0;
+  }
+
+  .stat-card small {
+    display: none;
+  }
+
+  .toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .toolbar #searchBox {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width:480px) {
+  .stats-grid {
+    grid-template-columns: repeat(3,minmax(0,1fr));
+  }
+
+  .stat-card {
+    padding: 10px 8px;
+    min-height: 74px;
+  }
+
+  .stat-card > span {
+    font-size: .64rem;
+    letter-spacing: .04em;
+  }
+
+  .stat-card > strong {
+    font-size: 1.4rem;
   }
 }
