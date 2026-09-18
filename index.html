@@ -29,6 +29,7 @@
     </section>
 
     <section class="toolbar">
+      <input id="searchBox" type="search" placeholder="Search jobs" data-feature="search">
       <select id="statusFilter" hidden><option value="">All statuses</option></select>
       <button id="searchJobsButton" type="button" data-feature="job-search-trigger">Pull new jobs</button>
       <button id="toggleCaptureButton" type="button" aria-expanded="false" aria-controls="captureForm">Add job</button>
@@ -41,13 +42,14 @@
     <section class="pipeline-shell">
       <div class="pipeline-board" id="jobList" aria-live="polite"></div>
     </section>
+    <ul id="queueList" hidden></ul>
     <footer class="app-footer">
       <a href="./extension/raven-capture-extension.zip" id="extensionLink" data-feature="extension-download">Chrome extension</a>
     </footer>
   </main>
 
   <script src="./snapshot.js?v=20260918-0518"></script>
-  <script>document.write('<script src="./config.js?v=' + window.RAVEN_ASSET_VERSION + '"><\/script>');</script>
-  <script>document.write('<script src="./app.js?v=' + window.RAVEN_ASSET_VERSION + '"><\/script>');</script>
+  <script src="./config.js?v=20260918-0518"></script>
+  <script src="./app.js?v=20260918-2332"></script>
 </body>
 </html>

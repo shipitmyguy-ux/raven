@@ -1,29 +1,27 @@
 (function () {
-  const config = window.RAVEN_CONFIG;
+  const config = window.RAVEN_CONFIG || window.JOBTRACK_CONFIG;
   const state = {
     jobs: [],
     selectedId: null,
     activeTrack: "Games / 3D",
-    runtime: { settings: {}, ui: [], features: {} },
+    queue: JSON.parse(localStorage.getItem("ravenQueue") || localStorage.getItem("jobtrackQueue") || "[]"),
+    runtime: { theme: {}, settings: {}, ui: [], statuses: [], features: {} },
     discovered: { Professional: [], Labor: [], Wildcard: [], "Games / 3D": [] },
     commutes: {},
-    descriptionCache: {},
-    descriptionLoading: {},
-    knownJobs: new Set(),
-    newJobs: new Set(),
     returnScrollY: null
   };
   const columns = ["id","added","track","title","company","location","remote","salaryMin","salaryMax","salaryText","url","source","status","viewed","appliedDate","followUp","resume","coverLetter","notes","lastUpdated"];
   const status = document.getElementById("syncStatus");
   const list = document.getElementById("jobList");
+  const template = document.getElementById("jobTemplate");
+  const searchBox = document.getElementById("searchBox");
+  const statusFilter = document.getElementById("statusFilter");
+  const queueList = document.getElementById("queueList");
   const trackTabs = [...document.querySelectorAll(".track-tab")];
   const searchJobsButton = document.getElementById("searchJobsButton");
 
   const CACHE_JOBS_KEY="ravenJobsCacheV1";
   const CACHE_DISCOVERED_KEY="ravenDiscoveredCacheV1";
-  const CACHE_DESCRIPTION_KEY="ravenDescriptionCacheV1";
-  const KNOWN_JOBS_KEY="ravenKnownJobUrlsV1";
-  const NEW_JOBS_KEY="ravenNewJobUrlsV1";
 
   function setStatus(message) { status.textContent = message; }
   function readCache(key,fallback){
@@ -35,44 +33,6 @@
   function writeCache(key,value){
     try{ localStorage.setItem(key,JSON.stringify(value)); }catch{}
   }
-  function jobKey(job){
-    return normalizeComparableUrl(job?.url) || String(job?.id||"");
-  }
-
-  function persistJobAwareness(){
-    writeCache(KNOWN_JOBS_KEY,[...state.knownJobs]);
-    writeCache(NEW_JOBS_KEY,[...state.newJobs]);
-  }
-
-  function registerIncomingJobs(jobs,{seed=false}={}){
-    const keys=(jobs||[]).map(jobKey).filter(Boolean);
-    if(seed || state.knownJobs.size===0){
-      keys.forEach((key)=>state.knownJobs.add(key));
-      persistJobAwareness();
-      return;
-    }
-    let changed=false;
-    keys.forEach((key)=>{
-      if(!state.knownJobs.has(key)){
-        state.knownJobs.add(key);
-        state.newJobs.add(key);
-        changed=true;
-      }
-    });
-    if(changed) persistJobAwareness();
-  }
-
-  function isNewJob(job){
-    return state.newJobs.has(jobKey(job));
-  }
-
-  function markJobSeen(job){
-    const key=jobKey(job);
-    if(!key || !state.newJobs.has(key)) return;
-    state.newJobs.delete(key);
-    persistJobAwareness();
-  }
-
   function hydrateImmediateData(){
     const cachedJobs=readCache(CACHE_JOBS_KEY,null);
     if(Array.isArray(cachedJobs) && cachedJobs.length){
@@ -82,23 +42,11 @@
       state.jobs=normalizeJobs(window.RAVEN_SNAPSHOT.jobs);
       setStatus("Refreshing…");
     }
-    const cachedDescriptions=readCache(CACHE_DESCRIPTION_KEY,{});
-    if(cachedDescriptions && typeof cachedDescriptions==="object") state.descriptionCache=cachedDescriptions;
     const cachedDiscovered=readCache(CACHE_DISCOVERED_KEY,{});
     if(cachedDiscovered && typeof cachedDiscovered==="object"){
       Object.keys(state.discovered).forEach((track)=>{
         if(Array.isArray(cachedDiscovered[track])) state.discovered[track]=cachedDiscovered[track];
       });
-    }
-
-    const known=readCache(KNOWN_JOBS_KEY,null);
-    const unread=readCache(NEW_JOBS_KEY,[]);
-    if(Array.isArray(known)){
-      state.knownJobs=new Set(known);
-      state.newJobs=new Set(Array.isArray(unread)?unread:[]);
-    } else {
-      const initial=[...state.jobs,...Object.values(state.discovered).flat()];
-      registerIncomingJobs(initial,{seed:true});
     }
     render();
   }
@@ -137,15 +85,23 @@
   }
   function applyRuntimeConfig(runtime) {
     state.runtime = {
+      theme: runtime.theme || {},
       settings: runtime.settings || {},
       ui: Array.isArray(runtime.ui) ? runtime.ui : [],
+      statuses: Array.isArray(runtime.statuses) ? runtime.statuses : [],
       features: runtime.features || {}
     };
+    Object.entries(state.runtime.theme).forEach(([key, value]) => {
+      if (value !== "" && value !== null && value !== undefined) {
+        document.documentElement.style.setProperty("--" + key, String(value));
+      }
+    });
     const settings = state.runtime.settings;
     if (settings["sidebar-width"]) document.documentElement.style.setProperty("--sidebar-width", settings["sidebar-width"]);
     if (settings["detail-panel-width"]) document.documentElement.style.setProperty("--detail-panel-width", settings["detail-panel-width"]);
     document.documentElement.dataset.cardDensity = settings["card-density"] || "compact";
     applyFeatureFlags();
+    buildStatusFilter();
   }
   function featureEnabled(key, fallback = true) {
     const feature = state.runtime.features[key];
@@ -168,6 +124,18 @@
       element.hidden = !featureEnabled(element.dataset.feature, true);
     });
     status.hidden = !settingEnabled("show-sync-status", true);
+  }
+  function buildStatusFilter() {
+    const current = statusFilter.value;
+    const statuses = state.runtime.statuses.filter((item) => parseBool(item.visible, true));
+    statusFilter.innerHTML = '<option value="">All statuses</option>';
+    statuses.sort((a,b)=>Number(a.order||0)-Number(b.order||0)).forEach((item)=>{
+      const option=document.createElement("option");
+      option.value=item.key||item.label||"";
+      option.textContent=item.label||item.key||"";
+      statusFilter.appendChild(option);
+    });
+    if ([...statusFilter.options].some((o)=>o.value===current)) statusFilter.value=current;
   }
   async function loadRuntimeConfig() {
     try {
@@ -214,67 +182,6 @@
     } catch { return String(value || "").trim(); }
   }
 
-  function cachedDescription(job) {
-    const key=normalizeComparableUrl(job?.url);
-    const entry=key ? state.descriptionCache[key] : null;
-    return entry && typeof entry.description==="string" ? entry.description : "";
-  }
-
-  function applyCachedDescription(job) {
-    const description=cachedDescription(job);
-    return description ? {...job,notes:description} : job;
-  }
-
-  async function ensureDescription(job) {
-    const key=normalizeComparableUrl(job?.url);
-    if(!key || state.descriptionLoading[key]) return;
-    const cached=cachedDescription(job);
-    if(cached && cached.length>180) return;
-
-    state.descriptionLoading[key]=true;
-    try {
-      const payload=await callSearchApi({
-        action:"describe",
-        url:job.url,
-        track:job.track||state.activeTrack,
-        title:job.title||"",
-        company:job.company||"",
-        location:job.location||"",
-        remote:isRemoteJob(job),
-        salary_text:job.salaryText||"",
-        source:job.source||"Web"
-      });
-      const description=String(payload.description||"").trim();
-      if(description){
-        state.descriptionCache[key]={
-          description,
-          updatedAt:new Date().toISOString()
-        };
-        writeCache(CACHE_DESCRIPTION_KEY,state.descriptionCache);
-
-        state.jobs=state.jobs.map((item)=>
-          normalizeComparableUrl(item.url)===key
-            ? {...item,notes:description,company:item.company||payload.company||"",location:item.location||payload.location||"",remote:item.remote||payload.remote||"",salaryText:item.salaryText||payload.salary_text||""}
-            : item
-        );
-        Object.keys(state.discovered).forEach((track)=>{
-          state.discovered[track]=state.discovered[track].map((item)=>
-            normalizeComparableUrl(item.url)===key
-              ? {...item,notes:description,company:item.company||payload.company||"",location:item.location||payload.location||"",remote:item.remote||payload.remote||"",salaryText:item.salaryText||payload.salary_text||""}
-              : item
-          );
-        });
-        writeCache(CACHE_JOBS_KEY,state.jobs);
-        writeCache(CACHE_DISCOVERED_KEY,state.discovered);
-        if(state.selectedId===job.id) render();
-      }
-    } catch (error) {
-      console.warn("Job description unavailable.",error);
-    } finally {
-      delete state.descriptionLoading[key];
-    }
-  }
-
   function normalizeDiscovered(results) {
     return (results || []).map((job)=>({
       id: "DISC-" + job.id,
@@ -297,6 +204,7 @@
       coverLetter: "",
       notes: job.snippet || "",
       lastUpdated: job.last_seen || "",
+      fitScore: Math.max(55, Math.min(96, 50 + Number(job.score || 7) * 3)),
       _discovered: true
     })).filter((job)=>job.url);
   }
@@ -305,7 +213,6 @@
     try {
       const payload = await callSearchApi({ action: "listResults", track });
       state.discovered[track] = normalizeDiscovered(payload.results);
-      registerIncomingJobs(state.discovered[track]);
       writeCache(CACHE_DISCOVERED_KEY,state.discovered);
       render();
       return true;
@@ -324,7 +231,6 @@
     try {
       const payload = await callSearchApi({ action: "search", track });
       state.discovered[track] = normalizeDiscovered(payload.results);
-      registerIncomingJobs(state.discovered[track]);
       writeCache(CACHE_DISCOVERED_KEY,state.discovered);
       state.selectedId = null;
       render();
@@ -348,7 +254,6 @@
     try {
       const payload = await callGateway({ action: "listJobs" });
       state.jobs = normalizeJobs(payload);
-      registerIncomingJobs(state.jobs);
       writeCache(CACHE_JOBS_KEY,state.jobs);
       setStatus("Up to date");
       render();
@@ -364,16 +269,10 @@
   function sortedJobs(jobs) {
     const mode = state.runtime.settings["default-sort"] || "added-desc";
     const copy=[...jobs];
-    const baseCompare=(a,b)=>{
-      if (mode==="added-asc") return parseDate(a.added)-parseDate(b.added);
-      if (mode==="title-asc") return String(a.title||"").localeCompare(String(b.title||""));
-      if (mode==="company-asc") return String(a.company||"").localeCompare(String(b.company||""));
-      return parseDate(b.added)-parseDate(a.added);
-    };
-    return copy.sort((a,b)=>{
-      const newDelta=Number(isNewJob(b))-Number(isNewJob(a));
-      return newDelta || baseCompare(a,b);
-    });
+    if (mode==="added-asc") return copy.sort((a,b)=>parseDate(a.added)-parseDate(b.added));
+    if (mode==="title-asc") return copy.sort((a,b)=>String(a.title||"").localeCompare(String(b.title||"")));
+    if (mode==="company-asc") return copy.sort((a,b)=>String(a.company||"").localeCompare(String(b.company||"")));
+    return copy.sort((a,b)=>parseDate(b.added)-parseDate(a.added));
   }
   function combinedJobs() {
     const discovered = state.discovered[state.activeTrack] || [];
@@ -390,15 +289,21 @@
           remote:job.remote||extra.remote,
           salaryText:job.salaryText||extra.salaryText,
           source:job.source||extra.source,
-          notes:extra.notes||job.notes,
+          notes:job.notes||extra.notes,
+          fitScore:job.fitScore||extra.fitScore
         };
       });
     const savedUrls = new Set(saved.map((job)=>normalizeComparableUrl(job.url)).filter(Boolean));
     const unsaved = discovered.filter((job)=>!savedUrls.has(normalizeComparableUrl(job.url)));
-    return [...saved, ...unsaved].map(applyCachedDescription);
+    return [...saved, ...unsaved];
   }
   function filteredJobs() {
-    return sortedJobs(combinedJobs());
+    const query=searchBox.value.trim().toLowerCase();
+    const selectedStatus=statusFilter.value;
+    return sortedJobs(combinedJobs().filter((job)=>{
+      const haystack=[job.title,job.company,job.location,job.notes,job.url].join(" ").toLowerCase();
+      return (!query||haystack.includes(query)) && (!selectedStatus||job.status===selectedStatus);
+    }));
   }
   function uiRows(surface) {
     return state.runtime.ui.filter((item)=>item.surface===surface && parseBool(item.visible,true))
@@ -411,6 +316,30 @@
     if (item.key==="notes" && !settingEnabled("show-notes",true)) return false;
     return true;
   }
+  function matchScore(job) {
+    if (Number(job.fitScore)) return Math.round(Number(job.fitScore));
+    const title=String(job.title||"").toLowerCase();
+    const notes=String(job.notes||"").toLowerCase();
+    let score=66;
+    if (job.remote) score+=4;
+    if (job.salaryText || job.salaryMin || job.salaryMax) score+=3;
+    if (job.company) score+=2;
+    if (job.location) score+=1;
+    const track=String(job.track||state.activeTrack);
+    if (track==="Professional") {
+      if (/implementation|project manager|program manager|operations manager|customer success|training|enablement|onboarding/.test(title)) score+=10;
+      if (/senior|lead|manager/.test(title)) score+=4;
+    } else if (track==="Labor") {
+      if (/maintenance|technician|parks|grounds|warehouse|repair|field service|production|painter/.test(title)) score+=11;
+      if (/mechanical|repair|maintenance|tools|equipment/.test(notes)) score+=4;
+    } else if (track==="Games / 3D") {
+      if (/environment artist|world artist|level artist|3d environment|3d artist|world builder/.test(title)) score+=14;
+      if (/senior|lead|staff/.test(title)) score+=5;
+    } else {
+      if (/operations|training|implementation|customer success|project|program|service/.test(title)) score+=8;
+    }
+    return Math.max(55,Math.min(96,score));
+  }
   function pipelineBucket(job) {
     const s=String(job.status||"Saved").toLowerCase();
     if (s.includes("offer")) return "Offer";
@@ -419,11 +348,6 @@
     if (s.includes("ready") || s.includes("tailor")) return "Tailoring";
     return "Saved";
   }
-  function isAppliedJob(job) {
-    const status=String(job.status||"").toLowerCase();
-    return status.includes("applied") || Boolean(job.appliedDate);
-  }
-
   function isRemoteJob(job) {
     if (job.remote===true) return true;
     const remote=String(job.remote||"").toLowerCase();
@@ -466,6 +390,7 @@
   }
   function render() {
     renderJobs();
+    renderQueue();
   }
   function renderJobs() {
     list.innerHTML="";
@@ -488,14 +413,15 @@
       groupJobs.forEach((job)=>{
           const card=document.createElement("button");
           card.type="button";
-          card.className="job-card"+(job.id===state.selectedId?" active":"")+(isRemoteJob(job)?" is-remote":"")+(isNewJob(job)?" is-new":"")+(isAppliedJob(job)?" is-applied":"");
+          card.className="job-card"+(job.id===state.selectedId?" active":"")+(isRemoteJob(job)?" is-remote":"");
+          card.dataset.status=statusToken(job.status);
           const company=job.company||"Company not captured";
           const location=[job.location,job.remote].filter(Boolean).join(" · ")||"Location not captured";
           const salary=job.salaryText||"";
+          const score=matchScore(job);
           card.innerHTML=
             '<span class="card-main">'+
-              (isNewJob(job)?'<span class="new-job-badge">NEW</span>':'')+
-              (isAppliedJob(job)?'<span class="applied-job-badge">APPLIED</span>':'')+
+              '<span class="match-line"><strong>'+score+'%</strong> match</span>'+
               '<span class="job-title">'+escapeHtml(job.title||"Untitled job")+'</span>'+
               '<span class="company-name">'+escapeHtml(company)+'</span>'+
               '<span class="job-location">'+escapeHtml(location)+'</span>'+
@@ -518,13 +444,9 @@
           }
           card.addEventListener("click",()=>{
             const opening=state.selectedId!==job.id;
-            if(opening) {
-              state.returnScrollY=window.scrollY;
-              markJobSeen(job);
-            }
+            if(opening) state.returnScrollY=window.scrollY;
             state.selectedId = opening ? job.id : null;
             render();
-            if(opening) ensureDescription(job);
 
             requestAnimationFrame(()=>{
               if(opening){
@@ -555,6 +477,9 @@
       section.appendChild(cards);
       list.appendChild(section);
     });
+  }
+  function statusToken(value) {
+    return String(value||"saved").trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"saved";
   }
   function fallbackDetailRows() {
     return [
@@ -600,8 +525,7 @@
         return '<button type="button" data-queue="'+escapeAttr(item.key)+'">'+escapeHtml(item.label||item.key)+'</button>';
       }).join("");
 
-    const key=normalizeComparableUrl(job.url);
-    const description=job.notes||(state.descriptionLoading[key]?"Loading job description…":"Job description not yet available.");
+    const description=job.notes||"Job description not yet available.";
     return '<section class="inline-job-detail">'+
       '<section class="job-description"><h3>Job description</h3><p>'+escapeHtml(description)+'</p></section>'+
       '<dl>'+detailHtml+'</dl>'+
@@ -609,56 +533,28 @@
     '</section>';
   }
 
-  async function resolveCanonicalJobId(job) {
-    if(job.id && !String(job.id).startsWith("DISC-")) return job.id;
-
-    await loadJobs();
-    let existing=state.jobs.find((item)=>normalizeComparableUrl(item.url)===normalizeComparableUrl(job.url));
-    if(existing?.id) return existing.id;
-
-    const saved=await callGateway({
-      action:"addJob",
-      title:job.title||"",
-      url:job.url||"",
-      track:job.track||state.activeTrack,
-      company:job.company||"",
-      location:job.location||"",
-      remote:job.remote||"",
-      salaryText:job.salaryText||"",
-      source:job.source||"",
-      notes:job.notes||""
+  function renderQueue() {
+    queueList.innerHTML="";
+    if (!state.queue.length) { queueList.innerHTML="<li>No pending tasks.</li>"; return; }
+    state.queue.forEach((task)=>{
+      const item=document.createElement("li");
+      item.textContent=task.type+": "+task.title+" ("+task.status+")";
+      queueList.appendChild(item);
     });
-
-    if(saved?.id) return saved.id;
-
-    if(saved?.duplicate){
-      await loadJobs();
-      existing=state.jobs.find((item)=>normalizeComparableUrl(item.url)===normalizeComparableUrl(job.url));
-      if(existing?.id) return existing.id;
-    }
-
-    throw new Error(saved?.error||"Could not resolve the tracker job ID.");
   }
-
-  async function enqueue(job,type) {
-    const typeMap={
-      resume:"tailored_resume",
-      coverLetter:"cover_letter",
-      applicationReview:"assisted_application",
-      enrich:"enrich"
+  function enqueue(job,type) {
+    const task={
+      id:Date.now()+"-"+type+"-"+(job.id||"job"),
+      jobId:job.id,
+      title:job.title||job.url||"Untitled job",
+      type,
+      status:"needs worker",
+      createdAt:new Date().toISOString()
     };
-    const backendType=typeMap[type]||type;
-    setStatus("Queuing task…");
-    try{
-      const jobId=await resolveCanonicalJobId(job);
-      const result=await callGateway({action:"enqueueTask",jobId,type:backendType});
-      if(!result?.ok) throw new Error(result?.error||"Task queue rejected the request.");
-      setStatus(result.existing ? "Task already queued" : "Task queued");
-    }catch(error){
-      setStatus("Queue failed: "+error.message);
-    }
+    state.queue.unshift(task);
+    localStorage.setItem("ravenQueue",JSON.stringify(state.queue));
+    renderQueue();
   }
-
   async function saveCapture(url) {
     setStatus("Adding job…");
     try {
@@ -710,6 +606,8 @@
       toggleCaptureButton.textContent=opening?"Cancel":"Add job";
       if(opening) document.getElementById("jobUrl").focus();
     });
+    searchBox.addEventListener("input",render);
+    statusFilter.addEventListener("change",render);
     document.getElementById("captureForm").addEventListener("submit",(event)=>{
       event.preventDefault();
       saveCapture(document.getElementById("jobUrl").value.trim());
