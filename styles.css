@@ -2082,3 +2082,33 @@ body.options-open > :not(main):not(.options-dialog) {
   pointer-events:auto;
   overscroll-behavior:contain;
 }
+
+
+/* Let Options shrink when returning from a larger submenu */
+.options-dialog,
+.options-dialog form {
+  height:auto;
+}
+
+.options-dialog form {
+  grid-template-rows:auto auto;
+}
+
+.options-viewport {
+  height:auto;
+  min-height:0;
+  max-height:calc(min(88vh,760px) - 58px);
+}
+
+.options-home {
+  position:relative;
+}
+
+.options-card[hidden] {
+  display:none;
+}
+
+.options-card:not([hidden]) {
+  position:relative;
+  inset:auto;
+}
