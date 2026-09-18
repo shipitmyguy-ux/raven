@@ -1213,3 +1213,9 @@ main {
 .job-card.is-viewed:not(.is-applied):not(.is-interested) {
   border-left-color: var(--border-subtle);
 }
+
+
+/* Status-only card topline after removing match scores */
+.card-topline {
+  justify-content: flex-end;
+}
