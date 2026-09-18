@@ -1152,10 +1152,29 @@
       if(resetOptionsButton) resetOptionsButton.addEventListener("click",resetUserSettings);
 
       const addMasterResumeButton=document.getElementById("addMasterResumeButton");
+      const masterResumeQuickFile=document.getElementById("masterResumeQuickFile");
       const cancelMasterResumeButton=document.getElementById("cancelMasterResumeButton");
       const saveMasterResumeButton=document.getElementById("saveMasterResumeButton");
       const masterResumeSource=document.getElementById("masterResumeSource");
-      if(addMasterResumeButton) addMasterResumeButton.addEventListener("click",()=>openMasterResumeEditor());
+      if(addMasterResumeButton && masterResumeQuickFile){
+        addMasterResumeButton.addEventListener("click",()=>{
+          masterResumeQuickFile.value="";
+          masterResumeQuickFile.click();
+        });
+        masterResumeQuickFile.addEventListener("change",()=>{
+          const file=masterResumeQuickFile.files?.[0];
+          if(!file) return;
+          openMasterResumeEditor();
+          document.getElementById("masterResumeSource").value="local";
+          syncMasterResumeSourceRows();
+          const editorFile=document.getElementById("masterResumeFile");
+          const transfer=new DataTransfer();
+          transfer.items.add(file);
+          editorFile.files=transfer.files;
+          document.getElementById("masterResumeName").value=file.name.replace(/\.[^.]+$/,"");
+          document.getElementById("masterResumeLocalStatus").textContent="Selected: "+file.name;
+        });
+      }
       if(cancelMasterResumeButton) cancelMasterResumeButton.addEventListener("click",resetMasterResumeEditor);
       if(saveMasterResumeButton) saveMasterResumeButton.addEventListener("click",saveMasterResumeFromEditor);
       if(masterResumeSource) masterResumeSource.addEventListener("change",syncMasterResumeSourceRows);
