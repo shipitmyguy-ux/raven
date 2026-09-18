@@ -27,6 +27,11 @@ jobs:
         uses: actions/configure-pages@v5
         with:
           enablement: true
+      - name: Build extension ZIP
+        run: |
+          mkdir -p extension
+          cd extension/src
+          zip -r ../raven-capture-extension.zip .
       - name: Upload static site
         uses: actions/upload-pages-artifact@v3
         with:
