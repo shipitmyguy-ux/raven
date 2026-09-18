@@ -22,7 +22,36 @@
   const statInterviews = document.getElementById("statInterviews");
   const statBestMatch = document.getElementById("statBestMatch");
 
+  const CACHE_JOBS_KEY="ravenJobsCacheV1";
+  const CACHE_DISCOVERED_KEY="ravenDiscoveredCacheV1";
+
   function setStatus(message) { status.textContent = message; }
+  function readCache(key,fallback){
+    try{
+      const value=JSON.parse(localStorage.getItem(key)||"null");
+      return value===null ? fallback : value;
+    }catch{return fallback;}
+  }
+  function writeCache(key,value){
+    try{ localStorage.setItem(key,JSON.stringify(value)); }catch{}
+  }
+  function hydrateImmediateData(){
+    const cachedJobs=readCache(CACHE_JOBS_KEY,null);
+    if(Array.isArray(cachedJobs) && cachedJobs.length){
+      state.jobs=cachedJobs;
+      setStatus("Showing cached jobs · refreshing…");
+    } else if(Array.isArray(window.RAVEN_SNAPSHOT?.jobs)){
+      state.jobs=normalizeJobs(window.RAVEN_SNAPSHOT.jobs);
+      setStatus("Showing latest snapshot · refreshing…");
+    }
+    const cachedDiscovered=readCache(CACHE_DISCOVERED_KEY,{});
+    if(cachedDiscovered && typeof cachedDiscovered==="object"){
+      Object.keys(state.discovered).forEach((track)=>{
+        if(Array.isArray(cachedDiscovered[track])) state.discovered[track]=cachedDiscovered[track];
+      });
+    }
+    render();
+  }
   function gatewayUrl(params = {}) {
     const url = new URL(config.gatewayUrl);
     Object.entries(params).forEach(([key, value]) => {
@@ -180,6 +209,8 @@
     try {
       const payload = await callSearchApi({ action: "listResults", track });
       state.discovered[track] = normalizeDiscovered(payload.results);
+      writeCache(CACHE_DISCOVERED_KEY,state.discovered);
+      render();
       return true;
     } catch (error) {
       console.warn("Discovered jobs unavailable.", error);
@@ -214,11 +245,12 @@
     try {
       const payload = await callGateway({ action: "listJobs" });
       state.jobs = normalizeJobs(payload);
-      setStatus(state.jobs.length + " saved jobs from Google Sheet");
+      writeCache(CACHE_JOBS_KEY,state.jobs);
+      setStatus(state.jobs.length + " saved jobs · up to date");
       render();
     } catch (error) {
-      setStatus("Could not sync: " + error.message);
-      list.innerHTML = '<p class="empty">Open the Apps Script gateway or try refresh again.</p>';
+      setStatus("Live sync unavailable · showing cached jobs");
+      if(!state.jobs.length) list.innerHTML = '<p class="empty">No cached jobs available.</p>';
     }
   }
   function parseDate(value) {
@@ -547,9 +579,8 @@
           item.classList.toggle("active",active);
           item.setAttribute("aria-selected",String(active));
         });
-        await loadDiscovered(state.activeTrack);
-        state.selectedId=null;
         render();
+        loadDiscovered(state.activeTrack);
       });
     });
     searchJobsButton.addEventListener("click",runJobSearch);
@@ -584,20 +615,23 @@
     }
   }
   async function refreshCurrentTrack() {
-    await loadJobs();
-    await loadDiscovered(state.activeTrack);
+    await Promise.allSettled([loadJobs(),loadDiscovered(state.activeTrack)]);
     render();
   }
   async function boot() {
     bindEvents();
     applySharedParams();
-    await loadRuntimeConfig();
-    await refreshCurrentTrack();
+    hydrateImmediateData();
+
+    const runtimePromise=loadRuntimeConfig();
+    const refreshPromise=refreshCurrentTrack();
+    await Promise.allSettled([runtimePromise,refreshPromise]);
+
     let lastRefresh=Date.now();
-    document.addEventListener("visibilitychange",async()=>{
+    document.addEventListener("visibilitychange",()=>{
       if(!document.hidden && Date.now()-lastRefresh>60000){
         lastRefresh=Date.now();
-        await refreshCurrentTrack();
+        refreshCurrentTrack();
       }
     });
   }
