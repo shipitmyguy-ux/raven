@@ -130,7 +130,7 @@
       "surface": "detail",
       "position": 1,
       "key": "status",
-      "visible": true,
+      "visible": false,
       "label": "Status",
       "format": "text",
       "notes": "Detail row"
