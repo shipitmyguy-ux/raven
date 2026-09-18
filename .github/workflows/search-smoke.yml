@@ -11,7 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Inspect LinkedIn guest jobs
+      - uses: actions/checkout@v4
+      - name: Search
         run: |
-          curl --max-time 30 -sS -L 'https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=Project%20Manager&location=Colorado%2C%20United%20States&f_WT=2&start=0' \
-            -H 'User-Agent: Mozilla/5.0' | head -c 12000
+          KEY=$(sed -n 's/.*searchAnonKey: "\([^"]*\)".*/\1/p' config.js)
+          URL=$(sed -n 's/.*searchApiUrl: "\([^"]*\)".*/\1/p' config.js)
+          curl --max-time 150 -sS -X POST "$URL" \
+            -H "Authorization: Bearer $KEY" \
+            -H "apikey: $KEY" \
+            -H "Content-Type: application/json" \
+            --data '{"action":"search","track":"Professional"}'
