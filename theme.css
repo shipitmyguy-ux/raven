@@ -373,3 +373,40 @@ button:active,.detail-actions a:active { transform: translateY(1px); }
   .job-card:hover { background: #2b2b2b; }
   .job-card.is-remote:hover { background: #323232; }
 }
+
+
+/* New/unseen job indicator */
+.job-card.is-new {
+  background: #3a3a3a;
+  border-color: rgba(255,255,255,.26);
+}
+
+.job-card.is-new:hover {
+  background: #404040;
+  border-color: rgba(255,255,255,.34);
+}
+
+.job-card.is-new.is-remote {
+  background: #3d3d3d;
+  border-color: rgba(255,255,255,.30);
+}
+
+.new-job-badge {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 1px 7px;
+  border: 1px solid rgba(255,255,255,.25);
+  border-radius: 999px;
+  background: #ececec;
+  color: #202020;
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  line-height: 1;
+}
+
+.job-card.active .new-job-badge {
+  display: none;
+}
