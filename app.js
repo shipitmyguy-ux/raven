@@ -27,6 +27,7 @@
   const DOCUMENT_APPROVALS_KEY="ravenDocumentApprovalsV1";
   const VIEWED_JOBS_KEY="ravenViewedJobsV1";
   const GENERATOR_PREFS_KEY="ravenGeneratorPreferencesV1";
+  const USER_SETTINGS_KEY="ravenUserSettingsV1";
 
   function setStatus(message) { status.textContent = message; }
   function readCache(key,fallback){
@@ -66,9 +67,10 @@
     return fallback;
   }
   function applyRuntimeConfig(runtime) {
+    const userSettings=readCache(USER_SETTINGS_KEY,{})||{};
     state.runtime = {
       theme: runtime.theme || {},
-      settings: runtime.settings || {},
+      settings: { ...(runtime.settings || {}), ...userSettings },
       ui: Array.isArray(runtime.ui) ? runtime.ui : [],
       statuses: Array.isArray(runtime.statuses) ? runtime.statuses : [],
       features: runtime.features || {}
@@ -84,7 +86,36 @@
     document.documentElement.dataset.cardDensity = settings["card-density"] || "compact";
     applyFeatureFlags();
     buildStatusFilter();
+    syncOptionsControls();
   }
+  function syncOptionsControls() {
+    document.querySelectorAll("[data-setting-key]").forEach((control)=>{
+      const key=control.dataset.settingKey;
+      const value=state.runtime.settings[key];
+      if(control.type==="checkbox") control.checked=parseBool(value,false);
+      else if(value!==undefined && value!==null) control.value=String(value);
+    });
+  }
+
+  function applyUserSetting(key,value) {
+    const current=readCache(USER_SETTINGS_KEY,{})||{};
+    current[key]=value;
+    writeCache(USER_SETTINGS_KEY,current);
+    state.runtime.settings[key]=value;
+
+    if(key==="sidebar-width") document.documentElement.style.setProperty("--sidebar-width",value);
+    if(key==="detail-panel-width") document.documentElement.style.setProperty("--detail-panel-width",value);
+    if(key==="card-density") document.documentElement.dataset.cardDensity=value||"compact";
+    if(key==="show-sync-status") status.hidden=!parseBool(value,true);
+
+    render();
+  }
+
+  function resetUserSettings() {
+    try{ localStorage.removeItem(USER_SETTINGS_KEY); }catch{}
+    loadRuntimeConfig().then(()=>render());
+  }
+
   function featureEnabled(key, fallback = true) {
     const feature = state.runtime.features[key];
     if (feature === undefined) return fallback;
@@ -900,10 +931,21 @@
     const optionsButton=document.getElementById("optionsButton");
     const optionsDialog=document.getElementById("optionsDialog");
     if(optionsButton && optionsDialog){
-      optionsButton.addEventListener("click",()=>optionsDialog.showModal());
+      optionsButton.addEventListener("click",()=>{
+        syncOptionsControls();
+        optionsDialog.showModal();
+      });
       optionsDialog.addEventListener("click",(event)=>{
         if(event.target===optionsDialog) optionsDialog.close();
       });
+      optionsDialog.querySelectorAll("[data-setting-key]").forEach((control)=>{
+        control.addEventListener("change",()=>{
+          const value=control.type==="checkbox" ? control.checked : control.value;
+          applyUserSetting(control.dataset.settingKey,value);
+        });
+      });
+      const resetOptionsButton=document.getElementById("resetOptionsButton");
+      if(resetOptionsButton) resetOptionsButton.addEventListener("click",resetUserSettings);
     }
 
     trackTabs.forEach((tab)=>{
