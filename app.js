@@ -9,6 +9,8 @@
     commutes: {},
     documentApprovals: {},
     viewedJobs: {},
+    generatorJob: null,
+    generatorType: null,
     returnScrollY: null
   };
   const columns = ["id","added","track","title","company","location","remote","salaryMin","salaryMax","salaryText","url","source","status","viewed","appliedDate","followUp","resume","coverLetter","notes","lastUpdated"];
@@ -24,6 +26,7 @@
   const CACHE_DISCOVERED_KEY="ravenDiscoveredCacheV1";
   const DOCUMENT_APPROVALS_KEY="ravenDocumentApprovalsV1";
   const VIEWED_JOBS_KEY="ravenViewedJobsV1";
+  const GENERATOR_PREFS_KEY="ravenGeneratorPreferencesV1";
 
   function setStatus(message) { status.textContent = message; }
   function readCache(key,fallback){
@@ -615,6 +618,88 @@
     '</section>';
   }
 
+  function generatorSections(type) {
+    return type==="resume"
+      ? [
+          ["summary","Professional summary"],
+          ["skills","Relevant skills"],
+          ["experience","Experience bullets"],
+          ["projects","Selected projects"],
+          ["education","Education and credentials"]
+        ]
+      : [
+          ["opening","Targeted opening"],
+          ["motivation","Why this company"],
+          ["experience","Relevant experience"],
+          ["requirements","Requirements alignment"],
+          ["closing","Concise closing"]
+        ];
+  }
+  function enqueue(job,type) {
+    state.generatorJob=job;
+    state.generatorType=type;
+    const dialog=document.getElementById("generatorDialog");
+    const isResume=type==="resume";
+    const label=isResume?"resume":"cover letter";
+    const prefs=readCache(GENERATOR_PREFS_KEY,{})[type]||{};
+    document.getElementById("generatorTitle").textContent=(job[type]?"Revise ":"Generate ")+label;
+    document.getElementById("generatorContext").textContent=(job.title||"Role")+(job.company?" at "+job.company:"");
+    document.getElementById("generatorSections").innerHTML=generatorSections(type).map(([key,text])=>
+      '<label><input type="checkbox" name="sections" value="'+escapeAttr(key)+'" '+(prefs.sections&&!prefs.sections.includes(key)?"":"checked")+'> <span>'+escapeHtml(text)+'</span></label>'
+    ).join("");
+    document.getElementById("generatorTone").value=prefs.tone||"direct";
+    document.getElementById("generatorLength").value=prefs.length||(isResume?"one-page":"concise");
+    document.getElementById("generatorInstructions").value=prefs.instructions||"";
+    document.getElementById("generatorTruth").checked=true;
+    dialog.showModal();
+  }
+  async function submitGeneration(event) {
+    event.preventDefault();
+    const job=state.generatorJob;
+    const type=state.generatorType;
+    if(!job||!type) return;
+    const form=event.currentTarget;
+    const sections=[...form.querySelectorAll('input[name="sections"]:checked')].map((input)=>input.value);
+    const preferences={
+      sections,
+      tone:document.getElementById("generatorTone").value,
+      length:document.getElementById("generatorLength").value,
+      instructions:document.getElementById("generatorInstructions").value.trim()
+    };
+    const allPrefs=readCache(GENERATOR_PREFS_KEY,{});
+    allPrefs[type]=preferences;
+    writeCache(GENERATOR_PREFS_KEY,allPrefs);
+    const label=type==="resume"?"resume":"cover letter";
+    const submitButton=document.getElementById("generatorSubmit");
+    submitButton.disabled=true;
+    setStatus("Queueing "+label+"...");
+    try{
+      await window.RavenAPI.enqueueTask({
+        type,
+        taskType:type==="resume"?"Generate Resume":"Generate Cover Letter",
+        jobId:job.id,
+        jobTitle:job.title||"",
+        company:job.company||"",
+        track:job.track||state.activeTrack,
+        sourceUrl:job.url||"",
+        description:job.notes||"",
+        currentFile:job[type]||"",
+        sections,
+        tone:preferences.tone,
+        length:preferences.length,
+        instructions:preferences.instructions,
+        preserveFacts:true,
+        status:"Queued"
+      });
+      document.getElementById("generatorDialog").close();
+      setStatus((job[type]?"Revision":"Generation")+" queued");
+    }catch(error){
+      setStatus("Could not queue "+label+": "+error.message);
+    }finally{
+      submitButton.disabled=false;
+    }
+  }
+
   async function toggleApplied(job) {
     const isApplied=String(job.status||"").toLowerCase()==="applied";
     const nextStatus=isApplied?"Saved":"Applied";
@@ -816,6 +901,10 @@
     document.getElementById("captureForm").addEventListener("submit",(event)=>{
       event.preventDefault();
       saveCapture(document.getElementById("jobUrl").value.trim());
+    });
+    document.getElementById("generatorForm").addEventListener("submit",submitGeneration);
+    document.querySelectorAll("[data-generator-cancel]").forEach((button)=>{
+      button.addEventListener("click",()=>document.getElementById("generatorDialog").close());
     });
   }
   function applySharedParams() {
