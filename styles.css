@@ -774,3 +774,40 @@ main {
     padding:11px 12px;
   }
 }
+
+
+/* Simplify top controls */
+.stats-grid {
+  display:none !important;
+}
+
+.toolbar {
+  grid-template-columns:minmax(220px,1fr) auto minmax(260px,.8fr);
+  align-items:center;
+}
+
+.url-capture {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:6px;
+  min-width:0;
+}
+
+.url-capture input,
+.url-capture button {
+  min-width:0;
+}
+
+@media (max-width:820px) {
+  .toolbar {
+    grid-template-columns:1fr auto;
+  }
+
+  .toolbar #searchBox {
+    grid-column:1 / -1;
+  }
+
+  .url-capture {
+    grid-column:1 / -1;
+  }
+}
