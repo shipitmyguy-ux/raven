@@ -49,14 +49,32 @@
 
     <dialog id="optionsDialog" class="options-dialog">
       <form method="dialog">
-        <header>
+        <header class="options-dialog-header">
           <h2>Options</h2>
           <button type="submit" class="options-close" aria-label="Close options" title="Close">×</button>
         </header>
-        <div class="options-panel-body">
-          <details class="options-group">
-            <summary>Layout</summary>
-            <div class="options-group-content">
+
+        <div class="options-viewport">
+          <section id="optionsHome" class="options-screen options-home" aria-label="Option categories">
+            <button type="button" class="options-category" data-options-target="layout">
+              <span>Layout</span><span aria-hidden="true">›</span>
+            </button>
+            <button type="button" class="options-category" data-options-target="job-info">
+              <span>Job information</span><span aria-hidden="true">›</span>
+            </button>
+            <button type="button" class="options-category" data-options-target="behavior">
+              <span>Behavior</span><span aria-hidden="true">›</span>
+            </button>
+            <button id="resetOptionsButton" class="options-reset" type="button">Reset to defaults</button>
+          </section>
+
+          <section id="optionsCard" class="options-screen options-card" aria-live="polite" hidden>
+            <header class="options-card-header">
+              <button id="optionsBackButton" class="options-back" type="button" aria-label="Back to option categories" title="Back">←</button>
+              <h3 id="optionsCardTitle">Options</h3>
+            </header>
+
+            <div class="options-card-panel" data-options-panel="layout" hidden>
               <label class="option-row">
                 <span>Card density</span>
                 <select data-setting-key="card-density">
@@ -81,22 +99,16 @@
                 </select>
               </label>
             </div>
-          </details>
 
-          <details class="options-group">
-            <summary>Job information</summary>
-            <div class="options-group-content">
+            <div class="options-card-panel" data-options-panel="job-info" hidden>
               <label class="option-toggle"><input type="checkbox" data-setting-key="show-salary"><span>Show salary</span></label>
               <label class="option-toggle"><input type="checkbox" data-setting-key="show-remote"><span>Show remote status</span></label>
               <label class="option-toggle"><input type="checkbox" data-setting-key="show-source"><span>Show source</span></label>
               <label class="option-toggle"><input type="checkbox" data-setting-key="show-notes"><span>Show notes</span></label>
               <label class="option-toggle"><input type="checkbox" data-setting-key="show-sync-status"><span>Show sync status</span></label>
             </div>
-          </details>
 
-          <details class="options-group">
-            <summary>Behavior</summary>
-            <div class="options-group-content">
+            <div class="options-card-panel" data-options-panel="behavior" hidden>
               <label class="option-row">
                 <span>Default sort</span>
                 <select data-setting-key="default-sort">
@@ -107,9 +119,7 @@
                 </select>
               </label>
             </div>
-          </details>
-
-          <button id="resetOptionsButton" class="options-reset" type="button">Reset to defaults</button>
+          </section>
         </div>
       </form>
     </dialog>
@@ -131,6 +141,6 @@
   <script src="./snapshot.js?v=20260918-0518"></script>
   <script src="./config.js?v=5"></script>
   <script src="./raven-api.js?v=5"></script>
-  <script src="./app.js?v=24"></script>
+  <script src="./app.js?v=25"></script>
 </body>
 </html>
