@@ -406,7 +406,7 @@
       groupJobs.forEach((job)=>{
           const card=document.createElement("button");
           card.type="button";
-          card.className="job-card"+(job.id===state.selectedId?" active":"");
+          card.className="job-card"+(job.id===state.selectedId?" active":"")+(isRemoteJob(job)?" is-remote":"");
           card.dataset.status=statusToken(job.status);
           const company=job.company||"Company not captured";
           const location=[job.location,job.remote].filter(Boolean).join(" · ")||"Location not captured";
