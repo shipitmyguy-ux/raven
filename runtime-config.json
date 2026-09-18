@@ -73,7 +73,7 @@
     "show-salary": true,
     "show-remote": true,
     "show-source": true,
-    "show-notes": true,
+    "show-notes": false,
     "show-sync-status": true,
     "empty-list-text": "No matching jobs.",
     "empty-detail-title": "Select a job",
@@ -175,7 +175,7 @@
       "surface": "detail",
       "position": 6,
       "key": "notes",
-      "visible": true,
+      "visible": false,
       "label": "Notes",
       "format": "multiline",
       "notes": "Controlled by show-notes"
