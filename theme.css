@@ -42,6 +42,7 @@
   --warning: #ffd84a;
   --danger: #ff5876;
   --info: #7bb8ff;
+  --status-discovered: var(--secondary);
   --status-saved: var(--accent);
   --status-ready: #9a8cff;
   --status-applied: var(--success);
@@ -236,6 +237,7 @@ button:active,.detail-actions a:active { transform: translateY(1px); }
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
 }
+.job-row[data-status="discovered"] { --status-color: var(--status-discovered); }
 .job-row[data-status="saved"] { --status-color: var(--status-saved); }
 .job-row[data-status="ready"] { --status-color: var(--status-ready); }
 .job-row[data-status="applied"] { --status-color: var(--status-applied); }
