@@ -28,6 +28,9 @@
   const VIEWED_JOBS_KEY="ravenViewedJobsV1";
   const GENERATOR_PREFS_KEY="ravenGeneratorPreferencesV1";
   const USER_SETTINGS_KEY="ravenUserSettingsV1";
+  const MASTER_RESUMES_KEY="ravenMasterResumesV1";
+  const MASTER_RESUME_DB="ravenMasterResumeFilesV1";
+  let editingMasterResumeId=null;
 
   function setStatus(message) { status.textContent = message; }
   function readCache(key,fallback){
@@ -39,6 +42,157 @@
   function writeCache(key,value){
     try{ localStorage.setItem(key,JSON.stringify(value)); }catch{}
   }
+
+  function readMasterResumes(){
+    const items=readCache(MASTER_RESUMES_KEY,[]);
+    return Array.isArray(items)?items:[];
+  }
+  function writeMasterResumes(items){
+    writeCache(MASTER_RESUMES_KEY,items);
+  }
+  function openMasterResumeDb(){
+    return new Promise((resolve,reject)=>{
+      const request=indexedDB.open(MASTER_RESUME_DB,1);
+      request.onupgradeneeded=()=>request.result.createObjectStore("files");
+      request.onsuccess=()=>resolve(request.result);
+      request.onerror=()=>reject(request.error);
+    });
+  }
+  async function saveMasterResumeFile(id,file){
+    const db=await openMasterResumeDb();
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction("files","readwrite");
+      tx.objectStore("files").put(file,id);
+      tx.oncomplete=resolve;
+      tx.onerror=()=>reject(tx.error);
+    });
+    db.close();
+  }
+  async function getMasterResumeFile(id){
+    const db=await openMasterResumeDb();
+    const file=await new Promise((resolve,reject)=>{
+      const tx=db.transaction("files","readonly");
+      const request=tx.objectStore("files").get(id);
+      request.onsuccess=()=>resolve(request.result||null);
+      request.onerror=()=>reject(request.error);
+    });
+    db.close();
+    return file;
+  }
+  async function deleteMasterResumeFile(id){
+    const db=await openMasterResumeDb();
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction("files","readwrite");
+      tx.objectStore("files").delete(id);
+      tx.oncomplete=resolve;
+      tx.onerror=()=>reject(tx.error);
+    });
+    db.close();
+  }
+  function fileToDataUrl(file){
+    return new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(String(reader.result||""));
+      reader.onerror=()=>reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
+  function masterResumeForTrack(track){
+    return readMasterResumes().find((item)=>Array.isArray(item.tracks)&&item.tracks.includes(track))||null;
+  }
+  async function masterResumeTaskInput(track){
+    const item=masterResumeForTrack(track);
+    if(!item) return null;
+    const base={id:item.id,name:item.name||"Master resume",sourceType:item.sourceType,tracks:item.tracks||[]};
+    if(item.sourceType==="drive") return {...base,url:item.url||""};
+    const file=await getMasterResumeFile(item.id);
+    if(!file) return {...base,fileName:item.fileName||"",missingLocalFile:true};
+    return {...base,fileName:file.name,mimeType:file.type||"application/octet-stream",dataUrl:await fileToDataUrl(file)};
+  }
+  function renderMasterResumeList(){
+    const host=document.getElementById("masterResumeList");
+    if(!host) return;
+    const items=readMasterResumes();
+    if(!items.length){
+      host.innerHTML='<p class="options-help">No master resumes added yet.</p>';
+      return;
+    }
+    host.innerHTML=items.map((item)=>{
+      const source=item.sourceType==="drive"?"Google Drive":("Local · "+(item.fileName||"file"));
+      const tracks=(item.tracks||[]).join(", ")||"No tracks assigned";
+      return '<article class="master-resume-item" data-master-resume-id="'+escapeAttr(item.id)+'">'+
+        '<div><strong>'+escapeHtml(item.name||"Master resume")+'</strong><small>'+escapeHtml(source)+' · '+escapeHtml(tracks)+'</small></div>'+
+        '<div class="master-resume-item-actions"><button type="button" data-master-edit>Edit</button><button type="button" data-master-delete>Delete</button></div>'+
+      '</article>';
+    }).join("");
+  }
+  function resetMasterResumeEditor(){
+    editingMasterResumeId=null;
+    const editor=document.getElementById("masterResumeEditor");
+    if(!editor) return;
+    editor.hidden=true;
+    document.getElementById("masterResumeName").value="";
+    document.getElementById("masterResumeSource").value="drive";
+    document.getElementById("masterResumeDriveUrl").value="";
+    document.getElementById("masterResumeFile").value="";
+    document.getElementById("masterResumeLocalStatus").textContent="Stored on this device.";
+    editor.querySelectorAll('.master-resume-tracks input[type="checkbox"]').forEach((input)=>input.checked=false);
+    syncMasterResumeSourceRows();
+  }
+  function syncMasterResumeSourceRows(){
+    const source=document.getElementById("masterResumeSource")?.value||"drive";
+    const drive=document.getElementById("masterResumeDriveRow");
+    const local=document.getElementById("masterResumeLocalRow");
+    if(drive) drive.hidden=source!=="drive";
+    if(local) local.hidden=source!=="local";
+  }
+  function openMasterResumeEditor(item=null){
+    const editor=document.getElementById("masterResumeEditor");
+    if(!editor) return;
+    editingMasterResumeId=item?.id||null;
+    editor.hidden=false;
+    document.getElementById("masterResumeName").value=item?.name||"";
+    document.getElementById("masterResumeSource").value=item?.sourceType||"drive";
+    document.getElementById("masterResumeDriveUrl").value=item?.url||"";
+    document.getElementById("masterResumeFile").value="";
+    document.getElementById("masterResumeLocalStatus").textContent=item?.fileName?("Current: "+item.fileName):"Stored on this device.";
+    editor.querySelectorAll('.master-resume-tracks input[type="checkbox"]').forEach((input)=>input.checked=(item?.tracks||[]).includes(input.value));
+    syncMasterResumeSourceRows();
+  }
+  async function saveMasterResumeFromEditor(){
+    const name=document.getElementById("masterResumeName").value.trim()||"Master resume";
+    const sourceType=document.getElementById("masterResumeSource").value;
+    const tracks=[...document.querySelectorAll('.master-resume-tracks input[type="checkbox"]:checked')].map((input)=>input.value);
+    if(!tracks.length){ setStatus("Assign at least one track"); return; }
+    const items=readMasterResumes();
+    const existing=items.find((item)=>item.id===editingMasterResumeId);
+    const id=existing?.id||("master-"+Date.now());
+    const next={...(existing||{}),id,name,sourceType,tracks};
+    if(sourceType==="drive"){
+      const url=document.getElementById("masterResumeDriveUrl").value.trim();
+      if(!url){ setStatus("Add a Google Drive URL"); return; }
+      next.url=url;
+      next.fileName="";
+      try{ await deleteMasterResumeFile(id); }catch{}
+    }else{
+      const file=document.getElementById("masterResumeFile").files[0];
+      if(file){
+        await saveMasterResumeFile(id,file);
+        next.fileName=file.name;
+      }else if(!next.fileName){
+        setStatus("Choose a local resume file");
+        return;
+      }
+      next.url="";
+    }
+    const index=items.findIndex((item)=>item.id===id);
+    if(index>=0) items[index]=next; else items.push(next);
+    writeMasterResumes(items);
+    renderMasterResumeList();
+    resetMasterResumeEditor();
+    setStatus("Master resume saved");
+  }
+
   function hydrateImmediateData(){
     const cachedJobs=readCache(CACHE_JOBS_KEY,null);
     if(Array.isArray(cachedJobs) && cachedJobs.length){
@@ -711,6 +865,7 @@
     setStatus("Queueing "+label+"...");
     try {
       const taskType=type==="resume"?"tailored_resume":"cover_letter";
+      const masterResume=type==="resume" ? await masterResumeTaskInput(job.track||state.activeTrack) : null;
       await window.RavenAPI.enqueueTask({
         jobId:job.id,
         type:taskType,
@@ -726,7 +881,8 @@
           instructions:String(instructions||"").trim(),
           mode:job[type]?"revise":"tailor",
           autonomy:"high",
-          preserveFacts:true
+          preserveFacts:true,
+          masterResume
         }
       });
       setStatus((job[type]?"Revision":"Generation")+" queued");
@@ -935,7 +1091,7 @@
       const optionsCard=document.getElementById("optionsCard");
       const optionsCardTitle=document.getElementById("optionsCardTitle");
       const optionsBackButton=document.getElementById("optionsBackButton");
-      const categoryTitles={layout:"Layout","job-info":"Job information",behavior:"Behavior"};
+      const categoryTitles={"master-resumes":"Master resumes",layout:"Layout","job-info":"Job information",behavior:"Behavior"};
 
       const showOptionsHome=()=>{
         if(!optionsCard || optionsCard.hidden) return;
@@ -975,6 +1131,8 @@
         optionsHome.hidden=false;
         optionsCard.hidden=true;
         optionsCard.classList.remove("is-entering","is-leaving","is-active");
+        renderMasterResumeList();
+        resetMasterResumeEditor();
         optionsDialog.showModal();
       });
       optionsDialog.addEventListener("click",(event)=>{
@@ -992,6 +1150,31 @@
       });
       const resetOptionsButton=document.getElementById("resetOptionsButton");
       if(resetOptionsButton) resetOptionsButton.addEventListener("click",resetUserSettings);
+
+      const addMasterResumeButton=document.getElementById("addMasterResumeButton");
+      const cancelMasterResumeButton=document.getElementById("cancelMasterResumeButton");
+      const saveMasterResumeButton=document.getElementById("saveMasterResumeButton");
+      const masterResumeSource=document.getElementById("masterResumeSource");
+      if(addMasterResumeButton) addMasterResumeButton.addEventListener("click",()=>openMasterResumeEditor());
+      if(cancelMasterResumeButton) cancelMasterResumeButton.addEventListener("click",resetMasterResumeEditor);
+      if(saveMasterResumeButton) saveMasterResumeButton.addEventListener("click",saveMasterResumeFromEditor);
+      if(masterResumeSource) masterResumeSource.addEventListener("change",syncMasterResumeSourceRows);
+      optionsDialog.addEventListener("click",async(event)=>{
+        const itemEl=event.target.closest("[data-master-resume-id]");
+        if(!itemEl) return;
+        const id=itemEl.dataset.masterResumeId;
+        const items=readMasterResumes();
+        const item=items.find((entry)=>entry.id===id);
+        if(event.target.closest("[data-master-edit]") && item) openMasterResumeEditor(item);
+        if(event.target.closest("[data-master-delete]") && item){
+          if(!window.confirm("Delete "+(item.name||"this master resume")+"?")) return;
+          writeMasterResumes(items.filter((entry)=>entry.id!==id));
+          try{ await deleteMasterResumeFile(id); }catch{}
+          renderMasterResumeList();
+          resetMasterResumeEditor();
+          setStatus("Master resume deleted");
+        }
+      });
     }
 
     trackTabs.forEach((tab)=>{
