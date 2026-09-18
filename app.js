@@ -7,6 +7,7 @@
     runtime: { theme: {}, settings: {}, ui: [], statuses: [], features: {} },
     discovered: { Professional: [], Labor: [], Wildcard: [], "Games / 3D": [] },
     commutes: {},
+    documentApprovals: {},
     returnScrollY: null
   };
   const columns = ["id","added","track","title","company","location","remote","salaryMin","salaryMax","salaryText","url","source","status","viewed","appliedDate","followUp","resume","coverLetter","notes","lastUpdated"];
@@ -20,6 +21,7 @@
 
   const CACHE_JOBS_KEY="ravenJobsCacheV1";
   const CACHE_DISCOVERED_KEY="ravenDiscoveredCacheV1";
+  const DOCUMENT_APPROVALS_KEY="ravenDocumentApprovalsV1";
 
   function setStatus(message) { status.textContent = message; }
   function readCache(key,fallback){
@@ -40,6 +42,7 @@
       state.jobs=normalizeJobs(window.RAVEN_SNAPSHOT.jobs);
       setStatus("Refreshing…");
     }
+    state.documentApprovals=readCache(DOCUMENT_APPROVALS_KEY,{})||{};
     const cachedDiscovered=readCache(CACHE_DISCOVERED_KEY,{});
     if(cachedDiscovered && typeof cachedDiscovered==="object"){
       Object.keys(state.discovered).forEach((track)=>{
@@ -374,35 +377,33 @@
       const cards=document.createElement("div");
       cards.className="stage-cards";
       groupJobs.forEach((job)=>{
-          const card=document.createElement("button");
-          card.type="button";
+          const card=document.createElement("article");
           card.className="job-card"+(job.id===state.selectedId?" active":"")+(isRemoteJob(job)?" is-remote":"")+(job.status==="Applied"?" is-applied":"")+(job.status==="Interested"?" is-interested":"");
           card.dataset.status=statusToken(job.status);
           const company=job.company||"Company not captured";
           const location=[job.location,job.remote].filter(Boolean).join(" · ")||"Location not captured";
           const salary=job.salaryText||"";
           const score=matchScore(job);
+          const isBookmarked=String(job.status||"").toLowerCase()==="interested";
+          const bookmarkStar=String(job.status||"").toLowerCase()==="applied" ? "" :
+            '<button class="bookmark-star'+(isBookmarked?' is-bookmarked':'')+'" type="button" data-card-bookmark aria-pressed="'+String(isBookmarked)+'" aria-label="'+(isBookmarked?'Remove bookmark':'Bookmark job')+'" title="'+(isBookmarked?'Remove bookmark':'Bookmark job')+'">'+(isBookmarked?'★':'☆')+'</button>';
           card.innerHTML=
-            '<span class="card-main">'+
-              '<span class="card-topline"><span class="match-line"><strong>'+score+'%</strong> match</span><span class="job-status">'+escapeHtml(job.status||"Saved")+'</span></span>'+
-              '<span class="job-title">'+escapeHtml(job.title||"Untitled job")+'</span>'+
-              '<span class="company-name">'+escapeHtml(company)+'</span>'+
-              '<span class="job-location">'+escapeHtml(location)+'</span>'+
-              (salary?'<span class="job-salary">'+escapeHtml(salary)+'</span>':'')+
-              '<span class="job-age">'+escapeHtml(relativeAdded(job.added))+'</span>'+
-            '</span>'+
-            (!isRemoteJob(job) && job.location ? '<span class="commute-footer" data-commute-key="'+escapeAttr(commuteCacheKey(job.location))+'" hidden></span>' : '');
+            '<button class="job-card-summary" type="button" aria-expanded="'+String(job.id===state.selectedId)+'">'+
+              '<span class="card-main">'+
+                '<span class="card-topline"><span class="match-line"><strong>'+score+'%</strong> match</span><span class="job-status">'+escapeHtml(job.status||"Saved")+'</span></span>'+
+                '<span class="job-title">'+escapeHtml(job.title||"Untitled job")+'</span>'+
+                '<span class="company-name">'+escapeHtml(company)+'</span>'+
+                '<span class="job-location">'+escapeHtml(location)+'</span>'+
+                (salary?'<span class="job-salary">'+escapeHtml(salary)+'</span>':'')+
+                '<span class="job-age">'+escapeHtml(relativeAdded(job.added))+'</span>'+
+              '</span>'+
+              (!isRemoteJob(job) && job.location ? '<span class="commute-footer" data-commute-key="'+escapeAttr(commuteCacheKey(job.location))+'" hidden></span>' : '')+
+            '</button>'+bookmarkStar;
           if (job.id===state.selectedId) {
             const expanded=document.createElement("span");
             expanded.className="job-card-expanded";
             expanded.innerHTML=renderInlineDetail(job);
             card.appendChild(expanded);
-            expanded.querySelectorAll("[data-bookmark]").forEach((button)=>{
-              button.addEventListener("click",(event)=>{
-                event.stopPropagation();
-                toggleBookmark(job);
-              });
-            });
             expanded.querySelectorAll("[data-apply-status]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
@@ -425,9 +426,22 @@
                 button.textContent=expanding?"Show less":"Show more";
               });
             });
+            expanded.querySelectorAll("[data-document-edit]").forEach((button)=>{
+              button.addEventListener("click",(event)=>{
+                event.stopPropagation();
+                editDocumentLink(job,button.dataset.documentEdit);
+              });
+            });
+            expanded.querySelectorAll("[data-document-approve]").forEach((button)=>{
+              button.addEventListener("click",(event)=>{
+                event.stopPropagation();
+                toggleDocumentApproval(job,button.dataset.documentApprove);
+              });
+            });
             expanded.querySelectorAll("a").forEach((link)=>link.addEventListener("click",(event)=>event.stopPropagation()));
           }
-          card.addEventListener("click",()=>{
+          const summary=card.querySelector(".job-card-summary");
+          summary.addEventListener("click",()=>{
             const opening=state.selectedId!==job.id;
             if(opening) state.returnScrollY=window.scrollY;
             state.selectedId = opening ? job.id : null;
@@ -438,13 +452,16 @@
                 const active=document.querySelector(".job-card.active");
                 if(active){
                   active.scrollIntoView({behavior:"smooth",block:"center",inline:"nearest"});
-                  active.focus({preventScroll:true});
+                  active.querySelector(".job-card-summary")?.focus({preventScroll:true});
                 }
               } else if(Number.isFinite(state.returnScrollY)){
                 window.scrollTo({top:state.returnScrollY,behavior:"smooth"});
                 state.returnScrollY=null;
               }
             });
+          });
+          card.querySelectorAll("[data-card-bookmark]").forEach((button)=>{
+            button.addEventListener("click",()=>toggleBookmark(job));
           });
           cards.appendChild(card);
           if(!isRemoteJob(job) && job.location){
@@ -491,15 +508,12 @@
     const detailHtml=detailRows.map((item)=>{
       const value=job[item.key];
       let rendered="Unknown";
-      if (item.format==="link") rendered=documentLink(value,item.label||item.key);
+      if (item.format==="link") rendered=documentControl(job,item.key,item.label||item.key);
       else if (value!==undefined && value!==null && value!=="") rendered=escapeHtml(value);
       return '<dt>'+escapeHtml(item.label||item.key)+'</dt><dd>'+rendered+'</dd>';
     }).join("");
 
     const isApplied=String(job.status||"").toLowerCase()==="applied";
-    const bookmarkAction=String(job.status||"").toLowerCase()==="interested"
-      ? '<button type="button" data-bookmark="remove">★ Bookmarked</button>'
-      : (isApplied ? "" : '<button type="button" data-bookmark="add">☆ Bookmark</button>');
     const appliedAction='<button class="workflow-action'+(isApplied?' is-applied':'')+'" type="button" data-apply-status="'+(isApplied?'saved':'applied')+'" aria-pressed="'+String(isApplied)+'" aria-label="'+(isApplied?'Unmark as applied':'Mark as applied')+'" title="'+(isApplied?'Unmark as applied':'Mark as applied')+'"><span class="workflow-icon" aria-hidden="true">✓</span><span>Applied</span></button>';
     const configuredActions=uiRows("detail-action");
     const actions=(configuredActions.length?configuredActions:fallbackActions())
@@ -527,7 +541,6 @@
       '</section>'+
       '<dl>'+detailHtml+'</dl>'+
       '<div class="detail-actions">'+
-        (bookmarkAction?'<div class="bookmark-action">'+bookmarkAction+'</div>':'')+
         '<div class="workflow-actions" aria-label="Application actions">'+appliedAction+actions+'</div>'+
       '</div>'+
     '</section>';
@@ -597,10 +610,52 @@
     return String(value||"").replace(/[&<>"']/g,(char)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
   }
   function escapeAttr(value) { return escapeHtml(value).replace(/`/g,"&#96;"); }
-  function documentLink(value,label) {
-    if (!value) return "Not generated";
-    if (/^https?:\/\//.test(value)) return '<a href="'+escapeAttr(value)+'" target="_blank" rel="noopener">Open '+escapeHtml(String(label||"file").toLowerCase())+'</a>';
-    return escapeHtml(value);
+  function documentApproved(job,key) {
+    const value=String(job[key]||"");
+    return Boolean(value && state.documentApprovals?.[job.id]?.[key]===value);
+  }
+  function documentControl(job,key,label) {
+    const value=job[key];
+    const approved=documentApproved(job,key);
+    const fileLabel=String(label||"file").toLowerCase();
+    const file=value
+      ? (/^https?:\/\//.test(value)
+          ? '<a href="'+escapeAttr(value)+'" target="_blank" rel="noopener">Open '+escapeHtml(fileLabel)+'</a>'
+          : '<span>'+escapeHtml(value)+'</span>')
+      : '<span class="document-empty">Not generated</span>';
+    return '<span class="document-control">'+file+
+      '<span class="document-buttons">'+
+        '<button type="button" data-document-edit="'+escapeAttr(key)+'" title="Change '+escapeAttr(fileLabel)+'">Edit</button>'+
+        (value?'<button class="'+(approved?'is-approved':'')+'" type="button" data-document-approve="'+escapeAttr(key)+'" aria-pressed="'+String(approved)+'" title="'+(approved?'Remove approval':'Approve this file')+'">'+(approved?'✓ Approved':'Approve')+'</button>':'')+
+      '</span>'+
+    '</span>';
+  }
+  async function editDocumentLink(job,key) {
+    const label=key==="coverLetter"?"cover letter":"resume";
+    const current=String(job[key]||"");
+    const next=window.prompt("Paste the "+label+" file link",current);
+    if(next===null || next.trim()===current) return;
+    setStatus("Updating "+label+"...");
+    try{
+      await window.RavenAPI.updateJob(job.id,{[key]:next.trim()});
+      if(state.documentApprovals[job.id]) delete state.documentApprovals[job.id][key];
+      writeCache(DOCUMENT_APPROVALS_KEY,state.documentApprovals);
+      await loadJobs();
+      setStatus(next.trim()?label[0].toUpperCase()+label.slice(1)+" updated":label[0].toUpperCase()+label.slice(1)+" removed");
+    }catch(error){
+      setStatus("Document update failed: "+error.message);
+    }
+  }
+  function toggleDocumentApproval(job,key) {
+    const value=String(job[key]||"");
+    if(!value) return;
+    const approved=documentApproved(job,key);
+    state.documentApprovals[job.id] ||= {};
+    if(approved) delete state.documentApprovals[job.id][key];
+    else state.documentApprovals[job.id][key]=value;
+    writeCache(DOCUMENT_APPROVALS_KEY,state.documentApprovals);
+    render();
+    setStatus(approved?"Approval removed":"File approved");
   }
   function bindEvents() {
     trackTabs.forEach((tab)=>{
