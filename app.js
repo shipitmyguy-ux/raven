@@ -3,7 +3,7 @@
   const state = {
     jobs: [],
     selectedId: null,
-    activeTrack: "Professional",
+    activeTrack: "Games / 3D",
     queue: JSON.parse(localStorage.getItem("ravenQueue") || localStorage.getItem("jobtrackQueue") || "[]"),
     runtime: { theme: {}, settings: {}, ui: [], statuses: [], features: {} },
     discovered: { Professional: [], Labor: [], Wildcard: [], "Games / 3D": [] },
