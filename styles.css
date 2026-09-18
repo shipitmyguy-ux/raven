@@ -842,3 +842,21 @@ main {
     grid-column:1 / -1;
   }
 }
+
+
+/* Bookmark and status controls */
+.card-topline {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+.job-status {
+  display:inline-flex;
+  align-items:center;
+  min-height:20px;
+  padding:2px 7px;
+  border-radius:999px;
+  font-size:.66rem;
+  line-height:1;
+}
