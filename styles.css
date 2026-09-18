@@ -1298,3 +1298,113 @@ main {
   height: 26px;
   min-height: 26px;
 }
+
+
+/* Guided resume and cover-letter generation */
+.generator-dialog {
+  width: min(92vw, 560px);
+  max-height: 88vh;
+  padding: 0;
+  color: var(--text);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+}
+
+.generator-dialog::backdrop {
+  background: rgba(0, 0, 0, .72);
+}
+
+.generator-dialog form {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.generator-dialog header,
+.generator-dialog footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.generator-dialog h2,
+.generator-dialog p {
+  margin: 0;
+}
+
+.generator-dialog h2 {
+  font-size: 1rem;
+}
+
+.generator-dialog p {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: .74rem;
+}
+
+.generator-dialog header > button {
+  width: 32px;
+  min-height: 32px;
+  padding: 0;
+  font-size: 1.1rem;
+}
+
+.generator-field {
+  display: grid;
+  gap: 5px;
+  color: var(--text-soft);
+  font-size: .74rem;
+}
+
+.generator-field select,
+.generator-field textarea {
+  width: 100%;
+}
+
+.generator-dialog fieldset {
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.generator-dialog legend {
+  padding: 0 5px;
+  color: var(--text-muted);
+  font-size: .7rem;
+}
+
+.generator-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 12px;
+}
+
+.generator-sections label,
+.truth-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  color: var(--text-soft);
+  font-size: .72rem;
+}
+
+.generator-sections input,
+.truth-check input {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.generator-dialog footer {
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+@media (max-width: 480px) {
+  .generator-sections {
+    grid-template-columns: 1fr;
+  }
+}
