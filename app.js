@@ -374,29 +374,23 @@
     }).join("");
     const configuredActions=uiRows("detail-action");
     let actions;
-    if (job._discovered) {
-      actions = (job.url ? '<a href="'+escapeAttr(job.url)+'" target="_blank" rel="noopener">Open posting</a>' : "") +
-        '<button type="button" data-save-discovered>Save to tracker</button>';
-    } else {
-      actions=(configuredActions.length?configuredActions:fallbackActions())
-        .filter((item)=>{
-          if (item.key==="posting") return Boolean(job.url);
-          const feature=actionFeatureKey(item.key);
-          return !feature || featureEnabled(feature,true);
-        })
-        .map((item)=>{
-          if (item.format==="external-link" || item.key==="posting") {
-            return '<a href="'+escapeAttr(job.url)+'" target="_blank" rel="noopener">'+escapeHtml(item.label||"Open posting")+'</a>';
-          }
-          return '<button type="button" data-queue="'+escapeAttr(item.key)+'">'+escapeHtml(item.label||item.key)+'</button>';
-        }).join("");
-    }
+    actions=(configuredActions.length?configuredActions:fallbackActions())
+      .filter((item)=>{
+        if (item.key==="posting") return Boolean(job.url);
+        const feature=actionFeatureKey(item.key);
+        return !feature || featureEnabled(feature,true);
+      })
+      .map((item)=>{
+        if (item.format==="external-link" || item.key==="posting") {
+          return '<a href="'+escapeAttr(job.url)+'" target="_blank" rel="noopener">'+escapeHtml(item.label||"Open posting")+'</a>';
+        }
+        return '<button type="button" data-queue="'+escapeAttr(item.key)+'">'+escapeHtml(item.label||item.key)+'</button>';
+      }).join("");
     detail.innerHTML='<h2>'+escapeHtml(job.title||"Untitled job")+'</h2><p>'+escapeHtml([job.company,job.location,settingEnabled("show-remote",true)?job.remote:""].filter(Boolean).join(" | "))+'</p><dl>'+detailHtml+'</dl><div class="detail-actions">'+actions+'</div>';
     detail.querySelectorAll("[data-queue]").forEach((button)=>{
       button.addEventListener("click",()=>enqueue(job,button.dataset.queue));
     });
-    const saveButton = detail.querySelector("[data-save-discovered]");
-    if (saveButton) saveButton.addEventListener("click",()=>saveDiscovered(job));
+
   }
   function renderQueue() {
     queueList.innerHTML="";
@@ -420,19 +414,6 @@
     localStorage.setItem("ravenQueue",JSON.stringify(state.queue));
     renderQueue();
   }
-  async function saveDiscovered(job) {
-    setStatus("Saving discovered job...");
-    try {
-      const saved = await callGateway({ action:"addJob", title:job.title, url:job.url, track:job.track });
-      if (!saved.id) throw new Error("Google did not confirm a saved job.");
-      await loadJobs();
-      render();
-      setStatus("Saved to tracker");
-    } catch (error) {
-      setStatus("Save needs review: " + error.message);
-    }
-  }
-
   async function saveCapture(title,url) {
     setStatus("Saving captured job...");
     try {
