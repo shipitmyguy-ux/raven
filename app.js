@@ -429,7 +429,23 @@
             expanded.querySelectorAll("[data-document-edit]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
-                editDocumentLink(job,button.dataset.documentEdit);
+                const field=button.closest(".document-control");
+                const editor=field.querySelector(".document-editor");
+                editor.hidden=!editor.hidden;
+                if(!editor.hidden) editor.querySelector("input").focus();
+              });
+            });
+            expanded.querySelectorAll("[data-document-cancel]").forEach((button)=>{
+              button.addEventListener("click",(event)=>{
+                event.stopPropagation();
+                button.closest(".document-editor").hidden=true;
+              });
+            });
+            expanded.querySelectorAll("[data-document-form]").forEach((form)=>{
+              form.addEventListener("submit",(event)=>{
+                event.preventDefault();
+                event.stopPropagation();
+                saveDocumentLink(job,form.dataset.documentForm,form.querySelector("input").value);
               });
             });
             expanded.querySelectorAll("[data-document-approve]").forEach((button)=>{
@@ -628,20 +644,25 @@
         '<button type="button" data-document-edit="'+escapeAttr(key)+'" title="Change '+escapeAttr(fileLabel)+'">Edit</button>'+
         (value?'<button class="'+(approved?'is-approved':'')+'" type="button" data-document-approve="'+escapeAttr(key)+'" aria-pressed="'+String(approved)+'" title="'+(approved?'Remove approval':'Approve this file')+'">'+(approved?'✓ Approved':'Approve')+'</button>':'')+
       '</span>'+
+      '<form class="document-editor" data-document-form="'+escapeAttr(key)+'" hidden>'+
+        '<input type="url" aria-label="'+escapeAttr(label)+' file link" value="'+escapeAttr(value||"")+'" placeholder="Paste file link" required>'+
+        '<button type="submit">Save</button>'+
+        '<button type="button" data-document-cancel>Cancel</button>'+
+      '</form>'+
     '</span>';
   }
-  async function editDocumentLink(job,key) {
+  async function saveDocumentLink(job,key,nextValue) {
     const label=key==="coverLetter"?"cover letter":"resume";
     const current=String(job[key]||"");
-    const next=window.prompt("Paste the "+label+" file link",current);
-    if(next===null || next.trim()===current) return;
+    const next=String(nextValue||"").trim();
+    if(next===current) return;
     setStatus("Updating "+label+"...");
     try{
-      await window.RavenAPI.updateJob(job.id,{[key]:next.trim()});
+      await window.RavenAPI.updateJob(job.id,{[key]:next});
       if(state.documentApprovals[job.id]) delete state.documentApprovals[job.id][key];
       writeCache(DOCUMENT_APPROVALS_KEY,state.documentApprovals);
       await loadJobs();
-      setStatus(next.trim()?label[0].toUpperCase()+label.slice(1)+" updated":label[0].toUpperCase()+label.slice(1)+" removed");
+      setStatus(next?label[0].toUpperCase()+label.slice(1)+" updated":label[0].toUpperCase()+label.slice(1)+" removed");
     }catch(error){
       setStatus("Document update failed: "+error.message);
     }
