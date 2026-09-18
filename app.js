@@ -867,14 +867,14 @@
       if(!window.pdfjsLib){
         await new Promise((resolve,reject)=>{
           const script=document.createElement("script");
-          script.src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs";
-          script.type="module";
+          script.src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
           script.onload=resolve;
           script.onerror=reject;
           document.head.appendChild(script);
         }).catch(()=>{});
       }
       if(window.pdfjsLib){
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
         const bytes=new Uint8Array(await file.arrayBuffer());
         const pdf=await window.pdfjsLib.getDocument({data:bytes}).promise;
         const pages=[];
