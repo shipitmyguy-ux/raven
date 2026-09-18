@@ -660,7 +660,7 @@
             expanded.querySelectorAll("[data-queue]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
-                enqueue(job,button.dataset.queue);
+                enqueue(job,button.dataset.queue,button);
               });
             });
             expanded.querySelectorAll("[data-document-menu]").forEach((button)=>{
@@ -943,33 +943,135 @@
   function documentLabel(type) {
     return type==="resume"?"resume":"cover letter";
   }
-  async function enqueue(job,type) {
-    if(job[type]) return openDocumentReview(job,type);
-    if(type==="resume"){
-      setStatus("Building instant resume...");
-      try{
-        const masterResume=await masterResumeTaskInput(job.track||state.activeTrack);
-        const instant=await createInstantResume(job,masterResume);
-        setStatus(instant.extracted?"Instant resume ready · AI refinement queued":"Instant draft ready · AI refinement queued");
-        queueDocumentGeneration(job,type,"Refine the instant local draft while preserving verified facts.").catch(()=>{});
-        openDocumentReview(job,type);
-        return;
-      }catch(error){
-        console.warn("Instant resume generation failed; falling back to queue.",error);
-      }
+  function setGenerationButton(button,active,label="Generating…"){
+    if(!button) return;
+    if(active){
+      button.dataset.originalHtml=button.innerHTML;
+      button.disabled=true;
+      button.classList.add("is-generating");
+      button.setAttribute("aria-busy","true");
+      button.innerHTML='<span class="generation-spinner" aria-hidden="true"></span><span>'+escapeHtml(label)+'</span>';
+    }else{
+      button.disabled=false;
+      button.classList.remove("is-generating");
+      button.removeAttribute("aria-busy");
+      if(button.dataset.originalHtml) button.innerHTML=button.dataset.originalHtml;
+      delete button.dataset.originalHtml;
     }
-    queueDocumentGeneration(job,type,"");
   }
+
+  function generatedResumeHtml(job,resume){
+    const list=(items,tag="li")=>(Array.isArray(items)?items:[]).filter(Boolean).map((x)=>"<"+tag+">"+escapeHtml(String(x))+"</"+tag+">").join("");
+    const experiences=(Array.isArray(resume.experience)?resume.experience:[]).map((item)=>{
+      const heading=[item.role,item.company].filter(Boolean).map(escapeHtml).join(" · ");
+      const meta=[item.location,item.dates].filter(Boolean).map(escapeHtml).join(" | ");
+      return '<section class="resume-job"><div class="resume-job-head"><strong>'+heading+'</strong><span>'+meta+'</span></div><ul>'+list(item.bullets)+'</ul></section>';
+    }).join("");
+    const education=(Array.isArray(resume.education)?resume.education:[]).map((item)=>{
+      const main=[item.degree,item.school].filter(Boolean).map(escapeHtml).join(" · ");
+      const meta=[item.location,item.dates].filter(Boolean).map(escapeHtml).join(" | ");
+      return '<div class="resume-education"><strong>'+main+'</strong><span>'+meta+'</span></div>';
+    }).join("");
+    return '<!doctype html><html><head><meta charset="utf-8"><title>'+escapeHtml((resume.name||"Resume")+" — "+(job.title||"Role"))+'</title><style>'+
+      '@page{size:letter;margin:.55in}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:10.2pt;line-height:1.24;max-width:7.4in;margin:0 auto}'+
+      'h1{font-size:20pt;line-height:1.05;margin:0 0 2px}h2{font-size:10.8pt;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #333;margin:10px 0 5px;padding-bottom:2px}'+
+      '.contact,.headline{font-size:9.4pt;margin:0 0 3px}.headline{font-weight:700}.summary{margin:0}.skills{margin:0;padding-left:18px;columns:2;column-gap:28px}ul{margin:3px 0 0 17px;padding:0}li{margin:0 0 2.5px;break-inside:avoid}'+
+      '.resume-job{margin:0 0 7px;break-inside:avoid}.resume-job-head{display:flex;justify-content:space-between;gap:10px;font-size:9.8pt}.resume-job-head span,.resume-education span{font-size:8.8pt;white-space:nowrap}.resume-education{display:flex;justify-content:space-between;gap:10px;margin:0 0 4px}'+
+      '.additional{margin:0;padding-left:18px}@media print{body{margin:0}}'+
+      '</style></head><body>'+
+      '<h1>'+escapeHtml(resume.name||"")+'</h1>'+
+      (resume.contact?'<p class="contact">'+escapeHtml(resume.contact)+'</p>':'')+
+      (resume.headline?'<p class="headline">'+escapeHtml(resume.headline)+'</p>':'')+
+      '<h2>Summary</h2><p class="summary">'+escapeHtml(resume.summary||"")+'</p>'+
+      '<h2>Skills</h2><ul class="skills">'+list(resume.skills)+'</ul>'+
+      '<h2>Experience</h2>'+experiences+
+      (education?'<h2>Education</h2>'+education:'')+
+      ((resume.additional||[]).length?'<h2>Additional</h2><ul class="additional">'+list(resume.additional)+'</ul>':'')+
+      '</body></html>';
+  }
+
+  async function saveGeneratedResume(job,resume){
+    const html=generatedResumeHtml(job,resume);
+    const dataUrl="data:text/html;charset=utf-8,"+encodeURIComponent(html);
+    if(!job._discovered){
+      await window.RavenAPI.updateJob(job.id,{resume:dataUrl});
+      job.resume=dataUrl;
+      const saved=state.jobs.find((item)=>item.id===job.id);
+      if(saved) saved.resume=dataUrl;
+      writeCache(CACHE_JOBS_KEY,state.jobs);
+    }
+    return dataUrl;
+  }
+
+  async function generateResumeOnline(job,masterResume){
+    if(!config?.generateApiUrl) throw new Error("Online resume generator is not configured.");
+    const masterResumeText=await extractMasterResumeText(masterResume);
+    if(!masterResumeText && masterResume?.sourceType==="drive"){
+      throw new Error("Instant online generation currently needs a local master resume file. Drive-only masters are not yet readable by the generator.");
+    }
+    if(!masterResumeText) throw new Error("The assigned master resume could not be read.");
+    const response=await fetch(config.generateApiUrl,{
+      method:"POST",
+      headers:{"Content-Type":"application/json","X-Raven-Client":"raven-web-v1"},
+      body:JSON.stringify({
+        jobId:job.id,
+        jobTitle:job.title||"",
+        company:job.company||"",
+        track:job.track||state.activeTrack,
+        sourceUrl:job.url||"",
+        jobDescription:job.notes||"",
+        masterResume:{
+          id:masterResume?.id||"",
+          name:masterResume?.name||"",
+          sourceType:masterResume?.sourceType||"",
+          text:masterResumeText
+        }
+      })
+    });
+    let payload={};
+    try{payload=await response.json();}catch{}
+    if(!response.ok) throw new Error(payload.error||("Online generation failed ("+response.status+")"));
+    if(!payload.resume) throw new Error("Online generator returned no resume.");
+    return payload.resume;
+  }
+
+  async function enqueue(job,type,button=null) {
+    if(job[type]) return openDocumentReview(job,type);
+    if(type!=="resume") return queueDocumentGeneration(job,type,"");
+    setGenerationButton(button,true,navigator.onLine?"Generating…":"Offline draft…");
+    try{
+      const masterResume=await masterResumeTaskInput(job.track||state.activeTrack);
+      if(!masterResume) throw new Error("Assign a master resume to this job track first.");
+      if(navigator.onLine===false){
+        setStatus("Offline · building local resume…");
+        const instant=await createInstantResume(job,masterResume);
+        if(!instant?.url) throw new Error("Offline resume generation failed.");
+        setStatus("Offline resume ready");
+      }else{
+        setStatus("Generating resume online…");
+        const resume=await generateResumeOnline(job,masterResume);
+        await saveGeneratedResume(job,resume);
+        setStatus("Resume ready");
+      }
+      setGenerationButton(button,false);
+      openDocumentReview(job,type);
+    }catch(error){
+      setGenerationButton(button,false);
+      setStatus("Resume generation failed: "+error.message);
+      console.error("Resume generation failed",error);
+    }
+  }
+
   async function queueDocumentGeneration(job,type,instructions) {
     const label=documentLabel(type);
-    if(type!=="resume") setStatus("Queueing "+label+"...");
+    setStatus("Queueing "+label+"...");
     try {
       const taskType=type==="resume"?"tailored_resume":"cover_letter";
       const masterResume=type==="resume" ? await masterResumeTaskInput(job.track||state.activeTrack) : null;
       await window.RavenAPI.enqueueTask({
         jobId:job.id,
         type:taskType,
-        idempotencyKey:job.id+":"+taskType+":"+(String(instructions||"").startsWith("Refine the instant") ? ("refine:"+(masterResume?.id||"default")) : (job[type] ? ("revise:"+Date.now()) : ("generate:"+(masterResume?.id||"default")))),
+        idempotencyKey:job.id+":"+taskType+":"+(job[type] ? ("revise:"+Date.now()) : ("generate:"+(masterResume?.id||"default"))),
         input:{
           documentType:type,
           jobTitle:job.title||"",
@@ -985,12 +1087,12 @@
           masterResume
         }
       });
-      if(type!=="resume") setStatus((job[type]?"Revision":"Generation")+" queued · processing pending");
+      setStatus((job[type]?"Revision":"Generation")+" queued · processing pending");
     } catch(error) {
-      if(type!=="resume") setStatus("Could not queue "+label+": "+error.message);
-      throw error;
+      setStatus("Could not queue "+label+": "+error.message);
     }
   }
+
   function previewableDocumentUrl(value) {
     const url=String(value||"");
     return /drive\.google\.com\/file\/d\//.test(url) ? url.replace(/\/view(?:\?.*)?$/,"/preview") : url;
