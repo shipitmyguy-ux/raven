@@ -315,6 +315,7 @@
   }
   function pipelineBucket(job) {
     const s=String(job.status||"Saved").toLowerCase();
+    if (s.includes("ignored")) return "Ignored";
     if (s.includes("offer")) return "Offer";
     if (s.includes("interview")) return "Interview";
     if (s.includes("applied")) return "Applied";
@@ -374,7 +375,8 @@
       {bucket:"Tailoring",label:"Tailoring"},
       {bucket:"Applied",label:"Applied"},
       {bucket:"Interview",label:"Interview"},
-      {bucket:"Offer",label:"Offer"}
+      {bucket:"Offer",label:"Offer"},
+      {bucket:"Ignored",label:"Ignored"}
     ];
     groups.forEach((group)=>{
       const groupJobs=jobs.filter((job)=>pipelineBucket(job)===group.bucket);
@@ -387,7 +389,7 @@
       groupJobs.forEach((job)=>{
           const card=document.createElement("article");
           const viewed=hasViewed(job);
-          card.className="job-card"+(job.id===state.selectedId?" active":"")+(isRemoteJob(job)?" is-remote":"")+(job.status==="Applied"?" is-applied":"")+(job.status==="Interested"?" is-interested":"")+(viewed?" is-viewed":" is-new");
+          card.className="job-card"+(job.id===state.selectedId?" active":"")+(isRemoteJob(job)?" is-remote":"")+(job.status==="Applied"?" is-applied":"")+(job.status==="Interested"?" is-interested":"")+(job.status==="Ignored"?" is-ignored":"")+(viewed?" is-viewed":" is-new");
           card.dataset.status=statusToken(job.status);
           card.dataset.jobId=String(job.id||"");
           const company=job.company||"Company not captured";
@@ -399,9 +401,11 @@
           const attentionIndicator=!viewed
             ? '<span class="job-status is-new-status">New</span>'
             : (meaningfulStatus?'<span class="job-status">'+escapeHtml(statusLabel)+'</span>':'');
+          const isIgnored=rawStatus.toLowerCase()==="ignored";
           const isBookmarked=rawStatus.toLowerCase()==="interested";
-          const bookmarkStar=String(job.status||"").toLowerCase()==="applied" ? "" :
+          const bookmarkStar=/^(applied|ignored)$/i.test(rawStatus) ? "" :
             '<button class="bookmark-star'+(isBookmarked?' is-bookmarked':'')+'" type="button" data-card-bookmark aria-pressed="'+String(isBookmarked)+'" aria-label="'+(isBookmarked?'Remove bookmark':'Bookmark job')+'" title="'+(isBookmarked?'Remove bookmark':'Bookmark job')+'">'+(isBookmarked?'★':'☆')+'</button>';
+          const ignoreControl='<button class="ignore-job-button'+(isIgnored?' is-restore':'')+'" type="button" data-ignore-job aria-label="'+(isIgnored?'Restore job':'Ignore job')+'" title="'+(isIgnored?'Restore job':'Ignore job')+'">'+(isIgnored?'↩':'×')+'</button>';
           card.innerHTML=
             '<button class="job-card-summary" type="button" aria-expanded="'+String(job.id===state.selectedId)+'">'+
               '<span class="card-main">'+
@@ -413,7 +417,7 @@
                 '<span class="job-age">'+escapeHtml(relativeAdded(job.added))+'</span>'+
               '</span>'+
               (!isRemoteJob(job) && job.location ? '<span class="commute-footer" data-commute-key="'+escapeAttr(commuteCacheKey(job.location))+'" hidden></span>' : '')+
-            '</button>'+bookmarkStar;
+            '</button>'+bookmarkStar+ignoreControl;
           if (job.id===state.selectedId) {
             const expanded=document.createElement("span");
             expanded.className="job-card-expanded";
@@ -472,7 +476,27 @@
             expanded.querySelectorAll("a").forEach((link)=>link.addEventListener("click",(event)=>event.stopPropagation()));
           }
           const summary=card.querySelector(".job-card-summary");
+          let swipeStart=null;
+          let suppressOpen=false;
+          summary.addEventListener("pointerdown",(event)=>{
+            if(event.pointerType==="touch") swipeStart={x:event.clientX,y:event.clientY};
+          });
+          summary.addEventListener("pointerup",(event)=>{
+            if(!swipeStart || event.pointerType!=="touch") return;
+            const dx=event.clientX-swipeStart.x;
+            const dy=event.clientY-swipeStart.y;
+            swipeStart=null;
+            if(dx<-60 && Math.abs(dx)>Math.abs(dy)){
+              suppressOpen=true;
+              setJobIgnored(job,true);
+            }
+          });
+          summary.addEventListener("pointercancel",()=>{ swipeStart=null; });
           summary.addEventListener("click",()=>{
+            if(suppressOpen){
+              suppressOpen=false;
+              return;
+            }
             const opening=state.selectedId!==job.id;
             if(opening) markViewed(job);
             state.selectedId = opening ? job.id : null;
@@ -488,6 +512,9 @@
           });
           card.querySelectorAll("[data-card-bookmark]").forEach((button)=>{
             button.addEventListener("click",()=>toggleBookmark(job));
+          });
+          card.querySelectorAll("[data-ignore-job]").forEach((button)=>{
+            button.addEventListener("click",()=>setJobIgnored(job,!isIgnored));
           });
           cards.appendChild(card);
           if(!isRemoteJob(job) && job.location){
@@ -626,6 +653,35 @@
       window.RavenAPI.updateJob(job.id,{viewed:true}).catch((error)=>{
         console.warn("Viewed state could not be synced.",error);
       });
+    }
+  }
+
+  async function setJobIgnored(job,ignored) {
+    const nextStatus=ignored?"Ignored":"Saved";
+    setStatus(ignored?"Ignoring job...":"Restoring job...");
+    try{
+      if(job._discovered){
+        await window.RavenAPI.addJob({
+          track:job.track||state.activeTrack,
+          title:job.title||"",
+          company:job.company||"",
+          location:job.location||"",
+          remote:isRemoteJob(job),
+          salaryText:job.salaryText||"",
+          url:job.url||"",
+          source:job.source||"",
+          status:nextStatus,
+          viewed:true,
+          notes:job.notes||""
+        });
+      }else{
+        await window.RavenAPI.updateJob(job.id,{status:nextStatus,viewed:true});
+      }
+      state.selectedId=null;
+      await loadJobs();
+      setStatus(ignored?"Moved to ignored":"Job restored");
+    }catch(error){
+      setStatus("Ignore update failed: "+error.message);
     }
   }
 
