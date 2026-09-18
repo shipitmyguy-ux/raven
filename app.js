@@ -156,23 +156,6 @@
       return Object.fromEntries(columns.map((key,index)=>[key,row[index]||""]));
     }).filter((job)=>job.id||job.title||job.url);
   }
-  async function callSearchApi(payload) {
-    const response = await fetch(config.searchApiUrl, {
-      method: "POST",
-      headers: {
-        "Authorization": "Bearer " + config.searchAnonKey,
-        "apikey": config.searchAnonKey,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-    const text = await response.text();
-    let data;
-    try { data = JSON.parse(text); } catch { throw new Error("Search backend returned an unreadable response."); }
-    if (!response.ok || data.ok === false || data.error) throw new Error(data.error || "Search backend failed.");
-    return data;
-  }
-
   function normalizeComparableUrl(value) {
     try {
       const url = new URL(value || "");
@@ -211,7 +194,7 @@
 
   async function loadDiscovered(track = state.activeTrack) {
     try {
-      const payload = await callSearchApi({ action: "listResults", track });
+      const payload = await window.RavenAPI.listResults(track);
       state.discovered[track] = normalizeDiscovered(payload.results);
       writeCache(CACHE_DISCOVERED_KEY,state.discovered);
       render();
@@ -229,7 +212,7 @@
     searchJobsButton.textContent = "Searching…";
     setStatus("Fast search…");
     try {
-      const payload = await callSearchApi({ action: "search", track });
+      const payload = await window.RavenAPI.searchJobs(track);
       state.discovered[track] = normalizeDiscovered(payload.results);
       writeCache(CACHE_DISCOVERED_KEY,state.discovered);
       state.selectedId = null;

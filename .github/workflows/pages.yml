@@ -8,6 +8,7 @@ on:
       - "app.js"
       - "config.js"
       - "runtime-config.json"
+      - "raven-api.js"
       - "snapshot.js"
       - "styles.css"
       - "theme.css"
