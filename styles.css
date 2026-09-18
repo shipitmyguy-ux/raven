@@ -1509,3 +1509,103 @@ main {
   max-height: none;
   overflow: visible;
 }
+
+
+/* Header options entry point */
+.topbar-actions {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+  margin-left:auto;
+  min-width:0;
+}
+
+.topbar-actions #syncStatus {
+  margin-left:0;
+  white-space:nowrap;
+}
+
+.options-button {
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  width:28px;
+  height:28px;
+  min-height:28px;
+  padding:0;
+  background:transparent;
+  border:0;
+  border-radius:50%;
+  color:var(--text-muted);
+  font-size:1rem;
+  line-height:1;
+  cursor:pointer;
+}
+
+.options-button:hover,
+.options-button:focus-visible {
+  color:var(--text);
+  background:var(--surface-hover);
+}
+
+.options-dialog {
+  width:min(92vw,360px);
+  padding:0;
+  color:var(--text);
+  background:var(--surface-raised);
+  border:1px solid var(--border-color);
+  border-radius:var(--radius-md);
+  box-shadow:var(--shadow-panel);
+}
+
+.options-dialog::backdrop {
+  background:rgba(0,0,0,.6);
+}
+
+.options-dialog form {
+  display:grid;
+  gap:12px;
+  padding:14px;
+}
+
+.options-dialog header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.options-dialog h2,
+.options-dialog p {
+  margin:0;
+}
+
+.options-dialog h2 {
+  font-size:.95rem;
+}
+
+.options-close {
+  width:28px;
+  height:28px;
+  min-height:28px;
+  padding:0;
+}
+
+.options-panel-body {
+  color:var(--text-muted);
+  font-size:.76rem;
+  line-height:1.45;
+}
+
+@media (max-width:480px) {
+  .topbar-actions {
+    gap:4px;
+  }
+
+  .options-button {
+    width:26px;
+    height:26px;
+    min-height:26px;
+  }
+}
