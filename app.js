@@ -6,7 +6,8 @@
     activeTrack: "Professional",
     queue: JSON.parse(localStorage.getItem("ravenQueue") || localStorage.getItem("jobtrackQueue") || "[]"),
     runtime: { theme: {}, settings: {}, ui: [], statuses: [], features: {} },
-    discovered: { Professional: [], Labor: [], Wildcard: [], "Games / 3D": [] }
+    discovered: { Professional: [], Labor: [], Wildcard: [], "Games / 3D": [] },
+    commutes: {}
   };
   const columns = ["id","added","track","title","company","location","remote","salaryMin","salaryMax","salaryText","url","source","status","viewed","appliedDate","followUp","resume","coverLetter","notes","lastUpdated"];
   const status = document.getElementById("syncStatus");
@@ -306,6 +307,36 @@
     if (s.includes("ready") || s.includes("tailor")) return "Tailoring";
     return "Saved";
   }
+  function isRemoteJob(job) {
+    if (job.remote===true) return true;
+    const remote=String(job.remote||"").toLowerCase();
+    const location=String(job.location||"").toLowerCase();
+    return /\bremote\b/.test(remote) || /remote position|fully remote|work from home/.test(location);
+  }
+  function commuteCacheKey(location) {
+    return String(location||"").trim().toLowerCase().replace(/\s+/g," ");
+  }
+  async function loadCommute(location) {
+    const key=commuteCacheKey(location);
+    if(!key || state.commutes[key] !== undefined) return;
+    state.commutes[key]="loading";
+    try{
+      const payload=await callSearchApi({action:"commute",location});
+      state.commutes[key]=Number.isFinite(Number(payload.minutes)) ? Number(payload.minutes) : null;
+    }catch{
+      state.commutes[key]=null;
+    }
+    document.querySelectorAll('[data-commute-key="'+CSS.escape(key)+'"]').forEach((el)=>{
+      const minutes=state.commutes[key];
+      if(minutes) {
+        el.textContent=minutes+" min";
+        el.hidden=false;
+      } else {
+        el.remove();
+      }
+    });
+  }
+
   function relativeAdded(value) {
     const t=parseDate(value);
     if(!t) return "Recently";
@@ -363,7 +394,8 @@
               (salary?'<span class="job-salary">'+escapeHtml(salary)+'</span>':'')+
               '<span class="job-source-line">'+escapeHtml(relativeAdded(job.added))+' · '+escapeHtml(source)+'</span>'+
             '</span>'+
-            '<span class="job-status">'+escapeHtml(job.status||"Saved")+'</span>';
+            '<span class="job-status">'+escapeHtml(job.status||"Saved")+'</span>'+
+            (!isRemoteJob(job) && job.location ? '<span class="commute-footer" data-commute-key="'+escapeAttr(commuteCacheKey(job.location))+'" hidden></span>' : '');
           if (job.id===state.selectedId) {
             const expanded=document.createElement("span");
             expanded.className="job-card-expanded";
@@ -382,6 +414,17 @@
             render();
           });
           cards.appendChild(card);
+          if(!isRemoteJob(job) && job.location){
+            const key=commuteCacheKey(job.location);
+            const known=state.commutes[key];
+            const footer=card.querySelector(".commute-footer");
+            if(Number.isFinite(Number(known))){
+              footer.textContent=Number(known)+" min";
+              footer.hidden=false;
+            } else if(known===undefined) {
+              loadCommute(job.location);
+            }
+          }
         });
       }
       section.appendChild(cards);
