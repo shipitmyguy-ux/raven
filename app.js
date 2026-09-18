@@ -389,6 +389,7 @@
           const viewed=hasViewed(job);
           card.className="job-card"+(job.id===state.selectedId?" active":"")+(isRemoteJob(job)?" is-remote":"")+(job.status==="Applied"?" is-applied":"")+(job.status==="Interested"?" is-interested":"")+(viewed?" is-viewed":" is-new");
           card.dataset.status=statusToken(job.status);
+          card.dataset.jobId=String(job.id||"");
           const company=job.company||"Company not captured";
           const location=[job.location,job.remote].filter(Boolean).join(" · ")||"Location not captured";
           const salary=job.salaryText||"";
@@ -473,23 +474,15 @@
           const summary=card.querySelector(".job-card-summary");
           summary.addEventListener("click",()=>{
             const opening=state.selectedId!==job.id;
-            if(opening) {
-              state.returnScrollY=window.scrollY;
-              markViewed(job);
-            }
+            if(opening) markViewed(job);
             state.selectedId = opening ? job.id : null;
             render();
 
             requestAnimationFrame(()=>{
-              if(opening){
-                const active=document.querySelector(".job-card.active");
-                if(active){
-                  active.scrollIntoView({behavior:"smooth",block:"center",inline:"nearest"});
-                  active.querySelector(".job-card-summary")?.focus({preventScroll:true});
-                }
-              } else if(Number.isFinite(state.returnScrollY)){
-                window.scrollTo({top:state.returnScrollY,behavior:"smooth"});
-                state.returnScrollY=null;
+              const anchor=document.querySelector('[data-job-id="'+CSS.escape(String(job.id||""))+'"]');
+              if(anchor){
+                anchor.scrollIntoView({behavior:"smooth",block:"start",inline:"nearest"});
+                anchor.querySelector(".job-card-summary")?.focus({preventScroll:true});
               }
             });
           });
