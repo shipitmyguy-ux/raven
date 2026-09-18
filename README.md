@@ -36,3 +36,13 @@ That file controls:
 Changing it triggers the normal GitHub Pages deployment automatically.
 
 Apps Script does not need a `getRuntimeConfig` route. It remains only as the existing job-data gateway for actions such as `listJobs` and `addJob`.
+
+## Chrome extension
+
+Raven Capture is built automatically during GitHub Pages deployment. The live site exposes the ZIP at:
+
+`https://shipitmyguy-ux.github.io/raven/extension/raven-capture-extension.zip`
+
+Install by extracting the ZIP and loading the extracted folder from `chrome://extensions` with Developer mode enabled.
+
+The previous ChatGPT Site is retired from canonical use.
