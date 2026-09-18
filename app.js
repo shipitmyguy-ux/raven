@@ -618,62 +618,17 @@
     '</section>';
   }
 
-  function generatorSections(type) {
-    return type==="resume"
-      ? [
-          ["summary","Professional summary"],
-          ["skills","Relevant skills"],
-          ["experience","Experience bullets"],
-          ["projects","Selected projects"],
-          ["education","Education and credentials"]
-        ]
-      : [
-          ["opening","Targeted opening"],
-          ["motivation","Why this company"],
-          ["experience","Relevant experience"],
-          ["requirements","Requirements alignment"],
-          ["closing","Concise closing"]
-        ];
+  function documentLabel(type) {
+    return type==="resume"?"resume":"cover letter";
   }
   function enqueue(job,type) {
-    state.generatorJob=job;
-    state.generatorType=type;
-    const dialog=document.getElementById("generatorDialog");
-    const isResume=type==="resume";
-    const label=isResume?"resume":"cover letter";
-    const prefs=readCache(GENERATOR_PREFS_KEY,{})[type]||{};
-    document.getElementById("generatorTitle").textContent=(job[type]?"Revise ":"Generate ")+label;
-    document.getElementById("generatorContext").textContent=(job.title||"Role")+(job.company?" at "+job.company:"");
-    document.getElementById("generatorSections").innerHTML=generatorSections(type).map(([key,text])=>
-      '<label><input type="checkbox" name="sections" value="'+escapeAttr(key)+'" '+(prefs.sections&&!prefs.sections.includes(key)?"":"checked")+'> <span>'+escapeHtml(text)+'</span></label>'
-    ).join("");
-    document.getElementById("generatorTone").value=prefs.tone||"direct";
-    document.getElementById("generatorLength").value=prefs.length||(isResume?"one-page":"concise");
-    document.getElementById("generatorInstructions").value=prefs.instructions||"";
-    document.getElementById("generatorTruth").checked=true;
-    dialog.showModal();
+    if(job[type]) return openDocumentReview(job,type);
+    queueDocumentGeneration(job,type,"");
   }
-  async function submitGeneration(event) {
-    event.preventDefault();
-    const job=state.generatorJob;
-    const type=state.generatorType;
-    if(!job||!type) return;
-    const form=event.currentTarget;
-    const sections=[...form.querySelectorAll('input[name="sections"]:checked')].map((input)=>input.value);
-    const preferences={
-      sections,
-      tone:document.getElementById("generatorTone").value,
-      length:document.getElementById("generatorLength").value,
-      instructions:document.getElementById("generatorInstructions").value.trim()
-    };
-    const allPrefs=readCache(GENERATOR_PREFS_KEY,{});
-    allPrefs[type]=preferences;
-    writeCache(GENERATOR_PREFS_KEY,allPrefs);
-    const label=type==="resume"?"resume":"cover letter";
-    const submitButton=document.getElementById("generatorSubmit");
-    submitButton.disabled=true;
+  async function queueDocumentGeneration(job,type,instructions) {
+    const label=documentLabel(type);
     setStatus("Queueing "+label+"...");
-    try{
+    try {
       await window.RavenAPI.enqueueTask({
         type,
         taskType:type==="resume"?"Generate Resume":"Generate Cover Letter",
@@ -684,20 +639,57 @@
         sourceUrl:job.url||"",
         description:job.notes||"",
         currentFile:job[type]||"",
-        sections,
-        tone:preferences.tone,
-        length:preferences.length,
-        instructions:preferences.instructions,
+        instructions:String(instructions||"").trim(),
+        mode:job[type]?"revise":"tailor",
+        autonomy:"high",
         preserveFacts:true,
         status:"Queued"
       });
-      document.getElementById("generatorDialog").close();
       setStatus((job[type]?"Revision":"Generation")+" queued");
-    }catch(error){
+    } catch(error) {
       setStatus("Could not queue "+label+": "+error.message);
-    }finally{
-      submitButton.disabled=false;
     }
+  }
+  function previewableDocumentUrl(value) {
+    const url=String(value||"");
+    return /drive\.google\.com\/file\/d\//.test(url) ? url.replace(/\/view(?:\?.*)?$/,"/preview") : url;
+  }
+  function openDocumentReview(job,type) {
+    state.generatorJob=job;
+    state.generatorType=type;
+    const label=documentLabel(type);
+    const value=String(job[type]||"");
+    document.getElementById("reviewTitle").textContent="Review "+label;
+    document.getElementById("reviewContext").textContent=(job.title||"Role")+(job.company?" at "+job.company:"");
+    const link=document.getElementById("reviewOpenFile");
+    link.href=value;
+    link.textContent="Open "+label+" in a new tab";
+    document.getElementById("reviewFrame").src=previewableDocumentUrl(value);
+    document.getElementById("reviewInstructions").value="";
+    document.getElementById("documentReviewDialog").showModal();
+  }
+  function closeDocumentReview() {
+    const dialog=document.getElementById("documentReviewDialog");
+    if(dialog.open) dialog.close();
+    document.getElementById("reviewFrame").src="about:blank";
+    if(state.generatorType) {
+      const label=documentLabel(state.generatorType);
+      setStatus(label[0].toUpperCase()+label.slice(1)+" saved");
+    }
+    state.generatorJob=null;
+    state.generatorType=null;
+  }
+  async function submitDocumentRevision(event) {
+    event.preventDefault();
+    const job=state.generatorJob;
+    const type=state.generatorType;
+    const instructions=document.getElementById("reviewInstructions").value.trim();
+    if(!job||!type||!instructions) return;
+    const button=document.getElementById("reviewSubmit");
+    button.disabled=true;
+    await queueDocumentGeneration(job,type,instructions);
+    button.disabled=false;
+    closeDocumentReview();
   }
 
   async function toggleApplied(job) {
@@ -819,13 +811,8 @@
     return String(value||"").replace(/[&<>"']/g,(char)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
   }
   function escapeAttr(value) { return escapeHtml(value).replace(/`/g,"&#96;"); }
-  function documentApproved(job,key) {
-    const value=String(job[key]||"");
-    return Boolean(value && state.documentApprovals?.[job.id]?.[key]===value);
-  }
   function documentControl(job,key,label) {
     const value=job[key];
-    const approved=documentApproved(job,key);
     const fileLabel=String(label||"file").toLowerCase();
     const file=value
       ? (/^https?:\/\//.test(value)
@@ -834,44 +821,11 @@
       : '<span class="document-empty">Not generated</span>';
     return '<span class="document-control">'+file+
       '<span class="document-buttons">'+
-        '<button type="button" data-queue="'+escapeAttr(key)+'" title="Generate '+escapeAttr(fileLabel)+'">Generate</button>'+
-        '<button type="button" data-document-edit="'+escapeAttr(key)+'" title="Change '+escapeAttr(fileLabel)+'">Edit</button>'+
-        (value?'<button class="'+(approved?'is-approved':'')+'" type="button" data-document-approve="'+escapeAttr(key)+'" aria-pressed="'+String(approved)+'" title="'+(approved?'Remove approval':'Approve this file')+'">'+(approved?'✓ Approved':'Approve')+'</button>':'')+
+        '<button type="button" data-queue="'+escapeAttr(key)+'" title="'+(value?'Review ':'Generate ')+escapeAttr(fileLabel)+'">'+(value?'Review':'Generate')+'</button>'+
       '</span>'+
-      '<form class="document-editor" data-document-form="'+escapeAttr(key)+'" hidden>'+
-        '<input type="url" aria-label="'+escapeAttr(label)+' file link" value="'+escapeAttr(value||"")+'" placeholder="Paste file link" required>'+
-        '<button type="submit">Save</button>'+
-        '<button type="button" data-document-cancel>Cancel</button>'+
-      '</form>'+
     '</span>';
   }
-  async function saveDocumentLink(job,key,nextValue) {
-    const label=key==="coverLetter"?"cover letter":"resume";
-    const current=String(job[key]||"");
-    const next=String(nextValue||"").trim();
-    if(next===current) return;
-    setStatus("Updating "+label+"...");
-    try{
-      await window.RavenAPI.updateJob(job.id,{[key]:next});
-      if(state.documentApprovals[job.id]) delete state.documentApprovals[job.id][key];
-      writeCache(DOCUMENT_APPROVALS_KEY,state.documentApprovals);
-      await loadJobs();
-      setStatus(next?label[0].toUpperCase()+label.slice(1)+" updated":label[0].toUpperCase()+label.slice(1)+" removed");
-    }catch(error){
-      setStatus("Document update failed: "+error.message);
-    }
-  }
-  function toggleDocumentApproval(job,key) {
-    const value=String(job[key]||"");
-    if(!value) return;
-    const approved=documentApproved(job,key);
-    state.documentApprovals[job.id] ||= {};
-    if(approved) delete state.documentApprovals[job.id][key];
-    else state.documentApprovals[job.id][key]=value;
-    writeCache(DOCUMENT_APPROVALS_KEY,state.documentApprovals);
-    render();
-    setStatus(approved?"Approval removed":"File approved");
-  }
+
   function bindEvents() {
     trackTabs.forEach((tab)=>{
       tab.addEventListener("click",async()=>{
@@ -902,9 +856,9 @@
       event.preventDefault();
       saveCapture(document.getElementById("jobUrl").value.trim());
     });
-    document.getElementById("generatorForm").addEventListener("submit",submitGeneration);
-    document.querySelectorAll("[data-generator-cancel]").forEach((button)=>{
-      button.addEventListener("click",()=>document.getElementById("generatorDialog").close());
+    document.getElementById("documentReviewForm").addEventListener("submit",submitDocumentRevision);
+    document.querySelectorAll("[data-review-close]").forEach((button)=>{
+      button.addEventListener("click",closeDocumentReview);
     });
   }
   function applySharedParams() {
