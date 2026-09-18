@@ -230,6 +230,12 @@
     if (mode==="company-asc") return copy.sort((a,b)=>String(a.company||"").localeCompare(String(b.company||"")));
     return copy.sort((a,b)=>parseDate(b.added)-parseDate(a.added));
   }
+  function preferredDescription(primary, fallback) {
+    const current = String(primary || "").trim();
+    const refreshed = String(fallback || "").trim();
+    return refreshed.length > current.length ? refreshed : current;
+  }
+
   function combinedJobs() {
     const discovered = state.discovered[state.activeTrack] || [];
     const discoveredByUrl = new Map(discovered.map((job)=>[normalizeComparableUrl(job.url),job]));
@@ -245,7 +251,7 @@
           remote:job.remote||extra.remote,
           salaryText:job.salaryText||extra.salaryText,
           source:job.source||extra.source,
-          notes:job.notes||extra.notes,
+          notes:preferredDescription(job.notes,extra.notes),
           fitScore:job.fitScore||extra.fitScore
         };
       });
