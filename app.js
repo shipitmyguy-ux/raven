@@ -5,7 +5,8 @@
     selectedId: null,
     activeTrack: "Professional",
     queue: JSON.parse(localStorage.getItem("ravenQueue") || localStorage.getItem("jobtrackQueue") || "[]"),
-    runtime: { theme: {}, settings: {}, ui: [], statuses: [], features: {} }
+    runtime: { theme: {}, settings: {}, ui: [], statuses: [], features: {} },
+    searchConfig: null
   };
   const columns = ["id","added","track","title","company","location","remote","salaryMin","salaryMax","salaryText","url","source","status","viewed","appliedDate","followUp","resume","coverLetter","notes","lastUpdated"];
   const status = document.getElementById("syncStatus");
@@ -16,6 +17,7 @@
   const statusFilter = document.getElementById("statusFilter");
   const queueList = document.getElementById("queueList");
   const trackTabs = [...document.querySelectorAll(".track-tab")];
+  const searchJobsButton = document.getElementById("searchJobsButton");
 
   function setStatus(message) { status.textContent = message; }
   function gatewayUrl(params = {}) {
@@ -118,6 +120,28 @@
       return Object.fromEntries(columns.map((key,index)=>[key,row[index]||""]));
     }).filter((job)=>job.id||job.title||job.url);
   }
+  async function loadSearchConfig() {
+    try {
+      const response = await fetch("./job-search-config.json", { cache: "no-store" });
+      if (!response.ok) throw new Error("Search config could not be loaded.");
+      state.searchConfig = await response.json();
+      return true;
+    } catch (error) {
+      console.warn("Job search config unavailable.", error);
+      return false;
+    }
+  }
+
+  function launchJobSearch() {
+    const trackConfig = state.searchConfig?.tracks?.[state.activeTrack];
+    if (!trackConfig?.prompt) {
+      setStatus("Job search configuration is unavailable.");
+      return;
+    }
+    const target = "https://chatgpt.com/?q=" + encodeURIComponent(trackConfig.prompt);
+    window.open(target, "_blank", "noopener");
+  }
+
   async function loadJobs() {
     setStatus("Syncing with Google Sheet...");
     try {
@@ -340,7 +364,8 @@
         render();
       });
     });
-    document.getElementById("refreshButton").addEventListener("click",async()=>{ await loadRuntimeConfig(); await loadJobs(); });
+    searchJobsButton.addEventListener("click",launchJobSearch);
+    document.getElementById("refreshButton").addEventListener("click",async()=>{ await loadRuntimeConfig(); await loadSearchConfig(); await loadJobs(); });
     searchBox.addEventListener("input",render);
     statusFilter.addEventListener("change",render);
     document.getElementById("captureForm").addEventListener("submit",(event)=>{
@@ -366,6 +391,7 @@
     bindEvents();
     applySharedParams();
     await loadRuntimeConfig();
+    await loadSearchConfig();
     await loadJobs();
   }
   boot();
