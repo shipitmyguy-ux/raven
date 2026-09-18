@@ -101,3 +101,15 @@ Files changed: `index.html`, `styles.css`, `app.js`.
 Commits: `102bf53c`, `2c5a84eb`, `66335184`.
 
 Important: generation workers still need to consume the new `input.masterResume` payload for the source resume to actually shape generated output end-to-end.
+
+
+## Chat implementation update - 2026-09-18
+Updated the live JobTrack Queue Worker automation to consume `input_json.masterResume` for tailored resumes.
+- Drive master resumes are used by URL.
+- Local master resumes are consumed from task payload content.
+- Missing local source blocks generation rather than silently substituting.
+- Track assignment is respected.
+- Output records which master resume was used.
+- Mirrored worker contract to `docs/QUEUE_WORKER.md`.
+
+Important architecture finding: `raven-tasks-v1` is only a queue API; the live ChatGPT automation is the actual document-generation consumer.
