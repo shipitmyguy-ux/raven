@@ -233,6 +233,7 @@
       // Refresh quietly so new results appear without blocking the user.
       setTimeout(()=>{ loadDiscovered(track); },8000);
       setTimeout(()=>{ Promise.allSettled([loadDiscovered(track),loadJobs()]); },22000);
+      setTimeout(()=>{ loadDiscovered(track); },45000);
     } catch (error) {
       setStatus("Search failed: " + error.message);
     } finally {
