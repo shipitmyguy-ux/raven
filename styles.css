@@ -1167,3 +1167,30 @@ main {
 .document-empty {
   color: var(--text-muted);
 }
+
+
+/* Inline generated-document link editor */
+.document-editor {
+  flex: 1 0 100%;
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto auto;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.document-editor[hidden] {
+  display: none;
+}
+
+.document-editor input {
+  min-width: 0;
+  height: 30px;
+  padding: 3px 7px;
+  font-size: .68rem;
+}
+
+.document-editor button {
+  min-height: 30px;
+  padding: 3px 8px;
+  font-size: .66rem;
+}
