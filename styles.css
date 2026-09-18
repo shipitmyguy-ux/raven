@@ -2061,3 +2061,24 @@ main {
     max-height:calc(92vh - 58px);
   }
 }
+
+
+/* Lock the app behind the modal Options dialog */
+html.options-open,
+body.options-open {
+  overflow:hidden;
+  overscroll-behavior:none;
+}
+
+body.options-open > :not(main):not(.options-dialog) {
+  pointer-events:none;
+}
+
+.options-dialog[open] {
+  pointer-events:auto;
+}
+
+.options-dialog::backdrop {
+  pointer-events:auto;
+  overscroll-behavior:contain;
+}
