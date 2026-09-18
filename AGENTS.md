@@ -18,6 +18,16 @@ Do not rely on prior chat history when the repository can provide the state.
 - Secrets: never commit secrets, API keys, service-role keys, tokens, or private credentials. Keep them in secure runtime/server/GitHub Actions configuration.
 - Google Sheets: backup/export only unless the project state explicitly says otherwise.
 
+## Work usage failsafe
+Before starting any substantial ChatGPT Work task, check the usage state if the Work environment exposes it.
+
+- If remaining usage is **2% or less** AND the next usage refresh is **more than 5 minutes away**, do **not** begin the substantial task.
+- Instead, preserve/commit any already-completed work, update `WORK_HANDOFF.md` if needed, and respond that the task is being held because the usage failsafe is active.
+- If remaining usage is above 2%, proceed normally.
+- If the refresh is 5 minutes or less away, proceeding is allowed, but prefer short/low-risk work unless the user explicitly asks otherwise.
+- Never pretend usage was checked when the environment does not expose it. If usage data is unavailable, say so and continue normally.
+- This safeguard is intended to prevent starting work that is likely to fail due to exhaustion of the current ChatGPT usage window.
+
 ## Working rules
 - Web application only. Do not add iOS or Android work unless the user explicitly changes scope.
 - Prefer modifying existing systems over introducing parallel implementations.
