@@ -192,10 +192,9 @@
     const response = await fetch(config.searchApiUrl, {
       method: "POST",
       headers: {
-        "apikey": config.searchAnonKey,
-        "Content-Type": "application/json"
+        "Content-Type": "text/plain;charset=UTF-8"
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({...payload,apiKey:config.searchAnonKey})
     });
     const text = await response.text();
     let data;
