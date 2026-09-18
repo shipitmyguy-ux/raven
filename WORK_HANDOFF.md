@@ -117,3 +117,16 @@ Important architecture finding: `raven-tasks-v1` is only a queue API; the live C
 
 ## Resume generation rule - 2026-09-18
 All generated tailored resumes must render to no more than 2 pages in the final PDF. The generator should preserve normal professional readability and meet the limit by prioritizing relevant experience and removing lower-value or redundant content, not by using unusually small fonts or excessively narrow margins. Page count must be verified before marking a resume task complete.
+
+
+## Chat implementation update - 2026-09-18
+Restored an instant resume first-pass path:
+- clicking Resume now builds a local parser-friendly draft immediately from the assigned local master resume and the job description,
+- local PDF/text master resumes are extracted in-browser,
+- job-posting keywords are used to prioritize existing verified master-resume content without inventing qualifications,
+- the instant draft is saved to the Raven job record immediately and opened for review,
+- the existing ChatGPT queue remains as a background refinement/fallback instead of blocking the button,
+- duplicate/refinement tasks use stable idempotency keys.
+Files changed: `app.js`.
+Commits: `aab70f0d`, `2e435977`.
+Important: this restores near-instant first-pass behavior, but the local deterministic draft is not equivalent to a fully AI-written resume. Live browser behavior still needs verification.
