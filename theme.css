@@ -132,6 +132,15 @@ button:active,.detail-actions a:active { transform:translateY(1px); }
   color:var(--text);
   transition:background 120ms ease,border-color 120ms ease,opacity 120ms ease;
 }
+.job-card,
+.job-card:focus,
+.job-card:focus-visible,
+.job-card:active {
+  outline: none;
+  box-shadow: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .job-card:hover { background:#303030; border-color:rgba(255,255,255,.10); }
 .job-card.active { background:#303030; border-color:rgba(255,255,255,.16); }
 
