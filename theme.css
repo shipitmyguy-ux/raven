@@ -643,3 +643,34 @@ button:active,.detail-actions a:active { transform:translateY(1px); }
     backdrop-filter: blur(9px);
   }
 }
+
+
+/* Reduced visual noise */
+.topbar {
+  box-shadow:none;
+  backdrop-filter:none;
+  background:rgba(8,5,10,.82);
+}
+
+.stat-card,
+.stage-header,
+.job-card {
+  box-shadow:none;
+}
+
+.track-tabs {
+  box-shadow:0 6px 16px rgba(0,0,0,.22);
+}
+
+.job-card:hover {
+  box-shadow:none;
+}
+
+.job-card.active {
+  box-shadow:0 0 0 1px rgba(255,154,60,.18);
+}
+
+.stats-grid .stat-card::before {
+  width:24px;
+  opacity:.65;
+}
