@@ -24,7 +24,7 @@
     return url.toString();
   }
   async function callGateway(params) {
-    const getActions = new Set(["listJobs","getRuntimeConfig"]);
+    const getActions = new Set(["listJobs"]);
     const response = getActions.has(params.action)
       ? await fetch(gatewayUrl(params), { cache: "no-store" })
       : await fetch(config.gatewayUrl, {
@@ -99,8 +99,10 @@
   }
   async function loadRuntimeConfig() {
     try {
-      const payload = await callGateway({ action: "getRuntimeConfig" });
-      applyRuntimeConfig(payload.config || payload);
+      const response = await fetch("./runtime-config.json", { cache: "no-store" });
+      if (!response.ok) throw new Error("Runtime config file could not be loaded.");
+      const payload = await response.json();
+      applyRuntimeConfig(payload);
       return true;
     } catch (error) {
       console.warn("Runtime config unavailable; using bundled defaults.", error);
