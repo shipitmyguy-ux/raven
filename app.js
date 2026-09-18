@@ -6,7 +6,7 @@
     activeTrack: "Professional",
     queue: JSON.parse(localStorage.getItem("ravenQueue") || localStorage.getItem("jobtrackQueue") || "[]"),
     runtime: { theme: {}, settings: {}, ui: [], statuses: [], features: {} },
-    searchConfig: null
+    discovered: { Professional: [], Labor: [], Wildcard: [] }
   };
   const columns = ["id","added","track","title","company","location","remote","salaryMin","salaryMax","salaryText","url","source","status","viewed","appliedDate","followUp","resume","coverLetter","notes","lastUpdated"];
   const status = document.getElementById("syncStatus");
@@ -120,26 +120,86 @@
       return Object.fromEntries(columns.map((key,index)=>[key,row[index]||""]));
     }).filter((job)=>job.id||job.title||job.url);
   }
-  async function loadSearchConfig() {
+  async function callSearchApi(payload) {
+    const response = await fetch(config.searchApiUrl, {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + config.searchAnonKey,
+        "apikey": config.searchAnonKey,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+    const text = await response.text();
+    let data;
+    try { data = JSON.parse(text); } catch { throw new Error("Search backend returned an unreadable response."); }
+    if (!response.ok || data.ok === false || data.error) throw new Error(data.error || "Search backend failed.");
+    return data;
+  }
+
+  function normalizeComparableUrl(value) {
     try {
-      const response = await fetch("./job-search-config.json", { cache: "no-store" });
-      if (!response.ok) throw new Error("Search config could not be loaded.");
-      state.searchConfig = await response.json();
+      const url = new URL(value || "");
+      ["utm_source","utm_medium","utm_campaign","utm_term","utm_content","gh_src","source"].forEach((key)=>url.searchParams.delete(key));
+      url.hash = "";
+      return url.toString().replace(/\/$/,"");
+    } catch { return String(value || "").trim(); }
+  }
+
+  function normalizeDiscovered(results) {
+    return (results || []).map((job)=>({
+      id: "DISC-" + job.id,
+      added: job.created_at || job.last_seen || "",
+      track: job.track,
+      title: job.title || "Untitled job",
+      company: job.company || "",
+      location: job.location || "",
+      remote: job.remote ? "Remote" : "",
+      salaryMin: "",
+      salaryMax: "",
+      salaryText: job.salary_text || "",
+      url: job.url || "",
+      source: job.source || "Web",
+      status: "Discovered",
+      viewed: false,
+      appliedDate: "",
+      followUp: "",
+      resume: "",
+      coverLetter: "",
+      notes: job.snippet || "",
+      lastUpdated: job.last_seen || "",
+      _discovered: true
+    })).filter((job)=>job.url);
+  }
+
+  async function loadDiscovered(track = state.activeTrack) {
+    try {
+      const payload = await callSearchApi({ action: "listResults", track });
+      state.discovered[track] = normalizeDiscovered(payload.results);
       return true;
     } catch (error) {
-      console.warn("Job search config unavailable.", error);
+      console.warn("Discovered jobs unavailable.", error);
       return false;
     }
   }
 
-  function launchJobSearch() {
-    const trackConfig = state.searchConfig?.tracks?.[state.activeTrack];
-    if (!trackConfig?.prompt) {
-      setStatus("Job search configuration is unavailable.");
-      return;
+  async function runJobSearch() {
+    const original = searchJobsButton.textContent;
+    searchJobsButton.disabled = true;
+    searchJobsButton.textContent = "Searching…";
+    setStatus("Searching " + state.activeTrack + " jobs...");
+    try {
+      const payload = await callSearchApi({ action: "search", track: state.activeTrack });
+      state.discovered[state.activeTrack] = normalizeDiscovered(payload.results);
+      state.selectedId = null;
+      render();
+      setStatus(payload.count + " " + state.activeTrack.toLowerCase() + " candidates found");
+    } catch (error) {
+      setStatus("Search failed: " + error.message);
+    } finally {
+      searchJobsButton.disabled = false;
+      searchJobsButton.textContent = original;
     }
-    const target = "https://chatgpt.com/?q=" + encodeURIComponent(trackConfig.prompt);
-    window.open(target, "_blank", "noopener");
   }
 
   async function loadJobs() {
@@ -166,13 +226,18 @@
     if (mode==="company-asc") return copy.sort((a,b)=>String(a.company||"").localeCompare(String(b.company||"")));
     return copy.sort((a,b)=>parseDate(b.added)-parseDate(a.added));
   }
+  function combinedJobs() {
+    const saved = state.jobs.filter((job)=>String(job.track||"").trim().toLowerCase()===state.activeTrack.toLowerCase());
+    const savedUrls = new Set(saved.map((job)=>normalizeComparableUrl(job.url)).filter(Boolean));
+    const discovered = (state.discovered[state.activeTrack] || []).filter((job)=>!savedUrls.has(normalizeComparableUrl(job.url)));
+    return [...saved, ...discovered];
+  }
   function filteredJobs() {
     const query=searchBox.value.trim().toLowerCase();
     const selectedStatus=statusFilter.value;
-    return sortedJobs(state.jobs.filter((job)=>{
+    return sortedJobs(combinedJobs().filter((job)=>{
       const haystack=[job.title,job.company,job.location,job.notes,job.url].join(" ").toLowerCase();
-      const matchesTrack=String(job.track||"").trim().toLowerCase()===state.activeTrack.toLowerCase();
-      return matchesTrack && (!query||haystack.includes(query)) && (!selectedStatus||job.status===selectedStatus);
+      return (!query||haystack.includes(query)) && (!selectedStatus||job.status===selectedStatus);
     }));
   }
   function uiRows(surface) {
@@ -189,7 +254,7 @@
   function render() {
     renderJobs();
     renderQueue();
-    const selected=state.jobs.find((job)=>job.id===state.selectedId)||filteredJobs()[0];
+    const selected=combinedJobs().find((job)=>job.id===state.selectedId)||filteredJobs()[0];
     renderDetail(selected);
   }
   function fallbackCardRows() {
@@ -289,22 +354,30 @@
       return '<dt>'+escapeHtml(item.label||item.key)+'</dt><dd>'+rendered+'</dd>';
     }).join("");
     const configuredActions=uiRows("detail-action");
-    const actions=(configuredActions.length?configuredActions:fallbackActions())
-      .filter((item)=>{
-        if (item.key==="posting") return Boolean(job.url);
-        const feature=actionFeatureKey(item.key);
-        return !feature || featureEnabled(feature,true);
-      })
-      .map((item)=>{
-        if (item.format==="external-link" || item.key==="posting") {
-          return '<a href="'+escapeAttr(job.url)+'" target="_blank" rel="noopener">'+escapeHtml(item.label||"Open posting")+'</a>';
-        }
-        return '<button type="button" data-queue="'+escapeAttr(item.key)+'">'+escapeHtml(item.label||item.key)+'</button>';
-      }).join("");
+    let actions;
+    if (job._discovered) {
+      actions = (job.url ? '<a href="'+escapeAttr(job.url)+'" target="_blank" rel="noopener">Open posting</a>' : "") +
+        '<button type="button" data-save-discovered>Save to tracker</button>';
+    } else {
+      actions=(configuredActions.length?configuredActions:fallbackActions())
+        .filter((item)=>{
+          if (item.key==="posting") return Boolean(job.url);
+          const feature=actionFeatureKey(item.key);
+          return !feature || featureEnabled(feature,true);
+        })
+        .map((item)=>{
+          if (item.format==="external-link" || item.key==="posting") {
+            return '<a href="'+escapeAttr(job.url)+'" target="_blank" rel="noopener">'+escapeHtml(item.label||"Open posting")+'</a>';
+          }
+          return '<button type="button" data-queue="'+escapeAttr(item.key)+'">'+escapeHtml(item.label||item.key)+'</button>';
+        }).join("");
+    }
     detail.innerHTML='<h2>'+escapeHtml(job.title||"Untitled job")+'</h2><p>'+escapeHtml([job.company,job.location,settingEnabled("show-remote",true)?job.remote:""].filter(Boolean).join(" | "))+'</p><dl>'+detailHtml+'</dl><div class="detail-actions">'+actions+'</div>';
     detail.querySelectorAll("[data-queue]").forEach((button)=>{
       button.addEventListener("click",()=>enqueue(job,button.dataset.queue));
     });
+    const saveButton = detail.querySelector("[data-save-discovered]");
+    if (saveButton) saveButton.addEventListener("click",()=>saveDiscovered(job));
   }
   function renderQueue() {
     queueList.innerHTML="";
@@ -328,12 +401,25 @@
     localStorage.setItem("ravenQueue",JSON.stringify(state.queue));
     renderQueue();
   }
+  async function saveDiscovered(job) {
+    setStatus("Saving discovered job...");
+    try {
+      const saved = await callGateway({ action:"addJob", title:job.title, url:job.url, track:job.track });
+      if (!saved.id) throw new Error("Google did not confirm a saved job.");
+      await loadJobs();
+      render();
+      setStatus("Saved to tracker");
+    } catch (error) {
+      setStatus("Save needs review: " + error.message);
+    }
+  }
+
   async function saveCapture(title,url) {
     setStatus("Saving captured job...");
     try {
       const parsed=new URL(url);
       if (!["https:","http:"].includes(parsed.protocol)) throw new Error("Enter a web address starting with https:// or http://.");
-      const saved=await callGateway({action:"addJob",title:String(title||"").trim(),url});
+      const saved=await callGateway({action:"addJob",title:String(title||"").trim(),url,track:state.activeTrack});
       if (!saved.id) throw new Error("Google did not confirm a saved job.");
       document.getElementById("jobTitle").value="";
       document.getElementById("jobUrl").value="";
@@ -353,7 +439,7 @@
   }
   function bindEvents() {
     trackTabs.forEach((tab)=>{
-      tab.addEventListener("click",()=>{
+      tab.addEventListener("click",async()=>{
         state.activeTrack=tab.dataset.track;
         state.selectedId=null;
         trackTabs.forEach((item)=>{
@@ -361,11 +447,12 @@
           item.classList.toggle("active",active);
           item.setAttribute("aria-selected",String(active));
         });
+        await loadDiscovered(state.activeTrack);
         render();
       });
     });
-    searchJobsButton.addEventListener("click",launchJobSearch);
-    document.getElementById("refreshButton").addEventListener("click",async()=>{ await loadRuntimeConfig(); await loadSearchConfig(); await loadJobs(); });
+    searchJobsButton.addEventListener("click",runJobSearch);
+    document.getElementById("refreshButton").addEventListener("click",async()=>{ await loadRuntimeConfig(); await loadJobs(); await loadDiscovered(state.activeTrack); render(); });
     searchBox.addEventListener("input",render);
     statusFilter.addEventListener("change",render);
     document.getElementById("captureForm").addEventListener("submit",(event)=>{
@@ -391,8 +478,9 @@
     bindEvents();
     applySharedParams();
     await loadRuntimeConfig();
-    await loadSearchConfig();
     await loadJobs();
+    await loadDiscovered(state.activeTrack);
+    render();
   }
   boot();
 }());
