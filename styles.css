@@ -340,3 +340,56 @@ button,input,select { width:auto; }
     margin-top:5px;
   }
 }
+
+
+/* Inline expanded job details */
+.job-card-expanded {
+  grid-column: 1 / -1;
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.inline-job-detail {
+  display: grid;
+  gap: 12px;
+}
+
+.inline-job-detail dl {
+  display: grid;
+  grid-template-columns: var(--detail-label-width) minmax(0,1fr);
+  gap: 7px 12px;
+  margin: 0;
+}
+
+.inline-job-detail dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.inline-job-detail .detail-actions {
+  margin-top: 2px;
+}
+
+.job-card.active {
+  min-height: 0;
+}
+
+@media (max-width:820px) {
+  .inline-job-detail dl {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .inline-job-detail dt {
+    margin-top: 8px;
+  }
+
+  .job-card-expanded {
+    margin-top: 8px;
+    padding-top: 10px;
+  }
+}
