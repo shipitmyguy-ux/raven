@@ -76,7 +76,7 @@
     "show-sync-status": true,
     "empty-list-text": "No matching jobs.",
     "empty-detail-title": "Select a job",
-    "empty-detail-text": "Choose a row to review source data, notes, document links, and next actions.",
+    "empty-detail-text": "",
     "public-site-url": "https://shipitmyguy-ux.github.io/raven/"
   },
   "ui": [
