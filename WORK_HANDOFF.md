@@ -130,3 +130,10 @@ Restored an instant resume first-pass path:
 Files changed: `app.js`.
 Commits: `aab70f0d`, `2e435977`.
 Important: this restores near-instant first-pass behavior, but the local deterministic draft is not equivalent to a fully AI-written resume. Live browser behavior still needs verification.
+
+
+## Working baseline checkpoint - 2026-09-18
+Treat the instant local resume first-pass path introduced in commits `aab70f0d` and `2e435977` as the current known-working baseline for resume generation UX.
+- Preserve this path while experimenting with hosted LLM generation.
+- New online-LLM work must be additive behind a feature/provider switch or safe fallback.
+- Do not remove the instant local path until a hosted path is verified faster, reliable, free at single-user volume, and end-to-end functional.
