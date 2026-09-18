@@ -276,7 +276,7 @@
     "resume-generation": true,
     "cover-letter-generation": true,
     "application-review": true,
-    "extension-download": false,
+    "extension-download": true,
     "queue-panel": true,
     "capture-form": true,
     "search": true,
