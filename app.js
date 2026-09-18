@@ -869,7 +869,7 @@
       await window.RavenAPI.enqueueTask({
         jobId:job.id,
         type:taskType,
-        idempotencyKey:job.id+":"+taskType+":"+Date.now(),
+        idempotencyKey:job.id+":"+taskType+":"+(job[type] ? ("revise:"+Date.now()) : ("generate:"+(masterResume?.id||"default"))),
         input:{
           documentType:type,
           jobTitle:job.title||"",
@@ -885,7 +885,7 @@
           masterResume
         }
       });
-      setStatus((job[type]?"Revision":"Generation")+" queued");
+      setStatus((job[type]?"Revision":"Generation")+" queued · processing pending");
     } catch(error) {
       setStatus("Could not queue "+label+": "+error.message);
     }
