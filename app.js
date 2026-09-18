@@ -191,9 +191,12 @@
     try {
       const payload = await callSearchApi({ action: "search", track: state.activeTrack });
       state.discovered[state.activeTrack] = normalizeDiscovered(payload.results);
+      await loadJobs();
       state.selectedId = null;
       render();
-      setStatus(payload.count + " " + state.activeTrack.toLowerCase() + " candidates found");
+      const savedText = payload.saved_count ? " · " + payload.saved_count + " saved to tracker" : "";
+      const duplicateText = payload.duplicate_count ? " · " + payload.duplicate_count + " already saved" : "";
+      setStatus(payload.count + " " + state.activeTrack.toLowerCase() + " candidates found" + savedText + duplicateText);
     } catch (error) {
       setStatus("Search failed: " + error.message);
     } finally {
@@ -227,10 +230,26 @@
     return copy.sort((a,b)=>parseDate(b.added)-parseDate(a.added));
   }
   function combinedJobs() {
-    const saved = state.jobs.filter((job)=>String(job.track||"").trim().toLowerCase()===state.activeTrack.toLowerCase());
+    const discovered = state.discovered[state.activeTrack] || [];
+    const discoveredByUrl = new Map(discovered.map((job)=>[normalizeComparableUrl(job.url),job]));
+    const saved = state.jobs
+      .filter((job)=>String(job.track||"").trim().toLowerCase()===state.activeTrack.toLowerCase())
+      .map((job)=>{
+        const extra=discoveredByUrl.get(normalizeComparableUrl(job.url));
+        if(!extra) return job;
+        return {
+          ...job,
+          company:job.company||extra.company,
+          location:job.location||extra.location,
+          remote:job.remote||extra.remote,
+          salaryText:job.salaryText||extra.salaryText,
+          source:job.source||extra.source,
+          notes:job.notes||extra.notes
+        };
+      });
     const savedUrls = new Set(saved.map((job)=>normalizeComparableUrl(job.url)).filter(Boolean));
-    const discovered = (state.discovered[state.activeTrack] || []).filter((job)=>!savedUrls.has(normalizeComparableUrl(job.url)));
-    return [...saved, ...discovered];
+    const unsaved = discovered.filter((job)=>!savedUrls.has(normalizeComparableUrl(job.url)));
+    return [...saved, ...unsaved];
   }
   function filteredJobs() {
     const query=searchBox.value.trim().toLowerCase();
