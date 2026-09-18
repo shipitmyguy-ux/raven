@@ -410,3 +410,42 @@ button:active,.detail-actions a:active { transform: translateY(1px); }
 .job-card.active .new-job-badge {
   display: none;
 }
+
+
+/* Applied job indicator */
+.job-card.is-applied {
+  opacity: .62;
+  background: #252525;
+  border-color: rgba(255,255,255,.055);
+}
+
+.job-card.is-applied:hover {
+  opacity: .78;
+  background: #292929;
+}
+
+.job-card.is-applied.active {
+  opacity: 1;
+  background: #303030;
+  border-color: rgba(255,255,255,.16);
+}
+
+.job-card.is-applied.is-new {
+  opacity: .82;
+}
+
+.applied-job-badge {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 1px 7px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 999px;
+  background: #242424;
+  color: #b8b8b8;
+  font-size: .62rem;
+  font-weight: 650;
+  letter-spacing: .05em;
+  line-height: 1;
+}
