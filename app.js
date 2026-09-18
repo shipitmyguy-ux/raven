@@ -1133,10 +1133,20 @@
         optionsCard.classList.remove("is-entering","is-leaving","is-active");
         renderMasterResumeList();
         resetMasterResumeEditor();
+        document.documentElement.classList.add("options-open");
+        document.body.classList.add("options-open");
         optionsDialog.showModal();
       });
       optionsDialog.addEventListener("click",(event)=>{
         if(event.target===optionsDialog) optionsDialog.close();
+      });
+      optionsDialog.addEventListener("close",()=>{
+        document.documentElement.classList.remove("options-open");
+        document.body.classList.remove("options-open");
+      });
+      optionsDialog.addEventListener("cancel",()=>{
+        document.documentElement.classList.remove("options-open");
+        document.body.classList.remove("options-open");
       });
       optionsDialog.querySelectorAll("[data-options-target]").forEach((button)=>{
         button.addEventListener("click",()=>showOptionsCard(button.dataset.optionsTarget));
