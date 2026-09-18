@@ -280,6 +280,7 @@
     "queue-panel": true,
     "capture-form": true,
     "search": true,
-    "status-filter": true
+    "status-filter": true,
+    "job-search-trigger": true
   }
 }
