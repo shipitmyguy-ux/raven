@@ -7,7 +7,8 @@
     queue: JSON.parse(localStorage.getItem("ravenQueue") || localStorage.getItem("jobtrackQueue") || "[]"),
     runtime: { theme: {}, settings: {}, ui: [], statuses: [], features: {} },
     discovered: { Professional: [], Labor: [], Wildcard: [], "Games / 3D": [] },
-    commutes: {}
+    commutes: {},
+    returnScrollY: null
   };
   const columns = ["id","added","track","title","company","location","remote","salaryMin","salaryMax","salaryText","url","source","status","viewed","appliedDate","followUp","resume","coverLetter","notes","lastUpdated"];
   const status = document.getElementById("syncStatus");
@@ -437,17 +438,22 @@
           }
           card.addEventListener("click",()=>{
             const opening=state.selectedId!==job.id;
+            if(opening) state.returnScrollY=window.scrollY;
             state.selectedId = opening ? job.id : null;
             render();
-            if(opening){
-              requestAnimationFrame(()=>{
+
+            requestAnimationFrame(()=>{
+              if(opening){
                 const active=document.querySelector(".job-card.active");
                 if(active){
                   active.scrollIntoView({behavior:"smooth",block:"center",inline:"nearest"});
                   active.focus({preventScroll:true});
                 }
-              });
-            }
+              } else if(Number.isFinite(state.returnScrollY)){
+                window.scrollTo({top:state.returnScrollY,behavior:"smooth"});
+                state.returnScrollY=null;
+              }
+            });
           });
           cards.appendChild(card);
           if(!isRemoteJob(job) && job.location){
