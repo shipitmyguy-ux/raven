@@ -64,3 +64,15 @@ Completed the Raven Options panel:
 
 Files changed: `index.html`, `styles.css`, `app.js`.
 Commits: `fdd8cb62`, `20a7e975`, `f0705a77`.
+
+
+## Chat implementation update - 2026-09-18
+Changed Options navigation UX:
+- category list no longer expands inline,
+- selecting Layout, Job information, or Behavior opens a single settings card,
+- settings card slides in from left to right,
+- top-left back arrow returns to the category list,
+- existing setting persistence and reset behavior remain intact.
+
+Files changed: `index.html`, `styles.css`, `app.js`.
+Commits: `580a883d`, `a7987a28`, `cd64a02a`.
