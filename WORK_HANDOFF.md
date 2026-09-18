@@ -51,3 +51,16 @@ Implemented the first Options UI step directly through GitHub:
 Files changed: `index.html`, `styles.css`, `app.js`.
 Commits: `26fbd636`, `782c6ef2`, `de6811ba`.
 Next: populate the panel with the existing runtime-config settings.
+
+
+## Chat implementation update - 2026-09-18
+Completed the Raven Options panel:
+- grouped settings into collapsed Layout, Job information, and Behavior sections,
+- added controls for card density, sidebar width, detail width, salary, remote status, source, notes, sync status, and default sort,
+- persisted per-device overrides in localStorage,
+- kept runtime-config.json as the default source,
+- added Reset to defaults,
+- settings apply immediately without a page reload.
+
+Files changed: `index.html`, `styles.css`, `app.js`.
+Commits: `fdd8cb62`, `20a7e975`, `f0705a77`.
