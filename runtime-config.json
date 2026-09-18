@@ -77,7 +77,7 @@
     "show-sync-status": true,
     "empty-list-text": "No matching jobs.",
     "empty-detail-title": "Select a job",
-    "empty-detail-text": "",
+    "empty-detail-text": "Tap a job to view its description and actions.",
     "public-site-url": "https://shipitmyguy-ux.github.io/raven/"
   },
   "ui": [
@@ -183,9 +183,9 @@
     {
       "surface": "detail-action",
       "position": 1,
-      "key": "posting",
+      "key": "apply",
       "visible": true,
-      "label": "Open posting",
+      "label": "Apply",
       "format": "external-link",
       "notes": "Job URL"
     },
@@ -194,7 +194,7 @@
       "position": 2,
       "key": "resume",
       "visible": true,
-      "label": "Draft resume",
+      "label": "Generate resume",
       "format": "queue",
       "notes": "Controlled by feature flag"
     },
@@ -203,7 +203,7 @@
       "position": 3,
       "key": "coverLetter",
       "visible": true,
-      "label": "Draft cover letter",
+      "label": "Generate cover letter",
       "format": "queue",
       "notes": "Controlled by feature flag"
     },
@@ -211,7 +211,7 @@
       "surface": "detail-action",
       "position": 4,
       "key": "applicationReview",
-      "visible": true,
+      "visible": false,
       "label": "Application review",
       "format": "queue",
       "notes": "Controlled by feature flag"
