@@ -535,6 +535,11 @@
       const saved=await callGateway({action:"addJob",title:"",url,track:state.activeTrack});
       if (!saved.id && !saved.ok) throw new Error("Google did not confirm a saved job.");
       document.getElementById("jobUrl").value="";
+      const captureForm=document.getElementById("captureForm");
+      const toggleCaptureButton=document.getElementById("toggleCaptureButton");
+      captureForm.hidden=true;
+      toggleCaptureButton.setAttribute("aria-expanded","false");
+      toggleCaptureButton.textContent="Add job";
       await loadJobs();
     } catch (error) {
       setStatus("Add failed: "+error.message);
@@ -564,6 +569,15 @@
       });
     });
     searchJobsButton.addEventListener("click",runJobSearch);
+    const toggleCaptureButton=document.getElementById("toggleCaptureButton");
+    const captureForm=document.getElementById("captureForm");
+    toggleCaptureButton.addEventListener("click",()=>{
+      const opening=captureForm.hidden;
+      captureForm.hidden=!opening;
+      toggleCaptureButton.setAttribute("aria-expanded",String(opening));
+      toggleCaptureButton.textContent=opening?"Cancel":"Add job";
+      if(opening) document.getElementById("jobUrl").focus();
+    });
     searchBox.addEventListener("input",render);
     statusFilter.addEventListener("change",render);
     document.getElementById("captureForm").addEventListener("submit",(event)=>{
