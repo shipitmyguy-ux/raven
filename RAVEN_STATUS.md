@@ -21,6 +21,13 @@ The repository contains:
 - Raven API/frontend integration files
 - Chrome extension
 - GitHub workflows
+- GitHub-first agent/status/task/handoff contract
+- Architecture, deployment, test, and decision documentation
+
+Current `config.js` routes Raven search, data, tasks, enrichment, and commute requests to Supabase Edge Functions.
+
+## GitHub parity status
+GitHub-first parity scaffolding is now in place. Future Chat/Work sessions should read the repository rather than depend on previous conversation history.
 
 ## Highest-priority unfinished work
 1. Add and verify a user-facing Options/Settings panel using existing runtime settings.
