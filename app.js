@@ -322,7 +322,17 @@
     searchJobsButton.textContent = "Searching…";
     setStatus("Fast search…");
     try {
-      const payload = await callSearchApi({ action: "search", track });
+      const searchUrl=new URL(config.searchApiUrl);
+      searchUrl.searchParams.set("action","search");
+      searchUrl.searchParams.set("track",track);
+      const searchResponse=await fetch(searchUrl.toString(),{method:"GET",cache:"no-store"});
+      const searchText=await searchResponse.text();
+      let payload;
+      try { payload=JSON.parse(searchText); }
+      catch { throw new Error("Search backend returned an unreadable response ("+searchResponse.status+")."); }
+      if(!searchResponse.ok || payload.ok===false || payload.error) {
+        throw new Error(payload.error || ("Search backend failed ("+searchResponse.status+")."));
+      }
       state.discovered[track] = normalizeDiscovered(payload.results);
       registerIncomingJobs(state.discovered[track]);
       writeCache(CACHE_DISCOVERED_KEY,state.discovered);
