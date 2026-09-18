@@ -630,3 +630,16 @@ button:active,.detail-actions a:active { transform:translateY(1px); }
     box-shadow: none;
   }
 }
+
+
+/* Sticky track switcher; header scrolls away */
+.track-tabs {
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 26px rgba(0,0,0,.34), 0 0 0 1px rgba(255,154,60,.05);
+}
+
+@media (max-width:820px) {
+  .track-tabs {
+    backdrop-filter: blur(9px);
+  }
+}
