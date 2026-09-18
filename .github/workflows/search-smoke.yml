@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Inspect Bing RSS
+      - name: Inspect LinkedIn guest jobs
         run: |
-          curl --max-time 30 -sS 'https://www.bing.com/search?format=rss&count=20&q=%22project%20manager%22%20remote%20Colorado%20jobs%20site%3Alinkedin.com%2Fjobs%2Fview' | head -c 8000
+          curl --max-time 30 -sS -L 'https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=Project%20Manager&location=Colorado%2C%20United%20States&f_WT=2&start=0' \
+            -H 'User-Agent: Mozilla/5.0' | head -c 12000
