@@ -114,6 +114,12 @@
   }
   function applyFeatureFlags() {
     document.querySelectorAll("[data-feature]").forEach((element) => {
+      // The add-job form has its own collapsed/open state.
+      // Feature flags may disable it, but must never force it open.
+      if (element.id === "captureForm") {
+        if (!featureEnabled(element.dataset.feature, true)) element.hidden = true;
+        return;
+      }
       element.hidden = !featureEnabled(element.dataset.feature, true);
     });
     status.hidden = !settingEnabled("show-sync-status", true);
