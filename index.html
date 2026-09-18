@@ -26,7 +26,8 @@
       <input id="searchBox" type="search" placeholder="Search jobs" data-feature="search">
       <select id="statusFilter" hidden><option value="">All statuses</option></select>
       <button id="searchJobsButton" type="button" data-feature="job-search-trigger">Pull new jobs</button>
-      <form id="captureForm" class="url-capture" data-feature="capture-form">
+      <button id="toggleCaptureButton" type="button" aria-expanded="false" aria-controls="captureForm">Add job</button>
+      <form id="captureForm" class="url-capture" data-feature="capture-form" hidden>
         <input id="jobUrl" name="url" type="url" autocomplete="off" placeholder="Paste job URL" required>
         <button type="submit">Add</button>
       </form>
