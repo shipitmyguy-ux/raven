@@ -395,13 +395,19 @@
   function renderJobs() {
     list.innerHTML="";
     const jobs=filteredJobs();
-    const groups=["Saved","Tailoring","Applied","Interview","Offer"];
+    const groups=[
+      {bucket:"Saved",label:"Active jobs"},
+      {bucket:"Tailoring",label:"Tailoring"},
+      {bucket:"Applied",label:"Applied"},
+      {bucket:"Interview",label:"Interview"},
+      {bucket:"Offer",label:"Offer"}
+    ];
     groups.forEach((group)=>{
-      const groupJobs=jobs.filter((job)=>pipelineBucket(job)===group);
+      const groupJobs=jobs.filter((job)=>pipelineBucket(job)===group.bucket);
       if(!groupJobs.length) return;
       const section=document.createElement("section");
       section.className="pipeline-stage";
-      section.innerHTML='<header class="stage-header"><h2>'+escapeHtml(group)+'</h2><span>'+groupJobs.length+'</span></header>';
+      section.innerHTML='<header class="stage-header"><h2>'+escapeHtml(group.label)+'</h2><span>'+groupJobs.length+'</span></header>';
       const cards=document.createElement("div");
       cards.className="stage-cards";
       groupJobs.forEach((job)=>{
@@ -477,12 +483,11 @@
   }
   function fallbackDetailRows() {
     return [
-      {key:"status",label:"Status",format:"text",visible:true,position:1},
-      {key:"salaryText",label:"Salary",format:"text",visible:true,position:2},
-      {key:"source",label:"Source",format:"text",visible:true,position:3},
-      {key:"resume",label:"Resume",format:"link",visible:true,position:4},
-      {key:"coverLetter",label:"Cover letter",format:"link",visible:true,position:5},
-      {key:"notes",label:"Notes",format:"multiline",visible:true,position:6}
+      {key:"salaryText",label:"Salary",format:"text",visible:true,position:1},
+      {key:"source",label:"Source",format:"text",visible:true,position:2},
+      {key:"resume",label:"Resume",format:"link",visible:true,position:3},
+      {key:"coverLetter",label:"Cover letter",format:"link",visible:true,position:4},
+      {key:"notes",label:"Notes",format:"multiline",visible:true,position:5}
     ];
   }
   function fallbackActions() {
