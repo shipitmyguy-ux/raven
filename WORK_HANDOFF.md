@@ -76,3 +76,13 @@ Changed Options navigation UX:
 
 Files changed: `index.html`, `styles.css`, `app.js`.
 Commits: `580a883d`, `a7987a28`, `cd64a02a`.
+
+
+## Chat implementation update - 2026-09-18
+Polished Options navigation:
+- category settings cards now slide in right-to-left,
+- back arrow is larger and more visually prominent,
+- all select/dropdown controls use a unified width for cleaner alignment.
+
+File changed: `styles.css`.
+Commit: `f051cc74`.
