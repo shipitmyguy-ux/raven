@@ -8,6 +8,8 @@
     runtime: { theme: {}, settings: {}, ui: [], statuses: [], features: {} },
     discovered: { Professional: [], Labor: [], Wildcard: [], "Games / 3D": [] },
     commutes: {},
+    descriptionCache: {},
+    descriptionLoading: {},
     returnScrollY: null
   };
   const columns = ["id","added","track","title","company","location","remote","salaryMin","salaryMax","salaryText","url","source","status","viewed","appliedDate","followUp","resume","coverLetter","notes","lastUpdated"];
@@ -22,6 +24,7 @@
 
   const CACHE_JOBS_KEY="ravenJobsCacheV1";
   const CACHE_DISCOVERED_KEY="ravenDiscoveredCacheV1";
+  const CACHE_DESCRIPTION_KEY="ravenDescriptionCacheV1";
 
   function setStatus(message) { status.textContent = message; }
   function readCache(key,fallback){
@@ -42,6 +45,8 @@
       state.jobs=normalizeJobs(window.RAVEN_SNAPSHOT.jobs);
       setStatus("Refreshing…");
     }
+    const cachedDescriptions=readCache(CACHE_DESCRIPTION_KEY,{});
+    if(cachedDescriptions && typeof cachedDescriptions==="object") state.descriptionCache=cachedDescriptions;
     const cachedDiscovered=readCache(CACHE_DISCOVERED_KEY,{});
     if(cachedDiscovered && typeof cachedDiscovered==="object"){
       Object.keys(state.discovered).forEach((track)=>{
@@ -182,6 +187,67 @@
     } catch { return String(value || "").trim(); }
   }
 
+  function cachedDescription(job) {
+    const key=normalizeComparableUrl(job?.url);
+    const entry=key ? state.descriptionCache[key] : null;
+    return entry && typeof entry.description==="string" ? entry.description : "";
+  }
+
+  function applyCachedDescription(job) {
+    const description=cachedDescription(job);
+    return description ? {...job,notes:description} : job;
+  }
+
+  async function ensureDescription(job) {
+    const key=normalizeComparableUrl(job?.url);
+    if(!key || state.descriptionLoading[key]) return;
+    const cached=cachedDescription(job);
+    if(cached && cached.length>180) return;
+
+    state.descriptionLoading[key]=true;
+    try {
+      const payload=await callSearchApi({
+        action:"describe",
+        url:job.url,
+        track:job.track||state.activeTrack,
+        title:job.title||"",
+        company:job.company||"",
+        location:job.location||"",
+        remote:isRemoteJob(job),
+        salary_text:job.salaryText||"",
+        source:job.source||"Web"
+      });
+      const description=String(payload.description||"").trim();
+      if(description){
+        state.descriptionCache[key]={
+          description,
+          updatedAt:new Date().toISOString()
+        };
+        writeCache(CACHE_DESCRIPTION_KEY,state.descriptionCache);
+
+        state.jobs=state.jobs.map((item)=>
+          normalizeComparableUrl(item.url)===key
+            ? {...item,notes:description,company:item.company||payload.company||"",location:item.location||payload.location||"",remote:item.remote||payload.remote||"",salaryText:item.salaryText||payload.salary_text||""}
+            : item
+        );
+        Object.keys(state.discovered).forEach((track)=>{
+          state.discovered[track]=state.discovered[track].map((item)=>
+            normalizeComparableUrl(item.url)===key
+              ? {...item,notes:description,company:item.company||payload.company||"",location:item.location||payload.location||"",remote:item.remote||payload.remote||"",salaryText:item.salaryText||payload.salary_text||""}
+              : item
+          );
+        });
+        writeCache(CACHE_JOBS_KEY,state.jobs);
+        writeCache(CACHE_DISCOVERED_KEY,state.discovered);
+        if(state.selectedId===job.id) render();
+      }
+    } catch (error) {
+      console.warn("Job description unavailable.",error);
+    } finally {
+      delete state.descriptionLoading[key];
+    }
+  }
+
   function normalizeDiscovered(results) {
     return (results || []).map((job)=>({
       id: "DISC-" + job.id,
@@ -289,13 +355,13 @@
           remote:job.remote||extra.remote,
           salaryText:job.salaryText||extra.salaryText,
           source:job.source||extra.source,
-          notes:job.notes||extra.notes,
+          notes:extra.notes||job.notes,
           fitScore:job.fitScore||extra.fitScore
         };
       });
     const savedUrls = new Set(saved.map((job)=>normalizeComparableUrl(job.url)).filter(Boolean));
     const unsaved = discovered.filter((job)=>!savedUrls.has(normalizeComparableUrl(job.url)));
-    return [...saved, ...unsaved];
+    return [...saved, ...unsaved].map(applyCachedDescription);
   }
   function filteredJobs() {
     const query=searchBox.value.trim().toLowerCase();
@@ -447,6 +513,7 @@
             if(opening) state.returnScrollY=window.scrollY;
             state.selectedId = opening ? job.id : null;
             render();
+            if(opening) ensureDescription(job);
 
             requestAnimationFrame(()=>{
               if(opening){
@@ -525,7 +592,8 @@
         return '<button type="button" data-queue="'+escapeAttr(item.key)+'">'+escapeHtml(item.label||item.key)+'</button>';
       }).join("");
 
-    const description=job.notes||"Job description not yet available.";
+    const key=normalizeComparableUrl(job.url);
+    const description=job.notes||(state.descriptionLoading[key]?"Loading job description…":"Job description not yet available.");
     return '<section class="inline-job-detail">'+
       '<section class="job-description"><h3>Job description</h3><p>'+escapeHtml(description)+'</p></section>'+
       '<dl>'+detailHtml+'</dl>'+
