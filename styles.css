@@ -1843,3 +1843,49 @@ main {
     animation-duration:1ms;
   }
 }
+
+
+/* Options polish: right-to-left navigation, stronger back control, aligned selects */
+.options-card {
+  transform:translateX(105%);
+}
+
+@keyframes optionsSlideIn {
+  from { transform:translateX(105%); opacity:0; }
+  to { transform:translateX(0); opacity:1; }
+}
+
+@keyframes optionsSlideOut {
+  from { transform:translateX(0); opacity:1; }
+  to { transform:translateX(105%); opacity:0; }
+}
+
+.options-back {
+  width:34px;
+  height:30px;
+  min-height:30px;
+  border:1px solid var(--border-color);
+  border-radius:var(--radius-sm);
+  background:var(--surface);
+  color:var(--text);
+  font-size:1.15rem;
+  font-weight:var(--font-weight-heavy);
+  box-shadow:0 0 0 1px rgba(255,255,255,.02);
+}
+
+.options-back:hover,
+.options-back:focus-visible {
+  background:var(--surface-hover);
+  border-color:var(--accent-border);
+  color:var(--accent-strong);
+}
+
+.options-card-header {
+  grid-template-columns:34px minmax(0,1fr) 34px;
+}
+
+.option-row select {
+  width:150px;
+  min-width:150px;
+  max-width:150px;
+}
