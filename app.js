@@ -897,6 +897,15 @@
   }
 
   function bindEvents() {
+    const optionsButton=document.getElementById("optionsButton");
+    const optionsDialog=document.getElementById("optionsDialog");
+    if(optionsButton && optionsDialog){
+      optionsButton.addEventListener("click",()=>optionsDialog.showModal());
+      optionsDialog.addEventListener("click",(event)=>{
+        if(event.target===optionsDialog) optionsDialog.close();
+      });
+    }
+
     trackTabs.forEach((tab)=>{
       tab.addEventListener("click",async()=>{
         state.activeTrack=tab.dataset.track;
