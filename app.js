@@ -415,6 +415,16 @@
                 enqueue(job,button.dataset.queue);
               });
             });
+            expanded.querySelectorAll("[data-description-toggle]").forEach((button)=>{
+              button.addEventListener("click",(event)=>{
+                event.stopPropagation();
+                const description=button.previousElementSibling;
+                const expanding=button.getAttribute("aria-expanded")!=="true";
+                description.classList.toggle("is-truncated",!expanding);
+                button.setAttribute("aria-expanded",String(expanding));
+                button.textContent=expanding?"Show less":"Show more";
+              });
+            });
             expanded.querySelectorAll("a").forEach((link)=>link.addEventListener("click",(event)=>event.stopPropagation()));
           }
           card.addEventListener("click",()=>{
@@ -508,8 +518,12 @@
       }).join("");
 
     const description=job.notes||"Job description not yet available.";
+    const canExpand=description.length>320;
     return '<section class="inline-job-detail">'+
-      '<section class="job-description"><h3>Job description</h3><p>'+escapeHtml(description)+'</p></section>'+
+      '<section class="job-description"><h3>Job description</h3>'+
+        '<p class="job-description-text'+(canExpand?' is-truncated':'')+'">'+escapeHtml(description)+'</p>'+
+        (canExpand?'<button class="description-toggle" type="button" data-description-toggle aria-expanded="false">Show more</button>':'')+
+      '</section>'+
       '<dl>'+detailHtml+'</dl>'+
       '<div class="detail-actions">'+
         (bookmarkAction?'<div class="bookmark-action">'+bookmarkAction+'</div>':'')+
