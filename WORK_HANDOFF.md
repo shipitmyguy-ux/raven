@@ -113,3 +113,7 @@ Updated the live JobTrack Queue Worker automation to consume `input_json.masterR
 - Mirrored worker contract to `docs/QUEUE_WORKER.md`.
 
 Important architecture finding: `raven-tasks-v1` is only a queue API; the live ChatGPT automation is the actual document-generation consumer.
+
+
+## Resume generation rule - 2026-09-18
+All generated tailored resumes must render to no more than 2 pages in the final PDF. The generator should preserve normal professional readability and meet the limit by prioritizing relevant experience and removing lower-value or redundant content, not by using unusually small fonts or excessively narrow margins. Page count must be verified before marking a resume task complete.
