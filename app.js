@@ -220,18 +220,22 @@
 
   async function runJobSearch() {
     const original = searchJobsButton.textContent;
+    const track = state.activeTrack;
     searchJobsButton.disabled = true;
     searchJobsButton.textContent = "Searching…";
-    setStatus("Searching " + state.activeTrack + " jobs...");
+    setStatus("Fast search…");
     try {
-      const payload = await callSearchApi({ action: "search", track: state.activeTrack });
-      state.discovered[state.activeTrack] = normalizeDiscovered(payload.results);
-      await loadJobs();
+      const payload = await callSearchApi({ action: "search", track });
+      state.discovered[track] = normalizeDiscovered(payload.results);
+      writeCache(CACHE_DISCOVERED_KEY,state.discovered);
       state.selectedId = null;
       render();
-      const savedText = payload.saved_count ? " · " + payload.saved_count + " saved to tracker" : "";
-      const duplicateText = payload.duplicate_count ? " · " + payload.duplicate_count + " already saved" : "";
-      setStatus(payload.count + " " + state.activeTrack.toLowerCase() + " candidates found" + savedText + duplicateText);
+      setStatus(payload.count + " results · deeper search continuing");
+
+      // The backend continues broad search/enrichment after returning the fast pass.
+      // Refresh quietly so new results appear without blocking the user.
+      setTimeout(()=>{ loadDiscovered(track); },8000);
+      setTimeout(()=>{ Promise.allSettled([loadDiscovered(track),loadJobs()]); },22000);
     } catch (error) {
       setStatus("Search failed: " + error.message);
     } finally {
