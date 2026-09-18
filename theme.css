@@ -42,7 +42,7 @@
   --danger: #9f9f9f;
   --info: #b8b8b8;
 
-  --status-discovered: var(--info);
+  --status-discovered: var(--info);\n  --status-interested: #ffd84a;
   --status-saved: #9aa4b2;
   --status-ready: #b59df3;
   --status-applied: var(--success);
@@ -418,4 +418,32 @@ button:active,.detail-actions a:active { transform: translateY(1px); }
   pointer-events: none;
   border-radius: inherit;
   box-shadow: inset 3px 0 0 rgba(255,255,255,.28);
+}
+
+
+/* Pipeline state emphasis */
+.job-status {
+  color:var(--text-soft);
+  background:#242424;
+  border:1px solid #363636;
+}
+.job-card.is-interested {
+  border-color:rgba(255,216,74,.68);
+  box-shadow:inset 3px 0 0 var(--status-interested);
+}
+.job-card.is-interested .job-status {
+  color:#fff1a8;
+  background:rgba(255,216,74,.13);
+  border-color:rgba(255,216,74,.38);
+}
+.job-card.is-applied {
+  border-color:rgba(66,245,158,.72);
+  background:linear-gradient(135deg,rgba(66,245,158,.11),rgba(66,245,158,.025)),var(--surface);
+  box-shadow:inset 4px 0 0 var(--status-applied);
+}
+.job-card.is-applied .job-status {
+  color:#baffd8;
+  background:rgba(66,245,158,.14);
+  border-color:rgba(66,245,158,.4);
+  font-weight:var(--font-weight-strong);
 }
