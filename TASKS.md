@@ -12,7 +12,7 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verificatio
 - [ ] Verify status changes persist after refresh.
 
 ## P0 - Documents
-- [!] Verify resume generation with a real output.
+- [!] Verify resume generation with a real online Gemini output (Edge Function deployed; Gemini secret still required).
 - [!] Verify cover-letter generation with a real output.
 - [ ] Verify generated files attach to the correct job.
 - [ ] Verify generated-file links survive refresh.
