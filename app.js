@@ -403,6 +403,12 @@
                 toggleBookmark(job);
               });
             });
+            expanded.querySelectorAll("[data-apply-status]").forEach((button)=>{
+              button.addEventListener("click",(event)=>{
+                event.stopPropagation();
+                markApplied(job);
+              });
+            });
             expanded.querySelectorAll("[data-queue]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
@@ -483,6 +489,9 @@
     const bookmarkAction=String(job.status||"").toLowerCase()==="interested"
       ? '<button type="button" data-bookmark="remove">★ Bookmarked</button>'
       : (String(job.status||"").toLowerCase()==="applied" ? "" : '<button type="button" data-bookmark="add">☆ Bookmark</button>');
+    const appliedAction=String(job.status||"").toLowerCase()==="applied"
+      ? '<button type="button" disabled>✓ Applied</button>'
+      : '<button type="button" data-apply-status="applied">Mark applied</button>';
     const configuredActions=uiRows("detail-action");
     const actions=(configuredActions.length?configuredActions:fallbackActions())
       .filter((item)=>{
@@ -501,8 +510,37 @@
     return '<section class="inline-job-detail">'+
       '<section class="job-description"><h3>Job description</h3><p>'+escapeHtml(description)+'</p></section>'+
       '<dl>'+detailHtml+'</dl>'+
-      '<div class="detail-actions">'+bookmarkAction+actions+'</div>'+
+      '<div class="detail-actions">'+bookmarkAction+appliedAction+actions+'</div>'+
     '</section>';
+  }
+
+  async function markApplied(job) {
+    const appliedDate=new Date().toISOString();
+    setStatus("Marking applied...");
+    try{
+      if(job._discovered){
+        await window.RavenAPI.addJob({
+          track:job.track||state.activeTrack,
+          title:job.title||"",
+          company:job.company||"",
+          location:job.location||"",
+          remote:isRemoteJob(job),
+          salaryText:job.salaryText||"",
+          url:job.url||"",
+          source:job.source||"",
+          status:"Applied",
+          appliedDate,
+          notes:job.notes||""
+        });
+      }else{
+        await window.RavenAPI.updateJob(job.id,{status:"Applied",appliedDate});
+      }
+      state.selectedId=null;
+      await loadJobs();
+      setStatus("Marked applied");
+    }catch(error){
+      setStatus("Update failed: "+error.message);
+    }
   }
 
   async function toggleBookmark(job) {
