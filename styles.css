@@ -1426,3 +1426,73 @@ main {
 .review-prompt textarea{width:100%;resize:vertical}
 .document-review-dialog footer{justify-content:flex-end}
 @media(max-width:520px){.document-review-dialog{width:100vw;height:100vh;max-width:none;max-height:none;border-radius:0}}
+
+
+/* Generated-document primary action and overflow menu */
+.document-control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+.document-primary,
+.document-menu-button {
+  height: 28px;
+  min-height: 28px;
+}
+
+.document-primary {
+  min-width: 78px;
+  padding: 3px 10px;
+}
+
+.document-menu-button {
+  width: 30px;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.document-overflow {
+  position: relative;
+  display: inline-flex;
+}
+
+.document-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 12;
+  display: grid;
+  min-width: 138px;
+  padding: 4px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-panel);
+}
+
+.document-menu[hidden] {
+  display: none;
+}
+
+.document-menu button {
+  justify-content: flex-start;
+  min-height: 32px;
+  padding: 5px 8px;
+  border: 0;
+  background: transparent;
+  font-size: .7rem;
+  text-align: left;
+}
+
+.document-menu button:hover,
+.document-menu button:focus-visible {
+  background: var(--surface-hover);
+}
+
+.document-menu .danger-action {
+  color: var(--danger);
+}
