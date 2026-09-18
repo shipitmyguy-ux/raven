@@ -5,8 +5,9 @@ Raven is the public static frontend for the job-application tracker.
 ## Architecture
 
 - **GitHub Pages:** public static frontend
-- **Google Apps Script:** API/gateway
-- **Google Sheets:** authoritative job data and runtime UI configuration
+- **GitHub runtime-config.json:** Raven UI/theme/status/feature configuration
+- **Google Apps Script:** API/gateway for job reads and writes only
+- **Google Sheets:** authoritative job database
 - **Google Drive:** private resumes, cover letters, qualification profile, backups, and recovery artifacts
 
 The public repository must not contain resumes, private qualification data, credentials, access tokens, or private Drive documents.
@@ -23,20 +24,15 @@ For a normal project Pages site, the URL will be:
 
 ## Runtime configuration
 
-Most visual and supported UI changes do not require a GitHub deployment. Raven loads runtime configuration from the Apps Script gateway, backed by these Google Sheet tabs:
+Raven loads UI configuration directly from `runtime-config.json` in this repository.
 
+That file controls:
 - Theme
 - Settings
-- UI
+- UI field order and visibility
 - Statuses
-- Features
+- Feature flags
 
-The frontend falls back to bundled defaults if runtime configuration is unavailable.
+Changing it triggers the normal GitHub Pages deployment automatically.
 
-## One-time backend requirement
-
-The Apps Script gateway must support:
-
-`GET ?action=getRuntimeConfig`
-
-using the prepared `runtime-config.gs` module from the private recovery/source archive. Do not place that private project material in this public repository unless it contains no secrets or private identifiers.
+Apps Script does not need a `getRuntimeConfig` route. It remains only as the existing job-data gateway for actions such as `listJobs` and `addJob`.
