@@ -39,10 +39,10 @@
     const cachedJobs=readCache(CACHE_JOBS_KEY,null);
     if(Array.isArray(cachedJobs) && cachedJobs.length){
       state.jobs=cachedJobs;
-      setStatus("Showing cached jobs · refreshing…");
+      setStatus("Refreshing…");
     } else if(Array.isArray(window.RAVEN_SNAPSHOT?.jobs)){
       state.jobs=normalizeJobs(window.RAVEN_SNAPSHOT.jobs);
-      setStatus("Showing latest snapshot · refreshing…");
+      setStatus("Refreshing…");
     }
     const cachedDiscovered=readCache(CACHE_DISCOVERED_KEY,{});
     if(cachedDiscovered && typeof cachedDiscovered==="object"){
@@ -246,10 +246,10 @@
       const payload = await callGateway({ action: "listJobs" });
       state.jobs = normalizeJobs(payload);
       writeCache(CACHE_JOBS_KEY,state.jobs);
-      setStatus(state.jobs.length + " saved jobs · up to date");
+      setStatus("Up to date");
       render();
     } catch (error) {
-      setStatus("Live sync unavailable · showing cached jobs");
+      setStatus("Offline cache");
       if(!state.jobs.length) list.innerHTML = '<p class="empty">No cached jobs available.</p>';
     }
   }
@@ -396,16 +396,14 @@
     const jobs=filteredJobs();
     const groups=["Saved","Tailoring","Applied","Interview","Offer"];
     groups.forEach((group)=>{
+      const groupJobs=jobs.filter((job)=>pipelineBucket(job)===group);
+      if(!groupJobs.length) return;
       const section=document.createElement("section");
       section.className="pipeline-stage";
-      const groupJobs=jobs.filter((job)=>pipelineBucket(job)===group);
       section.innerHTML='<header class="stage-header"><h2>'+escapeHtml(group)+'</h2><span>'+groupJobs.length+'</span></header>';
       const cards=document.createElement("div");
       cards.className="stage-cards";
-      if(!groupJobs.length){
-        cards.innerHTML='<p class="stage-empty">No jobs here yet</p>';
-      } else {
-        groupJobs.forEach((job)=>{
+      groupJobs.forEach((job)=>{
           const card=document.createElement("button");
           card.type="button";
           card.className="job-card"+(job.id===state.selectedId?" active":"");
@@ -413,20 +411,16 @@
           const company=job.company||"Company not captured";
           const location=[job.location,job.remote].filter(Boolean).join(" · ")||"Location not captured";
           const salary=job.salaryText||"";
-          const source=job.source||"Saved";
           const score=matchScore(job);
-          const initial=String(company||job.title||"?").trim().charAt(0).toUpperCase();
           card.innerHTML=
-            '<span class="company-mark">'+escapeHtml(initial)+'</span>'+
             '<span class="card-main">'+
               '<span class="match-line"><strong>'+score+'%</strong> match</span>'+
               '<span class="job-title">'+escapeHtml(job.title||"Untitled job")+'</span>'+
               '<span class="company-name">'+escapeHtml(company)+'</span>'+
               '<span class="job-location">'+escapeHtml(location)+'</span>'+
               (salary?'<span class="job-salary">'+escapeHtml(salary)+'</span>':'')+
-              '<span class="job-source-line">'+escapeHtml(relativeAdded(job.added))+' · '+escapeHtml(source)+'</span>'+
+              '<span class="job-age">'+escapeHtml(relativeAdded(job.added))+'</span>'+
             '</span>'+
-            '<span class="job-status">'+escapeHtml(job.status||"Saved")+'</span>'+
             (!isRemoteJob(job) && job.location ? '<span class="commute-footer" data-commute-key="'+escapeAttr(commuteCacheKey(job.location))+'" hidden></span>' : '');
           if (job.id===state.selectedId) {
             const expanded=document.createElement("span");
@@ -458,7 +452,6 @@
             }
           }
         });
-      }
       section.appendChild(cards);
       list.appendChild(section);
     });
