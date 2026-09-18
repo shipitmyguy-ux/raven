@@ -418,30 +418,6 @@
     if (item.key==="notes" && !settingEnabled("show-notes",true)) return false;
     return true;
   }
-  function matchScore(job) {
-    if (Number(job.fitScore)) return Math.round(Number(job.fitScore));
-    const title=String(job.title||"").toLowerCase();
-    const notes=String(job.notes||"").toLowerCase();
-    let score=66;
-    if (job.remote) score+=4;
-    if (job.salaryText || job.salaryMin || job.salaryMax) score+=3;
-    if (job.company) score+=2;
-    if (job.location) score+=1;
-    const track=String(job.track||state.activeTrack);
-    if (track==="Professional") {
-      if (/implementation|project manager|program manager|operations manager|customer success|training|enablement|onboarding/.test(title)) score+=10;
-      if (/senior|lead|manager/.test(title)) score+=4;
-    } else if (track==="Labor") {
-      if (/maintenance|technician|parks|grounds|warehouse|repair|field service|production|painter/.test(title)) score+=11;
-      if (/mechanical|repair|maintenance|tools|equipment/.test(notes)) score+=4;
-    } else if (track==="Games / 3D") {
-      if (/environment artist|world artist|level artist|3d environment|3d artist|world builder/.test(title)) score+=14;
-      if (/senior|lead|staff/.test(title)) score+=5;
-    } else {
-      if (/operations|training|implementation|customer success|project|program|service/.test(title)) score+=8;
-    }
-    return Math.max(55,Math.min(96,score));
-  }
   function pipelineBucket(job) {
     const s=String(job.status||"Saved").toLowerCase();
     if (s.includes("offer")) return "Offer";
@@ -523,12 +499,10 @@
           const company=job.company||"Company not captured";
           const location=[job.location,job.remote].filter(Boolean).join(" · ")||"Location not captured";
           const salary=job.salaryText||"";
-          const score=matchScore(job);
           card.innerHTML=
             '<span class="card-main">'+
               (isNewJob(job)?'<span class="new-job-badge">NEW</span>':'')+
               (isAppliedJob(job)?'<span class="applied-job-badge">APPLIED</span>':'')+
-              '<span class="match-line"><strong>'+score+'%</strong> match</span>'+
               '<span class="job-title">'+escapeHtml(job.title||"Untitled job")+'</span>'+
               '<span class="company-name">'+escapeHtml(company)+'</span>'+
               '<span class="job-location">'+escapeHtml(location)+'</span>'+
