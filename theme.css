@@ -447,3 +447,26 @@ button:active,.detail-actions a:active { transform: translateY(1px); }
   border-color:rgba(66,245,158,.4);
   font-weight:var(--font-weight-strong);
 }
+
+
+/* Keep expanded descriptions visually integrated with their job card */
+.job-description {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.job-description h3 {
+  margin: 0 0 4px;
+  color: var(--text-muted);
+  font-size: .68rem;
+  letter-spacing: .06em;
+}
+
+.job-description p {
+  color: var(--text-soft);
+  font-size: .76rem;
+  line-height: 1.45;
+}
