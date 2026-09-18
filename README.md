@@ -1,32 +1,64 @@
 # Raven
 
-Raven is the public static frontend for the job-application tracker.
+Raven is the public web application for the job-application tracker.
+
+> **GitHub-first project:** For current project state, priorities, and handoff information, read [AGENTS.md](AGENTS.md), [RAVEN_STATUS.md](RAVEN_STATUS.md), [TASKS.md](TASKS.md), and [WORK_HANDOFF.md](WORK_HANDOFF.md). Chat and Work conversations are transient; GitHub is the durable project-state source of truth.
 
 ## Architecture
 
+- **GitHub:** canonical source for Raven code, configuration, project state, handoffs, and deployment documentation
 - **GitHub Pages:** public static frontend
-- **GitHub runtime-config.json:** Raven UI/theme/status/feature configuration
-- **Supabase Edge Function:** server-side background job discovery and parsing
-- **Supabase Postgres:** staging store for discovered candidates and search-run history
-- **Google Apps Script:** API/gateway for canonical job reads and writes
-- **Google Sheets:** authoritative saved-job database
-- **Google Drive:** private resumes, cover letters, qualification profile, backups, and recovery artifacts
+- **runtime-config.json:** Raven UI/theme/status/feature defaults
+- **Supabase Edge Functions:** server-side search, data, task, enrichment, and commute APIs
+- **Supabase Postgres:** authoritative live Raven job/application/runtime data store
+- **Google Drive:** private resumes, cover letters, qualification profile, backups, and recovery artifacts where configured
+- **Google Sheets:** backup/export only; not the canonical live data store
 
-The public repository must not contain resumes, private qualification data, credentials, access tokens, or private Drive documents.
+The public repository must not contain resumes, private qualification data, credentials, access tokens, service-role keys, or private Drive documents.
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/DECISIONS.md](docs/DECISIONS.md) for the durable architecture contract.
+
+## Chat / Work operating model
+
+Raven is designed so a new coding session can reconstruct the project entirely from GitHub.
+
+At the start of a session:
+1. Pull/read the current repository.
+2. Read `AGENTS.md`.
+3. Read `RAVEN_STATUS.md`, `TASKS.md`, and `WORK_HANDOFF.md`.
+4. Inspect current code before making changes.
+
+At the end of a meaningful Work/coding session:
+1. Commit and push code changes.
+2. Update project status/tasks.
+3. Replace/update `WORK_HANDOFF.md` with verified results and the exact next action.
+
+No meaningful Work task is considered complete while its only record exists in conversation history.
 
 ## Publishing
 
 Push to `main`. The included GitHub Actions workflow deploys the repository to GitHub Pages automatically.
 
-Repository name: `raven`
+Repository: `shipitmyguy-ux/raven`
 
-For a normal project Pages site, the URL will be:
+Live site:
 
-`https://<github-username>.github.io/raven/`
+`https://shipitmyguy-ux.github.io/raven/`
+
+## Runtime APIs
+
+The current frontend configuration points to Supabase Edge Functions for:
+- search
+- job data
+- tasks
+- job-description enrichment
+- commute data
+
+See `config.js` and `raven-api.js` for the current client-side API wiring.
 
 ## Runtime configuration
 
-Raven loads UI configuration directly from `runtime-config.json` in this repository.
+Raven loads UI configuration from `runtime-config.json`.
 
 That file controls:
 - Theme
@@ -35,9 +67,7 @@ That file controls:
 - Statuses
 - Feature flags
 
-Changing settings, UI fields, or feature flags triggers the normal GitHub Pages deployment automatically. Visual styling lives only in `theme.css`.
-
-Apps Script does not need a `getRuntimeConfig` route. It remains only as the existing job-data gateway for actions such as `listJobs` and `addJob`.
+The planned user-facing Options/Settings panel should reuse this existing settings model rather than create a second configuration architecture. Per-user UI overrides may be stored locally where appropriate while `runtime-config.json` remains the default.
 
 ## Chrome extension
 
@@ -47,12 +77,12 @@ Raven Capture is built automatically during GitHub Pages deployment. The live si
 
 Install by extracting the ZIP and loading the extracted folder from `chrome://extensions` with Developer mode enabled.
 
-The previous ChatGPT Site is retired from canonical use.
-
 ## Background job search
 
-The **Pull new jobs** button calls the Supabase `raven-search` Edge Function directly. No ChatGPT window or visible prompt is opened.
+The Raven search UI calls the Supabase backend directly rather than opening a ChatGPT prompt/window.
 
-Current automated discovery sources are LinkedIn's public job feed plus Remotive, RemoteOK, and Arbeitnow. The broader target source pool remains documented in `job-search-config.json` for future source adapters.
+Current/target source configuration is documented in `job-search-config.json`. Search/import results should be normalized, ranked/deduplicated, persisted through Raven's Supabase data path, and displayed in the appropriate Raven tab.
 
-Search results are parsed, ranked, deduplicated, and stored as **Discovered** candidates in Supabase. They appear inside the Games / 3D, Professional, Labor, or Wildcard tab. The deep search pass automatically writes discovered candidates to the canonical Google Sheet; duplicate URLs are rejected by the gateway.
+## Verification
+
+Use [docs/TEST_CHECKLIST.md](docs/TEST_CHECKLIST.md) after meaningful production changes. A queued task is not considered verified until a real result is produced and persists correctly.
