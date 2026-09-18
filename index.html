@@ -14,31 +14,11 @@
       <h1>JobTrack Pipeline</h1>
       <p id="syncStatus">Loading saved jobs...</p>
     </div>
-    <nav>
-      <a href="#jobs">Job listings</a>
-      <a href="#queue" data-feature="queue-panel">Queue</a>
-      <a href="./extension/raven-capture-extension.zip" id="extensionLink" data-feature="extension-download">Chrome extension</a>
-    </nav>
   </header>
 
   <main>
-    <section class="search-focus">
-      <div>
-        <span class="section-kicker">Search focus</span>
-        <p id="searchFocusText">Remote PM, implementation, program, operations, local hands-on work, and game / 3D roles.</p>
-      </div>
-      <div class="profile-chip">
-        <strong>MR</strong>
-        <span>Mike Rodriguez<br>Fort Collins, CO</span>
-      </div>
-    </section>
 
     <section class="stats-grid" aria-label="Application pipeline summary">
-      <article class="stat-card">
-        <span>Tracked jobs</span>
-        <strong id="statTracked">0</strong>
-        <small>in your workspace</small>
-      </article>
       <article class="stat-card">
         <span>Applications sent</span>
         <strong id="statApplied">0</strong>
@@ -65,12 +45,12 @@
 
     <section class="toolbar">
       <input id="searchBox" type="search" placeholder="Search jobs" data-feature="search">
-      <select id="statusFilter" data-feature="status-filter"><option value="">All statuses</option></select>
+      <select id="statusFilter" hidden><option value="">All statuses</option></select>
       <button id="searchJobsButton" type="button" data-feature="job-search-trigger">Pull new jobs</button>
-      <button id="refreshButton" type="button">Refresh</button>
+      <button id="toggleCaptureButton" type="button" aria-expanded="false" aria-controls="capture">+ Add job</button>
     </section>
 
-    <section class="capture capture-compact" id="capture" data-feature="capture-form">
+    <section class="capture capture-compact" id="capture" data-feature="capture-form" hidden>
       <form id="captureForm">
         <input id="jobTitle" name="title" type="text" autocomplete="off" placeholder="Job title">
         <div class="capture-row">
@@ -83,13 +63,10 @@
     <section class="pipeline-shell">
       <div class="pipeline-board" id="jobList" aria-live="polite"></div>
     </section>
-
-    <section class="panels">
-      <article id="queue" data-feature="queue-panel">
-        <h2>Task queue</h2>
-        <ul id="queueList"></ul>
-      </article>
-    </section>
+    <ul id="queueList" hidden></ul>
+    <footer class="app-footer">
+      <a href="./extension/raven-capture-extension.zip" id="extensionLink" data-feature="extension-download">Chrome extension</a>
+    </footer>
   </main>
 
   <script src="./config.js"></script>
