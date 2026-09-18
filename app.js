@@ -18,6 +18,10 @@
   const queueList = document.getElementById("queueList");
   const trackTabs = [...document.querySelectorAll(".track-tab")];
   const searchJobsButton = document.getElementById("searchJobsButton");
+  const statTracked = document.getElementById("statTracked");
+  const statApplied = document.getElementById("statApplied");
+  const statInterviews = document.getElementById("statInterviews");
+  const statBestMatch = document.getElementById("statBestMatch");
 
   function setStatus(message) { status.textContent = message; }
   function gatewayUrl(params = {}) {
@@ -168,6 +172,7 @@
       coverLetter: "",
       notes: job.snippet || "",
       lastUpdated: job.last_seen || "",
+      fitScore: Math.max(55, Math.min(96, 50 + Number(job.score || 7) * 3)),
       _discovered: true
     })).filter((job)=>job.url);
   }
@@ -244,7 +249,8 @@
           remote:job.remote||extra.remote,
           salaryText:job.salaryText||extra.salaryText,
           source:job.source||extra.source,
-          notes:job.notes||extra.notes
+          notes:job.notes||extra.notes,
+          fitScore:job.fitScore||extra.fitScore
         };
       });
     const savedUrls = new Set(saved.map((job)=>normalizeComparableUrl(job.url)).filter(Boolean));
@@ -270,67 +276,108 @@
     if (item.key==="notes" && !settingEnabled("show-notes",true)) return false;
     return true;
   }
+  function matchScore(job) {
+    if (Number(job.fitScore)) return Math.round(Number(job.fitScore));
+    const title=String(job.title||"").toLowerCase();
+    const notes=String(job.notes||"").toLowerCase();
+    let score=66;
+    if (job.remote) score+=4;
+    if (job.salaryText || job.salaryMin || job.salaryMax) score+=3;
+    if (job.company) score+=2;
+    if (job.location) score+=1;
+    if (state.activeTrack==="Professional") {
+      if (/implementation|project manager|program manager|operations manager|customer success|training|enablement|onboarding/.test(title)) score+=10;
+      if (/senior|lead|manager/.test(title)) score+=4;
+    } else if (state.activeTrack==="Labor") {
+      if (/maintenance|technician|parks|grounds|warehouse|repair|field service|production|painter/.test(title)) score+=11;
+      if (/mechanical|repair|maintenance|tools|equipment/.test(notes)) score+=4;
+    } else if (state.activeTrack==="Games / 3D") {
+      if (/environment artist|world artist|level artist|3d environment|3d artist|world builder/.test(title)) score+=14;
+      if (/senior|lead|staff/.test(title)) score+=5;
+    } else {
+      if (/operations|training|implementation|customer success|project|program|service/.test(title)) score+=8;
+    }
+    return Math.max(55,Math.min(96,score));
+  }
+  function pipelineBucket(job) {
+    const s=String(job.status||"Saved").toLowerCase();
+    if (s.includes("offer")) return "Offer";
+    if (s.includes("interview")) return "Interview";
+    if (s.includes("applied")) return "Applied";
+    if (s.includes("ready") || s.includes("tailor")) return "Tailoring";
+    return "Saved";
+  }
+  function relativeAdded(value) {
+    const t=parseDate(value);
+    if(!t) return "Recently";
+    const days=Math.floor((Date.now()-t)/86400000);
+    if(days<=0) return "Today";
+    if(days===1) return "Yesterday";
+    if(days<7) return days+" days ago";
+    if(days<30) return Math.floor(days/7)+"w ago";
+    return Math.floor(days/30)+"mo ago";
+  }
+  function renderMetrics() {
+    const all=state.jobs.filter((job)=>job.id||job.url);
+    statTracked.textContent=String(all.length);
+    statApplied.textContent=String(all.filter((job)=>String(job.status||"").toLowerCase().includes("applied")).length);
+    statInterviews.textContent=String(all.filter((job)=>String(job.status||"").toLowerCase().includes("interview")).length);
+    const best=all.length?Math.max(...all.map(matchScore)):0;
+    statBestMatch.textContent=String(best);
+  }
   function render() {
+    renderMetrics();
     renderJobs();
     renderQueue();
     const selected=combinedJobs().find((job)=>job.id===state.selectedId)||null;
     renderDetail(selected);
   }
-  function fallbackCardRows() {
-    return [
-      {key:"title",label:"Title",format:"text",visible:true,position:1},
-      {key:"company",label:"Company",format:"text",visible:true,position:2},
-      {key:"location",label:"Location",format:"text",visible:true,position:3},
-      {key:"salaryText",label:"Salary",format:"text",visible:true,position:4},
-      {key:"status",label:"Status",format:"status",visible:true,position:5}
-    ];
-  }
   function renderJobs() {
     list.innerHTML="";
     const jobs=filteredJobs();
-    if (!jobs.length) {
-      list.innerHTML='<p class="empty">'+escapeHtml(state.runtime.settings["empty-list-text"]||"No matching jobs.")+'</p>';
-      return;
-    }
-    const configured=uiRows("job-card");
-    const cardRows=(configured.length?configured:fallbackCardRows()).filter(fieldAllowed);
-    jobs.forEach((job)=>{
-      const node=template.content.firstElementChild.cloneNode(true);
-      node.classList.toggle("active",job.id===state.selectedId);
-      node.dataset.status=statusToken(job.status);
-      const content=node.querySelector(".job-row-content");
-      const statusElement=node.querySelector(".job-status");
-      content.innerHTML="";
-      const meta=[];
-      cardRows.forEach((item)=>{
-        if (item.format==="status" || item.key==="status") {
-          statusElement.textContent=job[item.key]||item.label||"Saved";
-          statusElement.hidden=false;
-          return;
-        }
-        const value=job[item.key];
-        if (!value) return;
-        if (item.key==="title") {
-          const title=document.createElement("span");
-          title.className="job-title";
-          title.textContent=value||"Untitled job";
-          content.appendChild(title);
-        } else meta.push(String(value));
-      });
-      if (!content.querySelector(".job-title")) {
-        const title=document.createElement("span");
-        title.className="job-title";
-        title.textContent=job.title||"Untitled job";
-        content.prepend(title);
+    const groups=["Saved","Tailoring","Applied","Interview","Offer"];
+    groups.forEach((group)=>{
+      const section=document.createElement("section");
+      section.className="pipeline-stage";
+      const groupJobs=jobs.filter((job)=>pipelineBucket(job)===group);
+      section.innerHTML='<header class="stage-header"><h2>'+escapeHtml(group)+'</h2><span>'+groupJobs.length+'</span></header>';
+      const cards=document.createElement("div");
+      cards.className="stage-cards";
+      if(!groupJobs.length){
+        cards.innerHTML='<p class="stage-empty">No jobs here yet</p>';
+      } else {
+        groupJobs.forEach((job)=>{
+          const card=document.createElement("button");
+          card.type="button";
+          card.className="job-card"+(job.id===state.selectedId?" active":"");
+          card.dataset.status=statusToken(job.status);
+          const company=job.company||"Company not captured";
+          const location=[job.location,job.remote].filter(Boolean).join(" · ")||"Location not captured";
+          const salary=job.salaryText||"";
+          const source=job.source||"Saved";
+          const score=matchScore(job);
+          const initial=String(company||job.title||"?").trim().charAt(0).toUpperCase();
+          card.innerHTML=
+            '<span class="company-mark">'+escapeHtml(initial)+'</span>'+
+            '<span class="card-main">'+
+              '<span class="match-line"><strong>'+score+'%</strong> match</span>'+
+              '<span class="job-title">'+escapeHtml(job.title||"Untitled job")+'</span>'+
+              '<span class="company-name">'+escapeHtml(company)+'</span>'+
+              '<span class="job-location">'+escapeHtml(location)+'</span>'+
+              (salary?'<span class="job-salary">'+escapeHtml(salary)+'</span>':'')+
+              '<span class="job-source-line">'+escapeHtml(relativeAdded(job.added))+' · '+escapeHtml(source)+'</span>'+
+            '</span>'+
+            '<span class="job-status">'+escapeHtml(job.status||"Saved")+'</span>';
+          card.addEventListener("click",()=>{
+            state.selectedId=job.id;
+            render();
+            detail.scrollIntoView({behavior:"smooth",block:"nearest"});
+          });
+          cards.appendChild(card);
+        });
       }
-      if (meta.length) {
-        const metaElement=document.createElement("span");
-        metaElement.className="job-meta";
-        metaElement.textContent=meta.join(" | ");
-        content.appendChild(metaElement);
-      }
-      node.addEventListener("click",()=>{ state.selectedId=job.id; render(); });
-      list.appendChild(node);
+      section.appendChild(cards);
+      list.appendChild(section);
     });
   }
   function statusToken(value) {
@@ -358,9 +405,11 @@
   }
   function renderDetail(job) {
     if (!job) {
-      detail.innerHTML='<h2>'+escapeHtml(state.runtime.settings["empty-detail-title"]||"Select a job")+'</h2><p>'+escapeHtml(state.runtime.settings["empty-detail-text"]||"Tap a job to view its description and actions.")+'</p>';
+      detail.hidden=true;
+      detail.innerHTML='<h2>'+escapeHtml(state.runtime.settings["empty-detail-title"]||"Select a job")+'</h2>';
       return;
     }
+    detail.hidden=false;
     state.selectedId=job.id;
     const configured=uiRows("detail");
     const detailRows=(configured.length?configured:fallbackDetailRows()).filter(fieldAllowed);
@@ -375,13 +424,13 @@
     let actions;
     actions=(configuredActions.length?configuredActions:fallbackActions())
       .filter((item)=>{
-        if (item.key==="posting") return Boolean(job.url);
+        if (item.key==="posting" || item.key==="apply") return Boolean(job.url);
         const feature=actionFeatureKey(item.key);
         return !feature || featureEnabled(feature,true);
       })
       .map((item)=>{
-        if (item.format==="external-link" || item.key==="posting") {
-          return '<a href="'+escapeAttr(job.url)+'" target="_blank" rel="noopener">'+escapeHtml(item.label||"Open posting")+'</a>';
+        if (item.format==="external-link" || item.key==="posting" || item.key==="apply") {
+          return '<a href="'+escapeAttr(job.url)+'" target="_blank" rel="noopener">'+escapeHtml(item.label||"Apply")+'</a>';
         }
         return '<button type="button" data-queue="'+escapeAttr(item.key)+'">'+escapeHtml(item.label||item.key)+'</button>';
       }).join("");
