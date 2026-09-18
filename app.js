@@ -353,6 +353,23 @@
     });
   }
 
+  function jobSummary(job) {
+    const role=String(job.title||"Role").trim();
+    const company=String(job.company||"").trim();
+    const remote=isRemoteJob(job)?"Remote ":"";
+    const salary=String(job.salaryText||"").trim();
+    let description=String(job.notes||"")
+      .replace(/\[JOBTRACK_DATA\][\s\S]*$/i,"")
+      .replace(/Employer posting re-verified[^.]*\.\s*/i,"")
+      .replace(/\s+/g," ")
+      .trim();
+    const sentence=(description.match(/^.*?[.!?](?:\s|$)/)||[])[0]||description;
+    const context=[remote+role+(company?" at "+company:""),salary].filter(Boolean).join(" · ");
+    const detail=sentence && !context.toLowerCase().includes(sentence.toLowerCase()) ? sentence : "";
+    const combined=[context,detail].filter(Boolean).join(". ");
+    return combined.length>190 ? combined.slice(0,187).replace(/\s+\S*$/,"")+"..." : combined;
+  }
+
   function relativeAdded(value) {
     const t=parseDate(value);
     if(!t) return "Recently";
@@ -413,6 +430,7 @@
                 '<span class="job-title">'+escapeHtml(job.title||"Untitled job")+'</span>'+
                 '<span class="company-name">'+escapeHtml(company)+'</span>'+
                 '<span class="job-location">'+escapeHtml(location)+'</span>'+
+                '<span class="job-summary">'+escapeHtml(jobSummary(job))+'</span>'+
                 (salary?'<span class="job-salary">'+escapeHtml(salary)+'</span>':'')+
                 '<span class="job-age">'+escapeHtml(relativeAdded(job.added))+'</span>'+
               '</span>'+
@@ -572,8 +590,7 @@
     const actions=(configuredActions.length?configuredActions:fallbackActions())
       .filter((item)=>{
         if (item.key==="posting" || item.key==="apply") return Boolean(job.url);
-        const feature=actionFeatureKey(item.key);
-        return !feature || featureEnabled(feature,true);
+        return false;
       })
       .map((item)=>{
         const label=item.label||item.key;
@@ -594,7 +611,7 @@
       '</section>'+
       '<dl>'+detailHtml+'</dl>'+
       '<div class="detail-actions">'+
-        '<div class="workflow-actions" aria-label="Application actions">'+appliedAction+actions+'</div>'+
+        '<div class="workflow-actions" aria-label="Application actions">'+actions+appliedAction+'</div>'+
       '</div>'+
     '</section>';
   }
@@ -733,6 +750,7 @@
       : '<span class="document-empty">Not generated</span>';
     return '<span class="document-control">'+file+
       '<span class="document-buttons">'+
+        '<button type="button" data-queue="'+escapeAttr(key)+'" title="Generate '+escapeAttr(fileLabel)+'">Generate</button>'+
         '<button type="button" data-document-edit="'+escapeAttr(key)+'" title="Change '+escapeAttr(fileLabel)+'">Edit</button>'+
         (value?'<button class="'+(approved?'is-approved':'')+'" type="button" data-document-approve="'+escapeAttr(key)+'" aria-pressed="'+String(approved)+'" title="'+(approved?'Remove approval':'Approve this file')+'">'+(approved?'✓ Approved':'Approve')+'</button>':'')+
       '</span>'+
