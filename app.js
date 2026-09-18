@@ -6,7 +6,7 @@
     activeTrack: "Professional",
     queue: JSON.parse(localStorage.getItem("ravenQueue") || localStorage.getItem("jobtrackQueue") || "[]"),
     runtime: { theme: {}, settings: {}, ui: [], statuses: [], features: {} },
-    discovered: { Professional: [], Labor: [], Wildcard: [] }
+    discovered: { Professional: [], Labor: [], Wildcard: [], "Games / 3D": [] }
   };
   const columns = ["id","added","track","title","company","location","remote","salaryMin","salaryMax","salaryText","url","source","status","viewed","appliedDate","followUp","resume","coverLetter","notes","lastUpdated"];
   const status = document.getElementById("syncStatus");
