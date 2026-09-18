@@ -3,6 +3,7 @@
   const state = {
     jobs: [],
     selectedId: null,
+    activeTrack: "Professional",
     queue: JSON.parse(localStorage.getItem("ravenQueue") || localStorage.getItem("jobtrackQueue") || "[]"),
     runtime: { theme: {}, settings: {}, ui: [], statuses: [], features: {} }
   };
@@ -14,6 +15,7 @@
   const searchBox = document.getElementById("searchBox");
   const statusFilter = document.getElementById("statusFilter");
   const queueList = document.getElementById("queueList");
+  const trackTabs = [...document.querySelectorAll(".track-tab")];
 
   function setStatus(message) { status.textContent = message; }
   function gatewayUrl(params = {}) {
@@ -145,7 +147,8 @@
     const selectedStatus=statusFilter.value;
     return sortedJobs(state.jobs.filter((job)=>{
       const haystack=[job.title,job.company,job.location,job.notes,job.url].join(" ").toLowerCase();
-      return (!query||haystack.includes(query)) && (!selectedStatus||job.status===selectedStatus);
+      const matchesTrack=String(job.track||"").trim().toLowerCase()===state.activeTrack.toLowerCase();
+      return matchesTrack && (!query||haystack.includes(query)) && (!selectedStatus||job.status===selectedStatus);
     }));
   }
   function uiRows(surface) {
@@ -325,6 +328,18 @@
     return escapeHtml(value);
   }
   function bindEvents() {
+    trackTabs.forEach((tab)=>{
+      tab.addEventListener("click",()=>{
+        state.activeTrack=tab.dataset.track;
+        state.selectedId=null;
+        trackTabs.forEach((item)=>{
+          const active=item===tab;
+          item.classList.toggle("active",active);
+          item.setAttribute("aria-selected",String(active));
+        });
+        render();
+      });
+    });
     document.getElementById("refreshButton").addEventListener("click",async()=>{ await loadRuntimeConfig(); await loadJobs(); });
     searchBox.addEventListener("input",render);
     statusFilter.addEventListener("change",render);
