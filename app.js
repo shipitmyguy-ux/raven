@@ -475,6 +475,11 @@
     if (s.includes("ready") || s.includes("tailor")) return "Tailoring";
     return "Saved";
   }
+  function isAppliedJob(job) {
+    const status=String(job.status||"").toLowerCase();
+    return status.includes("applied") || Boolean(job.appliedDate);
+  }
+
   function isRemoteJob(job) {
     if (job.remote===true) return true;
     const remote=String(job.remote||"").toLowerCase();
@@ -540,7 +545,7 @@
       groupJobs.forEach((job)=>{
           const card=document.createElement("button");
           card.type="button";
-          card.className="job-card"+(job.id===state.selectedId?" active":"")+(isRemoteJob(job)?" is-remote":"")+(isNewJob(job)?" is-new":"");
+          card.className="job-card"+(job.id===state.selectedId?" active":"")+(isRemoteJob(job)?" is-remote":"")+(isNewJob(job)?" is-new":"")+(isAppliedJob(job)?" is-applied":"");
           card.dataset.status=statusToken(job.status);
           const company=job.company||"Company not captured";
           const location=[job.location,job.remote].filter(Boolean).join(" · ")||"Location not captured";
@@ -549,6 +554,7 @@
           card.innerHTML=
             '<span class="card-main">'+
               (isNewJob(job)?'<span class="new-job-badge">NEW</span>':'')+
+              (isAppliedJob(job)?'<span class="applied-job-badge">APPLIED</span>':'')+
               '<span class="match-line"><strong>'+score+'%</strong> match</span>'+
               '<span class="job-title">'+escapeHtml(job.title||"Untitled job")+'</span>'+
               '<span class="company-name">'+escapeHtml(company)+'</span>'+
