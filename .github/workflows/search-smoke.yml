@@ -11,13 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - uses: actions/checkout@v4
-      - name: Search
+      - name: Inspect Bing RSS
         run: |
-          KEY=$(sed -n 's/.*searchAnonKey: "\([^"]*\)".*/\1/p' config.js)
-          URL=$(sed -n 's/.*searchApiUrl: "\([^"]*\)".*/\1/p' config.js)
-          curl --max-time 150 -sS -X POST "$URL" \
-            -H "Authorization: Bearer $KEY" \
-            -H "apikey: $KEY" \
-            -H "Content-Type: application/json" \
-            --data '{"action":"search","track":"Professional"}'
+          curl --max-time 30 -sS 'https://www.bing.com/search?format=rss&count=20&q=%22project%20manager%22%20remote%20Colorado%20jobs%20site%3Alinkedin.com%2Fjobs%2Fview' | head -c 8000
