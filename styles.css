@@ -927,3 +927,37 @@ main {
   border-color: var(--accent-border);
   font-size: var(--font-size-xs);
 }
+
+
+/* Labeled application workflow controls */
+.workflow-actions {
+  grid-template-columns: repeat(2, minmax(132px, 1fr));
+  width: min(100%, 320px);
+}
+
+.workflow-actions .workflow-action {
+  grid-template-columns: 22px minmax(0, 1fr);
+  justify-content: start;
+  width: 100%;
+  padding: 0 11px;
+  gap: 7px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-xs);
+  text-align: left;
+}
+
+.workflow-icon {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: var(--font-weight-heavy);
+}
+
+@media (max-width: 420px) {
+  .workflow-actions {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+}
