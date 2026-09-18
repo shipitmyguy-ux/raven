@@ -2009,3 +2009,55 @@ main {
   display:flex;
   gap:6px;
 }
+
+
+/* Options dialog vertical sizing and scrolling */
+.options-dialog {
+  max-height:min(88vh,760px);
+  overflow:hidden;
+}
+
+.options-dialog form {
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr);
+  max-height:min(88vh,760px);
+  overflow:hidden;
+}
+
+.options-viewport {
+  min-height:0;
+  max-height:calc(min(88vh,760px) - 58px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  scrollbar-gutter:stable;
+  overscroll-behavior:contain;
+}
+
+.options-home,
+.options-card {
+  min-height:0;
+}
+
+.options-card {
+  position:relative;
+  inset:auto;
+}
+
+.options-card-panel {
+  min-height:0;
+}
+
+@media (max-width:520px) {
+  .options-dialog {
+    width:min(96vw,360px);
+    max-height:92vh;
+  }
+
+  .options-dialog form {
+    max-height:92vh;
+  }
+
+  .options-viewport {
+    max-height:calc(92vh - 58px);
+  }
+}
