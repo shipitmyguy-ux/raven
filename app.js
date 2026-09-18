@@ -436,8 +436,18 @@
             expanded.querySelectorAll("a").forEach((link)=>link.addEventListener("click",(event)=>event.stopPropagation()));
           }
           card.addEventListener("click",()=>{
-            state.selectedId = state.selectedId===job.id ? null : job.id;
+            const opening=state.selectedId!==job.id;
+            state.selectedId = opening ? job.id : null;
             render();
+            if(opening){
+              requestAnimationFrame(()=>{
+                const active=document.querySelector(".job-card.active");
+                if(active){
+                  active.scrollIntoView({behavior:"smooth",block:"center",inline:"nearest"});
+                  active.focus({preventScroll:true});
+                }
+              });
+            }
           });
           cards.appendChild(card);
           if(!isRemoteJob(job) && job.location){
