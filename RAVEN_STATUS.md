@@ -35,7 +35,7 @@ GitHub-first parity scaffolding is now in place. Future Chat/Work sessions shoul
 3. Fix missing/truncated LinkedIn and other source descriptions.
 4. Verify source -> parser -> Supabase -> Raven UI end to end.
 5. Verify the in-page "Search jobs now" path uses the backend search flow without exposing a ChatGPT prompt/window.
-6. Finish and verify real resume/cover-letter generation.
+6. Finish and verify real resume/cover-letter generation. Online resume path is deployed but awaiting Gemini secret.
 7. Remove unnecessary model-driven polling and prefer event/on-demand processing.
 
 ## Important verification boundary
