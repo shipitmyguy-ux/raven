@@ -901,3 +901,29 @@ main {
   border-color: var(--success);
   background: rgba(66, 245, 158, 0.12);
 }
+
+
+/* Scannable expandable job descriptions */
+.job-description-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.job-description-text.is-truncated {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+  overflow: hidden;
+}
+
+.description-toggle {
+  width: max-content;
+  min-height: 32px;
+  margin-top: 6px;
+  padding: 4px 9px;
+  color: var(--accent);
+  background: transparent;
+  border-color: var(--accent-border);
+  font-size: var(--font-size-xs);
+}
