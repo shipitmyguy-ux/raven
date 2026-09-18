@@ -137,3 +137,21 @@ Treat the instant local resume first-pass path introduced in commits `aab70f0d` 
 - Preserve this path while experimenting with hosted LLM generation.
 - New online-LLM work must be additive behind a feature/provider switch or safe fallback.
 - Do not remove the instant local path until a hosted path is verified faster, reliable, free at single-user volume, and end-to-end functional.
+
+
+## Online resume generation integration - 2026-09-18
+Implemented the new primary resume generation path:
+- when online, Raven calls Supabase Edge Function `raven-generate-v1` immediately,
+- the function calls Gemini 2.5 Flash-Lite and requests structured ATS-friendly resume output,
+- factual content is constrained to the assigned master resume,
+- output is rendered into Raven's parser-friendly single-column resume format,
+- the Generate Resume button disables and shows an animated Generating state while the request runs,
+- the local deterministic generator runs only when `navigator.onLine === false`,
+- online provider/configuration errors are surfaced and do NOT silently fall back locally,
+- normal resume clicks no longer depend on the scheduled ChatGPT queue worker.
+Frontend commits: `7c389516`, `5a79e640`, `5cde7bc`.
+Edge function source commit: `fefabf78`.
+Supabase function: `raven-generate-v1` version 1, deployed ACTIVE.
+
+Blocker: `RAVEN_GEMINI_API_KEY` (or `GEMINI_API_KEY`) still must be added to Supabase Edge Function secrets. Connected tooling does not expose secret-management actions, so this one-time credential step requires the user. Do not put the key in GitHub or frontend JavaScript.
+Live end-to-end Gemini generation is NOT verified until that secret is present and a real job successfully generates.
