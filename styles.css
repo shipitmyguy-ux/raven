@@ -88,7 +88,7 @@ label {
 }
 
 .toolbar {
-  grid-template-columns: minmax(180px, 1fr) 180px auto;
+  grid-template-columns: minmax(180px, 1fr) 180px auto auto;
   padding: 12px;
 }
 
