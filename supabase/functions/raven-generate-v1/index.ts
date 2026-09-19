@@ -36,11 +36,10 @@ const schema={
         properties:{
           role:{type:"string"},
           company:{type:"string"},
-          location:{type:"string"},
           dates:{type:"string"},
           bullets:{type:"array",items:{type:"string"}}
         },
-        required:["role","company","location","dates","bullets"]
+        required:["role","company","dates","bullets"]
       }
     },
     education:{
@@ -87,6 +86,7 @@ Deno.serve(async(req:Request)=>{
     "Mirror important terminology from the JOB DESCRIPTION only when the MASTER RESUME supports that wording.",
     "Optimize for ATS and AI-assisted screening without keyword stuffing.",
     "Use conventional sections and concise accomplishment-oriented bullets.",
+    "Do not include location for any work-experience entry. Omit city, state, country, remote location, and office location from employment history.",
     "The rendered resume must fit within TWO US letter pages with normal professional readability.",
     "Keep at most 16 core skills, at most 5 experience entries, and normally 3-4 bullets per recent/relevant role.",
     "Prefer the most relevant and recent material; omit lower-value content rather than shrinking readability.",
