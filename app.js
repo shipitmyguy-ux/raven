@@ -1036,7 +1036,7 @@
   }
 
   async function enqueue(job,type,button=null) {
-    if(job[type]) return openDocumentReview(job,type);
+    if(type!=="resume" && job[type]) return openDocumentReview(job,type);
     if(type!=="resume") return queueDocumentGeneration(job,type,"");
     setGenerationButton(button,true,navigator.onLine?"Generating…":"Offline draft…");
     try{
