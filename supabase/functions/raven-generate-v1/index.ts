@@ -66,16 +66,20 @@ Deno.serve(async(req:Request)=>{
   if(!allowed(req)) return json(req,{error:"Forbidden"},403);
   const apiKey=Deno.env.get("RAVEN_GEMINI_API_KEY")||Deno.env.get("GEMINI_API_KEY")||"";
   if(req.method==="GET"){
-    return json(req,{ok:true,service:"raven-generate-v1",provider:"gemini",model:"gemini-2.5-flash-lite",configured:Boolean(apiKey)});
+    return json(req,{ok:true,service:"raven-generate-v1",provider:"gemini",model:"gemini-2.5-flash",configured:Boolean(apiKey)});
   }
   if(req.method!=="POST") return json(req,{error:"GET or POST required"},405);
   if(!apiKey) return json(req,{error:"Online resume generation is not configured. Add RAVEN_GEMINI_API_KEY to Supabase Edge Function secrets."},503);
   let body:any={};
   try{body=JSON.parse(await req.text()||"{}");}catch{return json(req,{error:"Invalid JSON"},400);}
   const jobDescription=String(body.jobDescription||"").trim();
-  const masterText=String(body.masterResume?.text||"").trim();
+  const masterDataUrl=String(body.masterResume?.dataUrl||"").trim();
+  const masterMime=String(body.masterResume?.mimeType||"application/pdf").trim()||"application/pdf";
   if(!jobDescription) return json(req,{error:"Job description is required."},400);
-  if(!masterText) return json(req,{error:"Master resume text is required."},400);
+  if(!masterDataUrl) return json(req,{error:"Master resume file is required."},400);
+  const dataMatch=masterDataUrl.match(/^data:([^;,]+)?;base64,(.+)$/s);
+  if(!dataMatch) return json(req,{error:"Master resume must be provided as a base64 data URL."},400);
+  const masterBase64=dataMatch[2];
 
   const prompt=[
     "Create a tailored, ATS-friendly resume for the target job using ONLY facts contained in the MASTER RESUME.",
@@ -96,16 +100,15 @@ Deno.serve(async(req:Request)=>{
     "JOB DESCRIPTION:",
     jobDescription,
     "",
-    "MASTER RESUME (factual source of truth):",
-    masterText
+    "MASTER RESUME is attached as the factual source of truth. Read it completely before drafting."
   ].join("\n");
 
   try{
-    const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent",{
+    const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",{
       method:"POST",
       headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},
       body:JSON.stringify({
-        contents:[{parts:[{text:prompt}]}],
+        contents:[{parts:[{text:prompt},{inlineData:{mimeType:masterMime,data:masterBase64}}]}],
         generationConfig:{
           temperature:0.25,
           maxOutputTokens:4500,
@@ -123,7 +126,7 @@ Deno.serve(async(req:Request)=>{
     if(!text) return json(req,{error:"Gemini returned an empty response."},502);
     let resume:any;
     try{resume=JSON.parse(text);}catch{return json(req,{error:"Gemini returned invalid structured output."},502);}
-    return json(req,{ok:true,provider:"gemini",model:"gemini-2.5-flash-lite",resume});
+    return json(req,{ok:true,provider:"gemini",model:"gemini-2.5-flash",resume});
   }catch(e){
     return json(req,{error:e instanceof Error?e.message:String(e)},500);
   }
