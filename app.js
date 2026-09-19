@@ -965,9 +965,10 @@
   function generatedResumeHtml(job,resume){
     const list=(items,tag="li")=>(Array.isArray(items)?items:[]).filter(Boolean).map((x)=>"<"+tag+">"+escapeHtml(String(x))+"</"+tag+">").join("");
     const experiences=(Array.isArray(resume.experience)?resume.experience:[]).map((item)=>{
-      const heading=[item.role,item.company].filter(Boolean).map(escapeHtml).join(" · ");
-      const meta=[item.location,item.dates].filter(Boolean).map(escapeHtml).join(" | ");
-      return '<section class="resume-job"><div class="resume-job-head"><strong>'+heading+'</strong><span>'+meta+'</span></div><ul>'+list(item.bullets)+'</ul></section>';
+      const role=escapeHtml(item.role||"");
+      const company=escapeHtml(item.company||"");
+      const dates=escapeHtml(item.dates||"");
+      return '<section class="resume-job"><div class="resume-job-head"><div><strong class="resume-role">'+role+'</strong>'+(company?'<span class="resume-company">'+company+'</span>':'')+'</div>'+(dates?'<span class="resume-dates">'+dates+'</span>':'')+'</div><ul>'+list(item.bullets)+'</ul></section>';
     }).join("");
     const education=(Array.isArray(resume.education)?resume.education:[]).map((item)=>{
       const main=[item.degree,item.school].filter(Boolean).map(escapeHtml).join(" · ");
@@ -975,18 +976,21 @@
       return '<div class="resume-education"><strong>'+main+'</strong><span>'+meta+'</span></div>';
     }).join("");
     return '<!doctype html><html><head><meta charset="utf-8"><title>'+escapeHtml((resume.name||"Resume")+" — "+(job.title||"Role"))+'</title><style>'+
-      '@page{size:letter;margin:.55in}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:10.2pt;line-height:1.24;max-width:7.4in;margin:0 auto}'+
-      'h1{font-size:20pt;line-height:1.05;margin:0 0 2px}h2{font-size:10.8pt;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #333;margin:10px 0 5px;padding-bottom:2px}'+
-      '.contact,.headline{font-size:9.4pt;margin:0 0 3px}.headline{font-weight:700}.summary{margin:0}.skills{margin:0;padding-left:18px;columns:2;column-gap:28px}ul{margin:3px 0 0 17px;padding:0}li{margin:0 0 2.5px;break-inside:avoid}'+
-      '.resume-job{margin:0 0 7px;break-inside:avoid}.resume-job-head{display:flex;justify-content:space-between;gap:10px;font-size:9.8pt}.resume-job-head span,.resume-education span{font-size:8.8pt;white-space:nowrap}.resume-education{display:flex;justify-content:space-between;gap:10px;margin:0 0 4px}'+
-      '.additional{margin:0;padding-left:18px}@media print{body{margin:0}}'+
+      '@page{size:letter;margin:.52in .58in}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#20242a;font-size:10.15pt;line-height:1.3;max-width:7.35in;margin:0 auto;background:#fff}'+
+      '.resume-header{padding:0 0 10px;border-bottom:3px solid #294f7a;margin-bottom:10px}h1{font-size:24pt;line-height:1;margin:0;color:#17212b;letter-spacing:-.02em}'+
+      '.headline{font-size:10.5pt;font-weight:700;color:#294f7a;margin:4px 0 0}.contact{font-size:9pt;color:#555f69;margin:4px 0 0}'+
+      'h2{font-size:10.3pt;text-transform:uppercase;letter-spacing:.11em;color:#294f7a;margin:11px 0 5px;padding:0 0 3px;border-bottom:1px solid #cfd6dd}'+
+      '.summary{margin:0;color:#30363d}.skills{display:grid;grid-template-columns:1fr 1fr;gap:1px 26px;margin:0;padding:0;list-style:none}.skills li{position:relative;padding-left:10px;margin:0 0 2px}.skills li:before{content:"•";position:absolute;left:0;color:#294f7a}'+
+      'ul{margin:4px 0 0 17px;padding:0}li{margin:0 0 3px;break-inside:avoid}.resume-job{margin:0 0 9px;break-inside:avoid}.resume-job-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:2px}.resume-role{display:block;font-size:10.4pt;color:#17212b}.resume-company{display:block;font-size:9.3pt;font-weight:700;color:#4c5966;margin-top:1px}.resume-dates{font-size:8.9pt;color:#606b76;white-space:nowrap;padding-top:1px}.resume-education{display:flex;justify-content:space-between;gap:12px;margin:0 0 5px}.resume-education strong{color:#17212b}.resume-education span{font-size:8.8pt;color:#606b76;white-space:nowrap}.additional{margin:0;padding-left:17px}'+
+      '@media print{body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}}'+
       '</style></head><body>'+
-      '<h1>'+escapeHtml(resume.name||"")+'</h1>'+
-      (resume.contact?'<p class="contact">'+escapeHtml(resume.contact)+'</p>':'')+
+      '<header class="resume-header"><h1>'+escapeHtml(resume.name||"")+'</h1>'+
       (resume.headline?'<p class="headline">'+escapeHtml(resume.headline)+'</p>':'')+
-      '<h2>Summary</h2><p class="summary">'+escapeHtml(resume.summary||"")+'</p>'+
-      '<h2>Skills</h2><ul class="skills">'+list(resume.skills)+'</ul>'+
-      '<h2>Experience</h2>'+experiences+
+      (resume.contact?'<p class="contact">'+escapeHtml(resume.contact)+'</p>':'')+
+      '</header>'+
+      '<h2>Professional Summary</h2><p class="summary">'+escapeHtml(resume.summary||"")+'</p>'+
+      '<h2>Core Skills</h2><ul class="skills">'+list(resume.skills)+'</ul>'+
+      '<h2>Professional Experience</h2>'+experiences+
       (education?'<h2>Education</h2>'+education:'')+
       ((resume.additional||[]).length?'<h2>Additional</h2><ul class="additional">'+list(resume.additional)+'</ul>':'')+
       '</body></html>';
