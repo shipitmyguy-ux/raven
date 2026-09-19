@@ -155,3 +155,16 @@ Supabase function: `raven-generate-v1` version 1, deployed ACTIVE.
 
 Blocker: `RAVEN_GEMINI_API_KEY` (or `GEMINI_API_KEY`) still must be added to Supabase Edge Function secrets. Connected tooling does not expose secret-management actions, so this one-time credential step requires the user. Do not put the key in GitHub or frontend JavaScript.
 Live end-to-end Gemini generation is NOT verified until that secret is present and a real job successfully generates.
+
+
+## Resume click-path repair - 2026-09-18
+User reported that pressing Resume did not start generation.
+Root causes fixed:
+- Resume action previously opened an existing resume instead of regenerating whenever `job.resume` was already populated.
+- GitHub Pages was still referencing cached script URLs `app.js?v=27` and `config.js?v=5` after the online-generator changes.
+Changes:
+- Resume action now regenerates even if an older resume exists.
+- Cover-letter existing-document behavior is unchanged.
+- Bumped frontend cache-busting to `app.js?v=28` and `config.js?v=6`.
+Commits: `676049f1`, `ded518a3`.
+Next verification: refresh Raven and press Resume; button should show Generating spinner, call `raven-generate-v1`, and replace the prior resume on success.
