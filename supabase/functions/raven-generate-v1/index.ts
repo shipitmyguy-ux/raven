@@ -66,7 +66,7 @@ Deno.serve(async(req:Request)=>{
   if(!allowed(req)) return json(req,{error:"Forbidden"},403);
   const apiKey=Deno.env.get("RAVEN_GEMINI_API_KEY")||Deno.env.get("GEMINI_API_KEY")||"";
   if(req.method==="GET"){
-    return json(req,{ok:true,service:"raven-generate-v1",provider:"gemini",model:"gemini-2.5-flash",configured:Boolean(apiKey)});
+    return json(req,{ok:true,service:"raven-generate-v1",provider:"gemini",model:"gemini-3.5-flash-lite",configured:Boolean(apiKey)});
   }
   if(req.method!=="POST") return json(req,{error:"GET or POST required"},405);
   if(!apiKey) return json(req,{error:"Online resume generation is not configured. Add RAVEN_GEMINI_API_KEY to Supabase Edge Function secrets."},503);
@@ -104,7 +104,7 @@ Deno.serve(async(req:Request)=>{
   ].join("\n");
 
   try{
-    const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",{
+    const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",{
       method:"POST",
       headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},
       body:JSON.stringify({
@@ -126,7 +126,7 @@ Deno.serve(async(req:Request)=>{
     if(!text) return json(req,{error:"Gemini returned an empty response."},502);
     let resume:any;
     try{resume=JSON.parse(text);}catch{return json(req,{error:"Gemini returned invalid structured output."},502);}
-    return json(req,{ok:true,provider:"gemini",model:"gemini-2.5-flash",resume});
+    return json(req,{ok:true,provider:"gemini",model:"gemini-3.5-flash-lite",resume});
   }catch(e){
     return json(req,{error:e instanceof Error?e.message:String(e)},500);
   }
