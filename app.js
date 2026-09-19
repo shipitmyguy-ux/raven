@@ -946,6 +946,8 @@
   function setGenerationButton(button,active,label="Generating…"){
     if(!button) return;
     if(active){
+      button.classList.remove("generation-failed");
+      button.removeAttribute("title");
       button.dataset.originalHtml=button.innerHTML;
       button.disabled=true;
       button.classList.add("is-generating");
@@ -1005,11 +1007,16 @@
 
   async function generateResumeOnline(job,masterResume){
     if(!config?.generateApiUrl) throw new Error("Online resume generator is not configured.");
-    const masterResumeText=await extractMasterResumeText(masterResume);
-    if(!masterResumeText && masterResume?.sourceType==="drive"){
-      throw new Error("Instant online generation currently needs a local master resume file. Drive-only masters are not yet readable by the generator.");
+    if(masterResume?.sourceType==="drive"){
+      throw new Error("Online generation currently requires a local master resume file. Re-add this master as a local PDF, DOCX, TXT, or RTF file.");
     }
-    if(!masterResumeText) throw new Error("The assigned master resume could not be read.");
+    if(!masterResume?.dataUrl && !masterResume?.missingLocalFile){
+      const file=await getMasterResumeFile(masterResume?.id);
+      if(file){
+        masterResume={...masterResume,fileName:file.name,mimeType:file.type||"application/octet-stream",dataUrl:await fileToDataUrl(file)};
+      }
+    }
+    if(masterResume?.missingLocalFile || !masterResume?.dataUrl) throw new Error("The assigned master resume file is not available on this device.");
     const response=await fetch(config.generateApiUrl,{
       method:"POST",
       headers:{"Content-Type":"application/json","X-Raven-Client":"raven-web-v1"},
@@ -1024,7 +1031,9 @@
           id:masterResume?.id||"",
           name:masterResume?.name||"",
           sourceType:masterResume?.sourceType||"",
-          text:masterResumeText
+          fileName:masterResume?.fileName||"",
+          mimeType:masterResume?.mimeType||"",
+          dataUrl:masterResume?.dataUrl||""
         }
       })
     });
@@ -1057,6 +1066,12 @@
       openDocumentReview(job,type);
     }catch(error){
       setGenerationButton(button,false);
+      if(button){
+        button.classList.add("generation-failed");
+        button.title=String(error.message||"Resume generation failed");
+        const label=button.querySelector("span:last-child");
+        if(label) label.textContent="Retry";
+      }
       setStatus("Resume generation failed: "+error.message);
       console.error("Resume generation failed",error);
     }
