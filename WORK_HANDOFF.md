@@ -168,3 +168,15 @@ Changes:
 - Bumped frontend cache-busting to `app.js?v=28` and `config.js?v=6`.
 Commits: `676049f1`, `ded518a3`.
 Next verification: refresh Raven and press Resume; button should show Generating spinner, call `raven-generate-v1`, and replace the prior resume on success.
+
+
+## Generated resume presentation update - 2026-09-18
+New baseline for generated resumes:
+- work-history locations are omitted entirely from generated experience entries,
+- Gemini schema no longer requests an experience location field,
+- prompt explicitly instructs the model not to include city/state/country/remote location in employment history,
+- resume renderer upgraded to a modern ATS-safe single-column design with stronger hierarchy, subtle accent rule, cleaner spacing, improved role/company/date treatment, and more polished section styling,
+- education location remains allowed,
+- two-page and factual-source constraints remain in place.
+Commits: `08aaf948`, `2426e902`, `027d447f`.
+Supabase `raven-generate-v1` version 6 deployed ACTIVE.
