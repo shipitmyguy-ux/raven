@@ -117,6 +117,8 @@ Deno.serve(async(req:Request)=>{
   ].filter(Boolean).join("\\n") : [
     "Create a tailored, ATS-friendly resume for the target job using ONLY facts contained in the MASTER RESUME.",
     "Never invent or infer employers, titles, dates, tools, certifications, metrics, education, achievements, or responsibilities.",
+    "PRESERVE FACTUAL IDENTITY FIELDS EXACTLY as written in the MASTER RESUME: candidate name, contact information, employer names, official job titles, employment dates, school names, degree names, and education dates. Never rewrite, generalize, modernize, or optimize those fields.",
+    "You may tailor the headline, summary, skills, and experience bullet wording only when the MASTER RESUME supports the wording.",
     "Mirror important terminology from the JOB DESCRIPTION only when the MASTER RESUME supports that wording.",
     "Optimize for ATS and AI-assisted screening without keyword stuffing.",
     "Use conventional sections and concise accomplishment-oriented bullets.",
