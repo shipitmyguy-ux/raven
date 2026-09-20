@@ -79,3 +79,15 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verificatio
 - [ ] Add optional email-driven application status classification/matching with user-visible corrections.
 - [ ] Add outcome analytics by source, role family, resume variant, tailoring, and interview/offer conversion.
 - [ ] Replace opaque ATS-style scores with supported-requirement coverage, unsupported requirements, and missing-evidence reporting.
+
+## P1 - ATS-first job acquisition
+- [ ] Evaluate established ATS adapters/libraries before building additional board-specific scrapers; prototype reuse of ats-scrapers patterns where licensing/dependencies fit Raven.
+- [ ] Add direct ATS adapters for Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable, iCIMS, Oracle, SuccessFactors, ADP, BambooHR, Personio, Recruitee, Breezy, and Teamtailor, prioritized by coverage and reliability.
+- [ ] Add generic schema.org/JobPosting JSON-LD extraction for unsupported employer career pages.
+- [ ] Treat LinkedIn, Indeed, Glassdoor, ZipRecruiter, Google Jobs, Monster, Dice, and niche boards primarily as discovery/provenance sources when a canonical employer/ATS posting is available.
+- [ ] Resolve discovered aggregator jobs to canonical employer/ATS postings and enrich missing/truncated metadata from that canonical source.
+- [ ] Add browser-extension extraction fallback for job pages the user can view when server-side metadata is incomplete; avoid CAPTCHA/access-control bypass techniques.
+- [ ] Add rendered-page extraction only as a final compatibility fallback after structured/API/browser-extension paths fail.
+- [ ] Build an employer -> ATS identifier registry so Raven can query employer career systems directly instead of relying only on aggregator search ranking.
+- [ ] Add source health/coverage telemetry: successful fetches, missing descriptions, stale postings, adapter failures, and canonical-source resolution rate.
+- [ ] Extend cross-source dedupe to merge aggregator and ATS copies while retaining every source URL/provenance record.
