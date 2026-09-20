@@ -1172,6 +1172,13 @@
     setStatus("Approved documents locked · review the application before submitting");
   }
 
+  function documentApprovalKey(job,type){ return String(job.id||job.url||"")+"|"+type; }
+  function isDocumentApproved(job,type){ const record=state.documentApprovals[documentApprovalKey(job,type)]; return Boolean(record&&record.value===String(job[type]||"")); }
+  function setDocumentApproved(job,type,approved){ const key=documentApprovalKey(job,type); if(approved) state.documentApprovals[key]={value:String(job[type]||""),approvedAt:new Date().toISOString()}; else delete state.documentApprovals[key]; writeCache(DOCUMENT_APPROVALS_KEY,state.documentApprovals); }
+  function toggleDocumentApproval(job,type){ const approved=!isDocumentApproved(job,type); setDocumentApproved(job,type,approved); setStatus(documentLabel(type)+(approved?" approved":" approval removed")); render(); }
+  function documentsReadyForApplication(job){ return Boolean(job.resume&&job.coverLetter&&isDocumentApproved(job,"resume")&&isDocumentApproved(job,"coverLetter")); }
+  function beginApprovedApplication(job){ if(!documentsReadyForApplication(job)){ setStatus("Approve the resume and cover letter before applying"); return; } window.open(job.url,"_blank","noopener"); setStatus("Approved documents locked · review the application before submitting"); }
+
   function previewableDocumentUrl(value) {
     const url=String(value||"");
     return /drive\.google\.com\/file\/d\//.test(url) ? url.replace(/\/view(?:\?.*)?$/,"/preview") : url;
@@ -1530,6 +1537,7 @@
       saveCapture(document.getElementById("jobUrl").value.trim());
     });
     document.getElementById("documentReviewForm").addEventListener("submit",submitDocumentRevision);
+    document.getElementById("reviewApprove")?.addEventListener("click",()=>{ const job=state.generatorJob,type=state.generatorType; if(!job||!type)return; setDocumentApproved(job,type,true); const button=document.getElementById("reviewApprove"); button.textContent="Approved ✓"; button.classList.add("is-approved"); setStatus(documentLabel(type)+" approved"); });
     document.getElementById("reviewApprove")?.addEventListener("click",()=>{ const job=state.generatorJob,type=state.generatorType;if(!job||!type)return;setDocumentApproved(job,type,true);document.getElementById("reviewApprove").textContent="Approved ✓";document.getElementById("reviewApprove").classList.add("is-approved");setStatus(documentLabel(type)+" approved"); });
     document.querySelectorAll("[data-review-close]").forEach((button)=>{
       button.addEventListener("click",closeDocumentReview);
