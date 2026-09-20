@@ -77,14 +77,14 @@ function validateDocument(type:string,doc:any){
   if(doc.experience.some((x:any)=>!x||!validString(x.role)||!validString(x.company)||!validString(x.dates)||!Array.isArray(x.bullets)||!x.bullets.length)) return "AI returned malformed experience history.";
   return "";
 }
-function retryableProviderStatus(status:number){return status===408||status===429||status>=500;}
+function retryableProviderStatus(status:number){return status===408||status===429||status>=500;}\nconst GEMINI_MODEL="gemini-3.5-flash-lite";\nconst DIRECT_GEMINI_BASE="https://generativelanguage.googleapis.com";\nconst GATEWAY_GEMINI_BASE="https://gateway.ai.cloudflare.com/v1/0be401023d08048c03bbfbb0576fa89f/raven/google-ai-studio";
 
 Deno.serve(async(req:Request)=>{
   if(req.method==="OPTIONS") return new Response("ok",{headers:cors(req)});
   if(!allowed(req)) return json(req,{error:"Forbidden"},403);
   const apiKey=Deno.env.get("RAVEN_GEMINI_API_KEY")||Deno.env.get("GEMINI_API_KEY")||"";
   if(req.method==="GET"){
-    return json(req,{ok:true,service:"raven-generate-v1",provider:"gemini",model:"gemini-3.5-flash-lite",configured:Boolean(apiKey)});
+    return json(req,{ok:true,service:"raven-generate-v1",provider:"gemini",gateway:"cloudflare-ai-gateway",model:GEMINI_MODEL,configured:Boolean(apiKey)});
   }
   if(req.method!=="POST") return json(req,{error:"GET or POST required"},405);
   if(!apiKey) return json(req,{error:"Online resume generation is not configured. Add RAVEN_GEMINI_API_KEY to Supabase Edge Function secrets."},503);
@@ -138,7 +138,7 @@ Deno.serve(async(req:Request)=>{
   ].join("\\n");
 
   try{
-    const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",{
+    const r=await fetch(`${GATEWAY_GEMINI_BASE}/v1beta/models/${GEMINI_MODEL}:generateContent`,{
       method:"POST",
       headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},
       body:JSON.stringify({
@@ -163,7 +163,7 @@ Deno.serve(async(req:Request)=>{
     try{document=JSON.parse(text);}catch{return json(req,{error:"Gemini returned invalid structured output.",code:"AI_OUTPUT_INVALID",provider:"gemini",retryable:true},502);}
     const validationError=validateDocument(documentType,document);
     if(validationError) return json(req,{error:validationError,code:"AI_OUTPUT_INVALID",provider:"gemini",retryable:true},502);
-    return json(req,{ok:true,provider:"gemini",model:"gemini-3.5-flash-lite",[documentType==="coverLetter"?"coverLetter":"resume"]:document});
+    return json(req,{ok:true,provider:"gemini",route:"cloudflare-ai-gateway",model:GEMINI_MODEL,[documentType==="coverLetter"?"coverLetter":"resume"]:document});
   }catch(e){
     return json(req,{error:e instanceof Error?e.message:String(e)},500);
   }
