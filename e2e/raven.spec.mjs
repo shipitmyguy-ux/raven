@@ -67,3 +67,29 @@ test("document review and master resume controls remain present",async({page})=>
   await page.locator("#optionsButton").click();await expect(page.locator("#optionsDialog")).toBeVisible();
   await expect(page.locator("#addMasterResumeButton")).toBeAttached();await expect(page.locator("#masterResumeList")).toBeAttached();
 });
+
+
+test("application requires approval of both exact documents",async({page})=>{
+  await mockRaven(page);await page.goto("/");
+  await page.evaluate(()=>{
+    const profile={firstName:"Test",lastName:"Candidate",email:"candidate@example.com"};
+    localStorage.setItem("ravenApplicationProfileV1",JSON.stringify(profile));
+    localStorage.setItem("ravenDocumentApprovalsV1",JSON.stringify({}));
+  });
+  await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator(".job-card-summary").first().click();
+  await expect(page.locator("[data-approved-apply]")).toContainText("Approve docs");
+  await page.evaluate(()=>{
+    const jobs=JSON.parse(localStorage.getItem("ravenJobsCacheV1")||"[]"); const job=jobs.find(x=>x.id==="job-1");
+    if(job){job.resume="data:text/html,resume";job.coverLetter="data:text/html,letter";localStorage.setItem("ravenJobsCacheV1",JSON.stringify(jobs));
+      localStorage.setItem("ravenDocumentApprovalsV1",JSON.stringify({"job-1|resume":{value:job.resume},"job-1|coverLetter":{value:job.coverLetter}}));}
+  });
+  await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator(".job-card-summary").first().click();
+  await expect(page.locator("[data-approved-apply]")).toContainText("Apply");
+});
+
+test("application profile controls are available",async({page})=>{
+  await mockRaven(page);await page.goto("/");await page.locator("#optionsButton").click();
+  await page.locator('[data-options-target="application-profile"]').click();
+  await expect(page.locator('[data-profile-key="firstName"]')).toBeVisible();
+  await expect(page.locator("#saveApplicationProfile")).toBeVisible();
+});
