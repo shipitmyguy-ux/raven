@@ -45,6 +45,22 @@
   function writeCache(key,value){
     try{ localStorage.setItem(key,JSON.stringify(value)); }catch{}
   }
+  function pruneObjectCache(key,maxEntries=60,maxAgeDays=45){
+    const cache=readCache(key,{})||{};
+    if(!cache || typeof cache!=="object" || Array.isArray(cache)) return;
+    const cutoff=Date.now()-(maxAgeDays*86400000);
+    const entries=Object.entries(cache).filter(([,value])=>{
+      const stamp=Date.parse(value?.createdAt||value?.analyzedAt||value?.cachedAt||"");
+      return !stamp || stamp>=cutoff;
+    });
+    entries.sort((a,b)=>Date.parse(b[1]?.createdAt||b[1]?.analyzedAt||b[1]?.cachedAt||0)-Date.parse(a[1]?.createdAt||a[1]?.analyzedAt||a[1]?.cachedAt||0));
+    writeCache(key,Object.fromEntries(entries.slice(0,maxEntries)));
+  }
+  function maintainCaches(){
+    pruneObjectCache(GENERATION_CACHE_KEY,40,45);
+    pruneObjectCache(CANDIDATE_PROFILE_CACHE_KEY,12,120);
+    pruneObjectCache(JOB_ANALYSIS_CACHE_KEY,120,45);
+  }
 
   function readMasterResumes(){
     const items=readCache(MASTER_RESUMES_KEY,[]);
@@ -197,6 +213,7 @@
   }
 
   function hydrateImmediateData(){
+    maintainCaches();
     const cachedJobs=readCache(CACHE_JOBS_KEY,null);
     if(Array.isArray(cachedJobs) && cachedJobs.length){
       state.jobs=cachedJobs;
@@ -850,7 +867,7 @@
     const cache=jobAnalysisCache();
     if(cache[id]) return cache[id];
     const analysis=analyzeJobLocally(job);
-    cache[id]=analysis;
+    cache[id]={...analysis,cachedAt:new Date().toISOString()};
     writeCache(JOB_ANALYSIS_CACHE_KEY,cache);
     return analysis;
   }
@@ -933,7 +950,7 @@
     if(cache[id]) return cache[id];
     const text=await extractMasterResumeText(masterResume);
     const profile={id,masterResumeId:masterResume?.id||"",text,createdAt:new Date().toISOString()};
-    cache[id]=profile;
+    cache[id]={...profile,cachedAt:new Date().toISOString()};
     writeCache(CANDIDATE_PROFILE_CACHE_KEY,cache);
     return profile;
   }
