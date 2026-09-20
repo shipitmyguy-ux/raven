@@ -7,7 +7,14 @@
     "RemoteOK",
     "Arbeitnow",
     "Jobicy",
-    "Himalayas"
+    "Himalayas",
+    "Greenhouse via ATS dataset",
+    "Lever via ATS dataset",
+    "Ashby via ATS dataset",
+    "Workday via ATS dataset",
+    "SmartRecruiters via ATS dataset",
+    "Workable via ATS dataset",
+    "iCIMS via ATS dataset"
   ],
   "target_source_pool": [
     "LinkedIn Jobs",
