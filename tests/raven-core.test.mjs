@@ -1,0 +1,13 @@
+import fs from "node:fs";
+import vm from "node:vm";
+const store=new Map();
+const sandbox={URL,window:{},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v),removeItem:k=>store.delete(k)}};
+vm.createContext(sandbox);
+vm.runInContext(fs.readFileSync(new URL("../raven-core.js",import.meta.url),"utf8"),sandbox);
+const core=sandbox.window.RavenCore;
+const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
+assert(core.normalizeUrl("https://example.com/job/1?utm_source=x#top")==="https://example.com/job/1","URL normalization failed");
+const job=core.normalizeJob({title:" Engineer ",company:" Acme ",url:"https://example.com/job/1?utm_medium=x"});
+assert(job.title==="Engineer"&&job.company==="Acme","job normalization failed");
+assert(core.jobFingerprint(job).includes("https://example.com/job/1"),"fingerprint failed");
+console.log("raven-core tests passed");
