@@ -1,7 +1,7 @@
 import type { Candidate, Track } from "./types.ts";
 import { TRACKS } from "./config.ts";
 import { decodeHtml, normalizeUrl, within } from "./utils.ts";
-import { csvCells, splitCsvRecords, validAtsRow } from "./csv-records.js";
+import { csvCells, splitCsvRecords, validAtsRow } from "./csv-records.mjs";
 
 async function linkedin(term:string,track:Track,remote:boolean,timeout=7000):Promise<Candidate[]>{
   const params=new URLSearchParams({
