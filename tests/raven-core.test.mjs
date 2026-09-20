@@ -24,3 +24,5 @@ assert(cache.read("job").title==="Engineer","cache read failed");
 cache.remove("job");
 assert(cache.read("job","missing")==="missing","cache remove failed");
 console.log("raven-core tests passed");
+
+// CI trigger: reusable-core optimization pass 2026-09-20
