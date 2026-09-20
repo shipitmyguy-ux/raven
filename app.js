@@ -35,7 +35,8 @@
   const CANDIDATE_PROFILE_CACHE_KEY="ravenCandidateProfileCacheV1";
   const JOB_ANALYSIS_CACHE_KEY="ravenJobAnalysisCacheV1";
   const RESUME_TEMPLATE_VERSION="modern-v1";
-  let editingMasterResumeId=null;\n  let editingAnswerMemoryKey=null;
+  let editingMasterResumeId=null;
+  let editingAnswerMemoryKey=null;
 
   function setStatus(message) { status.textContent = message; }
   function readCache(key,fallback){
