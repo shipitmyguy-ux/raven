@@ -1009,19 +1009,6 @@
       '</body></html>';
   }
 
-  async function saveGeneratedResume(job,resume){
-    const html=generatedResumeHtml(job,resume);
-    const dataUrl="data:text/html;charset=utf-8,"+encodeURIComponent(html);
-    if(!job._discovered){
-      await window.RavenAPI.updateJob(job.id,{resume:dataUrl});
-      job.resume=dataUrl;
-      const saved=state.jobs.find((item)=>item.id===job.id);
-      if(saved) saved.resume=dataUrl;
-      writeCache(CACHE_JOBS_KEY,state.jobs);
-    }
-    return dataUrl;
-  }
-
   function generationCache(){
     return readCache(GENERATION_CACHE_KEY,{})||{};
   }
@@ -1089,7 +1076,7 @@
       }else{
         setStatus("Generating resume online…");
         const resume=await generateResumeOnline(job,masterResume);
-        await saveGeneratedResume(job,resume);
+        await saveGeneratedDocument(job,"resume",resume);
         setStatus("Resume ready");
       }
       setGenerationButton(button,false);
