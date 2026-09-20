@@ -70,18 +70,15 @@ test("document review and master resume controls remain present",async({page})=>
 
 
 test("application requires approval of both exact documents",async({page})=>{
-  await mockRaven(page);await page.goto("/");
-  await page.evaluate(()=>{
-    const profile={firstName:"Test",lastName:"Candidate",email:"candidate@example.com"};
-    localStorage.setItem("ravenApplicationProfileV1",JSON.stringify(profile));
-    localStorage.setItem("ravenDocumentApprovalsV1",JSON.stringify({}));
-  });
-  await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator(".job-card-summary").first().click();
+  await mockRaven(page);await page.goto("/");await page.locator('[data-track="Professional"]').click();await page.locator(".job-card-summary").first().click();
   await expect(page.locator("[data-approved-apply]")).toContainText("Approve docs");
   await page.evaluate(()=>{
-    const jobs=JSON.parse(localStorage.getItem("ravenJobsCacheV1")||"[]"); const job=jobs.find(x=>x.id==="job-1");
-    if(job){job.resume="data:text/html,resume";job.coverLetter="data:text/html,letter";localStorage.setItem("ravenJobsCacheV1",JSON.stringify(jobs));
-      localStorage.setItem("ravenDocumentApprovalsV1",JSON.stringify({"job-1|resume":{value:job.resume},"job-1|coverLetter":{value:job.coverLetter}}));}
+    const job={id:"job-1",resume:"data:text/html,resume",coverLetter:"data:text/html,letter"};
+    localStorage.setItem("ravenDocumentApprovalsV1",JSON.stringify({"job-1|resume":{value:job.resume},"job-1|coverLetter":{value:job.coverLetter}}));
+  });
+  await page.route("**/functions/v1/raven-data-v1**",async route=>{
+    if(route.request().method()==="GET") return route.fulfill({json:{ok:true,jobs:[{...savedJob,resume:"data:text/html,resume",cover_letter:"data:text/html,letter"}]}});
+    return route.fulfill({json:{ok:true}});
   });
   await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator(".job-card-summary").first().click();
   await expect(page.locator("[data-approved-apply]")).toContainText("Apply");
