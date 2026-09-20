@@ -35,7 +35,7 @@
   const CANDIDATE_PROFILE_CACHE_KEY="ravenCandidateProfileCacheV1";
   const JOB_ANALYSIS_CACHE_KEY="ravenJobAnalysisCacheV1";
   const RESUME_TEMPLATE_VERSION="modern-v1";
-  let editingMasterResumeId=null;
+  let editingMasterResumeId=null;\n  let editingAnswerMemoryKey=null;
 
   function setStatus(message) { status.textContent = message; }
   function readCache(key,fallback){
@@ -62,6 +62,56 @@
     pruneObjectCache(GENERATION_CACHE_KEY,40,45);
     pruneObjectCache(CANDIDATE_PROFILE_CACHE_KEY,12,120);
     pruneObjectCache(JOB_ANALYSIS_CACHE_KEY,120,45);
+  }
+
+  function normalizeAnswerQuestion(value){
+    return String(value||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+  }
+  function isSensitiveAnswerQuestion(value){
+    return /\b(sponsor|sponsorship|visa|citizen|citizenship|authorized|authorization|salary|compensation|pay|gender|sex|race|ethnic|ethnicity|disab|veteran|attest|certif|background|criminal|conviction|age|date of birth|birth date|ssn|social security|captcha|assessment|drug|protected class)\b/i.test(normalizeAnswerQuestion(value));
+  }
+  function readAnswerMemory(){
+    const values=readCache(ANSWER_MEMORY_KEY,{});
+    return values&&typeof values==="object"&&!Array.isArray(values)?values:{};
+  }
+  function resetAnswerMemoryEditor(){
+    editingAnswerMemoryKey=null;
+    const question=document.getElementById("answerMemoryQuestion");
+    const answer=document.getElementById("answerMemoryAnswer");
+    if(question) question.value="";
+    if(answer) answer.value="";
+    const save=document.getElementById("saveAnswerMemory");
+    if(save) save.textContent="Save answer";
+  }
+  function renderAnswerMemoryList(){
+    const host=document.getElementById("answerMemoryList");
+    if(!host) return;
+    const values=readAnswerMemory();
+    const entries=Object.entries(values);
+    if(!entries.length){
+      host.innerHTML='<p class="options-help">No reusable answers saved yet.</p>';
+      return;
+    }
+    host.innerHTML=entries.sort((a,b)=>a[0].localeCompare(b[0])).map(([question,answer])=>
+      '<article class="answer-memory-item" data-answer-key="'+escapeAttr(question)+'">'+
+        '<div><strong>'+escapeHtml(question.replace(/\b\w/g,(char)=>char.toUpperCase()))+'</strong><small>'+escapeHtml(String(answer))+'</small></div>'+
+        '<div class="answer-memory-actions"><button type="button" data-answer-edit>Edit</button><button type="button" data-answer-delete>Delete</button></div>'+
+      '</article>'
+    ).join("");
+  }
+  function saveAnswerMemoryFromEditor(){
+    const question=document.getElementById("answerMemoryQuestion")?.value.trim()||"";
+    const answer=document.getElementById("answerMemoryAnswer")?.value.trim()||"";
+    const key=normalizeAnswerQuestion(question);
+    if(!key||!answer){ setStatus("Add both a question and an answer"); return; }
+    if(isSensitiveAnswerQuestion(question)){ setStatus("Sensitive, legal, demographic, salary, sponsorship, CAPTCHA, and assessment answers are not stored in Answer Memory"); return; }
+    const values=readAnswerMemory();
+    if(editingAnswerMemoryKey&&editingAnswerMemoryKey!==key) delete values[editingAnswerMemoryKey];
+    values[key]=answer;
+    writeCache(ANSWER_MEMORY_KEY,values);
+    renderAnswerMemoryList();
+    resetAnswerMemoryEditor();
+    setStatus("Reusable answer saved");
   }
 
   function readMasterResumes(){
@@ -647,9 +697,7 @@
             expanded.className="job-card-expanded";
             expanded.innerHTML=renderInlineDetail(job);
             card.appendChild(expanded);
-            expanded.querySelectorAll("[data-approved-apply]").forEach((button)=>{ button.addEventListener("click",(event)=>{event.stopPropagation();beginApprovedApplication(job);}); });
-            expanded.querySelectorAll("[data-approved-apply]").forEach((button)=>{ button.addEventListener("click",(event)=>{ event.stopPropagation(); beginApprovedApplication(job); }); });
-            expanded.querySelectorAll("[data-apply-status]").forEach((button)=>{
+            expanded.querySelectorAll("[data-approved-apply]").forEach((button)=>{ button.addEventListener("click",(event)=>{ event.stopPropagation(); beginApprovedApplication(job); }); });\n            expanded.querySelectorAll("[data-apply-status]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
                 toggleApplied(job);
@@ -974,6 +1022,7 @@
       if(saved) saved.resume=dataUrl;
       writeCache(CACHE_JOBS_KEY,state.jobs);
     }
+    setDocumentApproved(job,"resume",false);
     return {url:dataUrl,extracted:Boolean(text)};
   }
 
@@ -1051,7 +1100,7 @@
   }
 
   async function enqueue(job,type,button=null) {
-    if(type!=="resume" && job[type]) return openDocumentReview(job,type);
+    if(job[type]) return openDocumentReview(job,type);
     if(type!=="resume"){
       setGenerationButton(button,true,"Generating…");
       try{
@@ -1112,6 +1161,7 @@
       const saved=state.jobs.find((item)=>item.id===job.id); if(saved) saved[type]=dataUrl;
       writeCache(CACHE_JOBS_KEY,state.jobs);
     }
+    setDocumentApproved(job,type,false);
     return dataUrl;
   }
   async function generateDocumentOnline(job,masterResume,type="resume",instructions=""){
@@ -1153,7 +1203,7 @@
   function documentApprovalKey(job,type){ return String(job.id||job.url||"")+"|"+type; }
   function isDocumentApproved(job,type){
     const record=state.documentApprovals[documentApprovalKey(job,type)];
-    return Boolean(record && record.value===String(job[type]||""));
+    return Boolean(record&&record.value===String(job[type]||""));
   }
   function setDocumentApproved(job,type,approved){
     const key=documentApprovalKey(job,type);
@@ -1167,22 +1217,12 @@
     setStatus(documentLabel(type)+(approved?" approved":" approval removed"));
     render();
   }
-  function documentsReadyForApplication(job){ return Boolean(job.resume&&job.coverLetter&&isDocumentApproved(job,"resume")&&isDocumentApproved(job,"coverLetter")); }
-  function beginApprovedApplication(job){
-    if(!job.resume || !job.coverLetter){ setStatus("Generate both documents before applying"); return; }
-    if(!isDocumentApproved(job,"resume") || !isDocumentApproved(job,"coverLetter")){ setStatus("Approve the resume and cover letter before applying"); return; }
-    window.open(job.url,"_blank","noopener");
-    setStatus("Approved documents locked · review the application before submitting");
+  function documentsReadyForApplication(job){
+    return Boolean(job.resume&&job.coverLetter&&isDocumentApproved(job,"resume")&&isDocumentApproved(job,"coverLetter"));
   }
-
-  function documentApprovalKey(job,type){ return String(job.id||job.url||"")+"|"+type; }
-  function isDocumentApproved(job,type){ const record=state.documentApprovals[documentApprovalKey(job,type)]; return Boolean(record&&record.value===String(job[type]||"")); }
-  function setDocumentApproved(job,type,approved){ const key=documentApprovalKey(job,type); if(approved) state.documentApprovals[key]={value:String(job[type]||""),approvedAt:new Date().toISOString()}; else delete state.documentApprovals[key]; writeCache(DOCUMENT_APPROVALS_KEY,state.documentApprovals); }
-  function toggleDocumentApproval(job,type){ const approved=!isDocumentApproved(job,type); setDocumentApproved(job,type,approved); setStatus(documentLabel(type)+(approved?" approved":" approval removed")); render(); }
-  function documentsReadyForApplication(job){ return Boolean(job.resume&&job.coverLetter&&isDocumentApproved(job,"resume")&&isDocumentApproved(job,"coverLetter")); }
   function beginApprovedApplication(job){
     if(!documentsReadyForApplication(job)){ setStatus("Approve the resume and cover letter before applying"); return; }
-    const packet={version:1,createdAt:new Date().toISOString(),jobId:job.id||"",jobUrl:job.url||"",title:job.title||"",company:job.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readCache(ANSWER_MEMORY_KEY,{})||{},resume:job.resume,coverLetter:job.coverLetter};
+    const packet={version:1,createdAt:new Date().toISOString(),jobId:job.id||"",jobUrl:job.url||"",title:job.title||"",company:job.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory(),resume:job.resume,coverLetter:job.coverLetter};
     const bridge=document.getElementById("ravenExtensionBridge");
     if(bridge){ bridge.dataset.packet=JSON.stringify(packet); document.dispatchEvent(new CustomEvent("raven-application-packet")); }
     setTimeout(()=>window.open(job.url,"_blank","noopener"),120);
@@ -1218,6 +1258,7 @@
     }
     state.generatorJob=null;
     state.generatorType=null;
+    render();
   }
   async function submitDocumentRevision(event) {
     event.preventDefault();
@@ -1233,6 +1274,9 @@
       document.getElementById("reviewOpenFile").href=value;
       document.getElementById("reviewFrame").src=previewableDocumentUrl(value);
       document.getElementById("reviewInstructions").value="";
+      const approve=document.getElementById("reviewApprove");
+      if(approve){ approve.textContent="Approve document"; approve.classList.remove("is-approved"); }
+      render();
     }finally{
       button.disabled=false;
     }
@@ -1368,6 +1412,7 @@
     setStatus("Deleting "+label+"...");
     try{
       await window.RavenAPI.updateJob(job.id,{[key]:""});
+      setDocumentApproved(job,key,false);
       await loadJobs();
       setStatus(label[0].toUpperCase()+label.slice(1)+" deleted");
     }catch(error){
@@ -1402,7 +1447,7 @@
       const optionsCard=document.getElementById("optionsCard");
       const optionsCardTitle=document.getElementById("optionsCardTitle");
       const optionsBackButton=document.getElementById("optionsBackButton");
-      const categoryTitles={"master-resumes":"Master resumes","application-profile":"Application profile",layout:"Layout","job-info":"Job information",behavior:"Behavior"};
+      const categoryTitles={"master-resumes":"Master resumes","application-profile":"Application profile","answer-memory":"Answer memory",layout:"Layout","job-info":"Job information",behavior:"Behavior"};
 
       const showOptionsHome=()=>{
         if(!optionsCard || optionsCard.hidden) return;
@@ -1444,6 +1489,8 @@
         optionsCard.classList.remove("is-entering","is-leaving","is-active");
         renderMasterResumeList();
         resetMasterResumeEditor();
+        renderAnswerMemoryList();
+        resetAnswerMemoryEditor();
         document.documentElement.classList.add("options-open");
         document.body.classList.add("options-open");
         optionsDialog.showModal();
@@ -1471,6 +1518,27 @@
       });
       const profile=readCache(APPLICATION_PROFILE_KEY,{})||{}; optionsDialog.querySelectorAll("[data-profile-key]").forEach(input=>input.value=profile[input.dataset.profileKey]||"");
       document.getElementById("saveApplicationProfile")?.addEventListener("click",()=>{ const next={}; optionsDialog.querySelectorAll("[data-profile-key]").forEach(input=>next[input.dataset.profileKey]=input.value.trim()); writeCache(APPLICATION_PROFILE_KEY,next); setStatus("Application profile saved"); });
+      document.getElementById("saveAnswerMemory")?.addEventListener("click",saveAnswerMemoryFromEditor);
+      document.getElementById("cancelAnswerMemory")?.addEventListener("click",resetAnswerMemoryEditor);
+      document.getElementById("answerMemoryList")?.addEventListener("click",(event)=>{
+        const item=event.target.closest("[data-answer-key]");
+        if(!item) return;
+        const key=item.dataset.answerKey;
+        const values=readAnswerMemory();
+        if(event.target.closest("[data-answer-delete]")){
+          delete values[key];
+          writeCache(ANSWER_MEMORY_KEY,values);
+          if(editingAnswerMemoryKey===key) resetAnswerMemoryEditor();
+          renderAnswerMemoryList();
+          setStatus("Reusable answer deleted");
+        }else if(event.target.closest("[data-answer-edit]")){
+          editingAnswerMemoryKey=key;
+          document.getElementById("answerMemoryQuestion").value=key;
+          document.getElementById("answerMemoryAnswer").value=String(values[key]||"");
+          document.getElementById("saveAnswerMemory").textContent="Update answer";
+          document.getElementById("answerMemoryQuestion").focus();
+        }
+      });
       const resetOptionsButton=document.getElementById("resetOptionsButton");
       if(resetOptionsButton) resetOptionsButton.addEventListener("click",resetUserSettings);
 
@@ -1549,10 +1617,35 @@
       saveCapture(document.getElementById("jobUrl").value.trim());
     });
     document.getElementById("documentReviewForm").addEventListener("submit",submitDocumentRevision);
-    document.getElementById("reviewApprove")?.addEventListener("click",()=>{ const job=state.generatorJob,type=state.generatorType; if(!job||!type)return; setDocumentApproved(job,type,true); const button=document.getElementById("reviewApprove"); button.textContent="Approved ✓"; button.classList.add("is-approved"); setStatus(documentLabel(type)+" approved"); });
-    document.getElementById("reviewApprove")?.addEventListener("click",()=>{ const job=state.generatorJob,type=state.generatorType;if(!job||!type)return;setDocumentApproved(job,type,true);document.getElementById("reviewApprove").textContent="Approved ✓";document.getElementById("reviewApprove").classList.add("is-approved");setStatus(documentLabel(type)+" approved"); });
+    document.getElementById("reviewApprove")?.addEventListener("click",()=>{ const job=state.generatorJob,type=state.generatorType; if(!job||!type)return; setDocumentApproved(job,type,true); const button=document.getElementById("reviewApprove"); button.textContent="Approved ✓"; button.classList.add("is-approved"); setStatus(documentLabel(type)+" approved"); render(); });
     document.querySelectorAll("[data-review-close]").forEach((button)=>{
       button.addEventListener("click",closeDocumentReview);
+    });
+    document.addEventListener("raven-application-complete",async()=>{
+      const bridge=document.getElementById("ravenExtensionBridge");
+      if(!bridge?.dataset.completion) return;
+      let completion;
+      try{ completion=JSON.parse(bridge.dataset.completion); }catch{return;}
+      delete bridge.dataset.completion;
+      const age=Date.now()-Date.parse(completion?.completedAt||0);
+      if(!completion?.jobId||!Number.isFinite(age)||age<0||age>24*60*60*1000) return;
+      const job=state.jobs.find((item)=>String(item.id)===String(completion.jobId));
+      if(!job||job._discovered) return;
+      let jobHost="",completionHost=String(completion.host||"").toLowerCase();
+      try{jobHost=new URL(job.url).hostname.toLowerCase();}catch{}
+      if(!jobHost||jobHost!==completionHost) return;
+      if(String(job.status||"").toLowerCase()==="applied") return;
+      const appliedDate=completion.completedAt||new Date().toISOString();
+      try{
+        await window.RavenAPI.updateJob(job.id,{status:"Applied",appliedDate});
+        job.status="Applied";
+        job.appliedDate=appliedDate;
+        writeCache(CACHE_JOBS_KEY,state.jobs);
+        render();
+        setStatus("Application completion confirmed · marked Applied");
+      }catch(error){
+        setStatus("Application completion detected, but Raven could not update status: "+error.message);
+      }
     });
   }
   function applySharedParams() {
