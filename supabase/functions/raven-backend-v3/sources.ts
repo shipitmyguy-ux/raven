@@ -1,6 +1,7 @@
 import type { Candidate, Track } from "./types.ts";
 import { TRACKS } from "./config.ts";
 import { decodeHtml, normalizeUrl, within } from "./utils.ts";
+import { csvCells, splitCsvRecords, validAtsRow } from "./csv-records.mjs";
 
 async function linkedin(term:string,track:Track,remote:boolean,timeout=7000):Promise<Candidate[]>{
   const params=new URLSearchParams({
@@ -161,10 +162,6 @@ async function atsManifest(){
     atsManifestCache=await r.json(); return atsManifestCache;
   }catch{return null;}
 }
-function csvCells(line:string){
-  const out:string[]=[]; let cell="",quoted=false;
-  for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(quoted&&line[i+1]==='"'){cell+='"';i++;}else quoted=!quoted;}else if(ch===","&&!quoted){out.push(cell);cell="";}else cell+=ch;}out.push(cell);return out;
-}
 async function atsSlice(source:string,track:Track){
   try{
     const m=await atsManifest(), entry=m?.by_ats?.[source];
@@ -177,21 +174,24 @@ async function atsSlice(source:string,track:Track){
     const maxLines=track==="Professional"?12000:18000;
     const maxBytes=track==="Professional"?12*1024*1024:14*1024*1024;
     while(out.length<80 && lines<maxLines){
-      const {done,value}=await reader.read(); if(done) break;
-      bytes+=value.byteLength;
-      if(bytes>maxBytes) break;
-      buf+=dec.decode(value,{stream:true});
-      const parts=buf.split(/\r?\n/); buf=parts.pop()||"";
-      for(const line of parts){
-        if(!line) continue;
+      const {done,value}=await reader.read();
+      if(value){
+        bytes+=value.byteLength;
+        if(bytes>maxBytes) break;
+        buf+=dec.decode(value,{stream:true});
+      }
+      if(done) buf+=dec.decode();
+      const parsed=splitCsvRecords(buf,done); buf=parsed.remainder;
+      for(const record of parsed.records){
+        if(!record) continue;
         if(!header){
-          header=csvCells(line).map(x=>x.trim());
+          header=csvCells(record).map((x:string)=>x.trim());
           const pick=(...n:string[])=>n.map(x=>header!.indexOf(x)).find(x=>x>=0)??-1;
           idx={title:pick("title"),company:pick("company","company_name"),location:pick("location"),url:pick("url","job_url","apply_url"),description:pick("description","description_text"),remote:pick("is_remote","remote"),posted:pick("posted_at","date_posted"),salaryMin:pick("salary_min"),salaryMax:pick("salary_max")};
           continue;
         }
         lines++;
-        const c=csvCells(line), title=c[idx.title]||"", desc=idx.description>=0?(c[idx.description]||""):"";
+        const c=csvCells(record), title=String(c[idx.title]||"").trim(), desc=idx.description>=0?(c[idx.description]||""):"";
         const hay=(title+" "+desc).toLowerCase();
         const titleHay=title.toLowerCase();
         const cfg=TRACKS[track];
@@ -201,10 +201,11 @@ async function atsSlice(source:string,track:Track){
         if(cfg.exclude.some((q:string)=>titleHay.includes(q.toLowerCase()))) continue;
         const location=idx.location>=0?(c[idx.location]||""):"";
         if(TRACKS[track].localOnly && !/(fort collins|loveland|windsor|timnath|laporte|wellington|johnstown|berthoud|greeley|northern colorado|remote|colorado)/i.test(location)) continue;
-        const url=idx.url>=0?(c[idx.url]||""):""; if(!url) continue;
+        const url=idx.url>=0?normalizeUrl(c[idx.url]||""):""; if(!validAtsRow(title,url)) continue;
         out.push({track,title,company:idx.company>=0?(c[idx.company]||source):source,location,url,snippet:desc.slice(0,6000),remote:idx.remote>=0?/true|1|yes/i.test(c[idx.remote]||""): /remote/i.test(location),posted_at:idx.posted>=0?(c[idx.posted]||""):"",source:"ATS:"+source} as Candidate);
         if(out.length>=80) break;
       }
+      if(done) break;
     }
     try{await reader.cancel();}catch{}
     return out;
@@ -232,11 +233,13 @@ export async function atsDiagnostics(track:Track){
       const r=await fetch(entry.csv,{headers:{"User-Agent":"RavenJobSearch/3.3"},signal:AbortSignal.timeout(12000)});
       http_status=r.status;
       if(!r.ok) throw new Error("HTTP "+r.status);
-      const text=await r.text(), lines=text.split(/\r?\n/).filter(Boolean);
-      if(lines.length<2) throw new Error("CSV slice contained no jobs");
-      const headers=csvCells(lines[0]).map(x=>x.trim());
-      if(!headers.includes("title")||!headers.some(x=>["url","job_url","apply_url"].includes(x))) throw new Error("Required columns missing: "+headers.slice(0,12).join(","));
-      jobs_parsed=lines.length-1; status="PASS";
+      const text=await r.text(), parsed=splitCsvRecords(text);
+      const records=[...parsed.records];
+      if(parsed.remainder.trim()) records.push(parsed.remainder);
+      if(records.length<2) throw new Error("CSV slice contained no jobs");
+      const headers=csvCells(records[0]).map((x:string)=>x.trim());
+      if(!headers.includes("title")||!headers.some((x:string)=>["url","job_url","apply_url"].includes(x))) throw new Error("Required columns missing: "+headers.slice(0,12).join(","));
+      jobs_parsed=records.length-1; status="PASS";
     }catch(e){error=e instanceof Error?e.message:String(e);}
     results.push({run_id:runId,source,status,http_status,jobs_parsed,elapsed_ms:Date.now()-start,error});
   }
@@ -256,12 +259,15 @@ export async function atsDiagnosticOne(source:string, track:Track){
     const reader=r.body?.getReader(); if(!reader) throw new Error("No response body");
     const dec=new TextDecoder(); let buf="", bytes=0, lines=0, header:string[]|null=null;
     while(true){
-      const {done,value}=await reader.read(); if(done) break;
-      bytes+=value.byteLength; if(bytes>8*1024*1024) throw new Error("Slice exceeds safe 8MB diagnostic limit");
-      buf+=dec.decode(value,{stream:true});
-      const parts=buf.split(/\r?\n/); buf=parts.pop()||"";
-      for(const line of parts){ if(!line) continue; if(!header){header=csvCells(line).map(x=>x.trim());} else lines++; if(lines>=2000){try{await reader.cancel();}catch{};break;} }
-      if(lines>=2000) break;
+      const {done,value}=await reader.read();
+      if(value){
+        bytes+=value.byteLength; if(bytes>8*1024*1024) throw new Error("Slice exceeds safe 8MB diagnostic limit");
+        buf+=dec.decode(value,{stream:true});
+      }
+      if(done) buf+=dec.decode();
+      const parsed=splitCsvRecords(buf,done); buf=parsed.remainder;
+      for(const record of parsed.records){ if(!record) continue; if(!header){header=csvCells(record).map((x:string)=>x.trim());} else lines++; if(lines>=2000){try{await reader.cancel();}catch{};break;} }
+      if(lines>=2000||done) break;
     }
     if(!header) throw new Error("CSV header missing");
     if(!header.includes("title")||!header.some(x=>["url","job_url","apply_url"].includes(x))) throw new Error("Required columns missing: "+header.slice(0,12).join(","));
