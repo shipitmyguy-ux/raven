@@ -44,6 +44,11 @@
     const canonical=normalizeJob(job);
     return [canonical._canonicalUrl,canonical.title.toLowerCase(),canonical.company.toLowerCase()].join("|");
   }
+  function stableHash(value) {
+    const input=text(value); let hash=2166136261;
+    for(let i=0;i<input.length;i++){ hash^=input.charCodeAt(i); hash=Math.imul(hash,16777619); }
+    return (hash>>>0).toString(36);
+  }
   function generationFingerprint(job, masterResume, type="resume", templateVersion="modern-v1") {
     const canonical=normalizeJob(job);
     return [type,templateVersion,canonical.id||canonical._canonicalUrl,text(canonical.notes),text(masterResume?.id),text(masterResume?.version||masterResume?.fileName)].join("|");
@@ -56,5 +61,5 @@
       remove(name){try{localStorage.removeItem(key(name));}catch{}}
     };
   }
-  global.RavenCore={JOB_FIELDS,normalizeUrl,fromApiJob,fromDiscoveredJob,normalizeJob,normalizeJobs,jobFingerprint,generationFingerprint,createCache};
+  global.RavenCore={JOB_FIELDS,normalizeUrl,fromApiJob,fromDiscoveredJob,normalizeJob,normalizeJobs,jobFingerprint,stableHash,generationFingerprint,createCache};
 }(window));
