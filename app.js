@@ -31,6 +31,8 @@
   const MASTER_RESUMES_KEY="ravenMasterResumesV1";
   const MASTER_RESUME_DB="ravenMasterResumeFilesV1";
   const GENERATION_CACHE_KEY="ravenGenerationCacheV1";
+  const CANDIDATE_PROFILE_CACHE_KEY="ravenCandidateProfileCacheV1";
+  const JOB_ANALYSIS_CACHE_KEY="ravenJobAnalysisCacheV1";
   const RESUME_TEMPLATE_VERSION="modern-v1";
   let editingMasterResumeId=null;
 
@@ -830,6 +832,24 @@
   }
 
 
+  function candidateProfileCache(){ return readCache(CANDIDATE_PROFILE_CACHE_KEY,{})||{}; }
+  function jobAnalysisCache(){ return readCache(JOB_ANALYSIS_CACHE_KEY,{})||{}; }
+  function candidateProfileId(masterResume){ return [masterResume?.id||"",masterResume?.fileName||"",masterResume?.version||""].join("|"); }
+  function jobAnalysisId(job){ return window.RavenCore?.jobFingerprint(job)+"|"+String(job.notes||"") || [job.id||job.url,String(job.notes||"")].join("|"); }
+  function analyzeJobLocally(job){
+    const text=[job.title||"",job.notes||""].join(" ");
+    return {keywords:resumeKeywords(text),title:job.title||"",company:job.company||"",analyzedAt:new Date().toISOString()};
+  }
+  function getJobAnalysis(job){
+    const id=jobAnalysisId(job);
+    const cache=jobAnalysisCache();
+    if(cache[id]) return cache[id];
+    const analysis=analyzeJobLocally(job);
+    cache[id]=analysis;
+    writeCache(JOB_ANALYSIS_CACHE_KEY,cache);
+    return analysis;
+  }
+
   async function extractMasterResumeText(masterResume){
     if(!masterResume) return "";
     if(masterResume.sourceType==="drive") return "";
@@ -874,7 +894,7 @@
   }
 
   function instantResumeHtml(job,masterText){
-    const keywords=resumeKeywords((job.title||"")+" "+(job.notes||""));
+    const keywords=getJobAnalysis(job).keywords;
     const keywordSet=new Set(keywords);
     const cleaned=String(masterText||"").replace(/\r/g,"").replace(/[ \t]+/g," ").trim();
     const lines=cleaned.split(/\n+/).map((s)=>s.trim()).filter(Boolean);
@@ -902,8 +922,20 @@
       "<div class=\"note\">"+escapeHtml(sourceNote)+" This instant draft preserves source wording and does not invent qualifications.</div></body></html>";
   }
 
-  async function createInstantResume(job,masterResume){
+  async function getCandidateProfile(masterResume){
+    const id=candidateProfileId(masterResume);
+    const cache=candidateProfileCache();
+    if(cache[id]) return cache[id];
     const text=await extractMasterResumeText(masterResume);
+    const profile={id,masterResumeId:masterResume?.id||"",text,createdAt:new Date().toISOString()};
+    cache[id]=profile;
+    writeCache(CANDIDATE_PROFILE_CACHE_KEY,cache);
+    return profile;
+  }
+
+  async function createInstantResume(job,masterResume){
+    const profile=await getCandidateProfile(masterResume);
+    const text=profile.text;
     const html=instantResumeHtml(job,text);
     const dataUrl="data:text/html;charset=utf-8,"+encodeURIComponent(html);
     if(!job._discovered){
