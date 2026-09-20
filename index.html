@@ -58,6 +58,7 @@
             <button type="button" class="options-category" data-options-target="master-resumes">
               <span>Master resumes</span><span aria-hidden="true">›</span>
             </button>
+            <button type="button" class="options-category" data-options-target="application-profile"><span>Application profile</span><span aria-hidden="true">›</span></button>
             <button type="button" class="options-category" data-options-target="layout">
               <span>Layout</span><span aria-hidden="true">›</span>
             </button>
@@ -122,6 +123,16 @@
               </section>
             </div>
 
+            <div class="options-card-panel" data-options-panel="application-profile" hidden>
+              <p class="options-help">Stored on this device and used only to fill known application fields. Raven never submits automatically.</p>
+              <label class="master-resume-field"><span>First name</span><input data-profile-key="firstName" type="text"></label>
+              <label class="master-resume-field"><span>Last name</span><input data-profile-key="lastName" type="text"></label>
+              <label class="master-resume-field"><span>Email</span><input data-profile-key="email" type="email"></label>
+              <label class="master-resume-field"><span>Phone</span><input data-profile-key="phone" type="tel"></label>
+              <label class="master-resume-field"><span>LinkedIn</span><input data-profile-key="linkedin" type="url"></label>
+              <label class="master-resume-field"><span>Portfolio / website</span><input data-profile-key="portfolio" type="url"></label>
+              <button id="saveApplicationProfile" type="button">Save application profile</button>
+            </div>
             <div class="options-card-panel" data-options-panel="layout" hidden>
               <label class="option-row">
                 <span>Card density</span>
@@ -181,6 +192,7 @@
       </form>
     </dialog>
 
+    <div id="ravenExtensionBridge" hidden></div>
     <footer class="app-footer">
       <a href="./extension/raven-capture-extension.zip" id="extensionLink" data-feature="extension-download">Chrome extension</a>
     </footer>
