@@ -2,7 +2,7 @@ import type { Candidate, Track } from "./types.ts";
 import { TRACKS } from "./config.ts";
 import { rankCandidates, score, within } from "./utils.ts";
 import { linkedinQuick, linkedinDeep, remotive, remoteOk, arbeitnow, jobicy, himalayas, atsWide } from "./sources.ts";
-import { upsertResults, createRun, finishRun, deepSearchRunning, upsertJobsFromCandidates } from "./db.ts";
+import { upsertResults, createRun, finishRun, deepSearchRunning, deepSearchCooldown, upsertJobsFromCandidates } from "./db.ts";
 import { enrichCandidate } from "./enrich.ts";
 
 export async function quickSearch(track:Track){
@@ -61,6 +61,7 @@ export async function deepSearch(track:Track){
 
 export async function maybeStartDeep(track:Track){
   if(await deepSearchRunning(track)) return "already-running";
+  if(await deepSearchCooldown(track,60)) return "cooldown";
   try{
     // @ts-ignore Supabase Edge Runtime global.
     EdgeRuntime.waitUntil(deepSearch(track));
