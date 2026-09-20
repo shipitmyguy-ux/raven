@@ -16,6 +16,8 @@ const discovered=core.fromDiscoveredJob({id:"2",title:"Ops",url:"https://example
 assert(discovered.id==="DISC-2"&&discovered.remote==="Remote"&&discovered._discovered===true,"discovered adapter failed");
 assert(core.generationFingerprint(job,{id:"master-1",fileName:"resume.pdf"})===core.generationFingerprint(job,{id:"master-1",fileName:"resume.pdf"}),"generation fingerprint unstable");
 assert(core.generationFingerprint(job,{id:"master-1",fileName:"resume.pdf"})!==core.generationFingerprint(job,{id:"master-2",fileName:"resume.pdf"}),"master resume must invalidate generation cache");
+assert(core.generationFingerprint(job,{id:"master-1",fileName:"resume.pdf",dataUrl:"data:a"})!==core.generationFingerprint(job,{id:"master-1",fileName:"resume.pdf",dataUrl:"data:b"}),"master resume content must invalidate generation cache");
+assert(core.generationFingerprint(job,{id:"master-1",fileName:"resume.pdf"}).length<20,"generation fingerprint should stay compact");
 const cache=core.createCache("test");
 assert(cache.write("job",job)===true,"cache write failed");
 assert(cache.read("job").title==="Engineer","cache read failed");
