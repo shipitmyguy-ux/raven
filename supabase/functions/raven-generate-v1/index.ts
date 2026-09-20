@@ -21,6 +21,11 @@ function allowed(req:Request){
   if(origin && !ALLOWED_ORIGINS.has(origin)) return false;
   return req.headers.get("x-raven-client")==="raven-web-v1" || req.method==="GET";
 }
+const coverLetterSchema={
+  type:"object",
+  properties:{greeting:{type:"string"},paragraphs:{type:"array",items:{type:"string"}},closing:{type:"string"},signature:{type:"string"}},
+  required:["greeting","paragraphs","closing","signature"]
+};
 const schema={
   type:"object",
   properties:{
@@ -80,7 +85,19 @@ Deno.serve(async(req:Request)=>{
   if(!dataMatch) return json(req,{error:"Master resume must be provided as a base64 data URL."},400);
   const masterBase64=dataMatch[2];
 
-  const prompt=[
+  const documentType=body.documentType==="coverLetter"?"coverLetter":"resume";
+  const instructions=String(body.instructions||"").trim();
+  const prompt=documentType==="coverLetter" ? [
+    "Create a concise, professional tailored cover letter using ONLY facts contained in the MASTER RESUME.",
+    "Never invent or infer employers, titles, dates, tools, certifications, metrics, education, achievements, or responsibilities.",
+    "Use terminology from the JOB DESCRIPTION only where supported by the MASTER RESUME.",
+    "Return a greeting, 2-3 short paragraphs, a closing, and signature text. Do not include a subject line.",
+    instructions ? "REVISION INSTRUCTIONS: "+instructions : "",
+    "TARGET JOB TITLE: "+String(body.jobTitle||""),
+    "TARGET COMPANY: "+String(body.company||""),
+    "JOB DESCRIPTION:", jobDescription,
+    "MASTER RESUME is attached as the factual source of truth."
+  ].filter(Boolean).join("\n") : [
     "Create a tailored, ATS-friendly resume for the target job using ONLY facts contained in the MASTER RESUME.",
     "Never invent or infer employers, titles, dates, tools, certifications, metrics, education, achievements, or responsibilities.",
     "Mirror important terminology from the JOB DESCRIPTION only when the MASTER RESUME supports that wording.",
@@ -116,7 +133,7 @@ Deno.serve(async(req:Request)=>{
           temperature:0.25,
           maxOutputTokens:4500,
           responseMimeType:"application/json",
-          responseSchema:schema
+          responseSchema:documentType==="coverLetter"?coverLetterSchema:schema
         }
       })
     });
@@ -127,9 +144,9 @@ Deno.serve(async(req:Request)=>{
     }
     const text=raw?.candidates?.[0]?.content?.parts?.map((p:any)=>p.text||"").join("")||"";
     if(!text) return json(req,{error:"Gemini returned an empty response."},502);
-    let resume:any;
-    try{resume=JSON.parse(text);}catch{return json(req,{error:"Gemini returned invalid structured output."},502);}
-    return json(req,{ok:true,provider:"gemini",model:"gemini-3.5-flash-lite",resume});
+    let document:any;
+    try{document=JSON.parse(text);}catch{return json(req,{error:"Gemini returned invalid structured output."},502);}
+    return json(req,{ok:true,provider:"gemini",model:"gemini-3.5-flash-lite",[documentType==="coverLetter"?"coverLetter":"resume"]:document});
   }catch(e){
     return json(req,{error:e instanceof Error?e.message:String(e)},500);
   }
