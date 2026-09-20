@@ -385,13 +385,10 @@
       writeCache(CACHE_DISCOVERED_KEY,state.discovered);
       state.selectedId = null;
       render();
-      setStatus(payload.count + " results · deeper search continuing");
+      setStatus(payload.count + " results · background enrichment may continue");
 
-      // The backend continues broad search/enrichment after returning the fast pass.
-      // Refresh quietly so new results appear without blocking the user.
-      setTimeout(()=>{ loadDiscovered(track); },8000);
-      setTimeout(()=>{ Promise.allSettled([loadDiscovered(track),loadJobs()]); },22000);
-      setTimeout(()=>{ loadDiscovered(track); },45000);
+      // Avoid timer-driven polling. Fresh data is loaded on explicit actions,
+      // tab changes, or when the user returns to Raven after a minute away.
     } catch (error) {
       setStatus("Search failed: " + error.message);
     } finally {
