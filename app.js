@@ -30,6 +30,8 @@
   const USER_SETTINGS_KEY="ravenUserSettingsV1";
   const MASTER_RESUMES_KEY="ravenMasterResumesV1";
   const MASTER_RESUME_DB="ravenMasterResumeFilesV1";
+  const GENERATION_CACHE_KEY="ravenGenerationCacheV1";
+  const RESUME_TEMPLATE_VERSION="modern-v1";
   let editingMasterResumeId=null;
 
   function setStatus(message) { status.textContent = message; }
@@ -1008,6 +1010,12 @@
     return dataUrl;
   }
 
+  function generationCache(){
+    return readCache(GENERATION_CACHE_KEY,{})||{};
+  }
+  function generationCacheId(job,masterResume){
+    return window.RavenCore?.generationFingerprint(job,masterResume,"resume",RESUME_TEMPLATE_VERSION) || [job.id||job.url,masterResume?.id||"",RESUME_TEMPLATE_VERSION].join("|");
+  }
   async function generateResumeOnline(job,masterResume){
     if(!config?.generateApiUrl) throw new Error("Online resume generator is not configured.");
     if(masterResume?.sourceType==="drive"){
@@ -1020,6 +1028,9 @@
       }
     }
     if(masterResume?.missingLocalFile || !masterResume?.dataUrl) throw new Error("The assigned master resume file is not available on this device.");
+    const cacheId=generationCacheId(job,masterResume);
+    const cached=generationCache()[cacheId];
+    if(cached?.resume) return cached.resume;
     const response=await fetch(config.generateApiUrl,{
       method:"POST",
       headers:{"Content-Type":"application/json","X-Raven-Client":"raven-web-v1"},
@@ -1044,6 +1055,9 @@
     try{payload=await response.json();}catch{}
     if(!response.ok) throw new Error(payload.error||("Online generation failed ("+response.status+")"));
     if(!payload.resume) throw new Error("Online generator returned no resume.");
+    const cache=generationCache();
+    cache[cacheId]={resume:payload.resume,createdAt:new Date().toISOString()};
+    writeCache(GENERATION_CACHE_KEY,cache);
     return payload.resume;
   }
 
