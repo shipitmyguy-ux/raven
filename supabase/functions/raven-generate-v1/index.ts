@@ -111,7 +111,8 @@ Deno.serve(async(req:Request)=>{
     "TARGET COMPANY: "+String(body.company||""),
     "JOB DESCRIPTION:", jobDescription,
     "MASTER RESUME is attached as the factual source of truth."
-  ].filter(Boolean).join("\n") : [
+  ].filter(Boolean).join("
+") : [
     "Create a tailored, ATS-friendly resume for the target job using ONLY facts contained in the MASTER RESUME.",
     "Never invent or infer employers, titles, dates, tools, certifications, metrics, education, achievements, or responsibilities.",
     "Mirror important terminology from the JOB DESCRIPTION only when the MASTER RESUME supports that wording.",
@@ -135,7 +136,8 @@ Deno.serve(async(req:Request)=>{
     Array.isArray(body.jobAnalysis?.keywords) ? body.jobAnalysis.keywords.slice(0,24).join(", ") : "",
     "",
     "MASTER RESUME is attached as the factual source of truth. Read it completely before drafting."
-  ].join("\n");
+  ].join("
+");
 
   try{
     const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",{
@@ -154,7 +156,8 @@ Deno.serve(async(req:Request)=>{
     const raw=await r.json().catch(()=>({}));
     if(!r.ok){
       const message=raw?.error?.message||("Gemini request failed ("+r.status+")");
-      const retryable=retryableProviderStatus(r.status);\n      return json(req,{error:message,code:retryable?"AI_PROVIDER_TEMPORARY":"AI_PROVIDER_ERROR",provider:"gemini",retryable,upstreamStatus:r.status},retryable?503:502);
+      const retryable=retryableProviderStatus(r.status);
+      return json(req,{error:message,code:retryable?"AI_PROVIDER_TEMPORARY":"AI_PROVIDER_ERROR",provider:"gemini",retryable,upstreamStatus:r.status},retryable?503:502);
     }
     const text=raw?.candidates?.[0]?.content?.parts?.map((p:any)=>p.text||"").join("")||"";
     if(!text) return json(req,{error:"Gemini returned an empty response."},502);
