@@ -16,7 +16,6 @@
   const columns = window.RavenCore?.JOB_FIELDS || ["id","added","track","title","company","location","remote","salaryMin","salaryMax","salaryText","url","source","status","viewed","appliedDate","followUp","resume","coverLetter","notes","lastUpdated"];
   const status = document.getElementById("syncStatus");
   const list = document.getElementById("jobList");
-  const template = document.getElementById("jobTemplate");
   const searchBox = document.getElementById("searchBox");
   const statusFilter = document.getElementById("statusFilter");
   const trackTabs = [...document.querySelectorAll(".track-tab")];
