@@ -1101,34 +1101,53 @@
     }
   }
 
+  function generatedCoverLetterHtml(job,letter){
+    const paragraphs=(letter.paragraphs||[]).map((p)=>"<p>"+escapeHtml(String(p))+"</p>").join("");
+    return '<!doctype html><html><head><meta charset="utf-8"><title>'+escapeHtml("Cover Letter — "+(job.title||"Role"))+'</title><style>@page{size:letter;margin:.75in}body{font-family:Arial,Helvetica,sans-serif;color:#20242a;font-size:11pt;line-height:1.5;max-width:7in;margin:0 auto}p{margin:0 0 14px}.closing{margin-top:24px}</style></head><body><p>'+escapeHtml(letter.greeting||"Dear Hiring Manager,")+'</p>'+paragraphs+'<p class="closing">'+escapeHtml(letter.closing||"Sincerely,")+'<br>'+escapeHtml(letter.signature||"")+'</p></body></html>';
+  }
+  async function saveGeneratedDocument(job,type,document){
+    const html=type==="resume"?generatedResumeHtml(job,document):generatedCoverLetterHtml(job,document);
+    const dataUrl="data:text/html;charset=utf-8,"+encodeURIComponent(html);
+    if(!job._discovered){
+      await window.RavenAPI.updateJob(job.id,{[type]:dataUrl});
+      job[type]=dataUrl;
+      const saved=state.jobs.find((item)=>item.id===job.id); if(saved) saved[type]=dataUrl;
+      writeCache(CACHE_JOBS_KEY,state.jobs);
+    }
+    return dataUrl;
+  }
+  async function generateDocumentOnline(job,masterResume,type="resume",instructions=""){
+    if(!config?.generateApiUrl) throw new Error("Online document generator is not configured.");
+    if(masterResume?.sourceType==="drive") throw new Error("Online generation currently requires a local master resume file.");
+    if(!masterResume?.dataUrl){
+      const file=await getMasterResumeFile(masterResume?.id);
+      if(file) masterResume={...masterResume,fileName:file.name,mimeType:file.type||"application/octet-stream",dataUrl:await fileToDataUrl(file)};
+    }
+    if(!masterResume?.dataUrl) throw new Error("The assigned master resume file is not available on this device.");
+    const response=await fetch(config.generateApiUrl,{method:"POST",headers:{"Content-Type":"application/json","X-Raven-Client":"raven-web-v1"},body:JSON.stringify({
+      documentType:type==="coverLetter"?"coverLetter":"resume",instructions,jobId:job.id,jobTitle:job.title||"",company:job.company||"",track:job.track||state.activeTrack,sourceUrl:job.url||"",jobDescription:job.notes||"",jobAnalysis:getJobAnalysis(job),
+      masterResume:{id:masterResume.id||"",name:masterResume.name||"",sourceType:masterResume.sourceType||"",fileName:masterResume.fileName||"",mimeType:masterResume.mimeType||"",dataUrl:masterResume.dataUrl||""}
+    })});
+    const payload=await response.json().catch(()=>({}));
+    if(!response.ok) throw new Error(payload.error||("Online generation failed ("+response.status+")"));
+    const document=type==="coverLetter"?payload.coverLetter:payload.resume;
+    if(!document) throw new Error("Online generator returned no "+documentLabel(type)+".");
+    return document;
+  }
+
   async function queueDocumentGeneration(job,type,instructions) {
     const label=documentLabel(type);
-    setStatus("Queueing "+label+"...");
-    try {
-      const taskType=type==="resume"?"tailored_resume":"cover_letter";
-      const masterResume=type==="resume" ? await masterResumeTaskInput(job.track||state.activeTrack) : null;
-      await window.RavenAPI.enqueueTask({
-        jobId:job.id,
-        type:taskType,
-        idempotencyKey:job.id+":"+taskType+":"+(job[type] ? ("revise:"+Date.now()) : ("generate:"+(masterResume?.id||"default"))),
-        input:{
-          documentType:type,
-          jobTitle:job.title||"",
-          company:job.company||"",
-          track:job.track||state.activeTrack,
-          sourceUrl:job.url||"",
-          description:job.notes||"",
-          currentFile:job[type]||"",
-          instructions:String(instructions||"").trim(),
-          mode:job[type]?"revise":"tailor",
-          autonomy:"high",
-          preserveFacts:true,
-          masterResume
-        }
-      });
-      setStatus((job[type]?"Revision":"Generation")+" queued · processing pending");
-    } catch(error) {
-      setStatus("Could not queue "+label+": "+error.message);
+    setStatus((instructions?"Revising ":"Generating ")+label+"...");
+    try{
+      const masterResume=await masterResumeTaskInput(job.track||state.activeTrack);
+      if(!masterResume) throw new Error("Assign a master resume to this job track first.");
+      const document=await generateDocumentOnline(job,masterResume,type,instructions);
+      await saveGeneratedDocument(job,type,document);
+      setStatus(label[0].toUpperCase()+label.slice(1)+" ready");
+      return document;
+    }catch(error){
+      setStatus("Could not generate "+label+": "+error.message);
+      throw error;
     }
   }
 
