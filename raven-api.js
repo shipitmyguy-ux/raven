@@ -52,9 +52,6 @@
     },
     addJob(job) { return write(config.dataApiUrl, "addJob", job); },
     updateJob(id, patch) { return write(config.dataApiUrl, "updateJob", { id, ...patch }); },
-    async listTasks() { return read(config.tasksApiUrl, "tasks"); },
-    enqueueTask(task) { return write(config.tasksApiUrl, "enqueueTask", task); },
-    updateTask(taskId, patch) { return write(config.tasksApiUrl, "updateTask", { taskId, ...patch }); },
     describeJob(job) { return read(config.enrichApiUrl, "describe", job || {}); },
     commute(location) { return read(config.commuteApiUrl, "commute", { location }); }
   });
