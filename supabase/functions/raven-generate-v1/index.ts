@@ -111,8 +111,7 @@ Deno.serve(async(req:Request)=>{
     "TARGET COMPANY: "+String(body.company||""),
     "JOB DESCRIPTION:", jobDescription,
     "MASTER RESUME is attached as the factual source of truth."
-  ].filter(Boolean).join("
-") : [
+  ].filter(Boolean).join("\\n") : [
     "Create a tailored, ATS-friendly resume for the target job using ONLY facts contained in the MASTER RESUME.",
     "Never invent or infer employers, titles, dates, tools, certifications, metrics, education, achievements, or responsibilities.",
     "Mirror important terminology from the JOB DESCRIPTION only when the MASTER RESUME supports that wording.",
@@ -136,8 +135,7 @@ Deno.serve(async(req:Request)=>{
     Array.isArray(body.jobAnalysis?.keywords) ? body.jobAnalysis.keywords.slice(0,24).join(", ") : "",
     "",
     "MASTER RESUME is attached as the factual source of truth. Read it completely before drafting."
-  ].join("
-");
+  ].join("\\n");
 
   try{
     const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",{
