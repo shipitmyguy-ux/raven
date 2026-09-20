@@ -159,11 +159,20 @@ export async function updateJob(id:string,patch:any){
   return {...(rows?.[0]||{}),ok:true};
 }
 export async function upsertJobsFromCandidates(rows:Candidate[]){
-  for(const c of rows){
-    const existing=await getJobByUrl(c.url);
-    if(existing) continue;
-    await addJob({track:c.track,title:c.title,company:c.company||"",location:c.location||"",remote:Boolean(c.remote),salary_text:c.salary_text||"",url:c.url,source:c.source||"",status:"Saved",notes:c.snippet||""});
-  }
+  const now=new Date().toISOString();
+  const seen=new Set<string>();
+  const body=rows.filter(c=>{const url=String(c.url||"");if(!url||seen.has(url))return false;seen.add(url);return true;}).slice(0,100).map((c,i)=>({
+    id:"DISC-"+Date.now()+"-"+i,added:now,track:c.track||"Professional",title:c.title||"",company:c.company||"",location:c.location||"",remote:Boolean(c.remote),
+    salary_min:null,salary_max:null,salary_text:c.salary_text||"",url:c.url,source:c.source||"",status:"Saved",viewed:false,applied_date:null,follow_up:null,
+    resume:"",cover_letter:"",notes:c.snippet||"",last_updated:now
+  }));
+  if(!body.length) return;
+  const r=await rest("raven_jobs?on_conflict=url",{
+    method:"POST",
+    headers:{Prefer:"resolution=ignore-duplicates,return=minimal"},
+    body:JSON.stringify(body)
+  });
+  if(!r.ok){const detail=await r.text().catch(()=>"");throw new Error("Bulk job upsert failed ("+r.status+"): "+detail.slice(0,1200));}
 }
 export async function listTasks(){
   const r=await rest("raven_tasks?select=*&order=created.asc&limit=1000",{method:"GET"});
