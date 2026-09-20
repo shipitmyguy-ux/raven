@@ -13,7 +13,7 @@ const sample=[
 const first=splitCsvRecords(sample.slice(0,110));
 assert(first.records.length===1,"partial quoted record must not be split at embedded newline");
 
-const second=splitCsvRecords(first.remainder+sample.slice(110));
+const second=splitCsvRecords(first.remainder+sample.slice(110),true);
 assert(second.records.length===2,"multiline Greenhouse description should remain one CSV record");
 
 const header=csvCells(first.records[0]);
