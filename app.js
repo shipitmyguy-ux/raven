@@ -334,30 +334,8 @@
   }
 
   function normalizeDiscovered(results) {
-    return (results || []).map((job)=>({
-      id: "DISC-" + job.id,
-      added: job.created_at || job.last_seen || "",
-      track: job.track,
-      title: job.title || "Untitled job",
-      company: job.company || "",
-      location: job.location || "",
-      remote: job.remote ? "Remote" : "",
-      salaryMin: "",
-      salaryMax: "",
-      salaryText: job.salary_text || "",
-      url: job.url || "",
-      source: job.source || "Web",
-      status: "Discovered",
-      viewed: false,
-      appliedDate: "",
-      followUp: "",
-      resume: "",
-      coverLetter: "",
-      notes: job.snippet || "",
-      lastUpdated: job.last_seen || "",
-      fitScore: Math.max(55, Math.min(96, 50 + Number(job.score || 7) * 3)),
-      _discovered: true
-    })).filter((job)=>job.url);
+    if(window.RavenCore?.fromDiscoveredJob) return (results||[]).map(window.RavenCore.fromDiscoveredJob).filter((job)=>job.url);
+    return (results||[]).filter((job)=>job?.url);
   }
 
   async function loadDiscovered(track = state.activeTrack) {
