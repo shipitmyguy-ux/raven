@@ -14,6 +14,12 @@ const api=core.fromApiJob({id:"1",title:"PM",salary_min:85000,cover_letter:"doc"
 assert(api.salaryMin===85000&&api.coverLetter==="doc","API adapter failed");
 const discovered=core.fromDiscoveredJob({id:"2",title:"Ops",url:"https://example.com/2",remote:true,score:9});
 assert(discovered.id==="DISC-2"&&discovered.remote==="Remote"&&discovered._discovered===true,"discovered adapter failed");
+const atsRows=core.normalizeJobs({jobs:[
+  {id:"good",title:"Project Manager",source:"ATS:greenhouse",url:"https://job-boards.greenhouse.io/acme/jobs/1"},
+  {id:"bad",title:"Coordinate internal teams",source:"ATS:greenhouse",url:"- Lead implementation work"}
+]});
+assert(atsRows.length===1&&atsRows[0].id==="good","malformed ATS rows must not render");
+assert(core.isRenderableJob({id:"bad",title:"Description fragment",source:"ATS:greenhouse",url:"This is not a URL"})===false,"invalid ATS URL guard failed");
 assert(core.generationFingerprint(job,{id:"master-1",fileName:"resume.pdf"})===core.generationFingerprint(job,{id:"master-1",fileName:"resume.pdf"}),"generation fingerprint unstable");
 assert(core.generationFingerprint(job,{id:"master-1",fileName:"resume.pdf"})!==core.generationFingerprint(job,{id:"master-2",fileName:"resume.pdf"}),"master resume must invalidate generation cache");
 assert(core.generationFingerprint(job,{id:"master-1",fileName:"resume.pdf",dataUrl:"data:a"})!==core.generationFingerprint(job,{id:"master-1",fileName:"resume.pdf",dataUrl:"data:b"}),"master resume content must invalidate generation cache");
