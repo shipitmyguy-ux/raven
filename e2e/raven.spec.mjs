@@ -30,6 +30,7 @@ async function mockRaven(page,{generatorFails=false}={}){
 
 test("loads mocked jobs and all tracks without page errors",async({page})=>{
   const errors=[];page.on("pageerror",e=>errors.push(e.message));await mockRaven(page);await page.goto("/");
+  await page.locator('[data-track="Professional"]').click();
   await expect(page.getByText("Implementation Project Manager")).toBeVisible();
   for(const track of ["Games / 3D","Professional","Labor","Wildcard"]){const tab=page.locator('[data-track="'+track+'"]');await expect(tab).toBeVisible();await tab.click();}
   expect(errors).toEqual([]);
@@ -37,13 +38,14 @@ test("loads mocked jobs and all tracks without page errors",async({page})=>{
 
 test("bookmark and applied status persist through reload",async({page})=>{
   const api=await mockRaven(page);await page.goto("/");
+  await page.locator('[data-track="Professional"]').click();
   await page.getByRole("button",{name:"Bookmark job"}).click();
   await expect.poll(()=>api.getJob().status).toBe("Interested");
-  await page.reload();await expect(page.getByRole("button",{name:"Remove bookmark"})).toBeVisible();
+  await page.reload();await page.locator('[data-track="Professional"]').click();await expect(page.getByRole("button",{name:"Remove bookmark"})).toBeVisible();
   await page.locator(".job-card-summary").first().click();
   await page.getByRole("button",{name:"Mark as applied"}).click();
   await expect.poll(()=>api.getJob().status).toBe("Applied");
-  await page.reload();await page.locator(".job-card-summary").first().click();
+  await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator(".job-card-summary").first().click();
   await expect(page.getByRole("button",{name:"Unmark as applied"})).toBeVisible();
 });
 
