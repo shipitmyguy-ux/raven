@@ -38,29 +38,7 @@
   }
 
   function normalizeJob(row) {
-    if (!row || Array.isArray(row)) return row;
-    return {
-      id: row.id || "",
-      added: row.added || "",
-      track: row.track || "",
-      title: row.title || "",
-      company: row.company || "",
-      location: row.location || "",
-      remote: row.remote ? "Remote" : "",
-      salaryMin: row.salary_min ?? "",
-      salaryMax: row.salary_max ?? "",
-      salaryText: row.salary_text || "",
-      url: row.url || "",
-      source: row.source || "",
-      status: row.status || "Saved",
-      viewed: Boolean(row.viewed),
-      appliedDate: row.applied_date || "",
-      followUp: row.follow_up || "",
-      resume: row.resume || "",
-      coverLetter: row.cover_letter || "",
-      notes: row.notes || "",
-      lastUpdated: row.last_updated || ""
-    };
+    return window.RavenCore?.fromApiJob ? window.RavenCore.fromApiJob(row) : row;
   }
 
   window.RavenAPI = Object.freeze({
