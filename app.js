@@ -1016,49 +1016,14 @@
     return window.RavenCore?.generationFingerprint(job,masterResume,"resume",RESUME_TEMPLATE_VERSION) || [job.id||job.url,masterResume?.id||"",RESUME_TEMPLATE_VERSION].join("|");
   }
   async function generateResumeOnline(job,masterResume){
-    if(!config?.generateApiUrl) throw new Error("Online resume generator is not configured.");
-    if(masterResume?.sourceType==="drive"){
-      throw new Error("Online generation currently requires a local master resume file. Re-add this master as a local PDF, DOCX, TXT, or RTF file.");
-    }
-    if(!masterResume?.dataUrl && !masterResume?.missingLocalFile){
-      const file=await getMasterResumeFile(masterResume?.id);
-      if(file){
-        masterResume={...masterResume,fileName:file.name,mimeType:file.type||"application/octet-stream",dataUrl:await fileToDataUrl(file)};
-      }
-    }
-    if(masterResume?.missingLocalFile || !masterResume?.dataUrl) throw new Error("The assigned master resume file is not available on this device.");
     const cacheId=generationCacheId(job,masterResume);
     const cached=generationCache()[cacheId];
     if(cached?.resume) return cached.resume;
-    const response=await fetch(config.generateApiUrl,{
-      method:"POST",
-      headers:{"Content-Type":"application/json","X-Raven-Client":"raven-web-v1"},
-      body:JSON.stringify({
-        jobId:job.id,
-        jobTitle:job.title||"",
-        company:job.company||"",
-        track:job.track||state.activeTrack,
-        sourceUrl:job.url||"",
-        jobDescription:job.notes||"",
-        jobAnalysis:getJobAnalysis(job),
-        masterResume:{
-          id:masterResume?.id||"",
-          name:masterResume?.name||"",
-          sourceType:masterResume?.sourceType||"",
-          fileName:masterResume?.fileName||"",
-          mimeType:masterResume?.mimeType||"",
-          dataUrl:masterResume?.dataUrl||""
-        }
-      })
-    });
-    let payload={};
-    try{payload=await response.json();}catch{}
-    if(!response.ok) throw new Error(payload.error||("Online generation failed ("+response.status+")"));
-    if(!payload.resume) throw new Error("Online generator returned no resume.");
+    const resume=await generateDocumentOnline(job,masterResume,"resume","");
     const cache=generationCache();
-    cache[cacheId]={resume:payload.resume,createdAt:new Date().toISOString()};
+    cache[cacheId]={resume,createdAt:new Date().toISOString()};
     writeCache(GENERATION_CACHE_KEY,cache);
-    return payload.resume;
+    return resume;
   }
 
   async function enqueue(job,type,button=null) {
