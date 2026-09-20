@@ -194,3 +194,9 @@ Implemented:
 - documented the reusable/token-efficient architecture and updated efficiency tasks.
 
 Not yet production verified or merged. Next action: run syntax/core tests and browser smoke tests, inspect diff, then merge only if Raven load/search/status/resume behavior is preserved. Do not mark the refactor complete until that verification occurs.
+
+Additional refactor progress:
+- canonical saved-job and discovered-job adapters now live in `raven-core.js`, removing duplicate mapping logic from API/frontend paths,
+- master-resume text extraction now feeds a persistent local CandidateProfile cache so repeated offline generation does not repeatedly parse the same file,
+- deterministic JobAnalysis (keywords/title/company) is cached per job-description fingerprint and reused by instant generation and sent as hints to the online generator,
+- generation remains structured JSON -> deterministic browser renderer; presentation is not delegated to Gemini.
