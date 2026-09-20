@@ -36,9 +36,16 @@
     const raw = Array.isArray(row) ? Object.fromEntries(fields.map((key,index)=>[key,row[index] || ""])) : (row || {});
     return {...raw,id:text(raw.id),track:text(raw.track),title:text(raw.title)||"Untitled job",company:text(raw.company),location:text(raw.location),url:text(raw.url),source:text(raw.source)||"Web",status:text(raw.status)||"Saved",notes:text(raw.notes),_canonicalUrl:normalizeUrl(raw.url)};
   }
+  function isRenderableJob(job) {
+    const canonical=job?._canonicalUrl!==undefined ? job : normalizeJob(job);
+    const hasIdentity=Boolean(canonical.id || canonical.title !== "Untitled job" || canonical.url);
+    if(!hasIdentity) return false;
+    if(/^ATS:/i.test(text(canonical.source)) && !/^https?:\/\//i.test(text(canonical._canonicalUrl || canonical.url))) return false;
+    return true;
+  }
   function normalizeJobs(payload, fields = JOB_FIELDS) {
     const rows = Array.isArray(payload) ? payload : (payload?.jobs || payload?.rows || []);
-    return rows.map((row)=>normalizeJob(row, fields)).filter((job)=>job.id || job.title !== "Untitled job" || job.url);
+    return rows.map((row)=>normalizeJob(row, fields)).filter(isRenderableJob);
   }
   function jobFingerprint(job) {
     const canonical=normalizeJob(job);
@@ -61,5 +68,5 @@
       remove(name){try{localStorage.removeItem(key(name));}catch{}}
     };
   }
-  global.RavenCore={JOB_FIELDS,normalizeUrl,fromApiJob,fromDiscoveredJob,normalizeJob,normalizeJobs,jobFingerprint,stableHash,generationFingerprint,createCache};
+  global.RavenCore={JOB_FIELDS,normalizeUrl,fromApiJob,fromDiscoveredJob,normalizeJob,normalizeJobs,isRenderableJob,jobFingerprint,stableHash,generationFingerprint,createCache};
 }(window));
