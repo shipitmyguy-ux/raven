@@ -36,7 +36,8 @@
     count+=setValue(find(safeSelectors.linkedin),profile.linkedin);
     count+=setValue(find(safeSelectors.portfolio),profile.portfolio);
     const answers=p.answers||{}; let remembered=0;
-    document.querySelectorAll("input[type=text],textarea,select").forEach(el=>{ const key=normalizeQuestion(labelFor(el)); const answer=answers[key]; if(!answer||el.value) return; if(el.tagName==="SELECT"){ const option=[...el.options].find(o=>normalizeQuestion(o.textContent)===normalizeQuestion(answer)); if(option){el.value=option.value;el.dispatchEvent(new Event("change",{bubbles:true}));remembered++;} } else if(setValue(el,String(answer))) remembered++; });
+    const blocked=/sponsor|visa|citizen|authorized|authorization|salary|compensation|pay|gender|race|ethnic|disab|veteran|attest|certif|background|criminal|age|date of birth|ssn|social security|captcha|assessment/i;
+    document.querySelectorAll("input[type=text],textarea,select").forEach(el=>{ const label=labelFor(el); if(blocked.test(label)) return; const key=normalizeQuestion(label); const answer=answers[key]; if(!answer||el.value) return; if(el.tagName==="SELECT"){ const option=[...el.options].find(o=>normalizeQuestion(o.textContent)===normalizeQuestion(answer)); if(option){el.value=option.value;el.dispatchEvent(new Event("change",{bubbles:true}));remembered++;} } else if(setValue(el,String(answer))) remembered++; });
     count+=remembered;
     if(count) banner("Raven filled "+count+" known field"+(count===1?"":"s")+". Review every field before submitting. Approved documents are locked in Raven.");
     else banner("Raven application detected. Review the form; no safe known fields were available to autofill.");
