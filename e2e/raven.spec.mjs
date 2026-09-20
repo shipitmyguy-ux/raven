@@ -31,7 +31,7 @@ async function mockRaven(page,{generatorFails=false}={}){
 test("loads mocked jobs and all tracks without page errors",async({page})=>{
   const errors=[];page.on("pageerror",e=>errors.push(e.message));await mockRaven(page);await page.goto("/");
   await page.locator('[data-track="Professional"]').click();
-  await expect(page.getByText("Implementation Project Manager")).toBeVisible();
+  await expect(page.locator(".job-title").filter({ hasText: "Implementation Project Manager" })).toBeVisible();
   for(const track of ["Games / 3D","Professional","Labor","Wildcard"]){const tab=page.locator('[data-track="'+track+'"]');await expect(tab).toBeVisible();await tab.click();}
   expect(errors).toEqual([]);
 });
