@@ -1045,7 +1045,23 @@
 
   async function enqueue(job,type,button=null) {
     if(type!=="resume" && job[type]) return openDocumentReview(job,type);
-    if(type!=="resume") return queueDocumentGeneration(job,type,"");
+    if(type!=="resume"){
+      setGenerationButton(button,true,"Generating…");
+      try{
+        await generateDocumentForJob(job,type,"");
+        setGenerationButton(button,false);
+        openDocumentReview(job,type);
+      }catch(error){
+        setGenerationButton(button,false);
+        if(button){
+          button.classList.add("generation-failed");
+          button.title=String(error.message||"Document generation failed");
+          const label=button.querySelector("span:last-child");
+          if(label) label.textContent="Retry";
+        }
+      }
+      return;
+    }
     setGenerationButton(button,true,navigator.onLine?"Generating…":"Offline draft…");
     try{
       const masterResume=await masterResumeTaskInput(job.track||state.activeTrack);
@@ -1110,7 +1126,7 @@
     return document;
   }
 
-  async function queueDocumentGeneration(job,type,instructions) {
+  async function generateDocumentForJob(job,type,instructions) {
     const label=documentLabel(type);
     setStatus((instructions?"Revising ":"Generating ")+label+"...");
     try{
@@ -1163,9 +1179,15 @@
     if(!job||!type||!instructions) return;
     const button=document.getElementById("reviewSubmit");
     button.disabled=true;
-    await queueDocumentGeneration(job,type,instructions);
-    button.disabled=false;
-    closeDocumentReview();
+    try{
+      await generateDocumentForJob(job,type,instructions);
+      const value=String(job[type]||"");
+      document.getElementById("reviewOpenFile").href=value;
+      document.getElementById("reviewFrame").src=previewableDocumentUrl(value);
+      document.getElementById("reviewInstructions").value="";
+    }finally{
+      button.disabled=false;
+    }
   }
 
   async function toggleApplied(job) {
