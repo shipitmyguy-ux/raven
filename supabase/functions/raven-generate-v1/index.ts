@@ -141,7 +141,8 @@ Deno.serve(async(req:Request)=>{
   ].join("\\n");
 
   try{
-    const r=await fetch(`${GATEWAY_GEMINI_BASE}/v1beta/models/${GEMINI_MODEL}:generateContent`,{
+    let route="cloudflare-ai-gateway";
+    let r=await fetch(`${GATEWAY_GEMINI_BASE}/v1beta/models/${GEMINI_MODEL}:generateContent`,{
       method:"POST",
       headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},
       body:JSON.stringify({
@@ -154,6 +155,13 @@ Deno.serve(async(req:Request)=>{
         }
       })
     });
+    if(r.status===401||r.status===403){
+      route="direct-gemini";
+      r=await fetch(`${DIRECT_GEMINI_BASE}/v1beta/models/${GEMINI_MODEL}:generateContent`,{
+        method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},
+        body:JSON.stringify({contents:[{parts:[{text:prompt},{inlineData:{mimeType:masterMime,data:masterBase64}}]}],generationConfig:{temperature:0.25,maxOutputTokens:4500,responseMimeType:"application/json",responseSchema:documentType==="coverLetter"?coverLetterSchema:resumeSchema}})
+      });
+    }
     const raw=await r.json().catch(()=>({}));
     if(!r.ok){
       const message=raw?.error?.message||("Gemini request failed ("+r.status+")");
@@ -166,7 +174,7 @@ Deno.serve(async(req:Request)=>{
     try{document=JSON.parse(text);}catch{return json(req,{error:"Gemini returned invalid structured output.",code:"AI_OUTPUT_INVALID",provider:"gemini",retryable:true},502);}
     const validationError=validateDocument(documentType,document);
     if(validationError) return json(req,{error:validationError,code:"AI_OUTPUT_INVALID",provider:"gemini",retryable:true},502);
-    return json(req,{ok:true,provider:"gemini",route:"cloudflare-ai-gateway",model:GEMINI_MODEL,[documentType==="coverLetter"?"coverLetter":"resume"]:document});
+    return json(req,{ok:true,provider:"gemini",route,model:GEMINI_MODEL,[documentType==="coverLetter"?"coverLetter":"resume"]:document});
   }catch(e){
     return json(req,{error:e instanceof Error?e.message:String(e)},500);
   }
