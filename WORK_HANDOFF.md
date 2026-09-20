@@ -1,19 +1,20 @@
 # Raven Work Handoff
 
-Last updated: 2026-09-18
+Last updated: 2026-09-20
 
 ## Purpose
 This file is the durable bridge between Chat and Work. Replace/update it at the end of each meaningful Work session.
 
 ## Current handoff
-The project is being normalized into a GitHub-first workflow.
+Production `main` now includes the reusable core, Application Assistant hardening, and the Greenhouse/ATS multiline CSV repair.
 
 Current known priorities:
-1. User-facing Options/Settings panel.
-2. Full job-description audit/fix across all tabs and sources.
-3. End-to-end ingestion persistence verification.
-4. Real resume/cover-letter generation verification.
-5. Reduce unnecessary model polling.
+1. Real-site Application Assistant verification: Greenhouse, Lever, Ashby first; Workday, iCIMS, Taleo where practical.
+2. Verify approved resume/cover-letter upload into real employer file inputs.
+3. Full frontend -> generation -> persistence -> Application Assistant smoke test.
+4. Audit job-description completeness/canonical-source resolution across all tabs.
+5. Verify search persistence/deduplication/source health end to end.
+6. Safely clean legacy malformed ATS rows that are now hidden from the UI.
 
 ## Usage failsafe
 At the beginning of substantial Work, apply the Raven usage guard from `AGENTS.md`:
@@ -200,3 +201,29 @@ Additional refactor progress:
 - master-resume text extraction now feeds a persistent local CandidateProfile cache so repeated offline generation does not repeatedly parse the same file,
 - deterministic JobAnalysis (keywords/title/company) is cached per job-description fingerprint and reused by instant generation and sent as hints to the online generator,
 - generation remains structured JSON -> deterministic browser renderer; presentation is not delegated to Gemini.
+
+
+## Application Assistant + ATS ingestion update - 2026-09-20
+Application Assistant hardening:
+- PR #8 merged as `2be8f0db`.
+- Added exact-document approval invalidation coverage, expanded Application Profile, editable local Answer Memory, initial ATS form adapters, best-effort approved-document attachment, and conservative completion handoff.
+- Final employer submission remains manual.
+- Reusable-core and Playwright browser regressions passed before merge.
+- Real employer-site upload/completion behavior still needs verification.
+
+Greenhouse overflow-card incident:
+- Root cause: the shared ATS CSV stream parser split on raw newlines before respecting CSV quote state, so quoted multiline descriptions could become separate candidate rows/cards.
+- PR #9 merged as `6f08bcbb`.
+- Added a quoted-newline-safe CSV record parser, HTTP(S)/single-line ATS row validation, diagnostic parser parity, and a Greenhouse-style regression fixture.
+- Deployed `raven-backend-v3` version 21 ACTIVE from canonical GitHub source.
+- Scan byte/record/result limits were not increased.
+
+Legacy-data defense:
+- Before the repair, Greenhouse had 68 malformed rows in `raven_jobs` and 69 in `raven_search_results`, identifiable by non-HTTP job URLs.
+- A destructive cleanup was not performed in this session.
+- PR #10 merged as `03b510fe`; shared frontend normalization now hides malformed `ATS:*` rows with non-HTTP(S) URLs.
+- Valid ATS rows remain visible.
+- Reusable-core and Playwright browser regressions passed; the post-merge GitHub Pages deployment and main-branch core tests also passed.
+
+Exact next action:
+- Verify Raven visually after a hard refresh, then continue real-site Application Assistant testing and end-to-end generation/persistence smoke testing.
