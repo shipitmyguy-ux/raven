@@ -833,8 +833,14 @@
 
   function candidateProfileCache(){ return readCache(CANDIDATE_PROFILE_CACHE_KEY,{})||{}; }
   function jobAnalysisCache(){ return readCache(JOB_ANALYSIS_CACHE_KEY,{})||{}; }
-  function candidateProfileId(masterResume){ return [masterResume?.id||"",masterResume?.fileName||"",masterResume?.version||""].join("|"); }
-  function jobAnalysisId(job){ const base=window.RavenCore?.jobFingerprint(job) || (job.id||job.url||""); return base+"|"+String(job.notes||""); }
+  function candidateProfileId(masterResume){
+    const identity=[masterResume?.id||"",masterResume?.fileName||"",masterResume?.version||"",masterResume?.dataUrl||""].join("|");
+    return window.RavenCore?.stableHash ? window.RavenCore.stableHash(identity) : identity;
+  }
+  function jobAnalysisId(job){
+    const identity=(window.RavenCore?.jobFingerprint(job)||(job.id||job.url||""))+"|"+String(job.notes||"");
+    return window.RavenCore?.stableHash ? window.RavenCore.stableHash(identity) : identity;
+  }
   function analyzeJobLocally(job){
     const text=[job.title||"",job.notes||""].join(" ");
     return {keywords:resumeKeywords(text),title:job.title||"",company:job.company||"",analyzedAt:new Date().toISOString()};
