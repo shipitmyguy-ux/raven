@@ -503,7 +503,7 @@
     if(!key || state.commutes[key] !== undefined) return;
     state.commutes[key]="loading";
     try{
-      const payload=await callSearchApi({action:"commute",location});
+      const payload=await window.RavenAPI.commute(location);
       state.commutes[key]=Number.isFinite(Number(payload.minutes)) ? Number(payload.minutes) : null;
     }catch{
       state.commutes[key]=null;
@@ -1491,8 +1491,11 @@
       document.getElementById("jobUrl").value=parts.find((part)=>/^https?:\/\//.test(part))||sharedUrl;
     }
   }
-  async function refreshCurrentTrack() {
-    await Promise.allSettled([loadJobs(),loadDiscovered(state.activeTrack)]);
+  async function refreshCurrentTrack(options={}) {
+    const includeDiscovered=options.includeDiscovered!==false;
+    const tasks=[loadJobs()];
+    if(includeDiscovered) tasks.push(loadDiscovered(state.activeTrack));
+    await Promise.allSettled(tasks);
     render();
   }
   async function boot() {
@@ -1508,7 +1511,7 @@
     document.addEventListener("visibilitychange",()=>{
       if(!document.hidden && Date.now()-lastRefresh>60000){
         lastRefresh=Date.now();
-        refreshCurrentTrack();
+        refreshCurrentTrack({includeDiscovered:false});
       }
     });
   }
