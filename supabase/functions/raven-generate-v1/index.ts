@@ -100,6 +100,9 @@ Deno.serve(async(req:Request)=>{
     "JOB DESCRIPTION:",
     jobDescription,
     "",
+    "PRECOMPUTED JOB KEYWORDS (deterministic; use only as prioritization hints):",
+    Array.isArray(body.jobAnalysis?.keywords) ? body.jobAnalysis.keywords.slice(0,24).join(", ") : "",
+    "",
     "MASTER RESUME is attached as the factual source of truth. Read it completely before drafting."
   ].join("\n");
 
