@@ -26,6 +26,8 @@
   const labelFor=(el)=>{ const id=el.id; const explicit=id?document.querySelector(`label[for="${CSS.escape(id)}"]`):null; return explicit?.innerText||el.closest("label")?.innerText||el.getAttribute("aria-label")||el.name||""; };
   chrome.storage.local.get(["ravenApplicationPacket"],({ravenApplicationPacket:p})=>{
     if(!p||!p.jobUrl) return;
+    let target; try{ target=new URL(p.jobUrl); }catch{return;} if(target.hostname!==location.hostname) return;
+    const age=Date.now()-Date.parse(p.createdAt||0); if(!Number.isFinite(age)||age<0||age>2*60*60*1000){ chrome.storage.local.remove("ravenApplicationPacket"); return; }
     const profile=p.profile||{}; let count=0;
     count+=setValue(find(safeSelectors.firstName),profile.firstName);
     count+=setValue(find(safeSelectors.lastName),profile.lastName);
@@ -38,5 +40,6 @@
     count+=remembered;
     if(count) banner("Raven filled "+count+" known field"+(count===1?"":"s")+". Review every field before submitting. Approved documents are locked in Raven.");
     else banner("Raven application detected. Review the form; no safe known fields were available to autofill.");
+    chrome.storage.local.remove("ravenApplicationPacket");
   });
 })();
