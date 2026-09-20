@@ -1,0 +1,31 @@
+name: Reusable core tests
+on:
+  pull_request:
+    paths:
+      - "raven-core.js"
+      - "raven-api.js"
+      - "app.js"
+      - "tests/**"
+      - ".github/workflows/test.yml"
+  push:
+    branches: ["main", "refactor/reusable-core"]
+    paths:
+      - "raven-core.js"
+      - "raven-api.js"
+      - "app.js"
+      - "tests/**"
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Syntax check
+        run: |
+          node --check raven-core.js
+          node --check raven-api.js
+          node --check app.js
+      - name: Core regression tests
+        run: node tests/raven-core.test.mjs
