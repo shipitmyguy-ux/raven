@@ -1,16 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "Raven Capture",
-  "version": "1.2.1",
-  "description": "Save job postings to Raven from the page context menu.",
-  "permissions": [
-    "contextMenus",
-    "tabs"
-  ],
-  "host_permissions": [
-    "https://shipitmyguy-ux.github.io/*"
-  ],
-  "background": {
-    "service_worker": "background.js"
-  }
+  "name": "Raven Application Assistant",
+  "version": "2.0.0",
+  "description": "Save jobs to Raven and assist with approved application autofill. Never submits applications.",
+  "permissions": ["contextMenus","tabs","storage"],
+  "host_permissions": ["<all_urls>"],
+  "background": {"service_worker":"background.js"},
+  "content_scripts": [{"matches":["<all_urls>"],"js":["content.js"],"run_at":"document_idle"}]
 }
