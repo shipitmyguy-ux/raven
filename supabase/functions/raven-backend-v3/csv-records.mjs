@@ -17,7 +17,7 @@ export function csvCells(record) {
   return out;
 }
 
-export function splitCsvRecords(buffer) {
+export function splitCsvRecords(buffer, flush=false) {
   const records=[];
   let quoted=false;
   let start=0;
@@ -35,7 +35,7 @@ export function splitCsvRecords(buffer) {
       start=i+1;
     }
   }
-  return {records,remainder:buffer.slice(start)};
+  let remainder=buffer.slice(start);\n  if(flush&&remainder&& !quoted){records.push(remainder);remainder="";}\n  return {records,remainder};
 }
 
 export function validAtsRow(title,url) {
