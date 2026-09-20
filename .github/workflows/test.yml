@@ -8,6 +8,7 @@ on:
       - "app.js"
       - "tests/**"
       - "extension/**"
+      - "supabase/functions/raven-backend-v3/**"
       - ".github/workflows/test.yml"
   push:
     branches: ["main", "refactor/reusable-core"]
@@ -17,6 +18,7 @@ on:
       - "app.js"
       - "tests/**"
       - "extension/**"
+      - "supabase/functions/raven-backend-v3/**"
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -33,8 +35,10 @@ jobs:
           node --check extension/src/assistant-core.js
           node --check extension/src/content.js
           node --check extension/src/background.js
+          node --check supabase/functions/raven-backend-v3/csv-records.mjs
           node -e "JSON.parse(require('fs').readFileSync('extension/src/manifest.json','utf8'))"
       - name: Core regression tests
         run: |
           node tests/raven-core.test.mjs
           node tests/assistant-core.test.mjs
+          node tests/ats-csv.test.mjs
