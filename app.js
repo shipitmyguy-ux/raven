@@ -1048,6 +1048,7 @@
         track:job.track||state.activeTrack,
         sourceUrl:job.url||"",
         jobDescription:job.notes||"",
+        jobAnalysis:getJobAnalysis(job),
         masterResume:{
           id:masterResume?.id||"",
           name:masterResume?.name||"",
