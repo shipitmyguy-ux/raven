@@ -1,6 +1,6 @@
 # Raven Queue Worker
 
-The live document-generation consumer is currently the ChatGPT automation named **JobTrack Queue Worker**.
+The legacy document-generation consumer is the ChatGPT automation named **JobTrack Queue Worker**. It is currently disabled and must not be treated as an active polling dependency. Raven resume generation now has a direct on-demand Edge Function path; keep the queue worker disabled unless queue-based document generation is intentionally re-enabled.
 
 ## Authoritative queue
 - Supabase project: `umvmilulnqnmeqvfoxxc`
@@ -33,3 +33,9 @@ For completed resume generation:
 `raven-tasks-v1` is only the queue API. It enqueues and updates tasks; it is **not** the document generator.
 
 The current actual queue consumer is the ChatGPT automation. If Raven later moves to a standalone server/Edge Function worker, this document defines the behavior that worker must preserve.
+
+## Token / polling efficiency
+- Keep the ChatGPT queue worker disabled during normal Raven operation.
+- Prefer direct, user-triggered generation for resumes.
+- Do not add timer polling merely to discover whether a task completed; use explicit refresh/event-driven status where possible.
+- If queue processing is re-enabled, claim only actionable tasks and exit immediately when none exist.
