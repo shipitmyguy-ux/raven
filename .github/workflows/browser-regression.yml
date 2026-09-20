@@ -1,0 +1,27 @@
+name: Browser regression
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "app.js"
+      - "index.html"
+      - "raven-api.js"
+      - "raven-core.js"
+      - "styles.css"
+      - "theme.css"
+      - "e2e/**"
+      - "playwright.config.mjs"
+      - "package.json"
+      - ".github/workflows/browser-regression.yml"
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install
+      - run: npx playwright install chromium --with-deps
+      - run: npm run test:e2e
