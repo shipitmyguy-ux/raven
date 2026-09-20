@@ -817,8 +817,6 @@
 
     const isApplied=String(job.status||"").toLowerCase()==="applied";
     const docsReady=documentsReadyForApplication(job);
-    const applyGate=job.url ? '<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply><span class="workflow-icon">↗</span><span>'+(docsReady?'Apply':'Approve docs')+'</span></button>' : "";
-    const docsReady=documentsReadyForApplication(job);
     const applyGate=job.url?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply aria-label="Open application with approved documents" title="'+(docsReady?'Open application':'Approve resume and cover letter first')+'"><span class="workflow-icon" aria-hidden="true">↗</span><span>'+(docsReady?'Apply':'Approve docs')+'</span></button>':"";
     const appliedAction='<button class="workflow-action'+(isApplied?' is-applied':'')+'" type="button" data-apply-status="'+(isApplied?'saved':'applied')+'" aria-pressed="'+String(isApplied)+'" aria-label="'+(isApplied?'Unmark as applied':'Mark as applied')+'" title="'+(isApplied?'Unmark as applied':'Mark as applied')+'"><span class="workflow-icon" aria-hidden="true">✓</span><span>Applied</span></button>';
     const configuredActions=uiRows("detail-action");
