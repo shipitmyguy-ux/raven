@@ -10,4 +10,9 @@ assert(core.normalizeUrl("https://example.com/job/1?utm_source=x#top")==="https:
 const job=core.normalizeJob({title:" Engineer ",company:" Acme ",url:"https://example.com/job/1?utm_medium=x"});
 assert(job.title==="Engineer"&&job.company==="Acme","job normalization failed");
 assert(core.jobFingerprint(job).includes("https://example.com/job/1"),"fingerprint failed");
+const api=core.fromApiJob({id:"1",title:"PM",salary_min:85000,cover_letter:"doc"});
+assert(api.salaryMin===85000&&api.coverLetter==="doc","API adapter failed");
+const discovered=core.fromDiscoveredJob({id:"2",title:"Ops",url:"https://example.com/2",remote:true,score:9});
+assert(discovered.id==="DISC-2"&&discovered.remote==="Remote"&&discovered._discovered===true,"discovered adapter failed");
+assert(core.generationFingerprint(job,{id:"master-1",fileName:"resume.pdf"})===core.generationFingerprint(job,{id:"master-1",fileName:"resume.pdf"}),"generation fingerprint unstable");
 console.log("raven-core tests passed");
