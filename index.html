@@ -58,7 +58,7 @@
             <button type="button" class="options-category" data-options-target="master-resumes">
               <span>Master resumes</span><span aria-hidden="true">›</span>
             </button>
-            <button type="button" class="options-category" data-options-target="application-profile"><span>Application profile</span><span aria-hidden="true">›</span></button>
+            <button type="button" class="options-category" data-options-target="application-profile"><span>Application profile</span><span aria-hidden="true">›</span></button>\n            <button type="button" class="options-category" data-options-target="answer-memory"><span>Answer memory</span><span aria-hidden="true">›</span></button>
             <button type="button" class="options-category" data-options-target="layout">
               <span>Layout</span><span aria-hidden="true">›</span>
             </button>
@@ -124,14 +124,33 @@
             </div>
 
             <div class="options-card-panel" data-options-panel="application-profile" hidden>
-              <p class="options-help">Stored on this device and used only to fill known application fields. Raven never submits automatically.</p>
+              <p class="options-help">Stored on this device and used only to fill known contact fields. Raven never submits automatically.</p>
               <label class="master-resume-field"><span>First name</span><input data-profile-key="firstName" type="text"></label>
               <label class="master-resume-field"><span>Last name</span><input data-profile-key="lastName" type="text"></label>
               <label class="master-resume-field"><span>Email</span><input data-profile-key="email" type="email"></label>
               <label class="master-resume-field"><span>Phone</span><input data-profile-key="phone" type="tel"></label>
+              <label class="master-resume-field"><span>Address line 1</span><input data-profile-key="address1" type="text" autocomplete="address-line1"></label>
+              <label class="master-resume-field"><span>Address line 2</span><input data-profile-key="address2" type="text" autocomplete="address-line2"></label>
+              <label class="master-resume-field"><span>City</span><input data-profile-key="city" type="text" autocomplete="address-level2"></label>
+              <label class="master-resume-field"><span>State / province</span><input data-profile-key="region" type="text" autocomplete="address-level1"></label>
+              <label class="master-resume-field"><span>ZIP / postal code</span><input data-profile-key="postalCode" type="text" autocomplete="postal-code"></label>
+              <label class="master-resume-field"><span>Country</span><input data-profile-key="country" type="text" autocomplete="country-name"></label>
               <label class="master-resume-field"><span>LinkedIn</span><input data-profile-key="linkedin" type="url"></label>
               <label class="master-resume-field"><span>Portfolio / website</span><input data-profile-key="portfolio" type="url"></label>
               <button id="saveApplicationProfile" type="button">Save application profile</button>
+            </div>
+
+            <div class="options-card-panel answer-memory-panel" data-options-panel="answer-memory" hidden>
+              <p class="options-help">Save reusable, non-sensitive answers Raven can fill when the question is recognized. Legal, demographic, salary, sponsorship, CAPTCHA, and assessment answers are intentionally excluded.</p>
+              <div id="answerMemoryList" class="answer-memory-list"></div>
+              <section class="answer-memory-editor">
+                <label class="master-resume-field"><span>Question</span><input id="answerMemoryQuestion" type="text" placeholder="e.g. Are you willing to travel occasionally?"></label>
+                <label class="master-resume-field"><span>Answer</span><textarea id="answerMemoryAnswer" rows="3" placeholder="Reusable answer"></textarea></label>
+                <div class="master-resume-actions">
+                  <button id="saveAnswerMemory" type="button">Save answer</button>
+                  <button id="cancelAnswerMemory" type="button">Clear</button>
+                </div>
+              </section>
             </div>
             <div class="options-card-panel" data-options-panel="layout" hidden>
               <label class="option-row">
@@ -202,6 +221,6 @@
   <script src="./config.js?v=6"></script>
   <script src="./raven-core.js?v=2"></script>
   <script src="./raven-api.js?v=6"></script>
-  <script src="./app.js?v=30"></script>
+  <script src="./app.js?v=31"></script>
 </body>
 </html>
