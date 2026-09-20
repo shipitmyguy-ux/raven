@@ -645,6 +645,7 @@
             expanded.className="job-card-expanded";
             expanded.innerHTML=renderInlineDetail(job);
             card.appendChild(expanded);
+            expanded.querySelectorAll("[data-approved-apply]").forEach((button)=>{ button.addEventListener("click",(event)=>{event.stopPropagation();beginApprovedApplication(job);}); });
             expanded.querySelectorAll("[data-apply-status]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
@@ -814,11 +815,14 @@
     }).join("");
 
     const isApplied=String(job.status||"").toLowerCase()==="applied";
+    const docsReady=documentsReadyForApplication(job);
+    const applyGate=job.url?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply aria-label="Open application with approved documents" title="'+(docsReady?'Open application':'Approve resume and cover letter first')+'"><span class="workflow-icon" aria-hidden="true">↗</span><span>'+(docsReady?'Apply':'Approve docs')+'</span></button>':"";
     const appliedAction='<button class="workflow-action'+(isApplied?' is-applied':'')+'" type="button" data-apply-status="'+(isApplied?'saved':'applied')+'" aria-pressed="'+String(isApplied)+'" aria-label="'+(isApplied?'Unmark as applied':'Mark as applied')+'" title="'+(isApplied?'Unmark as applied':'Mark as applied')+'"><span class="workflow-icon" aria-hidden="true">✓</span><span>Applied</span></button>';
     const configuredActions=uiRows("detail-action");
     const actions=(configuredActions.length?configuredActions:fallbackActions())
       .filter((item)=>{
-        if (item.key==="posting" || item.key==="apply") return Boolean(job.url);
+        if (item.key==="apply") return false;
+        if (item.key==="posting") return Boolean(job.url);
         return false;
       })
       .map((item)=>{
@@ -842,7 +846,7 @@
       '</section>'+
       '<dl>'+detailHtml+'</dl>'+
       '<div class="detail-actions">'+
-        '<div class="workflow-actions" aria-label="Application actions">'+actions+appliedAction+'</div>'+
+        '<div class="workflow-actions" aria-label="Application actions">'+actions+applyGate+appliedAction+'</div>'+
       '</div>'+
     '</section>';
   }
@@ -1134,12 +1138,38 @@
       if(!masterResume) throw new Error("Assign a master resume to this job track first.");
       const document=await generateDocumentOnline(job,masterResume,type,instructions);
       await saveGeneratedDocument(job,type,document);
-      setStatus(label[0].toUpperCase()+label.slice(1)+" ready");
+      setDocumentApproved(job,type,false);
+      setStatus(label[0].toUpperCase()+label.slice(1)+" ready · approval required");
       return document;
     }catch(error){
       setStatus("Could not generate "+label+": "+error.message);
       throw error;
     }
+  }
+
+  function documentApprovalKey(job,type){ return String(job.id||job.url||"")+"|"+type; }
+  function isDocumentApproved(job,type){
+    const record=state.documentApprovals[documentApprovalKey(job,type)];
+    return Boolean(record && record.value===String(job[type]||""));
+  }
+  function setDocumentApproved(job,type,approved){
+    const key=documentApprovalKey(job,type);
+    if(approved) state.documentApprovals[key]={value:String(job[type]||""),approvedAt:new Date().toISOString()};
+    else delete state.documentApprovals[key];
+    writeCache(DOCUMENT_APPROVALS_KEY,state.documentApprovals);
+  }
+  function toggleDocumentApproval(job,type){
+    const approved=!isDocumentApproved(job,type);
+    setDocumentApproved(job,type,approved);
+    setStatus(documentLabel(type)+(approved?" approved":" approval removed"));
+    render();
+  }
+  function documentsReadyForApplication(job){ return Boolean(job.resume&&job.coverLetter&&isDocumentApproved(job,"resume")&&isDocumentApproved(job,"coverLetter")); }
+  function beginApprovedApplication(job){
+    if(!job.resume || !job.coverLetter){ setStatus("Generate both documents before applying"); return; }
+    if(!isDocumentApproved(job,"resume") || !isDocumentApproved(job,"coverLetter")){ setStatus("Approve the resume and cover letter before applying"); return; }
+    window.open(job.url,"_blank","noopener");
+    setStatus("Approved documents locked · review the application before submitting");
   }
 
   function previewableDocumentUrl(value) {
@@ -1158,6 +1188,7 @@
     link.textContent="Open "+label+" in a new tab";
     document.getElementById("reviewFrame").src=previewableDocumentUrl(value);
     document.getElementById("reviewInstructions").value="";
+    const approve=document.getElementById("reviewApprove"); if(approve){ approve.textContent=isDocumentApproved(job,type)?"Approved ✓":"Approve document"; approve.classList.toggle("is-approved",isDocumentApproved(job,type)); }
     document.getElementById("documentReviewDialog").showModal();
   }
   function closeDocumentReview() {
@@ -1499,6 +1530,7 @@
       saveCapture(document.getElementById("jobUrl").value.trim());
     });
     document.getElementById("documentReviewForm").addEventListener("submit",submitDocumentRevision);
+    document.getElementById("reviewApprove")?.addEventListener("click",()=>{ const job=state.generatorJob,type=state.generatorType;if(!job||!type)return;setDocumentApproved(job,type,true);document.getElementById("reviewApprove").textContent="Approved ✓";document.getElementById("reviewApprove").classList.add("is-approved");setStatus(documentLabel(type)+" approved"); });
     document.querySelectorAll("[data-review-close]").forEach((button)=>{
       button.addEventListener("click",closeDocumentReview);
     });
