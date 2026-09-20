@@ -174,11 +174,14 @@ async function atsSlice(source:string,track:Track){
     const maxLines=track==="Professional"?12000:18000;
     const maxBytes=track==="Professional"?12*1024*1024:14*1024*1024;
     while(out.length<80 && lines<maxLines){
-      const {done,value}=await reader.read(); if(done) break;
-      bytes+=value.byteLength;
-      if(bytes>maxBytes) break;
-      buf+=dec.decode(value,{stream:true});
-      const parsed=splitCsvRecords(buf); buf=parsed.remainder;
+      const {done,value}=await reader.read();
+      if(value){
+        bytes+=value.byteLength;
+        if(bytes>maxBytes) break;
+        buf+=dec.decode(value,{stream:true});
+      }
+      if(done) buf+=dec.decode();
+      const parsed=splitCsvRecords(buf,done); buf=parsed.remainder;
       for(const record of parsed.records){
         if(!record) continue;
         if(!header){
@@ -202,6 +205,7 @@ async function atsSlice(source:string,track:Track){
         out.push({track,title,company:idx.company>=0?(c[idx.company]||source):source,location,url,snippet:desc.slice(0,6000),remote:idx.remote>=0?/true|1|yes/i.test(c[idx.remote]||""): /remote/i.test(location),posted_at:idx.posted>=0?(c[idx.posted]||""):"",source:"ATS:"+source} as Candidate);
         if(out.length>=80) break;
       }
+      if(done) break;
     }
     try{await reader.cancel();}catch{}
     return out;
@@ -255,12 +259,15 @@ export async function atsDiagnosticOne(source:string, track:Track){
     const reader=r.body?.getReader(); if(!reader) throw new Error("No response body");
     const dec=new TextDecoder(); let buf="", bytes=0, lines=0, header:string[]|null=null;
     while(true){
-      const {done,value}=await reader.read(); if(done) break;
-      bytes+=value.byteLength; if(bytes>8*1024*1024) throw new Error("Slice exceeds safe 8MB diagnostic limit");
-      buf+=dec.decode(value,{stream:true});
-      const parsed=splitCsvRecords(buf); buf=parsed.remainder;
+      const {done,value}=await reader.read();
+      if(value){
+        bytes+=value.byteLength; if(bytes>8*1024*1024) throw new Error("Slice exceeds safe 8MB diagnostic limit");
+        buf+=dec.decode(value,{stream:true});
+      }
+      if(done) buf+=dec.decode();
+      const parsed=splitCsvRecords(buf,done); buf=parsed.remainder;
       for(const record of parsed.records){ if(!record) continue; if(!header){header=csvCells(record).map((x:string)=>x.trim());} else lines++; if(lines>=2000){try{await reader.cancel();}catch{};break;} }
-      if(lines>=2000) break;
+      if(lines>=2000||done) break;
     }
     if(!header) throw new Error("CSV header missing");
     if(!header.includes("title")||!header.some(x=>["url","job_url","apply_url"].includes(x))) throw new Error("Required columns missing: "+header.slice(0,12).join(","));
