@@ -4,12 +4,12 @@ const savedJob={id:"job-1",track:"Professional",title:"Implementation Project Ma
 const generatedResume={name:"Test Candidate",headline:"Project & Implementation Leader",contact:"candidate@example.com",summary:"Experienced delivery leader.",skills:["Project delivery","Team leadership"],experience:[{role:"Environment Artist",company:"Example Studio",dates:"2020–2025",bullets:["Led delivery across internal teams."]}],education:[{degree:"Bachelor's Degree",school:"Example University",location:"",dates:""}],additional:[]};
 const generatedLetter={greeting:"Dear Hiring Manager,",paragraphs:["I am applying for the Implementation Project Manager role.","My background includes project delivery and internal team leadership."],closing:"Sincerely,",signature:"Test Candidate"};
 
-async function mockRaven(page,{generatorFails=false,initialJob=null}={}){
+async function mockRaven(page,{generatorFails=false,initialJob=null,dataDelayMs=0}={}){
   let job={...savedJob,...(initialJob||{})};
   let generationCalls=0;
   await page.route("**/functions/v1/raven-data-v1**",async route=>{
     const req=route.request();
-    if(req.method()==="GET") return route.fulfill({json:{ok:true,jobs:[job]}});
+    if(req.method()==="GET"){ if(dataDelayMs) await new Promise(resolve=>setTimeout(resolve,dataDelayMs)); return route.fulfill({json:{ok:true,jobs:[job]}}); }
     const body=JSON.parse(req.postData()||"{}");
     if(body.action==="updateJob"){job={...job,...body};delete job.action;return route.fulfill({json:{ok:true,job}});}
     if(body.action==="addJob") return route.fulfill({json:{ok:true,job:{...body,id:"job-added"}}});
@@ -200,4 +200,25 @@ test("completion event with host mismatch is ignored",async({page})=>{
   });
   await page.waitForTimeout(100);
   expect(api.getJob().status).toBe("Saved");
+});
+
+
+test("malformed ATS rows are pruned from cached startup data before refresh",async({page})=>{
+  await page.addInitScript(()=>{
+    localStorage.setItem("ravenJobsCacheV1",JSON.stringify([
+      {id:"cached-good",track:"Professional",title:"Cached Project Manager",company:"Acme",url:"https://job-boards.greenhouse.io/acme/jobs/123",source:"ATS:greenhouse",status:"Saved",notes:"Valid cached job."},
+      {id:"cached-bad",track:"Professional",title:"Coordinate internal teams and manage implementation",company:"greenhouse",url:"- Lead project delivery",source:"ATS:greenhouse",status:"Saved",notes:"Description overflow fragment."}
+    ]));
+    localStorage.setItem("ravenDiscoveredCacheV1",JSON.stringify({
+      Professional:[
+        {id:"DISC-cached-bad",track:"Professional",title:"Description overflow fragment",company:"greenhouse",url:"This is an implementation role",source:"ATS:greenhouse",status:"Discovered",notes:"More description text.",_discovered:true}
+      ]
+    }));
+  });
+  await mockRaven(page,{dataDelayMs:1200});
+  await page.goto("/");
+  await page.locator('[data-track="Professional"]').click();
+  await expect(page.locator(".job-title").filter({hasText:"Cached Project Manager"})).toBeVisible();
+  await expect(page.getByText("Coordinate internal teams and manage implementation",{exact:true})).toHaveCount(0);
+  await expect(page.getByText("Description overflow fragment",{exact:true})).toHaveCount(0);
 });

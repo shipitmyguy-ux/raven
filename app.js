@@ -269,7 +269,8 @@
     maintainCaches();
     const cachedJobs=readCache(CACHE_JOBS_KEY,null);
     if(Array.isArray(cachedJobs) && cachedJobs.length){
-      state.jobs=cachedJobs;
+      state.jobs=normalizeJobs(cachedJobs);
+      if(state.jobs.length!==cachedJobs.length) writeCache(CACHE_JOBS_KEY,state.jobs);
       setStatus("Refreshing…");
     } else if(Array.isArray(window.RAVEN_SNAPSHOT?.jobs)){
       state.jobs=normalizeJobs(window.RAVEN_SNAPSHOT.jobs);
@@ -279,9 +280,17 @@
     state.viewedJobs=readCache(VIEWED_JOBS_KEY,{})||{};
     const cachedDiscovered=readCache(CACHE_DISCOVERED_KEY,{});
     if(cachedDiscovered && typeof cachedDiscovered==="object"){
+      let pruned=false;
       Object.keys(state.discovered).forEach((track)=>{
-        if(Array.isArray(cachedDiscovered[track])) state.discovered[track]=cachedDiscovered[track];
+        if(!Array.isArray(cachedDiscovered[track])) return;
+        const rows=cachedDiscovered[track].filter((job)=>{
+          if(window.RavenCore?.isRenderableJob) return window.RavenCore.isRenderableJob(job);
+          return !/^ATS:/i.test(String(job?.source||"")) || /^https?:\/\//i.test(String(job?.url||""));
+        });
+        state.discovered[track]=rows;
+        if(rows.length!==cachedDiscovered[track].length) pruned=true;
       });
+      if(pruned) writeCache(CACHE_DISCOVERED_KEY,state.discovered);
     }
     render();
   }
