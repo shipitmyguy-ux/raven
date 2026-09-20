@@ -10,6 +10,28 @@
       return url.toString().replace(/\/$/,"");
     } catch { return text(value); }
   }
+  function fromApiJob(row) {
+    if (!row || Array.isArray(row)) return row;
+    return {
+      id: row.id || "", added: row.added || "", track: row.track || "", title: row.title || "",
+      company: row.company || "", location: row.location || "", remote: row.remote ? "Remote" : "",
+      salaryMin: row.salary_min ?? row.salaryMin ?? "", salaryMax: row.salary_max ?? row.salaryMax ?? "",
+      salaryText: row.salary_text || row.salaryText || "", url: row.url || "", source: row.source || "",
+      status: row.status || "Saved", viewed: Boolean(row.viewed), appliedDate: row.applied_date || row.appliedDate || "",
+      followUp: row.follow_up || row.followUp || "", resume: row.resume || "", coverLetter: row.cover_letter || row.coverLetter || "",
+      notes: row.notes || "", lastUpdated: row.last_updated || row.lastUpdated || ""
+    };
+  }
+  function fromDiscoveredJob(job) {
+    const raw=job||{};
+    return normalizeJob({
+      id: "DISC-" + text(raw.id), added: raw.created_at || raw.last_seen || "", track: raw.track,
+      title: raw.title, company: raw.company, location: raw.location, remote: raw.remote ? "Remote" : "",
+      salaryText: raw.salary_text || "", url: raw.url, source: raw.source || "Web", status: "Discovered",
+      viewed: false, notes: raw.snippet || "", lastUpdated: raw.last_seen || "",
+      fitScore: Math.max(55, Math.min(96, 50 + Number(raw.score || 7) * 3)), _discovered: true
+    });
+  }
   function normalizeJob(row, fields = JOB_FIELDS) {
     const raw = Array.isArray(row) ? Object.fromEntries(fields.map((key,index)=>[key,row[index] || ""])) : (row || {});
     return {...raw,id:text(raw.id),track:text(raw.track),title:text(raw.title)||"Untitled job",company:text(raw.company),location:text(raw.location),url:text(raw.url),source:text(raw.source)||"Web",status:text(raw.status)||"Saved",notes:text(raw.notes),_canonicalUrl:normalizeUrl(raw.url)};
@@ -34,5 +56,5 @@
       remove(name){try{localStorage.removeItem(key(name));}catch{}}
     };
   }
-  global.RavenCore={JOB_FIELDS,normalizeUrl,normalizeJob,normalizeJobs,jobFingerprint,generationFingerprint,createCache};
+  global.RavenCore={JOB_FIELDS,normalizeUrl,fromApiJob,fromDiscoveredJob,normalizeJob,normalizeJobs,jobFingerprint,generationFingerprint,createCache};
 }(window));
