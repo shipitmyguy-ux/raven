@@ -25,6 +25,8 @@
   const CACHE_DISCOVERED_KEY="ravenDiscoveredCacheV1";
   const DOCUMENT_APPROVALS_KEY="ravenDocumentApprovalsV1";
   const VIEWED_JOBS_KEY="ravenViewedJobsV1";
+  const APPLICATION_PROFILE_KEY="ravenApplicationProfileV1";
+  const ANSWER_MEMORY_KEY="ravenAnswerMemoryV1";
   const GENERATOR_PREFS_KEY="ravenGeneratorPreferencesV1";
   const USER_SETTINGS_KEY="ravenUserSettingsV1";
   const MASTER_RESUMES_KEY="ravenMasterResumesV1";
@@ -1178,7 +1180,14 @@
   function setDocumentApproved(job,type,approved){ const key=documentApprovalKey(job,type); if(approved) state.documentApprovals[key]={value:String(job[type]||""),approvedAt:new Date().toISOString()}; else delete state.documentApprovals[key]; writeCache(DOCUMENT_APPROVALS_KEY,state.documentApprovals); }
   function toggleDocumentApproval(job,type){ const approved=!isDocumentApproved(job,type); setDocumentApproved(job,type,approved); setStatus(documentLabel(type)+(approved?" approved":" approval removed")); render(); }
   function documentsReadyForApplication(job){ return Boolean(job.resume&&job.coverLetter&&isDocumentApproved(job,"resume")&&isDocumentApproved(job,"coverLetter")); }
-  function beginApprovedApplication(job){ if(!documentsReadyForApplication(job)){ setStatus("Approve the resume and cover letter before applying"); return; } window.open(job.url,"_blank","noopener"); setStatus("Approved documents locked · review the application before submitting"); }
+  function beginApprovedApplication(job){
+    if(!documentsReadyForApplication(job)){ setStatus("Approve the resume and cover letter before applying"); return; }
+    const packet={version:1,createdAt:new Date().toISOString(),jobId:job.id||"",jobUrl:job.url||"",title:job.title||"",company:job.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readCache(ANSWER_MEMORY_KEY,{})||{},resume:job.resume,coverLetter:job.coverLetter};
+    const bridge=document.getElementById("ravenExtensionBridge");
+    if(bridge){ bridge.dataset.packet=JSON.stringify(packet); document.dispatchEvent(new CustomEvent("raven-application-packet")); }
+    setTimeout(()=>window.open(job.url,"_blank","noopener"),120);
+    setStatus("Approved documents locked · Raven assistant prepared · review before submitting");
+  }
 
   function previewableDocumentUrl(value) {
     const url=String(value||"");
@@ -1393,7 +1402,7 @@
       const optionsCard=document.getElementById("optionsCard");
       const optionsCardTitle=document.getElementById("optionsCardTitle");
       const optionsBackButton=document.getElementById("optionsBackButton");
-      const categoryTitles={"master-resumes":"Master resumes",layout:"Layout","job-info":"Job information",behavior:"Behavior"};
+      const categoryTitles={"master-resumes":"Master resumes","application-profile":"Application profile",layout:"Layout","job-info":"Job information",behavior:"Behavior"};
 
       const showOptionsHome=()=>{
         if(!optionsCard || optionsCard.hidden) return;
@@ -1460,6 +1469,8 @@
           applyUserSetting(control.dataset.settingKey,value);
         });
       });
+      const profile=readCache(APPLICATION_PROFILE_KEY,{})||{}; optionsDialog.querySelectorAll("[data-profile-key]").forEach(input=>input.value=profile[input.dataset.profileKey]||"");
+      document.getElementById("saveApplicationProfile")?.addEventListener("click",()=>{ const next={}; optionsDialog.querySelectorAll("[data-profile-key]").forEach(input=>next[input.dataset.profileKey]=input.value.trim()); writeCache(APPLICATION_PROFILE_KEY,next); setStatus("Application profile saved"); });
       const resetOptionsButton=document.getElementById("resetOptionsButton");
       if(resetOptionsButton) resetOptionsButton.addEventListener("click",resetUserSettings);
 
