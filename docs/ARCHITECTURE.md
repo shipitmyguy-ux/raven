@@ -48,3 +48,11 @@ A queue acknowledgement is not equivalent to a successful generated document.
 
 ## Change discipline
 Do not create a parallel data/configuration system without a documented reason in `docs/DECISIONS.md`.
+
+## Reusable core and efficiency
+- `raven-core.js` owns canonical job normalization, URL normalization, stable fingerprints, and reusable browser cache helpers.
+- Source-specific ingestion should adapt into the canonical job shape instead of creating parallel downstream workflows.
+- Deterministic normalization, deduplication, rendering, persistence, and UI state stay outside model calls.
+- Generated AI content is structured data; browser code owns presentation/rendering.
+- Identical resume-generation inputs are fingerprinted and reused from cache rather than calling the model again.
+- Frontend search no longer performs timer-driven polling after a search; refresh happens on explicit actions, track changes, and return-to-app refresh.
