@@ -1120,7 +1120,7 @@
       masterResume:{id:masterResume.id||"",name:masterResume.name||"",sourceType:masterResume.sourceType||"",fileName:masterResume.fileName||"",mimeType:masterResume.mimeType||"",dataUrl:masterResume.dataUrl||""}
     })});
     const payload=await response.json().catch(()=>({}));
-    if(!response.ok) throw new Error(payload.error||("Online generation failed ("+response.status+")"));
+    if(!response.ok){ const error=new Error(payload.error||("Online generation failed ("+response.status+")")); error.code=payload.code||""; error.provider=payload.provider||""; error.retryable=Boolean(payload.retryable); error.upstreamStatus=payload.upstreamStatus||0; throw error; }
     const document=type==="coverLetter"?payload.coverLetter:payload.resume;
     if(!document) throw new Error("Online generator returned no "+documentLabel(type)+".");
     return document;
