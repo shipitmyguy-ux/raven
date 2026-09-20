@@ -1,4 +1,4 @@
-import {csvCells,splitCsvRecords,validAtsRow} from "../supabase/functions/raven-backend-v3/csv-records.js";
+import {csvCells,splitCsvRecords,validAtsRow} from "../supabase/functions/raven-backend-v3/csv-records.mjs";
 
 const assert=(ok,msg)=>{if(!ok)throw new Error(msg);};
 
