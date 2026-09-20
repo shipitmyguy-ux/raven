@@ -63,3 +63,19 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verificatio
 - [ ] Review generated docs
 - [ ] Refresh
 - [ ] Confirm all job/status/document data persists
+
+## P1 - Application automation / safety
+- [ ] Define structured CandidateProfile schema with source/provenance for verified facts.
+- [ ] Add ApplicationAnswerVault for user-approved deterministic answers and cached AI-drafted open-ended answers.
+- [ ] Add generated-claim provenance/anti-fabrication validation against CandidateProfile.
+- [ ] Preserve immutable original job-posting snapshots separately from enriched descriptions.
+- [ ] Improve duplicate detection across LinkedIn/Indeed/employer ATS copies of the same role.
+- [ ] Research/reuse established ATS adapter/configuration patterns before custom implementation; prioritize Greenhouse, Lever, Ashby, and Workday.
+- [ ] Keep final application Submit behind explicit user action.
+- [ ] Define privacy/storage boundaries for personal application data before adding autofill/email features.
+
+## P2 - Outcomes / intelligence
+- [ ] Add Contact, Interview, and FollowUp entities related to Job/Application.
+- [ ] Add optional email-driven application status classification/matching with user-visible corrections.
+- [ ] Add outcome analytics by source, role family, resume variant, tailoring, and interview/offer conversion.
+- [ ] Replace opaque ATS-style scores with supported-requirement coverage, unsupported requirements, and missing-evidence reporting.
