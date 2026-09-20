@@ -1198,8 +1198,10 @@
       }else{
         await window.RavenAPI.updateJob(job.id,{status:nextStatus,appliedDate});
       }
+      job.status=nextStatus;
+      job.appliedDate=appliedDate||"";
       state.selectedId=null;
-      await loadJobs();
+      if(job._discovered) await loadJobs(); else { writeCache(CACHE_JOBS_KEY,state.jobs); render(); }
       setStatus(isApplied?"Marked not applied":"Marked applied");
     }catch(error){
       setStatus("Update failed: "+error.message);
@@ -1253,8 +1255,10 @@
       }else{
         await window.RavenAPI.updateJob(job.id,{status:nextStatus,viewed:true});
       }
+      job.status=nextStatus;
+      job.viewed=true;
       state.selectedId=null;
-      await loadJobs();
+      if(job._discovered) await loadJobs(); else { writeCache(CACHE_JOBS_KEY,state.jobs); render(); }
       setStatus(ignored?"Moved to ignored":"Job restored");
     }catch(error){
       setStatus("Ignore update failed: "+error.message);
@@ -1282,8 +1286,9 @@
       }else{
         await window.RavenAPI.updateJob(job.id,{status:nextStatus});
       }
+      job.status=nextStatus;
       state.selectedId=null;
-      await loadJobs();
+      if(job._discovered) await loadJobs(); else { writeCache(CACHE_JOBS_KEY,state.jobs); render(); }
       setStatus(interested?"Bookmark removed":"Bookmarked");
     }catch(error){
       setStatus("Bookmark failed: "+error.message);
