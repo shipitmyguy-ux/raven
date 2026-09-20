@@ -25,6 +25,13 @@ Test representative sources, especially:
 
 Confirm descriptions are not empty, placeholder-only, or unexpectedly truncated.
 
+## ATS ingestion
+- [ ] Quoted multiline descriptions remain part of one CSV record/job.
+- [ ] ATS rows require a valid HTTP(S) job URL before persistence/rendering.
+- [ ] Description fragments never appear as standalone job cards.
+- [ ] Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable, and iCIMS sample records preserve title/company/url field alignment.
+- [ ] ATS byte, record, timeout, and result limits remain bounded after parser changes.
+
 ## Search
 - Trigger Search jobs now.
 - Confirm backend request runs without exposing a ChatGPT prompt/window.
@@ -72,3 +79,15 @@ Confirm descriptions are not empty, placeholder-only, or unexpectedly truncated.
 - [ ] JobAnalysis is reused for the same job description.
 - [ ] Generated work-experience entries contain no location.
 - [ ] Direct resume generation remains user-triggered; disabled ChatGPT queue automation is not required.
+
+## Application Assistant
+- [ ] Reviewing an approved existing document does not regenerate or alter it.
+- [ ] Regenerating/revising a resume invalidates only that resume approval.
+- [ ] Regenerating/revising a cover letter invalidates only that cover-letter approval.
+- [ ] Apply remains locked until both exact document versions are approved.
+- [ ] Application Profile fills only recognized reusable contact fields.
+- [ ] Answer Memory never fills sensitive/legal/demographic/attestation/salary/sponsorship/CAPTCHA/assessment questions.
+- [ ] Application packet is host-scoped, expires, and is removed after use.
+- [ ] Approved resume and cover letter attach to compatible employer file inputs without silent conversion or substitution.
+- [ ] No extension path clicks final Submit.
+- [ ] Applied status is updated only after strong completion evidence and correct job/host matching.

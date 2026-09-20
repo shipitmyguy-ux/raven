@@ -12,8 +12,8 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verificatio
 - [ ] Verify status changes persist after refresh.
 
 ## P0 - Documents
-- [!] Verify resume generation with a real online Gemini output (Edge Function deployed; Gemini secret still required).
-- [!] Verify cover-letter generation with a real output.
+- [!] Verify live end-to-end resume generation on a real job, correct job association, and persistence after refresh.
+- [!] Verify live end-to-end cover-letter generation on a real job, correct job association, and persistence after refresh.
 - [ ] Verify generated files attach to the correct job.
 - [ ] Verify generated-file links survive refresh.
 - [ ] Add/fix failure, timeout, retry, and stuck-task handling.
@@ -21,7 +21,7 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verificatio
 
 ## P1 - Efficiency
 - [~] Replace unnecessary model polling with event/on-demand processing. Frontend timer polling removed; return-to-app refresh now syncs saved jobs only instead of re-running discovery. Backend/automation polling still needs audit.
-- [~] Cache reusable inputs/results where practical. Resume generation, CandidateProfile extraction, and deterministic JobAnalysis are now cached on the refactor branch; verify invalidation in browser.
+- [x] Cache reusable inputs/results where practical. Resume generation, CandidateProfile extraction, and deterministic JobAnalysis are merged; generation invalidation has browser regression coverage.
 - [~] Keep deterministic processing out of AI paths. Canonical job normalization/fingerprinting moved into `raven-core.js`; continue migration after verification.
 - [ ] Review/remove obsolete five-minute polling if no longer needed.
 
@@ -65,14 +65,17 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verificatio
 - [ ] Confirm all job/status/document data persists
 
 ## P1 - Application automation / safety
-- [ ] Define structured CandidateProfile schema with source/provenance for verified facts.
-- [ ] Add ApplicationAnswerVault for user-approved deterministic answers and cached AI-drafted open-ended answers.
+- [~] Define structured CandidateProfile schema with source/provenance for verified facts. Local reusable profile extraction exists; provenance/claim validation remains.
+- [~] Add ApplicationAnswerVault. Local editable Answer Memory exists for reusable non-sensitive answers; approved AI-drafted open-ended answer workflow remains.
 - [ ] Add generated-claim provenance/anti-fabrication validation against CandidateProfile.
 - [ ] Preserve immutable original job-posting snapshots separately from enriched descriptions.
 - [ ] Improve duplicate detection across LinkedIn/Indeed/employer ATS copies of the same role.
-- [ ] Research/reuse established ATS adapter/configuration patterns before custom implementation; prioritize Greenhouse, Lever, Ashby, and Workday.
-- [ ] Keep final application Submit behind explicit user action.
+- [~] Application Assistant ATS adapters exist for Greenhouse, Lever, Ashby, Workday, iCIMS, Taleo, plus generic fallback; verify against real employer forms and current variants.
+- [x] Keep final application Submit behind explicit user action.
 - [ ] Define privacy/storage boundaries for personal application data before adding autofill/email features.
+- [x] Add browser regression proving document regeneration/revision invalidates exact-document approval.
+- [!] Verify approved resume/cover-letter attachment on real employer file inputs; do not mark complete from mocked tests alone.
+- [!] Verify conservative application-completion detection on real ATS confirmation pages without false positives.
 
 ## P2 - Outcomes / intelligence
 - [ ] Add Contact, Interview, and FollowUp entities related to Job/Application.
@@ -81,6 +84,8 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verificatio
 - [ ] Replace opaque ATS-style scores with supported-requirement coverage, unsupported requirements, and missing-evidence reporting.
 
 ## P1 - ATS-first job acquisition
+- [x] Make shared ATS CSV ingestion safe for quoted multiline records and reject malformed ATS rows with non-HTTP(S) URLs.
+- [!] Clean legacy malformed ATS rows from Supabase storage; frontend filtering is active and new malformed rows are blocked.
 - [ ] Evaluate established ATS adapters/libraries before building additional board-specific scrapers; prototype reuse of ats-scrapers patterns where licensing/dependencies fit Raven.
 - [ ] Add direct ATS adapters for Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable, iCIMS, Oracle, SuccessFactors, ADP, BambooHR, Personio, Recruitee, Breezy, and Teamtailor, prioritized by coverage and reliability.
 - [ ] Add generic schema.org/JobPosting JSON-LD extraction for unsupported employer career pages.
