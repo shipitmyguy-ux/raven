@@ -20,9 +20,9 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verificatio
 - [ ] Ensure generated content uses only verified qualifications.
 
 ## P1 - Efficiency
-- [ ] Replace unnecessary model polling with event/on-demand processing.
-- [ ] Cache reusable inputs/results where practical.
-- [ ] Keep deterministic processing out of AI paths.
+- [~] Replace unnecessary model polling with event/on-demand processing. Frontend post-search timer polling removed on refactor branch; backend/automation polling still needs audit.
+- [~] Cache reusable inputs/results where practical. Identical resume generation is now fingerprinted/cached on refactor branch; expand to job analysis after verification.
+- [~] Keep deterministic processing out of AI paths. Canonical job normalization/fingerprinting moved into `raven-core.js`; continue migration after verification.
 - [ ] Review/remove obsolete five-minute polling if no longer needed.
 
 ## P1 - Import/search/extension
