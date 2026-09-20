@@ -89,6 +89,14 @@ export async function finishRun(id:string|null,status:string,resultCount:number,
   }).catch(()=>{});
 }
 
+export async function deepSearchCooldown(track:Track,seconds=60){
+  const cutoff=new Date(Date.now()-seconds*1000).toISOString();
+  const r=await rest("raven_search_runs?select=id&track=eq."+encodeURIComponent(track)+"&created_at=gte."+encodeURIComponent(cutoff)+"&limit=1",{method:"GET"});
+  if(!r.ok) return false;
+  const rows=await r.json();
+  return Array.isArray(rows)&&rows.length>0;
+}
+
 export async function deepSearchRunning(track:Track){
   const cutoff=new Date(Date.now()-2*60*1000).toISOString();
   const r=await rest("raven_search_runs?select=id&track=eq."+encodeURIComponent(track)+"&status=eq.running&created_at=gte."+encodeURIComponent(cutoff)+"&limit=1",{method:"GET"});
