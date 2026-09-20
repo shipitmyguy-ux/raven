@@ -13,7 +13,7 @@
     generatorType: null,
     returnScrollY: null
   };
-  const columns = ["id","added","track","title","company","location","remote","salaryMin","salaryMax","salaryText","url","source","status","viewed","appliedDate","followUp","resume","coverLetter","notes","lastUpdated"];
+  const columns = window.RavenCore?.JOB_FIELDS || ["id","added","track","title","company","location","remote","salaryMin","salaryMax","salaryText","url","source","status","viewed","appliedDate","followUp","resume","coverLetter","notes","lastUpdated"];
   const status = document.getElementById("syncStatus");
   const list = document.getElementById("jobList");
   const template = document.getElementById("jobTemplate");
@@ -317,13 +317,12 @@
     }
   }
   function normalizeJobs(payload) {
+    if(window.RavenCore) return window.RavenCore.normalizeJobs(payload,columns);
     const rows = Array.isArray(payload) ? payload : payload.jobs || payload.rows || [];
-    return rows.map((row)=>{
-      if (!Array.isArray(row)) return row;
-      return Object.fromEntries(columns.map((key,index)=>[key,row[index]||""]));
-    }).filter((job)=>job.id||job.title||job.url);
+    return rows.map((row)=>Array.isArray(row)?Object.fromEntries(columns.map((key,index)=>[key,row[index]||""])):row).filter((job)=>job.id||job.title||job.url);
   }
   function normalizeComparableUrl(value) {
+    if(window.RavenCore) return window.RavenCore.normalizeUrl(value);
     try {
       const url = new URL(value || "");
       ["utm_source","utm_medium","utm_campaign","utm_term","utm_content","gh_src","source"].forEach((key)=>url.searchParams.delete(key));
