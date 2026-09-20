@@ -20,9 +20,9 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verificatio
 - [ ] Ensure generated content uses only verified qualifications.
 
 ## P1 - Efficiency
-- [ ] Replace unnecessary model polling with event/on-demand processing.
-- [ ] Cache reusable inputs/results where practical.
-- [ ] Keep deterministic processing out of AI paths.
+- [~] Replace unnecessary model polling with event/on-demand processing. Frontend timer polling removed; return-to-app refresh now syncs saved jobs only instead of re-running discovery. Backend/automation polling still needs audit.
+- [~] Cache reusable inputs/results where practical. Resume generation, CandidateProfile extraction, and deterministic JobAnalysis are now cached on the refactor branch; verify invalidation in browser.
+- [~] Keep deterministic processing out of AI paths. Canonical job normalization/fingerprinting moved into `raven-core.js`; continue migration after verification.
 - [ ] Review/remove obsolete five-minute polling if no longer needed.
 
 ## P1 - Import/search/extension
@@ -63,3 +63,31 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verificatio
 - [ ] Review generated docs
 - [ ] Refresh
 - [ ] Confirm all job/status/document data persists
+
+## P1 - Application automation / safety
+- [ ] Define structured CandidateProfile schema with source/provenance for verified facts.
+- [ ] Add ApplicationAnswerVault for user-approved deterministic answers and cached AI-drafted open-ended answers.
+- [ ] Add generated-claim provenance/anti-fabrication validation against CandidateProfile.
+- [ ] Preserve immutable original job-posting snapshots separately from enriched descriptions.
+- [ ] Improve duplicate detection across LinkedIn/Indeed/employer ATS copies of the same role.
+- [ ] Research/reuse established ATS adapter/configuration patterns before custom implementation; prioritize Greenhouse, Lever, Ashby, and Workday.
+- [ ] Keep final application Submit behind explicit user action.
+- [ ] Define privacy/storage boundaries for personal application data before adding autofill/email features.
+
+## P2 - Outcomes / intelligence
+- [ ] Add Contact, Interview, and FollowUp entities related to Job/Application.
+- [ ] Add optional email-driven application status classification/matching with user-visible corrections.
+- [ ] Add outcome analytics by source, role family, resume variant, tailoring, and interview/offer conversion.
+- [ ] Replace opaque ATS-style scores with supported-requirement coverage, unsupported requirements, and missing-evidence reporting.
+
+## P1 - ATS-first job acquisition
+- [ ] Evaluate established ATS adapters/libraries before building additional board-specific scrapers; prototype reuse of ats-scrapers patterns where licensing/dependencies fit Raven.
+- [ ] Add direct ATS adapters for Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable, iCIMS, Oracle, SuccessFactors, ADP, BambooHR, Personio, Recruitee, Breezy, and Teamtailor, prioritized by coverage and reliability.
+- [ ] Add generic schema.org/JobPosting JSON-LD extraction for unsupported employer career pages.
+- [ ] Treat LinkedIn, Indeed, Glassdoor, ZipRecruiter, Google Jobs, Monster, Dice, and niche boards primarily as discovery/provenance sources when a canonical employer/ATS posting is available.
+- [ ] Resolve discovered aggregator jobs to canonical employer/ATS postings and enrich missing/truncated metadata from that canonical source.
+- [ ] Add browser-extension extraction fallback for job pages the user can view when server-side metadata is incomplete; avoid CAPTCHA/access-control bypass techniques.
+- [ ] Add rendered-page extraction only as a final compatibility fallback after structured/API/browser-extension paths fail.
+- [ ] Build an employer -> ATS identifier registry so Raven can query employer career systems directly instead of relying only on aggregator search ranking.
+- [ ] Add source health/coverage telemetry: successful fetches, missing descriptions, stale postings, adapter failures, and canonical-source resolution rate.
+- [ ] Extend cross-source dedupe to merge aggregator and ATS copies while retaining every source URL/provenance record.

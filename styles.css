@@ -2142,3 +2142,8 @@ body.options-open > :not(main):not(.options-dialog) {
 @media (prefers-reduced-motion:reduce) {
   .generation-spinner { animation-duration:1.4s; }
 }
+
+/* Mandatory application approval gates */
+#reviewApprove.is-approved,.application-gate.is-ready{border-color:var(--success);color:var(--success);background:rgba(66,245,158,.12)}
+.application-gate:not(.is-ready){opacity:.82}
+.document-review-dialog footer{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}

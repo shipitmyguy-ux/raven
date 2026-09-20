@@ -6,6 +6,7 @@ on:
     paths:
       - "index.html"
       - "app.js"
+      - "raven-core.js"
       - "config.js"
       - "runtime-config.json"
       - "raven-api.js"

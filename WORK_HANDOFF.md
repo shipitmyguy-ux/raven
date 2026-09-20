@@ -180,3 +180,23 @@ New baseline for generated resumes:
 - two-page and factual-source constraints remain in place.
 Commits: `08aaf948`, `2426e902`, `027d447f`.
 Supabase `raven-generate-v1` version 6 deployed ACTIVE.
+
+
+## Reusable/token-efficiency refactor - 2026-09-19
+Started a safety-first refactor on branch `refactor/reusable-core` rather than changing production directly.
+
+Implemented:
+- added `raven-core.js` with canonical Job normalization, URL normalization, job/generation fingerprints, and reusable cache primitives,
+- wired frontend normalization to the shared core while retaining fallbacks,
+- added generation fingerprint caching so identical resume inputs can reuse structured output without another Gemini call,
+- removed three timer-driven post-search refresh polls; Raven now relies on explicit actions, track changes, and return-to-app refresh,
+- added a small standalone core test file under `tests/`,
+- documented the reusable/token-efficient architecture and updated efficiency tasks.
+
+Not yet production verified or merged. Next action: run syntax/core tests and browser smoke tests, inspect diff, then merge only if Raven load/search/status/resume behavior is preserved. Do not mark the refactor complete until that verification occurs.
+
+Additional refactor progress:
+- canonical saved-job and discovered-job adapters now live in `raven-core.js`, removing duplicate mapping logic from API/frontend paths,
+- master-resume text extraction now feeds a persistent local CandidateProfile cache so repeated offline generation does not repeatedly parse the same file,
+- deterministic JobAnalysis (keywords/title/company) is cached per job-description fingerprint and reused by instant generation and sent as hints to the online generator,
+- generation remains structured JSON -> deterministic browser renderer; presentation is not delegated to Gemini.
