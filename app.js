@@ -405,8 +405,12 @@
   }
 
   function normalizeDiscovered(results) {
-    if(window.RavenCore?.fromDiscoveredJob) return (results||[]).map(window.RavenCore.fromDiscoveredJob).filter((job)=>job.url);
-    return (results||[]).filter((job)=>job?.url);
+    if(window.RavenCore?.fromDiscoveredJob) {
+      return (results||[])
+        .map(window.RavenCore.fromDiscoveredJob)
+        .filter((job)=>job.url && (!window.RavenCore.isRenderableJob || window.RavenCore.isRenderableJob(job)));
+    }
+    return (results||[]).filter((job)=>job?.url && (!/^ATS:/i.test(String(job.source||"")) || /^https?:\/\//i.test(String(job.url||""))));
   }
 
   async function loadDiscovered(track = state.activeTrack) {
