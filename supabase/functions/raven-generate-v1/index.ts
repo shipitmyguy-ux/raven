@@ -77,7 +77,10 @@ function validateDocument(type:string,doc:any){
   if(doc.experience.some((x:any)=>!x||!validString(x.role)||!validString(x.company)||!validString(x.dates)||!Array.isArray(x.bullets)||!x.bullets.length)) return "AI returned malformed experience history.";
   return "";
 }
-function retryableProviderStatus(status:number){return status===408||status===429||status>=500;}\nconst GEMINI_MODEL="gemini-3.5-flash-lite";\nconst DIRECT_GEMINI_BASE="https://generativelanguage.googleapis.com";\nconst GATEWAY_GEMINI_BASE="https://gateway.ai.cloudflare.com/v1/0be401023d08048c03bbfbb0576fa89f/raven/google-ai-studio";
+function retryableProviderStatus(status:number){return status===408||status===429||status>=500;}
+const GEMINI_MODEL="gemini-3.5-flash-lite";
+const DIRECT_GEMINI_BASE="https://generativelanguage.googleapis.com";
+const GATEWAY_GEMINI_BASE="https://gateway.ai.cloudflare.com/v1/0be401023d08048c03bbfbb0576fa89f/raven/google-ai-studio";
 
 Deno.serve(async(req:Request)=>{
   if(req.method==="OPTIONS") return new Response("ok",{headers:cors(req)});
@@ -111,7 +114,8 @@ Deno.serve(async(req:Request)=>{
     "TARGET COMPANY: "+String(body.company||""),
     "JOB DESCRIPTION:", jobDescription,
     "MASTER RESUME is attached as the factual source of truth."
-  ].filter(Boolean).join("\\n") : [
+  ].filter(Boolean).join("\
+") : [
     "Create a tailored, ATS-friendly resume for the target job using ONLY facts contained in the MASTER RESUME.",
     "Never invent or infer employers, titles, dates, tools, certifications, metrics, education, achievements, or responsibilities.",
     "Mirror important terminology from the JOB DESCRIPTION only when the MASTER RESUME supports that wording.",
@@ -135,7 +139,8 @@ Deno.serve(async(req:Request)=>{
     Array.isArray(body.jobAnalysis?.keywords) ? body.jobAnalysis.keywords.slice(0,24).join(", ") : "",
     "",
     "MASTER RESUME is attached as the factual source of truth. Read it completely before drafting."
-  ].join("\\n");
+  ].join("\
+");
 
   try{
     const r=await fetch(`${GATEWAY_GEMINI_BASE}/v1beta/models/${GEMINI_MODEL}:generateContent`,{
