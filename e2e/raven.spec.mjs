@@ -4,8 +4,8 @@ const savedJob={id:"job-1",track:"Professional",title:"Implementation Project Ma
 const generatedResume={name:"Test Candidate",headline:"Project & Implementation Leader",contact:"candidate@example.com",summary:"Experienced delivery leader.",skills:["Project delivery","Team leadership"],experience:[{role:"Environment Artist",company:"Example Studio",dates:"2020–2025",bullets:["Led delivery across internal teams."]}],education:[{degree:"Bachelor's Degree",school:"Example University",location:"",dates:""}],additional:[]};
 const generatedLetter={greeting:"Dear Hiring Manager,",paragraphs:["I am applying for the Implementation Project Manager role.","My background includes project delivery and internal team leadership."],closing:"Sincerely,",signature:"Test Candidate"};
 
-async function mockRaven(page,{generatorFails=false}={}){
-  let job={...savedJob};
+async function mockRaven(page,{generatorFails=false,initialJob=null}={}){
+  let job={...savedJob,...(initialJob||{})};
   let generationCalls=0;
   await page.route("**/functions/v1/raven-data-v1**",async route=>{
     const req=route.request();
@@ -89,4 +89,115 @@ test("application profile controls are available",async({page})=>{
   await page.locator('[data-options-target="application-profile"]').click();
   await expect(page.locator('[data-profile-key="firstName"]')).toBeVisible();
   await expect(page.locator("#saveApplicationProfile")).toBeVisible();
+});
+
+
+test("review preserves approved document and revision invalidates approval",async({page})=>{
+  const resumeV1="data:text/html;charset=utf-8,resume-v1";
+  const letterV1="data:text/html;charset=utf-8,letter-v1";
+  await page.addInitScript(({resumeV1,letterV1})=>{
+    localStorage.setItem("ravenDocumentApprovalsV1",JSON.stringify({
+      "job-1|resume":{value:resumeV1,approvedAt:new Date().toISOString()},
+      "job-1|coverLetter":{value:letterV1,approvedAt:new Date().toISOString()}
+    }));
+    localStorage.setItem("ravenMasterResumesV1",JSON.stringify([{
+      id:"master-test",name:"Test master",sourceType:"local",fileName:"master.txt",tracks:["Professional"]
+    }]));
+  },{resumeV1,letterV1});
+
+  const api=await mockRaven(page,{initialJob:{resume:resumeV1,cover_letter:letterV1}});
+  await page.goto("/");
+  await page.evaluate(()=>new Promise((resolve,reject)=>{
+    const request=indexedDB.open("ravenMasterResumeFilesV1",1);
+    request.onupgradeneeded=()=>{
+      if(!request.result.objectStoreNames.contains("files")) request.result.createObjectStore("files");
+    };
+    request.onerror=()=>reject(request.error);
+    request.onsuccess=()=>{
+      const db=request.result;
+      const tx=db.transaction("files","readwrite");
+      tx.objectStore("files").put(new File(["Verified master resume content"],"master.txt",{type:"text/plain"}),"master-test");
+      tx.oncomplete=()=>{db.close();resolve();};
+      tx.onerror=()=>reject(tx.error);
+    };
+  }));
+
+  await page.locator('[data-track="Professional"]').click();
+  await page.locator(".job-card-summary").first().click();
+  await expect(page.locator("[data-approved-apply]")).toContainText("Apply");
+
+  await page.locator('[data-queue="resume"]').click();
+  await expect(page.locator("#documentReviewDialog")).toBeVisible();
+  expect(api.getGenerationCalls()).toBe(0);
+
+  await page.locator("#reviewInstructions").fill("Make the summary shorter.");
+  await page.locator("#reviewSubmit").click();
+  await expect.poll(()=>api.getGenerationCalls()).toBe(1);
+  await expect(page.locator("#reviewApprove")).toHaveText("Approve document");
+
+  const approvals=await page.evaluate(()=>JSON.parse(localStorage.getItem("ravenDocumentApprovalsV1")||"{}"));
+  expect(approvals["job-1|resume"]).toBeUndefined();
+  expect(approvals["job-1|coverLetter"]?.value).toBe(letterV1);
+
+  await page.locator('[data-review-close]').first().click();
+  await expect(page.locator("[data-approved-apply]")).toContainText("Approve docs");
+});
+
+test("Answer Memory stores only reusable non-sensitive answers",async({page})=>{
+  await mockRaven(page);
+  await page.goto("/");
+  await page.locator("#optionsButton").click();
+  await page.locator('[data-options-target="answer-memory"]').click();
+  await page.locator("#answerMemoryQuestion").fill("Are you willing to travel occasionally?");
+  await page.locator("#answerMemoryAnswer").fill("Yes, up to 20%.");
+  await page.locator("#saveAnswerMemory").click();
+
+  let memory=await page.evaluate(()=>JSON.parse(localStorage.getItem("ravenAnswerMemoryV1")||"{}"));
+  expect(memory["are you willing to travel occasionally"]).toBe("Yes, up to 20%.");
+  await expect(page.locator("#answerMemoryList")).toContainText("Willing To Travel");
+
+  await page.locator("#answerMemoryQuestion").fill("What salary do you expect?");
+  await page.locator("#answerMemoryAnswer").fill("$100,000");
+  await page.locator("#saveAnswerMemory").click();
+  memory=await page.evaluate(()=>JSON.parse(localStorage.getItem("ravenAnswerMemoryV1")||"{}"));
+  expect(memory["what salary do you expect"]).toBeUndefined();
+  await expect(page.locator("#syncStatus")).toContainText("not stored");
+});
+
+test("strong extension completion event marks only the matching job Applied",async({page})=>{
+  const api=await mockRaven(page);
+  await page.goto("/");
+  await page.evaluate(()=>{
+    const bridge=document.getElementById("ravenExtensionBridge");
+    bridge.dataset.completion=JSON.stringify({
+      version:1,
+      jobId:"job-1",
+      jobUrl:"https://example.com/job/1",
+      host:"example.com",
+      adapter:"generic",
+      completedAt:new Date().toISOString()
+    });
+    document.dispatchEvent(new CustomEvent("raven-application-complete"));
+  });
+  await expect.poll(()=>api.getJob().status).toBe("Applied");
+  await expect(page.locator("#syncStatus")).toContainText("marked Applied");
+});
+
+test("completion event with host mismatch is ignored",async({page})=>{
+  const api=await mockRaven(page);
+  await page.goto("/");
+  await page.evaluate(()=>{
+    const bridge=document.getElementById("ravenExtensionBridge");
+    bridge.dataset.completion=JSON.stringify({
+      version:1,
+      jobId:"job-1",
+      jobUrl:"https://evil.example/job/1",
+      host:"evil.example",
+      adapter:"generic",
+      completedAt:new Date().toISOString()
+    });
+    document.dispatchEvent(new CustomEvent("raven-application-complete"));
+  });
+  await page.waitForTimeout(100);
+  expect(api.getJob().status).toBe("Saved");
 });

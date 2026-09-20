@@ -1,4 +1,5 @@
 const RAVEN_URL = "https://shipitmyguy-ux.github.io/raven/";
+const RAVEN_MATCH = "https://shipitmyguy-ux.github.io/raven/*";
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => {
@@ -21,4 +22,14 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (title) target.searchParams.set("title", title);
 
   chrome.tabs.create({ url: target.toString() });
+});
+
+chrome.runtime.onMessage.addListener((message) => {
+  if(message?.type!=="raven-application-complete"||!message.completion) return;
+  chrome.tabs.query({url:RAVEN_MATCH},(tabs)=>{
+    tabs.forEach((tab)=>{
+      if(!tab.id) return;
+      chrome.tabs.sendMessage(tab.id,{type:"raven-application-complete",completion:message.completion},()=>void chrome.runtime.lastError);
+    });
+  });
 });
