@@ -2147,3 +2147,55 @@ body.options-open > :not(main):not(.options-dialog) {
 #reviewApprove.is-approved,.application-gate.is-ready{border-color:var(--success);color:var(--success);background:rgba(66,245,158,.12)}
 .application-gate:not(.is-ready){opacity:.82}
 .document-review-dialog footer{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+
+
+/* Application assistant: reusable answer memory */
+.answer-memory-list {
+  display:grid;
+  gap:8px;
+  margin:0 0 12px;
+}
+
+.answer-memory-item {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px;
+  border:1px solid var(--panel-border,rgba(255,255,255,.14));
+  border-radius:8px;
+  background:rgba(255,255,255,.03);
+}
+
+.answer-memory-item > div:first-child {
+  min-width:0;
+  display:grid;
+  gap:4px;
+}
+
+.answer-memory-item strong,
+.answer-memory-item small {
+  overflow-wrap:anywhere;
+}
+
+.answer-memory-item small {
+  color:var(--muted);
+}
+
+.answer-memory-actions {
+  display:flex;
+  gap:6px;
+  flex:0 0 auto;
+}
+
+.answer-memory-editor {
+  display:grid;
+  gap:10px;
+  padding-top:10px;
+  border-top:1px solid var(--panel-border,rgba(255,255,255,.14));
+}
+
+.answer-memory-editor textarea {
+  width:100%;
+  resize:vertical;
+}
