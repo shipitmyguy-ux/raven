@@ -120,6 +120,7 @@ test("local master resume and track assignments persist through reload",async({p
   await page.locator('.master-resume-tracks input[value="Professional"]').check();
   await page.locator('.master-resume-tracks input[value="Games / 3D"]').check();
   await page.locator("#saveMasterResumeButton").click();
+  await expect(page.locator("#syncStatus")).toContainText("Master resume saved");
 
   const before=await page.evaluate(()=>JSON.parse(localStorage.getItem("ravenMasterResumesV1")||"[]"));
   expect(before).toHaveLength(1);
