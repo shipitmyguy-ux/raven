@@ -76,7 +76,8 @@ Deno.serve(async(req:Request)=>{
     const catalog={experience:(profile.experience||[]).flatMap((e:any)=>(e.facts||[]).map((f:any)=>({id:f.id,text:f.text}))),transferable_facts:profile.transferable_facts||[]};
     const prompt=["Select the strongest factual evidence for a concise cover letter. Return IDs only. Do not invent or rewrite facts.","TRACK: "+track,"TARGET: "+title+" at "+company,"JOB DESCRIPTION:",desc,"FACT CATALOG:",JSON.stringify(catalog)].join("\n\n");
     const key=Deno.env.get("RAVEN_GEMINI_API_KEY")||Deno.env.get("GEMINI_API_KEY")||"";if(!key)throw new Error("Gemini not configured");
-    const generated=await selectFacts(prompt,key);\n    const sel=generated.data;
+    const generated=await selectFacts(prompt,key);
+    const sel=generated.data;
     const coverLetter=build(profile,sel,track,title,company);
     await finish(eid,"success",200);
     return json(req,{ok:true,provider:"gemini",model:generated.model,architecture:"canonical-profile+fact-selection",selection:sel,coverLetter});

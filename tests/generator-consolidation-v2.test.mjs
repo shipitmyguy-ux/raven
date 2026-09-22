@@ -21,6 +21,7 @@ assert.match(cover,/RAVEN_GEMINI_FALLBACK_MODEL/,"Cover generator must support a
 assert.match(resume,/model:generated\.model/,"Resume response must report the model actually used.");
 assert.match(cover,/model:generated\.model/,"Cover response must report the model actually used.");
 for(const src of [resume,cover]){
+  assert.doesNotMatch(src,/\\\\n\\s+const (?:selection|sel)=generated\\.data/,"Generator source must not contain escaped newline text in executable TypeScript.");
   assert.match(src,/x-raven-client/,"Generator routes must require the Raven client header.");
   assert.doesNotMatch(src,/\|\|req\.method===[\"']GET[\"']/,"GET health routes must not bypass client authentication.");
 }

@@ -145,7 +145,8 @@ Deno.serve(async(req:Request)=>{
   ].join("\n\n");
   try{
     const key=Deno.env.get("RAVEN_GEMINI_API_KEY")||Deno.env.get("GEMINI_API_KEY")||"";if(!key)throw new Error("Gemini not configured");
-    const generated=await callGemini(prompt,key);\n    const selection=generated.data;
+    const generated=await callGemini(prompt,key);
+    const selection=generated.data;
     const resume=build(profile,selection,track);
     const errors=validate(resume,profile,track);
     if(errors.length){await finish(eid,"failure",502,errors.join(","));return json(req,{error:"Deterministic validation failed",validation_errors:errors},502);}
