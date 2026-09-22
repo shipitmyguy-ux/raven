@@ -1,5 +1,7 @@
 import { driveExportTarget } from "./drive-source.mjs";
 import { requestGuard, requestFinish } from "./request-budget.ts";
+import { fetchGenerationPolicies, applyGenerationPolicies, extractMasterText, GenerationPolicyMap } from "./policy.ts";
+
 const ALLOWED_ORIGINS=new Set([
   "https://shipitmyguy-ux.github.io",
   "http://localhost:8000",
@@ -71,7 +73,7 @@ function validString(value:unknown){return typeof value==="string"&&value.trim()
 function placeholderText(value:unknown){
   return /^(?:not provided(?: in master resume)?|n\/?a|none|available upon request)$/i.test(String(value||"").trim());
 }
-function normalizeGeneratedDocument(type:string,doc:any){
+function normalizeGeneratedDocument(type:string,doc:any,policies:GenerationPolicyMap,masterSourceText="",jobLocation=""){
   if(!doc||typeof doc!=="object") return doc;
   if(type==="coverLetter"){
     return {
@@ -85,7 +87,8 @@ function normalizeGeneratedDocument(type:string,doc:any){
     .map((x:any)=>({degree:String(x?.degree||"").trim(),school:String(x?.school||"").trim(),location:String(x?.location||"").trim(),dates:String(x?.dates||"").trim()}))
     .filter((x:any)=>[x.degree,x.school,x.location,x.dates].some((v:any)=>validString(v)&&!placeholderText(v)))
     .slice(0,3);
-  return {
+
+  const rawNormalized = {
     name:String(doc.name||"").trim(),
     contact:placeholderText(doc.contact)?"":String(doc.contact||"").trim(),
     headline:String(doc.headline||"").trim(),
@@ -100,6 +103,8 @@ function normalizeGeneratedDocument(type:string,doc:any){
     education,
     additional:(Array.isArray(doc.additional)?doc.additional:[]).map((x:any)=>String(x||"").trim()).filter(Boolean).slice(0,6)
   };
+
+  return applyGenerationPolicies(rawNormalized, policies, masterSourceText, jobLocation);
 }
 function validateDocument(type:string,doc:any){
   if(!doc||typeof doc!=="object") return "AI returned no structured document.";
@@ -177,6 +182,9 @@ Deno.serve(async(req:Request)=>{
   }
   const budgetEventId=Number(budget.event_id||0)||null;
 
+  // Load generation policies from Supabase raven_generation_policy
+  const policies = await fetchGenerationPolicies();
+
   let masterBase64="";
   if(masterDataUrl){
     const dataMatch=masterDataUrl.match(/^data:([^;,]+)?;base64,(.+)$/s);
@@ -197,6 +205,9 @@ Deno.serve(async(req:Request)=>{
     }
   }
 
+  const masterSourceText = extractMasterText(body.masterResume || {});
+  const jobLocation = String(body.jobLocation || body.location || "").trim();
+
   const documentType=body.documentType==="coverLetter"?"coverLetter":"resume";
   const instructions=String(body.instructions||"").trim();
   const prompt=documentType==="coverLetter" ? [
@@ -209,7 +220,7 @@ Deno.serve(async(req:Request)=>{
     "TARGET COMPANY: "+String(body.company||""),
     "JOB DESCRIPTION:", jobDescription,
     "MASTER RESUME is attached as the factual source of truth."
-  ].filter(Boolean).join("\\n") : [
+  ].filter(Boolean).join("\n") : [
     "Create a tailored, ATS-friendly resume for the target job using ONLY facts contained in the MASTER RESUME.",
     "Never invent or infer employers, titles, dates, tools, certifications, metrics, education, achievements, or responsibilities.",
     "PRESERVE FACTUAL IDENTITY FIELDS EXACTLY as written in the MASTER RESUME: candidate name, contact information, employer names, official job titles, employment dates, school names, degree names, and education dates. Never rewrite, generalize, modernize, or optimize those fields.",
@@ -218,6 +229,7 @@ Deno.serve(async(req:Request)=>{
     "Optimize for ATS and AI-assisted screening without keyword stuffing.",
     "Use conventional sections and concise accomplishment-oriented bullets.",
     "Do not include location for any work-experience entry. Omit city, state, country, remote location, and office location from employment history.",
+    "CRITICAL EDUCATION LOCATION RULE: Do not infer, estimate, or fabricate education locations. For each education entry, set location ONLY if an explicit education location is explicitly present in the MASTER RESUME. If the MASTER RESUME does not explicitly list an education location for that institution, set location to an empty string \"\". Do NOT use the candidate's home/current location, school name, target job location, or prior knowledge as the education location.",
     "The rendered resume must fit within TWO US letter pages with normal professional readability.",
     "Keep at most 16 core skills, at most 5 experience entries, and normally 3-4 bullets per recent/relevant role.",
     "Prefer the most relevant and recent material; omit lower-value content rather than shrinking readability.",
@@ -235,7 +247,7 @@ Deno.serve(async(req:Request)=>{
     Array.isArray(body.jobAnalysis?.keywords) ? body.jobAnalysis.keywords.slice(0,24).join(", ") : "",
     "",
     "MASTER RESUME is attached as the factual source of truth. Read it completely before drafting."
-  ].join("\\n");
+  ].join("\n");
 
   try{
     let route="cloudflare-ai-gateway";
@@ -272,7 +284,7 @@ Deno.serve(async(req:Request)=>{
       return json(req,{error:"Gemini returned an empty response."},502);
     }
     let document:any;
-    try{document=normalizeGeneratedDocument(documentType,JSON.parse(text));}catch{
+    try{document=normalizeGeneratedDocument(documentType,JSON.parse(text),policies,masterSourceText,jobLocation);}catch{
       await requestFinish(budgetEventId,"failure",502,"Gemini returned invalid structured output.").catch(()=>{});
       return json(req,{error:"Gemini returned invalid structured output.",code:"AI_OUTPUT_INVALID",provider:"gemini",retryable:true},502);
     }
