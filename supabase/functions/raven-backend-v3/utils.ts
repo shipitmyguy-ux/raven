@@ -49,7 +49,7 @@ export function score(track:Track,c:Candidate){
     else if(text.includes(term)) n+=2;
   }
   for(const term of TRACKS[track].exclude) if(text.includes(term)) n-=10;
-  if(!titleMatch && track!=="Wildcard") n-=4;
+  if(!titleMatch) n-=4;
   if(c.remote) n+=2;
   if(/fort collins|loveland|windsor|greeley|colorado/.test(text)) n+=2;
   if(c.source==="LinkedIn") n+=1;
@@ -70,8 +70,6 @@ export function rankCandidates(track:Track,candidates:Candidate[],limit=40){
     const url=normalizeUrl(c0.url);
     if(!url) continue;
     const c={...c0,url};
-    const title=String(c.title||"").toLowerCase();
-    if(track==="Wildcard" && /\bengineer\b|\bengineering\b|\bprogrammer\b|\bdeveloper\b/.test(title)) continue;
     c.score=score(track,c);
     if((c.score||0)<3) continue;
     if(c.posted_at&&daysOld(c.posted_at)>60) continue;
