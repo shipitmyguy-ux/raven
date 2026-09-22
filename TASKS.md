@@ -33,8 +33,8 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verificatio
 - [ ] Preserve source provenance and original URL.
 
 ## P1 - Data/backup
-- [ ] Confirm Supabase remains the single live source of truth.
-- [ ] Verify Google Sheets backup/export flow.
+- [x] Confirm Supabase remains the single live source of truth.
+- [x] Retire Google Sheets as a live write target; any future backup is export-only.
 - [ ] Document/verify restore procedure.
 - [ ] Verify clean export of Raven data.
 
@@ -49,7 +49,7 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verificatio
 - [ ] Add useful backend/frontend error reporting.
 - [ ] Add deployment regression checklist.
 - [ ] Add basic health/status view.
-- [ ] Remove dead legacy/localStorage/old Sheets/old ChatGPT-window paths when confirmed unused.
+- [x] Remove dead legacy backend/queue/Sheets paths. Keep localStorage only for cache, offline pending sync, application profile/answer memory, and device-local master resumes.
 - [ ] Review repository for accidentally committed secrets.
 
 ## Production acceptance test
