@@ -21,9 +21,10 @@ for(const src of [resume,cover]){
 assert.doesNotMatch(resume,/headline:"[^"]*Customer Success/i);
 assert.doesNotMatch(resume,/HVAC|facility maintenance|mechanical upkeep/i);
 assert.doesNotMatch(cover,/HVAC|facility maintenance|mechanical upkeep/i);
-assert.match(resume,/coffee makers used on Boeing 747 and 737 aircraft/);
+assert.doesNotMatch(resume,/17 years of professional game-development experience|coffee makers used on Boeing 747 and 737 aircraft/,"Resume summaries must not hard-code candidate facts outside canonical selection.");
 assert.match(resume,/location:clean\(e\.location/);
 assert.match(resume,/Do not imply direct customer-success, account-management, SaaS, or implementation experience/);
+assert.doesNotMatch(cover,/My background (?:is centered|combines)/,"Cover-letter narrative must not hard-code candidate claims outside selected canonical facts.");
 
 for(const src of [resume,cover]){
   assert.doesNotMatch(src,/FACT-(?:REQ|RES|EXP|EDU)-/);
