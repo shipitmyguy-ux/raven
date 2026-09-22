@@ -392,7 +392,39 @@ test.describe("Synthetic Application Assistant Adapter Smoke Tests", () => {
         });
       });
 
+      const submissionRequests = [];
+      page.on("request", (request) => {
+        if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) {
+          submissionRequests.push({ method: request.method(), url: request.url() });
+        }
+      });
+
       await page.goto(fixture.url);
+
+      // Add two safety fixtures that the assistant must not alter:
+      // one prefilled unrelated upload and one resume-like input that rejects HTML.
+      await page.evaluate(() => {
+        const form = document.querySelector("form");
+        if (!form) return;
+        const existing = document.createElement("input");
+        existing.type = "file";
+        existing.id = "existing_attachment";
+        existing.name = "portfolio_attachment";
+        existing.accept = ".txt";
+        form.appendChild(existing);
+
+        const incompatible = document.createElement("input");
+        incompatible.type = "file";
+        incompatible.id = "incompatible_attachment";
+        incompatible.name = "resume_pdf_only";
+        incompatible.accept = ".pdf";
+        form.appendChild(incompatible);
+      });
+      await page.locator("#existing_attachment").setInputFiles({
+        name: "existing-portfolio.txt",
+        mimeType: "text/plain",
+        buffer: Buffer.from("KEEP EXISTING FILE")
+      });
 
       // Add submit listener to ensure form submit is NEVER triggered
       await page.evaluate(() => {
@@ -443,12 +475,32 @@ test.describe("Synthetic Application Assistant Adapter Smoke Tests", () => {
         })));
       });
 
-      const attachedTexts = attachedFiles.map((f) => f.text).join(" ");
-      expect(attachedTexts).toContain(resumeContent);
+      const resumeAttachment = attachedFiles.find((f) => f.text.includes(resumeContent));
+      const coverAttachment = attachedFiles.find((f) => f.text.includes(coverContent));
+      expect(resumeAttachment, "exact approved resume must be attached").toBeTruthy();
+      expect(coverAttachment, "exact approved cover letter must be attached").toBeTruthy();
+      expect(resumeAttachment.name).toMatch(/resume/i);
+      expect(coverAttachment.name).toMatch(/cover/i);
 
-      // 6. Verify form was NEVER submitted
+      // 6. Existing unrelated file input must be preserved, and an incompatible
+      // resume-like .pdf-only input must not receive the approved HTML document.
+      const safetyFiles = await page.evaluate(async () => {
+        const existing = document.querySelector("#existing_attachment");
+        const incompatible = document.querySelector("#incompatible_attachment");
+        return {
+          existingName: existing?.files?.[0]?.name || "",
+          existingText: existing?.files?.[0] ? await existing.files[0].text() : "",
+          incompatibleCount: incompatible?.files?.length || 0
+        };
+      });
+      expect(safetyFiles.existingName).toBe("existing-portfolio.txt");
+      expect(safetyFiles.existingText).toBe("KEEP EXISTING FILE");
+      expect(safetyFiles.incompatibleCount).toBe(0);
+
+      // 7. Verify form was NEVER submitted and no finalization request escaped.
       const wasSubmitted = await page.evaluate(() => window.__formSubmitted === true);
       expect(wasSubmitted).toBe(false);
+      expect(submissionRequests).toEqual([]);
     });
   }
 });
