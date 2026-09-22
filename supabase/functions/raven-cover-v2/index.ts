@@ -48,13 +48,7 @@ function build(profile:any,sel:any,track:string,title:string,company:string){
   const factual=[...chosenExp,...chosenX].slice(0,6);
   if(factual.length<2)throw new Error("Insufficient supported facts selected");
 
-  const openingByTrack:any={
-    "Games / 3D":"My background is centered on environment art, world building, visual-quality ownership, and collaboration across art, design, and engineering teams.",
-    "Labor":"My background combines hands-on maintenance and repair experience with a long record of troubleshooting problems, improving workflows, and delivering reliable work in production environments.",
-    "Professional":"My background combines project delivery, team leadership, mentoring and onboarding, workflow improvement, technical troubleshooting, and cross-functional coordination.",
-    "Wildcard":"My background combines leadership, mentoring and onboarding, project delivery, workflow improvement, troubleshooting, automation, and cross-functional collaboration."
-  };
-  const p1="I am interested in the "+title+" position at "+company+". "+openingByTrack[track];
+  const p1="I am interested in the "+title+" position at "+company+".";
   const p2="Examples that may transfer to this role include: "+factual.map(x=>x.replace(/[.]$/,"")).join("; ")+". ";
   const p3=track==="Games / 3D"
     ? "I would welcome the opportunity to bring that experience to "+company+" and contribute to the team's visual and production goals."
