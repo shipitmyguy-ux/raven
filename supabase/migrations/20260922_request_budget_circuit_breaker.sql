@@ -110,7 +110,7 @@ security definer
 set search_path = ''
 as $$
 begin
-  if p_status not in ('success','failure') then
+  if p_status not in ('success','failure','rejected') then
     raise exception 'invalid request event status';
   end if;
   update public.raven_request_events
