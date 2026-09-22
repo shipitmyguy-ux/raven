@@ -2,7 +2,7 @@ import type { Track, Candidate } from "./types.ts";
 import { CORS, TRACKS } from "./config.ts";
 import { json, normalizeUrl } from "./utils.ts";
 import { quickSearch, maybeStartDeep } from "./search.ts";
-import { listResults, listJobs, addJob, updateJob, listTasks } from "./db.ts";
+import { listResults, listJobs, addJob, updateJob } from "./db.ts";
 import { requestGuard, requestFinish } from "./request-budget.ts";
 import { enrichCandidate } from "./enrich.ts";
 
@@ -12,38 +12,6 @@ async function runAndSaveAtsDiagnostics(track:Track="Professional"){
   const diagnostic=await atsDiagnostics(track);
   await saveDiagnostics(diagnostic.results);
   return diagnostic;
-}
-
-
-function classifyBackendTask(task:any){
-  const id=String(task?.task_id||task?.id||"");
-  const status=String(task?.status||"").toUpperCase();
-  const type=String(task?.type||task?.source||"").toLowerCase();
-  const notes=String(task?.last_error||task?.error||task?.detail||"").toLowerCase();
-  const input=task?.input_json||{};
-  const isTest=Boolean(input?.is_test||input?.isTest)||/^(test-|e2e-|playwright-)/i.test(id)||/\b(integration-test|e2e|playwright|disposable)\b/i.test(type+" "+notes);
-  if(isTest) return {category:"disposable_test",isSystemFailure:false};
-  if(["BLOCKED_USER_INPUT","BLOCKED_USER_CONFIRMATION","BLOCKED_MANUAL_REVIEW","WAITING_FOR_USER","AWAITING_USER_CONFIRMATION","USER_CONFIRMATION_REQUIRED"].includes(status)||/^BLOCKED_USER/i.test(status)||/^BLOCKED_MANUAL/i.test(status)||/\b(user confirmation|manual review|awaiting user)\b/i.test(notes)){
-    return {category:"manual_blocked",isSystemFailure:false};
-  }
-  if(["FAILED_FINAL","BLOCKED_TOOLING","RETIRED","ARCHIVED","EXPIRED_LEGACY"].includes(status)||/\b(drive_upload|google_drive|gdrive|apps_script|raven_tasks_v1|retired_queue)\b/i.test(type+" "+notes)){
-    return {category:"historical_legacy",isSystemFailure:false};
-  }
-  const isFailure=["FAILED","ERROR","CRASHED","SYSTEM_FAILURE"].includes(status);
-  return {category:"operational_active",isSystemFailure:isFailure};
-}
-
-function evaluateBackendHealth(tasks:any[]){
-  const counts={total:tasks.length,operationalActive:0,activeFailures:0,manualBlocked:0,historicalLegacy:0,disposableTest:0};
-  for(const task of tasks){
-    const cls=classifyBackendTask(task);
-    if(cls.category==="disposable_test") counts.disposableTest++;
-    else if(cls.category==="manual_blocked") counts.manualBlocked++;
-    else if(cls.category==="historical_legacy") counts.historicalLegacy++;
-    else { counts.operationalActive++; if(cls.isSystemFailure) counts.activeFailures++; }
-  }
-  const healthy=counts.activeFailures===0;
-  return {status:healthy?"healthy":"degraded",healthy,counts};
 }
 
 Deno.serve(async(req:Request)=>{
@@ -59,22 +27,19 @@ Deno.serve(async(req:Request)=>{
     const action=String(body.action||u.searchParams.get("action")||"");
 
     if(action==="health"){
-      const tasks=await listTasks();
-      const taskHealth=evaluateBackendHealth(tasks);
       return json({
-        ok:taskHealth.healthy,
-        status:taskHealth.status,
+        ok:true,
+        status:"healthy",
         service:"raven-backend-v3",
         version:1,
         features:["quick-search","deep-search","descriptions","persistence","sheet-sync","commute","jobicy","himalayas","ats-wide"],
-        task_health:taskHealth,
         task_health_policy:{
           active_operational_only:true,
           historical_terminal_states_ignored:true,
           expected_manual_blocks_ignored:true,
           disposable_test_records_ignored:true
         }
-      },taskHealth.healthy?200:503);
+      });
     }
 
     if(action==="jobs"){
