@@ -33,22 +33,22 @@ const resumeSchema={
     contact:{type:"string"},
     headline:{type:"string"},
     summary:{type:"string"},
-    skills:{type:"array",items:{type:"string"}},
+    skills:{type:"array",maxItems:16,items:{type:"string"}},
     experience:{
-      type:"array",
+      type:"array",maxItems:5,
       items:{
         type:"object",
         properties:{
           role:{type:"string"},
           company:{type:"string"},
           dates:{type:"string"},
-          bullets:{type:"array",items:{type:"string"}}
+          bullets:{type:"array",maxItems:4,items:{type:"string"}}
         },
         required:["role","company","dates","bullets"]
       }
     },
     education:{
-      type:"array",
+      type:"array",maxItems:3,
       items:{
         type:"object",
         properties:{
@@ -60,7 +60,7 @@ const resumeSchema={
         required:["degree","school","location","dates"]
       }
     },
-    additional:{type:"array",items:{type:"string"}}
+    additional:{type:"array",maxItems:6,items:{type:"string"}}
   },
   required:["name","contact","headline","summary","skills","experience","education","additional"]
 };
@@ -73,8 +73,10 @@ function validateDocument(type:string,doc:any){
     return "";
   }
   if(!validString(doc.name)||!validString(doc.summary)||!Array.isArray(doc.skills)||!Array.isArray(doc.experience)||!doc.experience.length||!Array.isArray(doc.education)||!Array.isArray(doc.additional)) return "AI returned an incomplete resume.";
-  if(doc.skills.length>20) return "AI returned too many skills.";
-  if(doc.experience.some((x:any)=>!x||!validString(x.role)||!validString(x.company)||!validString(x.dates)||!Array.isArray(x.bullets)||!x.bullets.length)) return "AI returned malformed experience history.";
+  if(doc.skills.length>16) return "AI returned too many skills.";
+  if(doc.experience.length>5) return "AI returned too many experience entries.";
+  if(doc.experience.some((x:any)=>!x||!validString(x.role)||!validString(x.company)||!validString(x.dates)||!Array.isArray(x.bullets)||!x.bullets.length||x.bullets.length>4)) return "AI returned malformed experience history.";
+  if(doc.education.length>3||doc.additional.length>6) return "AI returned too much secondary content.";
   return "";
 }
 function retryableProviderStatus(status:number){return status===408||status===429||status>=500;}
@@ -128,6 +130,7 @@ Deno.serve(async(req:Request)=>{
     "Prefer the most relevant and recent material; omit lower-value content rather than shrinking readability.",
     "Do not use tables, columns, graphics, icons, or unusual section names.",
     "Preserve contact information from the master resume when present.",
+    "If contact or education information is absent from the master resume, leave contact blank and return an empty education array. Do not insert placeholders such as 'Not Provided', 'N/A', or 'Available Upon Request'.",
     "",
     "TARGET JOB TITLE: "+String(body.jobTitle||""),
     "TARGET COMPANY: "+String(body.company||""),
