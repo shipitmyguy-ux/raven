@@ -1,5 +1,5 @@
 import type { Candidate, Track } from "./types.ts";
-import { TRACKS } from "./config.ts";
+import { TRACKS, ATS_SOURCES } from "./config.ts";
 import { decodeHtml, normalizeUrl, within } from "./utils.ts";
 import { csvCells, splitCsvRecords, validAtsRow } from "./csv-records.mjs";
 
@@ -63,7 +63,7 @@ export async function linkedinDeep(track:Track){
 }
 
 export async function remotive(track:Track):Promise<Candidate[]>{
-  if(track==="Labor") return [];
+  if(TRACKS[track].remoteBoards===false) return [];
   try{
     const r=await fetch("https://remotive.com/api/remote-jobs?limit=100",{headers:{"User-Agent":"RavenJobSearch/3.0"},signal:AbortSignal.timeout(6500)});
     if(!r.ok) return [];
@@ -77,7 +77,7 @@ export async function remotive(track:Track):Promise<Candidate[]>{
 }
 
 export async function remoteOk(track:Track):Promise<Candidate[]>{
-  if(track==="Labor") return [];
+  if(TRACKS[track].remoteBoards===false) return [];
   try{
     const r=await fetch("https://remoteok.com/api",{headers:{"User-Agent":"RavenJobSearch/3.0"},signal:AbortSignal.timeout(6500)});
     if(!r.ok) return [];
@@ -108,7 +108,7 @@ export async function arbeitnow(track:Track):Promise<Candidate[]>{
 
 
 export async function jobicy(track:Track, termLimit=6):Promise<Candidate[]>{
-  if(track==="Labor") return [];
+  if(TRACKS[track].remoteBoards===false) return [];
   try{
     const terms=TRACKS[track].terms.slice(0,termLimit);
     const calls=terms.map(async term=>{
@@ -129,7 +129,7 @@ export async function jobicy(track:Track, termLimit=6):Promise<Candidate[]>{
 }
 
 export async function himalayas(track:Track, termLimit=6):Promise<Candidate[]>{
-  if(track==="Labor") return [];
+  if(TRACKS[track].remoteBoards===false) return [];
   try{
     const terms=TRACKS[track].terms.slice(0,termLimit);
     const calls=terms.map(async term=>{
@@ -152,7 +152,6 @@ export async function himalayas(track:Track, termLimit=6):Promise<Candidate[]>{
 
 type AtsManifestEntry={csv?:string;parquet?:string;rows?:number};
 const ATS_MANIFEST="https://storage.stapply.ai/jobhive/v1/manifest.json";
-const ATS_SOURCES=["greenhouse","lever","ashby","workday","smartrecruiters","workable","icims"];
 let atsManifestCache:any=null;
 async function atsManifest(){
   if(atsManifestCache) return atsManifestCache;
@@ -214,7 +213,7 @@ async function atsSlice(source:string,track:Track,quick=false){
 
 export async function atsWide(track:Track,quick=false){
   const out:Candidate[]=[];
-  const sources=track==="Labor"?["greenhouse","lever","ashby","smartrecruiters"]:ATS_SOURCES;
+  const sources=TRACKS[track].atsSources||ATS_SOURCES;
   for(const source of sources){
     const rows=await atsSlice(source,track,quick);
     out.push(...rows);
