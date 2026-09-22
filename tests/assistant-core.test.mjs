@@ -27,4 +27,7 @@ assert(core.completionLooksSuccessful({url:"https://jobs.lever.co/acme/thank-you
 assert(!core.completionLooksSuccessful({url:"https://jobs.lever.co/acme/job",text:"Thank you for applying."}),"generic job page must not be marked complete");
 assert(!core.completionLooksSuccessful({url:"https://jobs.lever.co/acme/thank-you",text:"Complete your application below."}),"URL alone must not be enough");
 
+const contentScript=fs.readFileSync(new URL("../extension/src/content.js",import.meta.url),"utf8");
+assert(!/requestSubmit\s*\(|\.submit\s*\(|\.click\s*\(\s*\)/i.test(contentScript),"Application Assistant must never click or submit employer forms automatically");
+
 console.log("assistant-core tests passed");
