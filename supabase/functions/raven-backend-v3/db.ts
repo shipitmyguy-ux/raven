@@ -157,18 +157,18 @@ export async function getJobByUrl(url:string){
   return rows?.[0]||null;
 }
 export async function addJob(input:any){
-  const url=String(input.url||"");
+  const url=String(input.url||"").trim();
   const existing=await getJobByUrl(url);
   if(existing) return {...existing,duplicate:true,ok:true};
   const now=new Date().toISOString();
   const row={
     id:String(input.id||("JT-"+Date.now())),added:input.added||now,track:String(input.track||""),title:String(input.title||""),
     company:String(input.company||""),location:String(input.location||""),remote:Boolean(input.remote),
-    salary_min:input.salary_min===undefined||input.salary_min===null||input.salary_min===""?null:Number(input.salary_min),
-    salary_max:input.salary_max===undefined||input.salary_max===null||input.salary_max===""?null:Number(input.salary_max),
-    salary_text:String(input.salary_text||""),url,source:String(input.source||""),status:String(input.status||"Saved"),
-    viewed:Boolean(input.viewed),applied_date:input.applied_date||null,follow_up:input.follow_up||null,
-    resume:String(input.resume||""),cover_letter:String(input.cover_letter||""),notes:String(input.notes||""),last_updated:now
+    salary_min:input.salary_min===undefined||input.salary_min===null||input.salary_min===""?(input.salaryMin===undefined||input.salaryMin===null||input.salaryMin===""?null:Number(input.salaryMin)):Number(input.salary_min),
+    salary_max:input.salary_max===undefined||input.salary_max===null||input.salary_max===""?(input.salaryMax===undefined||input.salaryMax===null||input.salaryMax===""?null:Number(input.salaryMax)):Number(input.salary_max),
+    salary_text:String(input.salary_text||input.salaryText||""),url,source:String(input.source||""),status:String(input.status||"Saved"),
+    viewed:Boolean(input.viewed),applied_date:input.applied_date||input.appliedDate||null,follow_up:input.follow_up||input.followUp||null,
+    resume:String(input.resume||""),cover_letter:String(input.cover_letter||input.coverLetter||""),notes:String(input.notes||""),last_updated:now
   };
   const r=await rest("raven_jobs",{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(row)});
   if(!r.ok) throw new Error("Job save failed ("+r.status+")");
@@ -177,8 +177,10 @@ export async function addJob(input:any){
 }
 export async function updateJob(id:string,patch:any){
   const allowed=["track","title","company","location","remote","salary_min","salary_max","salary_text","url","source","status","viewed","applied_date","follow_up","resume","cover_letter","notes"];
+  const aliases:any={salaryMin:"salary_min",salaryMax:"salary_max",salaryText:"salary_text",appliedDate:"applied_date",followUp:"follow_up",coverLetter:"cover_letter"};
   const body:any={last_updated:new Date().toISOString()};
   for(const k of allowed) if(Object.prototype.hasOwnProperty.call(patch,k)) body[k]=patch[k];
+  for(const [from,to] of Object.entries(aliases)) if(Object.prototype.hasOwnProperty.call(patch,from)) body[to as string]=patch[from];
   const r=await rest("raven_jobs?id=eq."+encodeURIComponent(id),{method:"PATCH",headers:{Prefer:"return=representation"},body:JSON.stringify(body)});
   if(!r.ok) throw new Error("Job update failed ("+r.status+")");
   const rows=await r.json();
