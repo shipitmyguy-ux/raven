@@ -44,7 +44,7 @@ async function callGemini(prompt:string,key:string){
       return JSON.parse(text);
     }
     last=raw?.error?.message||("Gemini request failed ("+r.status+")");
-    if(r.status!==401&&r.status!==403)break;
+    if(r.status!==401&&r.status!==403&&r.status!==429&&r.status<500)break;
   }
   throw new Error(last||"Gemini request failed");
 }

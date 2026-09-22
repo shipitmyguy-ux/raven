@@ -14,6 +14,8 @@ assert.match(resume,/raven_canonical_profiles/);
 assert.match(cover,/raven_canonical_profiles/);
 assert.match(resume,/p_short_limit:12/);
 assert.match(cover,/p_short_limit:12/);
+assert.match(resume,/r\.status!==429&&r\.status<500/,"Resume generator must fall through to the alternate provider endpoint on 429/5xx.");
+assert.match(cover,/r\.status!==429&&r\.status<500/,"Cover generator must fall through to the alternate provider endpoint on 429/5xx.");
 for(const src of [resume,cover]){
   assert.match(src,/x-raven-client/,"Generator routes must require the Raven client header.");
   assert.doesNotMatch(src,/\|\|req\.method===[\"']GET[\"']/,"GET health routes must not bypass client authentication.");
