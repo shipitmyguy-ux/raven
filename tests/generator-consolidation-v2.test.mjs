@@ -14,6 +14,10 @@ assert.match(resume,/raven_canonical_profiles/);
 assert.match(cover,/raven_canonical_profiles/);
 assert.match(resume,/p_short_limit:12/);
 assert.match(cover,/p_short_limit:12/);
+for(const src of [resume,cover]){
+  assert.match(src,/x-raven-client/,"Generator routes must require the Raven client header.");
+  assert.doesNotMatch(src,/\|\|req\.method===[\"']GET[\"']/,"GET health routes must not bypass client authentication.");
+}
 assert.doesNotMatch(resume,/headline:"[^"]*Customer Success/i);
 assert.doesNotMatch(resume,/HVAC|facility maintenance|mechanical upkeep/i);
 assert.doesNotMatch(cover,/HVAC|facility maintenance|mechanical upkeep/i);
