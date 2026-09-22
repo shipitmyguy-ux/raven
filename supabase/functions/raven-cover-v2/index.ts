@@ -9,7 +9,7 @@ function allowed(req:Request){const o=req.headers.get("origin")||"";if(o&&!ALLOW
 function env(){const url=Deno.env.get("SUPABASE_URL")||"";const key=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";if(!url||!key)throw new Error("Supabase unavailable");return {url,key};}
 async function rest(path:string){const {url,key}=env();const r=await fetch(url+"/rest/v1/"+path,{headers:{apikey:key,Authorization:"Bearer "+key}});if(!r.ok)throw new Error("DB read failed");return await r.json();}
 async function rpc(name:string,p:any){const {url,key}=env();const r=await fetch(url+"/rest/v1/rpc/"+name,{method:"POST",headers:{apikey:key,Authorization:"Bearer "+key,"Content-Type":"application/json"},body:JSON.stringify(p)});if(!r.ok)throw new Error("RPC failed");const t=await r.text();return t?JSON.parse(t):null;}
-async function guard(){return await rpc("raven_request_guard",{p_kind:"generation_v2",p_scope:"cover",p_short_limit:6,p_short_seconds:60,p_long_limit:30,p_long_seconds:3600,p_failure_threshold:3,p_failure_window_seconds:300,p_circuit_seconds:600});}
+async function guard(){return await rpc("raven_request_guard",{p_kind:"generation_v2",p_scope:"cover",p_short_limit:12,p_short_seconds:60,p_long_limit:60,p_long_seconds:3600,p_failure_threshold:3,p_failure_window_seconds:300,p_circuit_seconds:600});}
 async function finish(id:number|null,status:string,http:number,detail?:string){if(!id)return;await rpc("raven_request_finish",{p_event_id:id,p_status:status,p_http_status:http,p_detail:detail||null}).catch(()=>{});}
 function clean(v:any,n=1000){return String(v||"").trim().replace(/\s+/g," ").slice(0,n);}
 
@@ -52,10 +52,10 @@ function build(profile:any,sel:any,track:string,title:string,company:string){
     "Games / 3D":"My background is centered on environment art, world building, visual-quality ownership, and collaboration across art, design, and engineering teams.",
     "Labor":"My background combines hands-on maintenance and repair experience with a long record of troubleshooting problems, improving workflows, and delivering reliable work in production environments.",
     "Professional":"My background combines project delivery, team leadership, mentoring and onboarding, workflow improvement, technical troubleshooting, and cross-functional coordination.",
-    "Wildcard":"My background combines leadership, mentoring and onboarding, project delivery, workflow improvement, troubleshooting, and cross-functional collaboration."
+    "Wildcard":"My background combines leadership, mentoring and onboarding, project delivery, workflow improvement, troubleshooting, automation, and cross-functional collaboration."
   };
   const p1="I am interested in the "+title+" position at "+company+". "+openingByTrack[track];
-  const p2="Relevant experience includes "+sentenceList(factual.map(x=>x.replace(/[.]$/,"")+"."));
+  const p2="Examples that may transfer to this role include: "+factual.map(x=>x.replace(/[.]$/,"")).join("; ")+". ";
   const p3=track==="Games / 3D"
     ? "I would welcome the opportunity to bring that experience to "+company+" and contribute to the team's visual and production goals."
     : "I would welcome the opportunity to discuss how these transferable strengths could support "+company+" in this role.";
