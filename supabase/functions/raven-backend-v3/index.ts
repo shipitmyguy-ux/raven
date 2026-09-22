@@ -3,6 +3,7 @@ import { CORS, TRACKS } from "./config.ts";
 import { json, normalizeUrl } from "./utils.ts";
 import { quickSearch, maybeStartDeep } from "./search.ts";
 import { listResults, listJobs, addJob, updateJob } from "./db.ts";
+import { requestGuard, requestFinish } from "./request-budget.ts";
 
 const BACKUP_URL=(Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/raven-backup-v1";
 function queueBackup(kind:string,payload:any){
@@ -94,9 +95,40 @@ Deno.serve(async(req:Request)=>{
     if(action==="search"){
       const track=String(body.track||u.searchParams.get("track")||"") as Track;
       if(!TRACKS[track]) return json({error:"Invalid track"},400);
-      const rows=await quickSearch(track);
-      const deep_search=await maybeStartDeep(track);
-      return json({ok:true,track,count:rows.length,results:rows,phase:"quick",deep_search});
+
+      let guard:any;
+      try{
+        guard=await requestGuard("search",track,{
+          shortLimit:8,shortSeconds:60,
+          longLimit:40,longSeconds:600,
+          failureThreshold:3,failureWindowSeconds:300,circuitSeconds:300
+        });
+      }catch(e){
+        return json({error:"Search safety budget is temporarily unavailable.",detail:e instanceof Error?e.message:String(e)},503);
+      }
+
+      if(!guard?.allowed){
+        const cached=await listResults(track);
+        return json({
+          ok:true,track,count:cached.length,results:cached,phase:"cached",
+          deep_search:guard?.reason==="circuit-open"?"circuit-open":"budget-cooldown",
+          budget_limited:true,retry_after_seconds:Number(guard?.retry_after_seconds||60)
+        });
+      }
+
+      const eventId=Number(guard.event_id||0)||null;
+      try{
+        const rows=await quickSearch(track);
+        const deep_search=await maybeStartDeep(track);
+        await requestFinish(eventId,"success",200).catch(()=>{});
+        return json({
+          ok:true,track,count:rows.length,results:rows,phase:"quick",deep_search,
+          budget:{short_remaining:guard.short_remaining,long_remaining:guard.long_remaining}
+        });
+      }catch(e){
+        await requestFinish(eventId,"failure",500,e instanceof Error?e.message:String(e)).catch(()=>{});
+        throw e;
+      }
     }
 
     if(action==="listResults"){
