@@ -107,10 +107,10 @@ export async function arbeitnow(track:Track):Promise<Candidate[]>{
 }
 
 
-export async function jobicy(track:Track):Promise<Candidate[]>{
+export async function jobicy(track:Track, termLimit=6):Promise<Candidate[]>{
   if(track==="Labor") return [];
   try{
-    const terms=TRACKS[track].terms.slice(0,6);
+    const terms=TRACKS[track].terms.slice(0,termLimit);
     const calls=terms.map(async term=>{
       const u=new URL("https://jobicy.com/api/v2/remote-jobs");
       u.searchParams.set("count","50"); u.searchParams.set("geo","usa"); u.searchParams.set("tag",term);
@@ -128,10 +128,10 @@ export async function jobicy(track:Track):Promise<Candidate[]>{
   }catch{return [];}
 }
 
-export async function himalayas(track:Track):Promise<Candidate[]>{
+export async function himalayas(track:Track, termLimit=6):Promise<Candidate[]>{
   if(track==="Labor") return [];
   try{
-    const terms=TRACKS[track].terms.slice(0,6);
+    const terms=TRACKS[track].terms.slice(0,termLimit);
     const calls=terms.map(async term=>{
       const u=new URL("https://himalayas.app/jobs/api/search");
       u.searchParams.set("q",term); u.searchParams.set("country","US"); u.searchParams.set("sort","recent");
@@ -162,7 +162,7 @@ async function atsManifest(){
     atsManifestCache=await r.json(); return atsManifestCache;
   }catch{return null;}
 }
-async function atsSlice(source:string,track:Track){
+async function atsSlice(source:string,track:Track,quick=false){
   try{
     const m=await atsManifest(), entry=m?.by_ats?.[source];
     if(!entry?.csv) return [];
@@ -171,8 +171,8 @@ async function atsSlice(source:string,track:Track){
     const reader=r.body.getReader(), dec=new TextDecoder();
     let buf="", header:string[]|null=null, idx:any=null, bytes=0, lines=0;
     const out:Candidate[]=[];
-    const maxLines=track==="Professional"?12000:18000;
-    const maxBytes=track==="Professional"?12*1024*1024:14*1024*1024;
+    const maxLines=quick ? 5000 : (track==="Professional"?12000:18000);
+    const maxBytes=quick ? 5*1024*1024 : (track==="Professional"?12*1024*1024:14*1024*1024);
     while(out.length<80 && lines<maxLines){
       const {done,value}=await reader.read();
       if(value){
@@ -212,11 +212,11 @@ async function atsSlice(source:string,track:Track){
   }catch{return [];}
 }
 
-export async function atsWide(track:Track){
+export async function atsWide(track:Track,quick=false){
   const out:Candidate[]=[];
   const sources=track==="Labor"?["greenhouse","lever","ashby","smartrecruiters"]:ATS_SOURCES;
   for(const source of sources){
-    const rows=await atsSlice(source,track);
+    const rows=await atsSlice(source,track,quick);
     out.push(...rows);
     if(out.length>=240) break;
   }
