@@ -68,5 +68,94 @@
       remove(name){try{localStorage.removeItem(key(name));}catch{}}
     };
   }
-  global.RavenCore={JOB_FIELDS,normalizeUrl,fromApiJob,fromDiscoveredJob,normalizeJob,normalizeJobs,isRenderableJob,jobFingerprint,stableHash,generationFingerprint,createCache};
-}(window));
+  function classifyTask(task) {
+    const raw = task || {};
+    const id = text(raw.id || raw.task_id || raw.taskId || raw.job_id || raw.jobId);
+    const status = text(raw.status).toUpperCase();
+    const source = text(raw.source || raw.task_type || raw.type || raw.workflow).toLowerCase();
+    const title = text(raw.title || raw.name).toLowerCase();
+    const track = text(raw.track).toLowerCase();
+    const notes = text(raw.notes || raw.error || raw.blocked_reason || raw.detail).toLowerCase();
+    const isTestFlag = Boolean(raw.is_test || raw.isTest || raw._test);
+
+    if (
+      isTestFlag ||
+      /^(test-|e2e-|playwright-)/i.test(id) ||
+      /\b(integration-test|e2e|playwright|test-job|disposable)\b/i.test(title + " " + source + " " + track)
+    ) {
+      return { category: "disposable_test", isSystemFailure: false, description: "Disposable integration test record" };
+    }
+
+    if (
+      ["BLOCKED_USER_INPUT", "BLOCKED_USER_CONFIRMATION", "BLOCKED_MANUAL_REVIEW", "WAITING_FOR_USER", "AWAITING_USER_CONFIRMATION", "USER_CONFIRMATION_REQUIRED"].includes(status) ||
+      /^BLOCKED_USER/i.test(status) ||
+      /^BLOCKED_MANUAL/i.test(status) ||
+      /\b(user confirmation|manual review|blocked by user|never submit without|awaiting user)\b/i.test(notes)
+    ) {
+      return { category: "manual_blocked", isSystemFailure: false, description: "Expected manual state waiting for user action" };
+    }
+
+    if (
+      ["FAILED_FINAL", "BLOCKED_TOOLING", "RETIRED", "ARCHIVED", "EXPIRED_LEGACY"].includes(status) ||
+      Boolean(raw.retired || raw.legacy) ||
+      /\b(drive_upload|google_drive|gdrive|apps_script|raven_tasks_v1|retired_queue)\b/i.test(source + " " + notes)
+    ) {
+      return { category: "historical_legacy", isSystemFailure: false, description: "Historical or legacy terminal task state" };
+    }
+
+    const isFailure = ["FAILED", "ERROR", "CRASHED", "SYSTEM_FAILURE"].includes(status) || (Boolean(raw.http_status) && Number(raw.http_status) >= 500);
+    return {
+      category: "operational_active",
+      isSystemFailure: isFailure,
+      description: isFailure ? "Active operational system failure" : "Active operational task"
+    };
+  }
+
+  function filterActiveSystemFailures(tasks) {
+    const list = Array.isArray(tasks) ? tasks : [];
+    return list.filter((task) => {
+      const cls = classifyTask(task);
+      return cls.category === "operational_active" && cls.isSystemFailure;
+    });
+  }
+
+  function evaluateRavenHealth(tasks) {
+    const list = Array.isArray(tasks) ? tasks : [];
+    const counts = { total: list.length, operationalActive: 0, activeFailures: 0, manualBlocked: 0, historicalLegacy: 0, disposableTest: 0 };
+
+    list.forEach((task) => {
+      const cls = classifyTask(task);
+      if (cls.category === "disposable_test") counts.disposableTest++;
+      else if (cls.category === "manual_blocked") counts.manualBlocked++;
+      else if (cls.category === "historical_legacy") counts.historicalLegacy++;
+      else {
+        counts.operationalActive++;
+        if (cls.isSystemFailure) counts.activeFailures++;
+      }
+    });
+
+    const isHealthy = counts.activeFailures === 0;
+    return {
+      status: isHealthy ? "healthy" : "degraded",
+      healthy: isHealthy,
+      counts
+    };
+  }
+
+  global.RavenCore={
+    JOB_FIELDS,
+    normalizeUrl,
+    fromApiJob,
+    fromDiscoveredJob,
+    normalizeJob,
+    normalizeJobs,
+    isRenderableJob,
+    jobFingerprint,
+    stableHash,
+    generationFingerprint,
+    createCache,
+    classifyTask,
+    filterActiveSystemFailures,
+    evaluateRavenHealth
+  };
+}(typeof window !== "undefined" ? window : globalThis));

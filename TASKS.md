@@ -48,8 +48,8 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verificatio
 - [ ] Verify dialogs/panels do not break navigation.
 - [ ] Add useful backend/frontend error reporting.
 - [ ] Add deployment regression checklist.
-- [ ] Add basic health/status view.
-- [x] Remove dead legacy backend/queue/Sheets paths. Keep localStorage only for cache, offline pending sync, application profile/answer memory, and device-local master resumes.
+- [x] Add basic health/status view and task noise health classification rules.
+- [x] Remove dead legacy backend/queue/Sheets paths and filter historical/legacy task noise from active health metrics. Keep localStorage only for cache, offline pending sync, application profile/answer memory, and device-local master resumes.
 - [ ] Review repository for accidentally committed secrets.
 
 ## Production acceptance test

@@ -29,9 +29,16 @@ Deno.serve(async(req:Request)=>{
     if(action==="health"){
       return json({
         ok:true,
+        status:"healthy",
         service:"raven-backend-v3",
         version:1,
-        features:["quick-search","deep-search","descriptions","persistence","sheet-sync","commute","jobicy","himalayas","ats-wide"]
+        features:["quick-search","deep-search","descriptions","persistence","sheet-sync","commute","jobicy","himalayas","ats-wide"],
+        task_health_policy:{
+          active_operational_only:true,
+          historical_terminal_states_ignored:true,
+          expected_manual_blocks_ignored:true,
+          disposable_test_records_ignored:true
+        }
       });
     }
 

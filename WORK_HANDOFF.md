@@ -23,6 +23,18 @@ Exact next action:
 1. Continue with real-site Application Assistant verification and full frontend -> generation -> persistence -> application-assistant smoke testing.
 2. Then audit job-description completeness/canonical-source resolution across all tabs.
 
+## Task noise cleanup & status reporting update - 2026-09-22
+Task noise retired and health classification aligned with current Raven architecture:
+- Implemented task classification rules in `raven-core.js` (`classifyTask`, `filterActiveSystemFailures`, `evaluateRavenHealth`):
+  - `operational_active`: current active tasks / active operational failures within window;
+  - `historical_legacy`: retired terminal states (`FAILED_FINAL`, `BLOCKED_TOOLING`, retired Drive upload queues, `raven_tasks_v1`);
+  - `manual_blocked`: expected manual states waiting for user review/confirmation (`BLOCKED_USER_INPUT`, `BLOCKED_USER_CONFIRMATION`);
+  - `disposable_test`: disposable integration-test records (`test-`, `e2e-`, or `is_test: true`).
+- System health now reports `"healthy"` as long as zero `operational_active` system failures exist, preventing historical rows or manual application blocks from polluting system metrics.
+- Updated Edge Functions (`raven-backend-v3` and `raven-tasks-v1`) to reflect explicit task health policies and retired status notes.
+- Added comprehensive unit test suite in `tests/task-health.test.mjs`; all unit tests pass.
+- Updated `TASKS.md`, `RAVEN_STATUS.md`, and `WORK_HANDOFF.md` to reflect current health evaluation architecture.
+
 ## Usage failsafe
 At the beginning of substantial Work, apply the Raven usage guard from `AGENTS.md`:
 - block starting substantial work at <=2% remaining usage when refresh is >5 minutes away,

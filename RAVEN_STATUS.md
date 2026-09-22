@@ -19,11 +19,13 @@ Final employer submission remains manual and requires user review.
 - GitHub `main` is canonical source.
 - Supabase is the single live Raven data source.
 - Saved-job read/add/update and search all use `raven-backend-v3`.
-- `raven-backend-v3` is ACTIVE at version 33.
+- `raven-backend-v3` is ACTIVE at version 33 (with task health classification policy).
 - `raven-enrich-v1` is ACTIVE at version 5.
 - `raven-commute-v1` is ACTIVE at version 4.
 - `raven-generate-v1` is ACTIVE at version 15.
-- Legacy data/search/queue/Sheets endpoints are retired or inert.
+- Legacy data/search/queue (`raven-tasks-v1`)/Sheets endpoints are retired or inert.
+- Historical task rows (`FAILED_FINAL`, `BLOCKED_TOOLING`, retired Drive queues) are preserved for audit history but filtered out of active operational health metrics.
+- Expected manual application blocks (`BLOCKED_USER_INPUT`, `BLOCKED_USER_CONFIRMATION`) and disposable integration tests are explicitly categorized and do not trigger system failure health alerts.
 - Tabs are view filters; Refresh all jobs refreshes every category through one shared search/parse pipeline.
 - Request budgets and circuit breakers protect search and Gemini.
 - Portable backup/restore tooling is committed and covered by checksum, tamper, dry-run, and destructive-restore guard tests.
