@@ -225,7 +225,7 @@
       "order": 5,
       "visible": true,
       "terminal": false,
-      "notes": "Background search candidate not yet saved to the Google Sheet"
+      "notes": "Background search candidate not yet saved to Raven"
     },
     {
       "key": "Interested",
