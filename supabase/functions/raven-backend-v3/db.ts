@@ -184,53 +184,6 @@ export async function updateJob(id:string,patch:any){
   const rows=await r.json();
   return {...(rows?.[0]||{}),ok:true};
 }
-export async function upsertJobsFromCandidates(rows:Candidate[]){
-  const now=new Date().toISOString();
-  const seen=new Set<string>();
-  const body=rows.filter(c=>{const url=String(c.url||"");if(!isPersistableCandidate(c)||seen.has(url))return false;seen.add(url);return true;}).slice(0,100).map((c,i)=>({
-    id:"DISC-"+Date.now()+"-"+i,added:now,track:c.track||"Professional",title:c.title||"",company:c.company||"",location:c.location||"",remote:Boolean(c.remote),
-    salary_min:null,salary_max:null,salary_text:c.salary_text||"",url:c.url,source:c.source||"",status:"Saved",viewed:false,applied_date:null,follow_up:null,
-    resume:"",cover_letter:"",notes:c.snippet||"",last_updated:now
-  }));
-  if(!body.length) return;
-  const r=await rest("raven_jobs?on_conflict=url",{
-    method:"POST",
-    headers:{Prefer:"resolution=ignore-duplicates,return=minimal"},
-    body:JSON.stringify(body)
-  });
-  if(!r.ok){const detail=await r.text().catch(()=>"");throw new Error("Bulk job upsert failed ("+r.status+"): "+detail.slice(0,1200));}
-}
-export async function listTasks(){
-  const r=await rest("raven_tasks?select=*&order=created.asc&limit=1000",{method:"GET"});
-  if(!r.ok) throw new Error("Tasks read failed ("+r.status+")");
-  return await r.json();
-}
-export async function enqueueTask(input:any){
-  const jobId=String(input.job_id||input.jobId||"");
-  const type=String(input.type||"");
-  if(!jobId||!type) throw new Error("job_id and type are required");
-  const key=String(input.idempotency_key||input.idempotencyKey||`${jobId}:${type}:v1`);
-  const existingResp=await rest("raven_tasks?select=*&idempotency_key=eq."+encodeURIComponent(key)+"&limit=1",{method:"GET"});
-  if(existingResp.ok){
-    const existing=await existingResp.json();
-    if(existing?.[0]) return {...existing[0],duplicate:true,ok:true};
-  }
-  const row={task_id:String(input.task_id||input.taskId||("TASK-"+Date.now())),job_id:jobId,type,status:"PENDING",idempotency_key:key,attempts:0,max_attempts:Number(input.max_attempts||input.maxAttempts||(type==="assisted_application"?1:3)),created:new Date().toISOString(),available_after:input.available_after||null,input_json:input.input_json||input.input||{},output_json:{},updated:new Date().toISOString(),cancel_requested:false};
-  const r=await rest("raven_tasks",{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(row)});
-  if(!r.ok) throw new Error("Task enqueue failed ("+r.status+")");
-  const rows=await r.json();
-  return {...rows[0],ok:true};
-}
-export async function updateTask(taskId:string,patch:any){
-  const allowed=["status","attempts","max_attempts","available_after","claimed_by","lease_until","last_error","input_json","output_json","cancel_requested"];
-  const body:any={updated:new Date().toISOString()};
-  for(const k of allowed) if(Object.prototype.hasOwnProperty.call(patch,k)) body[k]=patch[k];
-  const r=await rest("raven_tasks?task_id=eq."+encodeURIComponent(taskId),{method:"PATCH",headers:{Prefer:"return=representation"},body:JSON.stringify(body)});
-  if(!r.ok) throw new Error("Task update failed ("+r.status+")");
-  const rows=await r.json();
-  return {...(rows?.[0]||{}),ok:true};
-}
-
 export async function saveDiagnostics(rows:any[]){
   if(!rows.length) return;
   const r=await rest("raven_source_diagnostics",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(rows)});
