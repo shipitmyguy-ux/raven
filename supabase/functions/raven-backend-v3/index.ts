@@ -5,18 +5,6 @@ import { quickSearch, maybeStartDeep } from "./search.ts";
 import { listResults, listJobs, addJob, updateJob } from "./db.ts";
 import { requestGuard, requestFinish } from "./request-budget.ts";
 
-const BACKUP_URL=(Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/raven-backup-v1";
-function queueBackup(kind:string,payload:any){
-  try{
-    // @ts-ignore Supabase Edge Runtime global.
-    EdgeRuntime.waitUntil(fetch(BACKUP_URL,{
-      method:"POST",
-      headers:{"Content-Type":"text/plain;charset=UTF-8"},
-      body:JSON.stringify({kind,[kind]:payload})
-    }).catch(()=>{}));
-  }catch{}
-}
-
 async function runAndSaveAtsDiagnostics(track:Track="Professional"){
   const { atsDiagnostics }=await import("./sources.ts");
   const { saveDiagnostics }=await import("./db.ts");
@@ -54,7 +42,6 @@ Deno.serve(async(req:Request)=>{
       const url=normalizeUrl(String(body.url||""));
       if(!url) return json({error:"URL required"},400);
       const job=await addJob({...body,url});
-      queueBackup("job",job);
       return json(job);
     }
 
