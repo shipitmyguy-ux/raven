@@ -30,25 +30,27 @@ const selectionSchema={
 };
 
 async function callGemini(prompt:string,key:string){
+  const models=[GEMINI_MODEL,Deno.env.get("RAVEN_GEMINI_FALLBACK_MODEL")||"gemini-2.5-flash-lite"].filter((v,i,a)=>v&&a.indexOf(v)===i);
   const bases=["https://gateway.ai.cloudflare.com/v1/0be401023d08048c03bbfbb0576fa89f/raven/google-ai-studio","https://generativelanguage.googleapis.com"];
   let last="";
-  for(const base of bases){
-    const r=await fetch(base+"/v1beta/models/"+GEMINI_MODEL+":generateContent",{
-      method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},
-      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:2200,responseMimeType:"application/json",responseSchema:selectionSchema}})
-    });
-    const raw=await r.json().catch(()=>({}));
-    if(r.ok){
-      const text=raw?.candidates?.[0]?.content?.parts?.map((p:any)=>p.text||"").join("")||"";
-      if(!text)throw new Error("Gemini returned empty output");
-      return JSON.parse(text);
+  for(const model of models){
+    for(const base of bases){
+      const r=await fetch(base+"/v1beta/models/"+model+":generateContent",{
+        method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:2200,responseMimeType:"application/json",responseSchema:selectionSchema}})
+      });
+      const raw=await r.json().catch(()=>({}));
+      if(r.ok){
+        const text=raw?.candidates?.[0]?.content?.parts?.map((p:any)=>p.text||"").join("")||"";
+        if(!text)throw new Error("Gemini returned empty output");
+        return {data:JSON.parse(text),model};
+      }
+      last=raw?.error?.message||("Gemini request failed ("+r.status+")");
+      if(r.status!==401&&r.status!==403&&r.status!==429&&r.status<500)break;
     }
-    last=raw?.error?.message||("Gemini request failed ("+r.status+")");
-    if(r.status!==401&&r.status!==403&&r.status!==429&&r.status<500)break;
   }
   throw new Error(last||"Gemini request failed");
 }
-
 function headlineForTrack(track:string){
   if(track==="Games / 3D")return "Environment Art Professional";
   if(track==="Labor")return "Maintenance & Operations Professional";
@@ -143,11 +145,11 @@ Deno.serve(async(req:Request)=>{
   ].join("\n\n");
   try{
     const key=Deno.env.get("RAVEN_GEMINI_API_KEY")||Deno.env.get("GEMINI_API_KEY")||"";if(!key)throw new Error("Gemini not configured");
-    const selection=await callGemini(prompt,key);
+    const generated=await callGemini(prompt,key);\n    const selection=generated.data;
     const resume=build(profile,selection,track);
     const errors=validate(resume,profile,track);
     if(errors.length){await finish(eid,"failure",502,errors.join(","));return json(req,{error:"Deterministic validation failed",validation_errors:errors},502);}
     await finish(eid,"success",200);
-    return json(req,{ok:true,provider:"gemini",model:GEMINI_MODEL,architecture:"canonical-profile+fact-selection",selection,validation_errors:[],budget:{short_remaining:b.short_remaining,long_remaining:b.long_remaining},resume});
+    return json(req,{ok:true,provider:"gemini",model:generated.model,architecture:"canonical-profile+fact-selection",selection,validation_errors:[],budget:{short_remaining:b.short_remaining,long_remaining:b.long_remaining},resume});
   }catch(e){const m=e instanceof Error?e.message:String(e);await finish(eid,"failure",500,m);return json(req,{error:m},500);}
 });
