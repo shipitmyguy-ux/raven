@@ -256,20 +256,30 @@ export async function atsDiagnosticOne(source:string, track:Track){
     http_status=r.status;
     if(!r.ok) throw new Error("HTTP "+r.status);
     const reader=r.body?.getReader(); if(!reader) throw new Error("No response body");
-    const dec=new TextDecoder(); let buf="", bytes=0, lines=0, header:string[]|null=null;
-    while(true){
+    const dec=new TextDecoder(); let buf="", bytes=0, lines=0, header:string[]|null=null, stop=false;
+    while(!stop){
       const {done,value}=await reader.read();
       if(value){
-        bytes+=value.byteLength; if(bytes>8*1024*1024) throw new Error("Slice exceeds safe 8MB diagnostic limit");
+        bytes+=value.byteLength;
+        if(bytes>8*1024*1024){
+          if(header&&lines>0){try{await reader.cancel();}catch{};break;}
+          throw new Error("Slice exceeds safe 8MB diagnostic limit before a complete job row");
+        }
         buf+=dec.decode(value,{stream:true});
       }
       if(done) buf+=dec.decode();
       const parsed=splitCsvRecords(buf,done); buf=parsed.remainder;
-      for(const record of parsed.records){ if(!record) continue; if(!header){header=csvCells(record).map((x:string)=>x.trim());} else lines++; if(lines>=2000){try{await reader.cancel();}catch{};break;} }
-      if(lines>=2000||done) break;
+      for(const record of parsed.records){
+        if(!record) continue;
+        if(!header) header=csvCells(record).map((x:string)=>x.trim());
+        else lines++;
+        if(lines>=100){stop=true;try{await reader.cancel();}catch{};break;}
+      }
+      if(done) break;
     }
     if(!header) throw new Error("CSV header missing");
     if(!header.includes("title")||!header.some(x=>["url","job_url","apply_url"].includes(x))) throw new Error("Required columns missing: "+header.slice(0,12).join(","));
+    if(lines<1) throw new Error("CSV slice contained no complete job rows");
     jobs_parsed=lines; status="PASS";
   }catch(e){error=e instanceof Error?e.message:String(e);}
   return {run_id:runId,source,status,http_status,jobs_parsed,elapsed_ms:Date.now()-start,error};
