@@ -13,7 +13,7 @@ assert(backend.includes('phase:"cached"'),"Rate-limited search must return cache
 assert(backend.includes('budget_limited:true'),"Cached budget fallback must be explicit.");
 
 assert(generator.includes('requestGuard("generation","gemini"'),"Generation must use the server request guard.");
-assert(generator.includes("shortLimit:6,shortSeconds:60"),"Generation short budget must be bounded.");
+assert(generator.includes("shortLimit:12,shortSeconds:60"),"Generation short budget must allow 8+ sequential requests per minute.");
 assert(generator.includes("longLimit:30,longSeconds:3600"),"Generation hourly budget must be bounded.");
 assert(generator.includes('"AI_CIRCUIT_OPEN"'),"Generation must expose the automatic provider circuit.");
 assert(generator.includes('requestFinish(budgetEventId,"success",200)'),"Successful generation must reset provider failure history.");

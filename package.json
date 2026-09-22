@@ -1,7 +1,9 @@
 {
   "name": "raven-regression",
   "private": true,
+  "type": "module",
   "scripts": {
+    "test": "for f in tests/*.test.mjs; do node \"$f\"; done",
     "test:e2e": "playwright test",
     "backup:raven": "node scripts/export-raven.mjs",
     "verify:backup": "node scripts/verify-raven-backup.mjs",

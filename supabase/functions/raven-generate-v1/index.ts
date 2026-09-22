@@ -1,5 +1,7 @@
 import { driveExportTarget } from "./drive-source.mjs";
 import { requestGuard, requestFinish } from "./request-budget.ts";
+import { fetchGenerationPolicies, extractMasterText, applyGenerationPolicies } from "./policy.js";
+
 const ALLOWED_ORIGINS=new Set([
   "https://shipitmyguy-ux.github.io",
   "http://localhost:8000",
@@ -23,11 +25,18 @@ function allowed(req:Request){
   if(origin && !ALLOWED_ORIGINS.has(origin)) return false;
   return req.headers.get("x-raven-client")==="raven-web-v1" || req.method==="GET";
 }
+
 const coverLetterSchema={
   type:"object",
-  properties:{greeting:{type:"string"},paragraphs:{type:"array",items:{type:"string"}},closing:{type:"string"},signature:{type:"string"}},
+  properties:{
+    greeting:{type:"string"},
+    paragraphs:{type:"array",items:{type:"string"}},
+    closing:{type:"string"},
+    signature:{type:"string"}
+  },
   required:["greeting","paragraphs","closing","signature"]
 };
+
 const resumeSchema={
   type:"object",
   properties:{
@@ -71,36 +80,58 @@ function validString(value:unknown){return typeof value==="string"&&value.trim()
 function placeholderText(value:unknown){
   return /^(?:not provided(?: in master resume)?|n\/?a|none|available upon request)$/i.test(String(value||"").trim());
 }
-function normalizeGeneratedDocument(type:string,doc:any){
-  if(!doc||typeof doc!=="object") return doc;
-  if(type==="coverLetter"){
-    return {
-      greeting:String(doc.greeting||"").trim(),
-      paragraphs:(Array.isArray(doc.paragraphs)?doc.paragraphs:[]).map((x:any)=>String(x||"").trim()).filter(Boolean).slice(0,3),
-      closing:String(doc.closing||"").trim(),
-      signature:String(doc.signature||"").trim()
+
+function normalizeGeneratedDocument(
+  type: string,
+  doc: any,
+  policies: any = {},
+  masterSource: any = null,
+  jobLocation = ""
+) {
+  if (!doc || typeof doc !== "object") return doc;
+
+  if (type === "coverLetter") {
+    const rawDoc = {
+      greeting: String(doc.greeting || "").trim(),
+      paragraphs: (Array.isArray(doc.paragraphs) ? doc.paragraphs : [])
+        .map((x: any) => String(x || "").trim())
+        .filter(Boolean)
+        .slice(0, 4),
+      closing: String(doc.closing || "").trim(),
+      signature: String(doc.signature || "").trim()
     };
+    return applyGenerationPolicies(rawDoc, policies, masterSource, jobLocation);
   }
-  const education=(Array.isArray(doc.education)?doc.education:[])
-    .map((x:any)=>({degree:String(x?.degree||"").trim(),school:String(x?.school||"").trim(),location:String(x?.location||"").trim(),dates:String(x?.dates||"").trim()}))
-    .filter((x:any)=>[x.degree,x.school,x.location,x.dates].some((v:any)=>validString(v)&&!placeholderText(v)))
-    .slice(0,3);
-  return {
-    name:String(doc.name||"").trim(),
-    contact:placeholderText(doc.contact)?"":String(doc.contact||"").trim(),
-    headline:String(doc.headline||"").trim(),
-    summary:String(doc.summary||"").trim().slice(0,1200),
-    skills:(Array.isArray(doc.skills)?doc.skills:[]).map((x:any)=>String(x||"").trim()).filter(Boolean).slice(0,16),
-    experience:(Array.isArray(doc.experience)?doc.experience:[]).slice(0,5).map((x:any)=>({
-      role:String(x?.role||"").trim(),
-      company:String(x?.company||"").trim(),
-      dates:String(x?.dates||"").trim(),
-      bullets:(Array.isArray(x?.bullets)?x.bullets:[]).map((b:any)=>String(b||"").trim()).filter(Boolean).slice(0,4)
+
+  const education = (Array.isArray(doc.education) ? doc.education : [])
+    .map((x: any) => ({
+      degree: String(x?.degree || "").trim(),
+      school: String(x?.school || "").trim(),
+      location: String(x?.location || "").trim(),
+      dates: String(x?.dates || "").trim()
+    }))
+    .filter((x: any) => [x.degree, x.school, x.location, x.dates].some((v: any) => validString(v) && !placeholderText(v)))
+    .slice(0, 3);
+
+  const rawDoc = {
+    name: String(doc.name || "").trim(),
+    contact: placeholderText(doc.contact) ? "" : String(doc.contact || "").trim(),
+    headline: String(doc.headline || "").trim(),
+    summary: String(doc.summary || "").trim().slice(0, 1200),
+    skills: (Array.isArray(doc.skills) ? doc.skills : []).map((x: any) => String(x || "").trim()).filter(Boolean).slice(0, 16),
+    experience: (Array.isArray(doc.experience) ? doc.experience : []).slice(0, 5).map((x: any) => ({
+      role: String(x?.role || "").trim(),
+      company: String(x?.company || "").trim(),
+      dates: String(x?.dates || "").trim(),
+      bullets: (Array.isArray(x?.bullets) ? x.bullets : []).map((b: any) => String(b || "").trim()).filter(Boolean).slice(0, 4)
     })),
     education,
-    additional:(Array.isArray(doc.additional)?doc.additional:[]).map((x:any)=>String(x||"").trim()).filter(Boolean).slice(0,6)
+    additional: (Array.isArray(doc.additional) ? doc.additional : []).map((x: any) => String(x || "").trim()).filter(Boolean).slice(0, 6)
   };
+
+  return applyGenerationPolicies(rawDoc, policies, masterSource, jobLocation);
 }
+
 function validateDocument(type:string,doc:any){
   if(!doc||typeof doc!=="object") return "AI returned no structured document.";
   if(type==="coverLetter"){
@@ -114,12 +145,14 @@ function validateDocument(type:string,doc:any){
   if(doc.education.length>3||doc.additional.length>6) return "AI returned too much secondary content.";
   return "";
 }
+
 function retryableProviderStatus(status:number){return status===408||status===429||status>=500;}
 function bytesToBase64(bytes:Uint8Array){
   let binary="";
   for(let i=0;i<bytes.length;i+=0x8000) binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));
   return btoa(binary);
 }
+
 async function loadDriveMaster(rawUrl:string){
   const target=driveExportTarget(rawUrl);
   const response=await fetch(target.url,{redirect:"follow",headers:{"User-Agent":"RavenResumeGenerator/1.0"},signal:AbortSignal.timeout(15000)});
@@ -134,6 +167,46 @@ async function loadDriveMaster(rawUrl:string){
   if(!bytes.length) throw new Error("Google Drive master resume was empty.");
   return {base64:bytesToBase64(bytes),mimeType:contentType||target.mimeType||"application/pdf"};
 }
+
+function buildTrackPromptGuidance(trackRaw: string, documentType: string): string[] {
+  const track = String(trackRaw || "").trim().toLowerCase();
+
+  if (track.includes("professional")) {
+    return [
+      "TRACK GUIDANCE (Professional Track):",
+      "- Foreground transferable project management and operations accomplishments and capabilities.",
+      "- Emphasize: project delivery, team leadership, mentoring/onboarding, workflow/process improvement, cross-functional coordination, troubleshooting, internal meetings, intermediate Excel, AI/automation modules, asset database metadata/reporting/querying.",
+      "- CRITICAL FACTUAL CONSTRAINT: Do NOT fabricate or alter job titles. You must preserve the candidate's exact, official employment titles from the master resume (e.g., retain 'Environment Artist' or 'Technical Artist' as the official job title). Do NOT rename roles to 'Project Manager' or 'Operations Manager' to disguise career pivots.",
+      "- Explain transferable relevance cleanly through summary, bullet framing, and skill highlights."
+    ];
+  }
+
+  if (track.includes("wildcard")) {
+    return [
+      "TRACK GUIDANCE (Wildcard Track):",
+      "- Foreground implementation, onboarding, technical customer success, client support, solution adoption, account training, and cross-functional user assistance capabilities.",
+      "- CRITICAL FACTUAL CONSTRAINT: Stay transparent about the candidate's actual game-industry job titles and employers. Do NOT invent customer success job titles or fake account management roles.",
+      "- Frame technical experience clearly to demonstrate transferable value for client-facing, onboarding, and customer success positions."
+    ];
+  }
+
+  if (track.includes("labor")) {
+    return [
+      "TRACK GUIDANCE (Labor Track):",
+      "- Strongly prioritize SoundAir maintenance evidence when relevant to the job role (e.g., HVAC maintenance, facility maintenance, mechanical upkeep, tool handling, equipment operation, safety standards, component troubleshooting).",
+      "- Highlight practical hands-on experience, physical operations, safety compliance, equipment upkeep, and mechanical reliability.",
+      "- Preserve exact official job titles, companies, and employment dates."
+    ];
+  }
+
+  // Default / Games / 3D track
+  return [
+    "TRACK GUIDANCE (Games / 3D Track):",
+    "- Strongly target environment art, 3D modeling, texturing, material creation, level art, PBR workflows, asset optimization, and game engine integration (Unreal Engine / Unity).",
+    "- Highlight spatial composition, modular environment kits, LODs, lighting, and art production pipelines."
+  ];
+}
+
 const GEMINI_MODEL="gemini-3.5-flash-lite";
 const DIRECT_GEMINI_BASE="https://generativelanguage.googleapis.com";
 const GATEWAY_GEMINI_BASE="https://gateway.ai.cloudflare.com/v1/0be401023d08048c03bbfbb0576fa89f/raven/google-ai-studio";
@@ -159,7 +232,7 @@ Deno.serve(async(req:Request)=>{
   let budget:any;
   try{
     budget=await requestGuard("generation","gemini",{
-      shortLimit:6,shortSeconds:60,
+      shortLimit:12,shortSeconds:60,
       longLimit:30,longSeconds:3600,
       failureThreshold:3,failureWindowSeconds:300,circuitSeconds:600
     });
@@ -176,6 +249,9 @@ Deno.serve(async(req:Request)=>{
     },circuit?503:429);
   }
   const budgetEventId=Number(budget.event_id||0)||null;
+
+  // Load generation policies from Supabase raven_generation_policy
+  const policies = await fetchGenerationPolicies();
 
   let masterBase64="";
   if(masterDataUrl){
@@ -197,27 +273,42 @@ Deno.serve(async(req:Request)=>{
     }
   }
 
+  const masterSource = body.masterResume || {};
+  const masterSourceText = extractMasterText(masterSource);
+  const jobLocation = String(body.jobLocation || body.location || "").trim();
+  const trackName = String(body.track || "Professional").trim();
+
   const documentType=body.documentType==="coverLetter"?"coverLetter":"resume";
   const instructions=String(body.instructions||"").trim();
+  const trackGuidance = buildTrackPromptGuidance(trackName, documentType);
+
   const prompt=documentType==="coverLetter" ? [
-    "Create a concise, professional tailored cover letter using ONLY facts contained in the MASTER RESUME.",
-    "Never invent or infer employers, titles, dates, tools, certifications, metrics, education, achievements, or responsibilities.",
-    "Use terminology from the JOB DESCRIPTION only where supported by the MASTER RESUME.",
-    "Return a greeting, 2-3 short paragraphs, a closing, and signature text. Do not include a subject line.",
+    "Create a concise, highly professional tailored cover letter using ONLY facts contained in the MASTER RESUME.",
+    "PROSE STYLE REQUIREMENTS:",
+    "- Write fluent, natural, cohesive narrative paragraphs linking the candidate's real background to the target job.",
+    "- NEVER concatenate raw bullet fragments or use robotic lead-in formulas like 'Relevant experience includes Collaborated with...' or 'Selected achievements include:'.",
+    "- Frame candidate accomplishments gracefully (e.g., 'During my tenure at [Company], I managed...', 'My background includes hands-on experience in...', 'I led cross-functional workflows that improved...').",
+    "FACTUAL GROUNDING CONSTRAINTS:",
+    "- Never invent or infer employers, titles, dates, tools, certifications, metrics, education, achievements, or responsibilities.",
+    "- Preserve exact employer names, job titles, education, and dates if referenced.",
+    "- Return a greeting, 2-3 well-written paragraphs, a closing, and signature text. Do not include a subject line.",
+    ...trackGuidance,
     instructions ? "REVISION INSTRUCTIONS: "+instructions : "",
     "TARGET JOB TITLE: "+String(body.jobTitle||""),
     "TARGET COMPANY: "+String(body.company||""),
     "JOB DESCRIPTION:", jobDescription,
     "MASTER RESUME is attached as the factual source of truth."
-  ].filter(Boolean).join("\\n") : [
+  ].filter(Boolean).join("\n") : [
     "Create a tailored, ATS-friendly resume for the target job using ONLY facts contained in the MASTER RESUME.",
     "Never invent or infer employers, titles, dates, tools, certifications, metrics, education, achievements, or responsibilities.",
     "PRESERVE FACTUAL IDENTITY FIELDS EXACTLY as written in the MASTER RESUME: candidate name, contact information, employer names, official job titles, employment dates, school names, degree names, and education dates. Never rewrite, generalize, modernize, or optimize those fields.",
     "You may tailor the headline, summary, skills, and experience bullet wording only when the MASTER RESUME supports the wording.",
     "Mirror important terminology from the JOB DESCRIPTION only when the MASTER RESUME supports that wording.",
+    ...trackGuidance,
     "Optimize for ATS and AI-assisted screening without keyword stuffing.",
     "Use conventional sections and concise accomplishment-oriented bullets.",
     "Do not include location for any work-experience entry. Omit city, state, country, remote location, and office location from employment history.",
+    "CRITICAL EDUCATION LOCATION RULE: Do not infer, estimate, or fabricate education locations. For each education entry, set location ONLY if an explicit education location is explicitly present in the MASTER RESUME. If the MASTER RESUME does not explicitly list an education location for that institution, set location to an empty string \"\". Do NOT use the candidate's home/current location, school name, target job location, or prior knowledge as the education location.",
     "The rendered resume must fit within TWO US letter pages with normal professional readability.",
     "Keep at most 16 core skills, at most 5 experience entries, and normally 3-4 bullets per recent/relevant role.",
     "Prefer the most relevant and recent material; omit lower-value content rather than shrinking readability.",
@@ -235,7 +326,7 @@ Deno.serve(async(req:Request)=>{
     Array.isArray(body.jobAnalysis?.keywords) ? body.jobAnalysis.keywords.slice(0,24).join(", ") : "",
     "",
     "MASTER RESUME is attached as the factual source of truth. Read it completely before drafting."
-  ].join("\\n");
+  ].join("\n");
 
   try{
     let route="cloudflare-ai-gateway";
@@ -272,7 +363,9 @@ Deno.serve(async(req:Request)=>{
       return json(req,{error:"Gemini returned an empty response."},502);
     }
     let document:any;
-    try{document=normalizeGeneratedDocument(documentType,JSON.parse(text));}catch{
+    try{
+      document=normalizeGeneratedDocument(documentType,JSON.parse(text),policies,masterSource,jobLocation);
+    }catch{
       await requestFinish(budgetEventId,"failure",502,"Gemini returned invalid structured output.").catch(()=>{});
       return json(req,{error:"Gemini returned invalid structured output.",code:"AI_OUTPUT_INVALID",provider:"gemini",retryable:true},502);
     }
