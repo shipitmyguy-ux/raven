@@ -10,18 +10,28 @@ async function mockRaven(page,{generatorFails=false,initialJob=null,dataDelayMs=
   const generationBodies=[];
   const searchTracks=[];
   const listTracks=[];
-  await page.route("**/functions/v1/raven-data-v1**",async route=>{
+  await page.route("**/functions/v1/raven-data-v1**",route=>route.fulfill({status:410,json:{ok:false,error:"retired"}}));
+  await page.route("**/functions/v1/raven-backend-v3**",async route=>{
     const req=route.request();
-    if(req.method()==="GET"){ if(dataDelayMs) await new Promise(resolve=>setTimeout(resolve,dataDelayMs)); return route.fulfill({json:{ok:true,jobs:[job]}}); }
-    const body=JSON.parse(req.postData()||"{}");
-    if(body.action==="updateJob"){job={...job,...body};delete job.action;return route.fulfill({json:{ok:true,job}});}
-    if(body.action==="addJob") return route.fulfill({json:{ok:true,job:{...body,id:"job-added"}}});
-    return route.fulfill({json:{ok:true}});
-  });
-  await page.route("**/functions/v1/raven-backend-v3**",route=>{
-    const url=new URL(route.request().url());
-    const action=url.searchParams.get("action")||"";
-    const track=url.searchParams.get("track")||"";
+    const url=new URL(req.url());
+    let action=url.searchParams.get("action")||"";
+    let body={};
+    if(req.method()==="POST"){
+      body=JSON.parse(req.postData()||"{}");
+      action=body.action||action;
+    }
+    const track=url.searchParams.get("track")||body.track||"";
+    if(action==="jobs"){
+      if(dataDelayMs) await new Promise(resolve=>setTimeout(resolve,dataDelayMs));
+      return route.fulfill({json:{ok:true,jobs:[job]}});
+    }
+    if(action==="updateJob"){
+      job={...job,...body};delete job.action;
+      return route.fulfill({json:{...job,ok:true}});
+    }
+    if(action==="addJob"){
+      return route.fulfill({json:{...body,id:"job-added",ok:true}});
+    }
     if(action==="search") searchTracks.push(track);
     if(action==="listResults") listTracks.push(track);
     return route.fulfill({json:{ok:true,track,count:0,jobs:[],results:[],phase:"quick",deep_search:"started"}});
