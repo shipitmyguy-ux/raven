@@ -1,5 +1,13 @@
 import { driveExportTarget } from "./drive-source.mjs";
 import { requestGuard, requestFinish } from "./request-budget.ts";
+import {
+  fetchGenerationPolicies,
+  extractMasterText,
+  buildRequirementEvidenceMatrix,
+  applyGenerationPolicies,
+  validateAndCriticGeneratedDocument,
+  toJsonResumeFormat
+} from "./policy.ts";
 const ALLOWED_ORIGINS=new Set([
   "https://shipitmyguy-ux.github.io",
   "http://localhost:8000",
@@ -177,6 +185,11 @@ Deno.serve(async(req:Request)=>{
   }
   const budgetEventId=Number(budget.event_id||0)||null;
 
+  const policies = await fetchGenerationPolicies();
+
+  const masterSourceText = extractMasterText(body.masterResume || {});
+  const jobLocation = String(body.jobLocation || body.location || "").trim();
+
   let masterBase64="";
   if(masterDataUrl){
     const dataMatch=masterDataUrl.match(/^data:([^;,]+)?;base64,(.+)$/s);
@@ -237,6 +250,11 @@ Deno.serve(async(req:Request)=>{
     "MASTER RESUME is attached as the factual source of truth. Read it completely before drafting."
   ].join("\\n");
 
+  const matrix = buildRequirementEvidenceMatrix(
+    body.jobAnalysis?.normalizedRequirements || { keywords: { all: Array.isArray(body.jobAnalysis?.keywords) ? body.jobAnalysis.keywords : [] } },
+    masterSourceText
+  );
+
   try{
     let route="cloudflare-ai-gateway";
     let r=await fetch(`${GATEWAY_GEMINI_BASE}/v1beta/models/${GEMINI_MODEL}:generateContent`,{
@@ -272,7 +290,23 @@ Deno.serve(async(req:Request)=>{
       return json(req,{error:"Gemini returned an empty response."},502);
     }
     let document:any;
-    try{document=normalizeGeneratedDocument(documentType,JSON.parse(text));}catch{
+    let criticReport:any = null;
+    let jsonResume:any = null;
+    try{
+      const rawDoc = normalizeGeneratedDocument(documentType,JSON.parse(text));
+      document = documentType === "resume" ? applyGenerationPolicies(rawDoc, policies, masterSourceText, jobLocation) : rawDoc;
+      if (documentType === "resume") {
+        const targetKeywords = Array.isArray(body.jobAnalysis?.keywords)
+          ? body.jobAnalysis.keywords
+          : (body.jobAnalysis?.keywords?.all || body.jobAnalysis?.normalizedRequirements?.keywords?.all || []);
+        criticReport = validateAndCriticGeneratedDocument(
+          document,
+          masterSourceText,
+          targetKeywords
+        );
+        jsonResume = toJsonResumeFormat(document, matrix);
+      }
+    }catch{
       await requestFinish(budgetEventId,"failure",502,"Gemini returned invalid structured output.").catch(()=>{});
       return json(req,{error:"Gemini returned invalid structured output.",code:"AI_OUTPUT_INVALID",provider:"gemini",retryable:true},502);
     }
@@ -282,7 +316,17 @@ Deno.serve(async(req:Request)=>{
       return json(req,{error:validationError,code:"AI_OUTPUT_INVALID",provider:"gemini",retryable:true},502);
     }
     await requestFinish(budgetEventId,"success",200).catch(()=>{});
-    return json(req,{ok:true,provider:"gemini",route,model:GEMINI_MODEL,budget:{short_remaining:budget.short_remaining,long_remaining:budget.long_remaining},[documentType==="coverLetter"?"coverLetter":"resume"]:document});
+    return json(req,{
+      ok:true,
+      provider:"gemini",
+      route,
+      model:GEMINI_MODEL,
+      budget:{short_remaining:budget.short_remaining,long_remaining:budget.long_remaining},
+      [documentType==="coverLetter"?"coverLetter":"resume"]:document,
+      matrix: documentType === "resume" ? matrix : undefined,
+      criticReport: documentType === "resume" ? criticReport : undefined,
+      jsonResume: documentType === "resume" ? jsonResume : undefined
+    });
   }catch(e){
     await requestFinish(budgetEventId,"failure",500,e instanceof Error?e.message:String(e)).catch(()=>{});
     return json(req,{error:e instanceof Error?e.message:String(e)},500);

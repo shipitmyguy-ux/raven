@@ -29,6 +29,26 @@ assert(cache.write("job",job)===true,"cache write failed");
 assert(cache.read("job").title==="Engineer","cache read failed");
 cache.remove("job");
 assert(cache.read("job","missing")==="missing","cache remove failed");
+const sampleJd = `
+Role focus:
+Lead environment art for Unreal project.
+Build 3D modular assets and PBR shaders.
+
+Key requirements:
+6+ years experience in Unreal Engine and C++.
+Shipped AAA game titles.
+
+Preferred:
+Houdini procedural workflows.
+`;
+
+const normReqs = core.normalizeJobRequirements(sampleJd);
+assert(normReqs.responsibilities.length === 2, "Responsibilities parsing failed");
+assert(normReqs.requiredQualifications.length === 2, "Required qualifications parsing failed");
+assert(normReqs.preferredQualifications.length === 1, "Preferred qualifications parsing failed");
+assert(normReqs.keywords.toolsAndTech.includes("unreal"), "Tools/tech keyword extraction failed");
+assert(normReqs.keywords.toolsAndTech.includes("houdini"), "Tools/tech keyword extraction failed for preferred");
+
 console.log("raven-core tests passed");
 
 // CI trigger: reusable-core optimization pass 2026-09-20
