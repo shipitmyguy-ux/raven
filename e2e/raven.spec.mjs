@@ -69,6 +69,134 @@ test("document review and master resume controls remain present",async({page})=>
 });
 
 
+test("local master resume and track assignments persist through reload",async({page})=>{
+  await mockRaven(page);
+  await page.goto("/");
+  await page.locator("#optionsButton").click();
+  await page.locator('[data-options-target="master-resumes"]').click();
+  await page.locator("#masterResumeQuickFile").setInputFiles({
+    name:"persistent-master.txt",
+    mimeType:"text/plain",
+    buffer:Buffer.from("Persistent master resume text for Raven browser QA.")
+  });
+  await expect(page.locator("#masterResumeEditor")).toBeVisible();
+  await page.locator('.master-resume-tracks input[value="Professional"]').check();
+  await page.locator('.master-resume-tracks input[value="Games / 3D"]').check();
+  await page.locator("#saveMasterResumeButton").click();
+
+  const before=await page.evaluate(()=>JSON.parse(localStorage.getItem("ravenMasterResumesV1")||"[]"));
+  expect(before).toHaveLength(1);
+  expect(before[0].tracks).toEqual(expect.arrayContaining(["Professional","Games / 3D"]));
+  const masterId=before[0].id;
+
+  await page.reload();
+  const persisted=await page.evaluate(async(id)=>{
+    const metadata=JSON.parse(localStorage.getItem("ravenMasterResumesV1")||"[]");
+    const file=await new Promise((resolve,reject)=>{
+      const request=indexedDB.open("ravenMasterResumeFilesV1",1);
+      request.onerror=()=>reject(request.error);
+      request.onsuccess=()=>{
+        const db=request.result;
+        const tx=db.transaction("files","readonly");
+        const get=tx.objectStore("files").get(id);
+        get.onsuccess=()=>{resolve(get.result||null);db.close();};
+        get.onerror=()=>reject(get.error);
+      };
+    });
+    return {metadata,fileName:file?.name||"",text:file?await file.text():""};
+  },masterId);
+  expect(persisted.metadata[0].tracks).toEqual(expect.arrayContaining(["Professional","Games / 3D"]));
+  expect(persisted.fileName).toBe("persistent-master.txt");
+  expect(persisted.text).toContain("Persistent master resume text");
+});
+
+test("offline resume fallback creates a local draft without network generation",async({page})=>{
+  await page.addInitScript(()=>{
+    localStorage.setItem("ravenMasterResumesV1",JSON.stringify([{
+      id:"offline-master",name:"Offline master",sourceType:"local",fileName:"offline.txt",version:"1",tracks:["Professional"]
+    }]));
+  });
+  const api=await mockRaven(page);
+  await page.goto("/");
+  await page.evaluate(()=>new Promise((resolve,reject)=>{
+    const request=indexedDB.open("ravenMasterResumeFilesV1",1);
+    request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains("files")) request.result.createObjectStore("files");};
+    request.onerror=()=>reject(request.error);
+    request.onsuccess=()=>{
+      const db=request.result;
+      const tx=db.transaction("files","readwrite");
+      tx.objectStore("files").put(new File([
+        "Project coordination and team leadership across complex production milestones.\n",
+        "Mentored and onboarded team members while delivering work on schedule.\n",
+        "Built automation modules, reports, and asset database workflows."
+      ],"offline.txt",{type:"text/plain"}),"offline-master");
+      tx.oncomplete=()=>{db.close();resolve();};
+      tx.onerror=()=>reject(tx.error);
+    };
+  }));
+  await page.locator('[data-track="Professional"]').click();
+  await page.locator(".job-card-summary").first().click();
+  await page.context().setOffline(true);
+  await page.locator('[data-queue="resume"]').click();
+  await expect(page.locator("#documentReviewDialog")).toBeVisible();
+  expect(api.getGenerationCalls()).toBe(0);
+  const pending=await page.evaluate(()=>JSON.parse(localStorage.getItem("ravenPendingDocumentSyncV1")||"{}"));
+  expect(String(pending["job-1"]?.resume?.value||"")).toContain("data:text/html");
+  await page.context().setOffline(false);
+});
+
+test("generation cache prevents a duplicate resume model call",async({page})=>{
+  await page.addInitScript(()=>{
+    localStorage.setItem("ravenMasterResumesV1",JSON.stringify([{
+      id:"cache-master",name:"Cache master",sourceType:"local",fileName:"cache.txt",version:"cache-v1",tracks:["Professional"]
+    }]));
+  });
+  const api=await mockRaven(page);
+  await page.goto("/");
+  await page.evaluate(()=>new Promise((resolve,reject)=>{
+    const request=indexedDB.open("ravenMasterResumeFilesV1",1);
+    request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains("files")) request.result.createObjectStore("files");};
+    request.onerror=()=>reject(request.error);
+    request.onsuccess=()=>{
+      const db=request.result;
+      const tx=db.transaction("files","readwrite");
+      tx.objectStore("files").put(new File(["Cached master resume text"],"cache.txt",{type:"text/plain"}),"cache-master");
+      tx.oncomplete=()=>{db.close();resolve();};
+      tx.onerror=()=>reject(tx.error);
+    };
+  }));
+  await page.evaluate(async(resume)=>{
+    const db=await new Promise((resolve,reject)=>{
+      const request=indexedDB.open("ravenMasterResumeFilesV1",1);
+      request.onsuccess=()=>resolve(request.result);
+      request.onerror=()=>reject(request.error);
+    });
+    const file=await new Promise((resolve,reject)=>{
+      const tx=db.transaction("files","readonly");
+      const get=tx.objectStore("files").get("cache-master");
+      get.onsuccess=()=>resolve(get.result);
+      get.onerror=()=>reject(get.error);
+    });
+    db.close();
+    const dataUrl=await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(String(reader.result||""));
+      reader.onerror=()=>reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+    const job={id:"job-1",track:"Professional",title:"Implementation Project Manager",company:"Acme Health",url:"https://example.com/job/1?utm_source=test",source:"Mock",status:"Saved",notes:"Lead implementation projects, coordinate internal teams, manage schedules and stakeholder communication."};
+    const master={id:"cache-master",name:"Cache master",sourceType:"local",fileName:"cache.txt",version:"cache-v1",url:"",dataUrl};
+    const key=window.RavenCore.generationFingerprint(job,master,"resume","modern-v2");
+    localStorage.setItem("ravenGenerationCacheV1",JSON.stringify({[key]:{resume,createdAt:new Date().toISOString()}}));
+  },generatedResume);
+
+  await page.locator('[data-track="Professional"]').click();
+  await page.locator(".job-card-summary").first().click();
+  await page.locator('[data-queue="resume"]').click();
+  await expect(page.locator("#documentReviewDialog")).toBeVisible();
+  expect(api.getGenerationCalls()).toBe(0);
+});
+
 test("application requires approval of both exact documents",async({page})=>{
   await mockRaven(page);await page.goto("/");await page.locator('[data-track="Professional"]').click();await page.locator(".job-card-summary").first().click();
   await expect(page.locator("[data-approved-apply]")).toContainText("Approve docs");
