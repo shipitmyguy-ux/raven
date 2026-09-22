@@ -4,6 +4,7 @@ import { json, normalizeUrl } from "./utils.ts";
 import { quickSearch, maybeStartDeep } from "./search.ts";
 import { listResults, listJobs, addJob, updateJob } from "./db.ts";
 import { requestGuard, requestFinish } from "./request-budget.ts";
+import { enrichCandidate } from "./enrich.ts";
 
 async function runAndSaveAtsDiagnostics(track:Track="Professional"){
   const { atsDiagnostics }=await import("./sources.ts");
@@ -41,7 +42,28 @@ Deno.serve(async(req:Request)=>{
     if(action==="addJob"){
       const url=normalizeUrl(String(body.url||""));
       if(!url) return json({error:"URL required"},400);
-      const job=await addJob({...body,url});
+      const existingDescription=String(body.notes||body.snippet||"").trim();
+      let saveBody={...body,url,notes:existingDescription};
+      if(existingDescription.length<180){
+        try{
+          const candidate:Candidate={
+            track:(String(body.track||"Professional")) as Track,
+            title:String(body.title||""),company:String(body.company||""),location:String(body.location||""),
+            remote:Boolean(body.remote),salary_text:String(body.salary_text||body.salaryText||""),
+            url,source:String(body.source||"Web"),snippet:existingDescription
+          };
+          const enriched=await enrichCandidate(candidate);
+          saveBody={...saveBody,
+            title:enriched.title||saveBody.title,
+            company:enriched.company||saveBody.company,
+            location:enriched.location||saveBody.location,
+            remote:Boolean(enriched.remote),
+            salary_text:enriched.salary_text||saveBody.salary_text||saveBody.salaryText||"",
+            notes:String(enriched.snippet||existingDescription).trim()
+          };
+        }catch{}
+      }
+      const job=await addJob(saveBody);
       return json(job);
     }
 
@@ -50,6 +72,34 @@ Deno.serve(async(req:Request)=>{
       if(!id) return json({error:"ID required"},400);
       const job=await updateJob(id,body);
       return json(job);
+    }
+
+    if(action==="repairDescriptions"){
+      const track=String(body.track||u.searchParams.get("track")||"") as Track;
+      if(track && !TRACKS[track]) return json({error:"Invalid track"},400);
+      const requested=Math.max(1,Math.min(8,Number(body.limit||u.searchParams.get("limit")||6)));
+      const jobs=(await listJobs()).filter((job:any)=>{
+        if(track && job.track!==track) return false;
+        return String(job.notes||"").trim().length<180 && /^https?:\/\//i.test(String(job.url||""));
+      }).slice(0,requested);
+      const repaired:any[]=[];
+      for(const job of jobs){
+        try{
+          const enriched=await enrichCandidate({
+            track:(job.track||"Professional") as Track,title:job.title||"",company:job.company||"",location:job.location||"",
+            remote:Boolean(job.remote),salary_text:job.salary_text||"",url:job.url||"",source:job.source||"Web",snippet:job.notes||""
+          });
+          const description=String(enriched.snippet||"").trim();
+          if(description.length>=180){
+            await updateJob(job.id,{
+              title:enriched.title||job.title,company:enriched.company||job.company,location:enriched.location||job.location,
+              remote:Boolean(enriched.remote),salary_text:enriched.salary_text||job.salary_text||"",notes:description
+            });
+            repaired.push({id:job.id,url:job.url,description_chars:description.length});
+          }
+        }catch{}
+      }
+      return json({ok:true,track:track||"all",checked:jobs.length,repaired:repaired.length,rows:repaired});
     }
 
     if(action==="diagnoseAtsSource"){

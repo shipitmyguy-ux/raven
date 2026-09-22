@@ -36,6 +36,10 @@
   const CANDIDATE_PROFILE_CACHE_KEY="ravenCandidateProfileCacheV1";
   const JOB_ANALYSIS_CACHE_KEY="ravenJobAnalysisCacheV1";
   const PENDING_DOCUMENT_SYNC_KEY="ravenPendingDocumentSyncV1";
+  const DEVICE_BACKUP_KEYS=[
+    MASTER_RESUMES_KEY,APPLICATION_PROFILE_KEY,ANSWER_MEMORY_KEY,GENERATOR_PREFS_KEY,
+    USER_SETTINGS_KEY,DOCUMENT_APPROVALS_KEY,VIEWED_JOBS_KEY
+  ];
   const RESUME_TEMPLATE_VERSION="modern-v2";
   let editingMasterResumeId=null;
   let editingAnswerMemoryKey=null;
@@ -170,6 +174,81 @@
       reader.onerror=()=>reject(reader.error);
       reader.readAsDataURL(file);
     });
+  }
+  async function exportDeviceBackup(){
+    setStatus("Preparing device backup...");
+    try{
+      const storage={};
+      for(const key of DEVICE_BACKUP_KEYS){
+        const value=localStorage.getItem(key);
+        if(value!==null) storage[key]=value;
+      }
+      const files={};
+      for(const item of readMasterResumes()){
+        if(item.sourceType==="drive") continue;
+        const file=await getMasterResumeFile(item.id);
+        if(!file) continue;
+        files[item.id]={
+          name:file.name||item.fileName||"master-resume",
+          type:file.type||"application/octet-stream",
+          lastModified:Number(file.lastModified||Date.now()),
+          dataUrl:await fileToDataUrl(file)
+        };
+      }
+      const payload={
+        format:"raven-device-backup",
+        version:1,
+        exportedAt:new Date().toISOString(),
+        storage,
+        masterResumeFiles:files
+      };
+      const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+      const url=URL.createObjectURL(blob);
+      const link=document.createElement("a");
+      link.href=url;
+      link.download="raven-device-backup-"+new Date().toISOString().slice(0,10)+".json";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),0);
+      setStatus("Device backup exported");
+    }catch(error){
+      setStatus("Device backup failed: "+error.message);
+    }
+  }
+  async function restoreDeviceBackup(file){
+    setStatus("Restoring device backup...");
+    try{
+      const payload=JSON.parse(await file.text());
+      if(payload?.format!=="raven-device-backup"||Number(payload?.version)!==1) throw new Error("Unsupported Raven backup file.");
+      const storage=payload.storage&&typeof payload.storage==="object"?payload.storage:{};
+      for(const key of DEVICE_BACKUP_KEYS){
+        if(Object.prototype.hasOwnProperty.call(storage,key)){
+          JSON.parse(storage[key]);
+          localStorage.setItem(key,storage[key]);
+        }
+      }
+      const files=payload.masterResumeFiles&&typeof payload.masterResumeFiles==="object"?payload.masterResumeFiles:{};
+      for(const [id,entry] of Object.entries(files)){
+        const dataUrl=String(entry?.dataUrl||"");
+        if(!dataUrl.startsWith("data:")) continue;
+        const response=await fetch(dataUrl);
+        const blob=await response.blob();
+        const restored=new File([blob],String(entry?.name||"master-resume"),{
+          type:String(entry?.type||blob.type||"application/octet-stream"),
+          lastModified:Number(entry?.lastModified||Date.now())
+        });
+        await saveMasterResumeFile(id,restored);
+      }
+      renderMasterResumeList();
+      const profile=readCache(APPLICATION_PROFILE_KEY,{})||{};
+      document.querySelectorAll("[data-profile-key]").forEach(input=>input.value=profile[input.dataset.profileKey]||"");
+      renderAnswerMemoryList();
+      syncOptionsControls();
+      setStatus("Device backup restored");
+    }catch(error){
+      setStatus("Restore failed: "+error.message);
+    }
   }
   function masterResumeForTrack(track){
     return readMasterResumes().find((item)=>Array.isArray(item.tracks)&&item.tracks.includes(track))||null;
@@ -1533,7 +1612,7 @@
       const optionsCard=document.getElementById("optionsCard");
       const optionsCardTitle=document.getElementById("optionsCardTitle");
       const optionsBackButton=document.getElementById("optionsBackButton");
-      const categoryTitles={"master-resumes":"Master resumes","application-profile":"Application profile","answer-memory":"Answer memory",layout:"Layout","job-info":"Job information",behavior:"Behavior"};
+      const categoryTitles={"master-resumes":"Master resumes","application-profile":"Application profile","answer-memory":"Answer memory","device-backup":"Device backup",layout:"Layout","job-info":"Job information",behavior:"Behavior"};
 
       const showOptionsHome=()=>{
         if(!optionsCard || optionsCard.hidden) return;
@@ -1627,6 +1706,14 @@
       });
       const resetOptionsButton=document.getElementById("resetOptionsButton");
       if(resetOptionsButton) resetOptionsButton.addEventListener("click",resetUserSettings);
+      const exportDeviceBackupButton=document.getElementById("exportDeviceBackup");
+      const importDeviceBackupButton=document.getElementById("importDeviceBackup");
+      const deviceBackupFile=document.getElementById("deviceBackupFile");
+      if(exportDeviceBackupButton) exportDeviceBackupButton.addEventListener("click",exportDeviceBackup);
+      if(importDeviceBackupButton&&deviceBackupFile){
+        importDeviceBackupButton.addEventListener("click",()=>{deviceBackupFile.value="";deviceBackupFile.click();});
+        deviceBackupFile.addEventListener("change",()=>{const file=deviceBackupFile.files?.[0];if(file) restoreDeviceBackup(file);});
+      }
 
       const addMasterResumeButton=document.getElementById("addMasterResumeButton");
       const masterResumeQuickFile=document.getElementById("masterResumeQuickFile");
