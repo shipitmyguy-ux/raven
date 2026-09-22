@@ -331,6 +331,7 @@ test("completion event with host mismatch is ignored",async({page})=>{
 });
 
 
+// iPhone SE 2nd gen CSS viewport in portrait.
 test("iPhone SE viewport keeps Raven usable without page overflow",async({page})=>{
   await page.setViewportSize({width:375,height:667});
   const errors=[];page.on("pageerror",e=>errors.push(e.message));
