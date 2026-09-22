@@ -78,10 +78,11 @@ Deno.serve(async(req:Request)=>{
       const track=String(body.track||u.searchParams.get("track")||"") as Track;
       if(track && !TRACKS[track]) return json({error:"Invalid track"},400);
       const requested=Math.max(1,Math.min(8,Number(body.limit||u.searchParams.get("limit")||6)));
+      const offset=Math.max(0,Math.min(1000,Number(body.offset||u.searchParams.get("offset")||0)));
       const jobs=(await listJobs()).filter((job:any)=>{
         if(track && job.track!==track) return false;
         return String(job.notes||"").trim().length<180 && /^https?:\/\//i.test(String(job.url||""));
-      }).slice(0,requested);
+      }).slice(offset,offset+requested);
       const repaired:any[]=[];
       for(const job of jobs){
         try{
@@ -99,7 +100,7 @@ Deno.serve(async(req:Request)=>{
           }
         }catch{}
       }
-      return json({ok:true,track:track||"all",checked:jobs.length,repaired:repaired.length,rows:repaired});
+      return json({ok:true,track:track||"all",offset,checked:jobs.length,repaired:repaired.length,rows:repaired});
     }
 
     if(action==="diagnoseAtsSource"){
