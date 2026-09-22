@@ -60,7 +60,11 @@ export async function upsertResults(rows:Candidate[]){
 }
 
 export async function listResults(track:Track){
-  const q="raven_search_results?select=id,track,title,company,location,remote,salary_text,url,source,snippet,score,status,created_at,last_seen&track=eq."+encodeURIComponent(track)+"&order=score.desc,last_seen.desc&limit=100";
+  // Discovered results are ephemeral. Hide entries not seen by any source in
+  // the last 30 days; saved/bookmarked/applied jobs live in raven_jobs and are
+  // never removed by this freshness filter.
+  const cutoff=new Date(Date.now()-30*86400000).toISOString();
+  const q="raven_search_results?select=id,track,title,company,location,remote,salary_text,url,source,snippet,score,status,created_at,last_seen&track=eq."+encodeURIComponent(track)+"&status=eq.Discovered&last_seen=gte."+encodeURIComponent(cutoff)+"&order=score.desc,last_seen.desc&limit=100";
   const r=await rest(q,{method:"GET"});
   if(!r.ok) throw new Error("Database read failed ("+r.status+")");
   return await r.json();
