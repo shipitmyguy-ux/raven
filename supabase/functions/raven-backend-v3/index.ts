@@ -2,7 +2,7 @@ import type { Track, Candidate } from "./types.ts";
 import { CORS, TRACKS } from "./config.ts";
 import { json, normalizeUrl, recoverCompanyFromUrl, analyzeCanonicalIdentity } from "./utils.ts";
 import { quickSearch, maybeStartDeep } from "./search.ts";
-import { listResults, listJobs, addJob, updateJob } from "./db.ts";
+import { listResults, listJobs, addJob, updateJob, listTasksForHealth } from "./db.ts";
 import { requestGuard, requestFinish } from "./request-budget.ts";
 import { enrichCandidate } from "./enrich.ts";
 
@@ -27,12 +27,24 @@ Deno.serve(async(req:Request)=>{
     const action=String(body.action||u.searchParams.get("action")||"");
 
     if(action==="health"){
-      return json({
-        ok:true,
-        service:"raven-backend-v3",
-        version:1,
-        features:["quick-search","deep-search","descriptions","persistence","sheet-sync","commute","jobicy","himalayas","ats-wide"]
-      });
+      const tasks=await listTasksForHealth();
+      const now=Date.now(), windowMs=24*60*60*1000;
+      const classify=(task:any)=>{
+        const status=String(task?.status||"").toUpperCase();
+        const type=String(task?.type||"").toLowerCase();
+        const id=String(task?.task_id||"");
+        const notes=String(task?.last_error||"").toLowerCase();
+        const input=task?.input_json||{};
+        if(Boolean(input?.is_test)||/^(test-|e2e-|playwright-)/i.test(id)||/\b(test|e2e|playwright)\b/i.test(type)) return "disposable_test";
+        if(/^BLOCKED_USER/.test(status)||/^BLOCKED_MANUAL/.test(status)||["WAITING_FOR_USER","AWAITING_USER_CONFIRMATION","USER_CONFIRMATION_REQUIRED"].includes(status)) return "manual_blocked";
+        if(["FAILED_FINAL","BLOCKED_TOOLING","RETIRED","ARCHIVED","EXPIRED_LEGACY"].includes(status)||/\b(drive|gdrive|sheets|legacy|queue)\b/i.test(type+" "+notes)) return "historical_legacy";
+        const updated=Date.parse(String(task?.updated||task?.created||""));
+        if(Number.isFinite(updated)&&now-updated>windowMs) return "historical_legacy";
+        return ["FAILED","ERROR","CRASHED","SYSTEM_FAILURE"].includes(status)?"operational_failure":"operational_active";
+      };
+      const categories=tasks.map(classify);
+      const counts={total:tasks.length,operationalActive:categories.filter(x=>x==="operational_active").length,activeFailures:categories.filter(x=>x==="operational_failure").length,manualBlocked:categories.filter(x=>x==="manual_blocked").length,historicalLegacy:categories.filter(x=>x==="historical_legacy").length,disposableTest:categories.filter(x=>x==="disposable_test").length};
+      return json({ok:true,status:counts.activeFailures?"degraded":"healthy",healthy:counts.activeFailures===0,counts,service:"raven-backend-v3",version:1,features:["quick-search","deep-search","descriptions","persistence","commute","jobicy","himalayas","ats-wide"]});
     }
 
     if(action==="jobs"){
