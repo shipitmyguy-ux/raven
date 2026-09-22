@@ -43,7 +43,7 @@ A queue acknowledgement is not equivalent to a successful generated document.
 ## State ownership
 - GitHub: code, configuration, migrations, docs, project status.
 - Supabase: live jobs/application/document data.
-- Google Sheets: backup/export.
+- Private JSON snapshots: portable Supabase data backup/recovery; see `docs/BACKUP_RESTORE.md`.\n- Google Sheets: retired; not part of the live or backup architecture.
 - Work/Chat conversations: transient only.
 
 ## Change discipline
