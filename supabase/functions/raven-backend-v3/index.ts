@@ -49,7 +49,6 @@ Deno.serve(async(req:Request)=>{
       const id=String(body.id||"");
       if(!id) return json({error:"ID required"},400);
       const job=await updateJob(id,body);
-      queueBackup("job",job);
       return json(job);
     }
 
