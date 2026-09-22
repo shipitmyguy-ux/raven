@@ -2,7 +2,7 @@ import type { Track, Candidate } from "./types.ts";
 import { CORS, TRACKS } from "./config.ts";
 import { json, normalizeUrl } from "./utils.ts";
 import { quickSearch, maybeStartDeep } from "./search.ts";
-import { listResults, listJobs, addJob, updateJob, listTasks, enqueueTask, updateTask } from "./db.ts";
+import { listResults, listJobs, addJob, updateJob } from "./db.ts";
 
 const BACKUP_URL=(Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/raven-backup-v1";
 function queueBackup(kind:string,payload:any){
@@ -63,22 +63,6 @@ Deno.serve(async(req:Request)=>{
       const job=await updateJob(id,body);
       queueBackup("job",job);
       return json(job);
-    }
-
-    if(action==="tasks"){
-      return json({ok:true,tasks:await listTasks()});
-    }
-
-    if(action==="enqueueTask"){
-      const task=await enqueueTask(body);
-      queueBackup("task",task);
-      return json(task);
-    }
-
-    if(action==="updateTask"){
-      const taskId=String(body.task_id||body.taskId||"");
-      if(!taskId) return json({error:"task_id required"},400);
-      return json(await updateTask(taskId,body));
     }
 
     if(action==="diagnoseAtsSource"){
