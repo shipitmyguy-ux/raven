@@ -195,7 +195,7 @@
       "key": "resume",
       "visible": true,
       "label": "Generate resume",
-      "format": "queue",
+      "format": "generate",
       "notes": "Controlled by feature flag"
     },
     {
@@ -204,7 +204,7 @@
       "key": "coverLetter",
       "visible": true,
       "label": "Generate cover letter",
-      "format": "queue",
+      "format": "generate",
       "notes": "Controlled by feature flag"
     },
     {
@@ -213,7 +213,7 @@
       "key": "applicationReview",
       "visible": false,
       "label": "Application review",
-      "format": "queue",
+      "format": "generate",
       "notes": "Controlled by feature flag"
     }
   ],
@@ -305,7 +305,6 @@
     "cover-letter-generation": true,
     "application-review": true,
     "extension-download": true,
-    "queue-panel": true,
     "capture-form": true,
     "search": true,
     "status-filter": true,
