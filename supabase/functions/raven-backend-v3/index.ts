@@ -1,6 +1,6 @@
 import type { Track, Candidate } from "./types.ts";
 import { CORS, TRACKS } from "./config.ts";
-import { json, normalizeUrl } from "./utils.ts";
+import { json, normalizeUrl, recoverCompanyFromUrl, analyzeCanonicalIdentity } from "./utils.ts";
 import { quickSearch, maybeStartDeep } from "./search.ts";
 import { listResults, listJobs, addJob, updateJob } from "./db.ts";
 import { requestGuard, requestFinish } from "./request-budget.ts";
@@ -43,7 +43,11 @@ Deno.serve(async(req:Request)=>{
       const url=normalizeUrl(String(body.url||""));
       if(!url) return json({error:"URL required"},400);
       const existingDescription=String(body.notes||body.snippet||"").trim();
-      let saveBody={...body,url,notes:existingDescription};
+      let company = String(body.company || "").trim();
+      if(!company){
+        company = recoverCompanyFromUrl(url);
+      }
+      let saveBody={...body,url,company,notes:existingDescription};
       if(existingDescription.length<180){
         try{
           const candidate:Candidate={
@@ -65,6 +69,50 @@ Deno.serve(async(req:Request)=>{
       }
       const job=await addJob(saveBody);
       return json(job);
+    }
+
+    if(action==="diagnoseCanonicalIdentity"){
+      const jobs = await listJobs();
+      const diagnostics = analyzeCanonicalIdentity(jobs);
+      return json({ok:true, ...diagnostics});
+    }
+
+    if(action==="recoverMissingCompanies"){
+      const requested = Math.max(1, Math.min(100, Number(body.limit || u.searchParams.get("limit") || 50)));
+      const jobs = await listJobs();
+      const missing = jobs.filter((j: any) => !j.company || String(j.company).trim() === "").slice(0, requested);
+      const updatedRows: any[] = [];
+      const ambiguousRows: any[] = [];
+
+      for (const job of missing) {
+        let recovered = recoverCompanyFromUrl(job.url);
+        if (!recovered) {
+          try {
+            const enriched = await enrichCandidate({
+              track: (job.track || "Professional") as Track, title: job.title || "", company: "", location: job.location || "",
+              remote: Boolean(job.remote), salary_text: job.salary_text || "", url: job.url || "", source: job.source || "Web", snippet: job.notes || ""
+            });
+            if (enriched.company && enriched.company.trim()) {
+              recovered = enriched.company.trim();
+            }
+          } catch {}
+        }
+
+        if (recovered) {
+          await updateJob(job.id, { company: recovered });
+          updatedRows.push({ id: job.id, title: job.title, url: job.url, recoveredCompany: recovered });
+        } else {
+          ambiguousRows.push({ id: job.id, title: job.title, url: job.url });
+        }
+      }
+
+      return json({
+        ok: true,
+        checked: missing.length,
+        recovered: updatedRows.length,
+        updatedRows,
+        ambiguousRows
+      });
     }
 
     if(action==="updateJob"){

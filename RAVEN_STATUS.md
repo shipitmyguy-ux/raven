@@ -1,6 +1,6 @@
 # Raven Status
 
-Last normalized: 2026-09-22
+Last normalized: 2026-09-23
 
 ## Scope
 Raven is a web-based job application tracker and application-assistant project.
@@ -19,6 +19,7 @@ Final employer submission remains manual and requires user review.
 - GitHub `main` is canonical source.
 - Supabase is the single live Raven data source.
 - Saved-job read/add/update and search all use `raven-backend-v3`.
+- High-confidence company recovery and canonical identity strategy are active in `raven-core.js` and `raven-backend-v3`.
 - `raven-backend-v3` is ACTIVE at version 33.
 - `raven-enrich-v1` is ACTIVE at version 5.
 - `raven-commute-v1` is ACTIVE at version 4.
@@ -61,6 +62,13 @@ Observed before the fix:
 - valid Greenhouse rows were distinguishable by normal HTTP(S) job URLs.
 
 The malformed ATS rows were subsequently cleaned from production; current malformed ATS job/search-result counts are zero, and persistence guards prevent recurrence.
+
+## Company recovery & Canonical identity
+Implemented high-confidence company-recovery and canonical posting deduplication:
+- Safe URL recovery (`recoverCompanyFromUrl`) extracts employer names from LinkedIn `-at-` slugs (e.g., Cloud Chamber, Swaybox Studios, CD Projekt Red, Epic Games, Eleventh Hour Games, Comploy, CBIZ, DealerBuilt) and ATS URLs (Greenhouse, Lever, Ashby, SmartRecruiters, Workday, Workable, iCIMS, Taleo, etc.).
+- Never overwrites existing nonblank company values; leaves ambiguous URLs (such as numeric LinkedIn URLs without `-at-`) blank when evidence is absent.
+- Canonical posting identity (`getCanonicalIdentity`) uses provider posting keys (e.g. `linkedin:{id}`, `greenhouse:{board}:{id}`, `lever:{company}:{id}`) to distinguish exact duplicates from same-title/company distinct postings (such as 1840&Company's 7 Lever URLs or EmotaInizioEngage's 3 Greenhouse URLs).
+- Diagnostic reporting (`analyzeCanonicalIdentity` & `diagnoseCanonicalIdentity`) and idempotent backfill (`recoverMissingCompanies`) provided in `raven-backend-v3`.
 
 ## Highest-priority unfinished work
 1. Run real-site Application Assistant tests on Greenhouse, Lever, and Ashby, then Workday/iCIMS/Taleo where practical.
