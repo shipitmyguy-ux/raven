@@ -456,6 +456,7 @@
     state.selectedId=null;
     let total=0;
     const failed=[];
+    const limited=[];
     for(let i=0;i<JOB_TRACKS.length;i++){
       const track=JOB_TRACKS[i];
       setStatus("Refreshing all jobs · "+(i+1)+"/"+JOB_TRACKS.length+" · "+track);
@@ -463,6 +464,7 @@
         const payload=await window.RavenAPI.searchJobs(track);
         state.discovered[track]=normalizeDiscovered(payload.results);
         total+=Number(payload.count||state.discovered[track].length||0);
+        if(payload.budget_limited) limited.push(track);
         writeCache(CACHE_DISCOVERED_KEY,state.discovered);
         render();
       }catch(error){
@@ -473,6 +475,7 @@
     searchJobsButton.disabled=false;
     searchJobsButton.textContent=original;
     if(failed.length) setStatus(total+" refreshed · failed: "+failed.join(", "));
+    else if(limited.length) setStatus("Refresh cooldown · showing cached jobs for "+limited.join(", ")+" · try again shortly");
     else setStatus(total+" jobs refreshed across all tabs · background enrichment may continue");
   }
 
