@@ -132,4 +132,23 @@ assert(report.exactDuplicatesCount === 1, "Exact duplicates count mismatch");
 assert(report.titleCompanyCollisionsCount === 1, "Same title/company collisions count mismatch");
 assert(report.crossSourceDuplicatesCount === 1, "Cross-source duplicates count mismatch");
 
+
+// Test 9: persistent recovery must never use a plausible generic enrichment company.
+// Guard the backend implementation itself so a future refactor cannot silently
+// reintroduce enrichCandidate() as a canonical company mutation source.
+{
+  const backendSource = fs.readFileSync(
+    new URL("../supabase/functions/raven-backend-v3/index.ts", import.meta.url),
+    "utf8"
+  );
+  const actionStart = backendSource.indexOf('if(action==="recoverMissingCompanies")');
+  const actionEnd = backendSource.indexOf('if(action==="updateJob")', actionStart);
+  assert(actionStart >= 0 && actionEnd > actionStart, "recoverMissingCompanies action must exist");
+  const recoveryAction = backendSource.slice(actionStart, actionEnd);
+  assert(!recoveryAction.includes("enrichCandidate("),
+    "Persistent company recovery must not persist plausible unsupported companies from generic enrichment");
+  assert(recoveryAction.includes("recoverCompanyFromUrl(job.url)"),
+    "Persistent recovery must remain grounded in deterministic URL/provider evidence");
+}
+
 console.log("canonical-identity targeted tests passed!");
