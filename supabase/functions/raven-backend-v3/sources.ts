@@ -36,11 +36,10 @@ async function linkedin(term:string,track:Track,remote:boolean,timeout=7000):Pro
 }
 
 export async function linkedinQuick(track:Track){
-  const cfg=TRACKS[track];
   const calls:Promise<Candidate[]>[]=[];
-  for(const term of cfg.terms.slice(0,4)){
+  for(const term of TRACKS[track].terms.slice(0,4)){
     calls.push(within(linkedin(term,track,false,5500),5500,[]));
-    if(!cfg.localOnly) calls.push(within(linkedin(term,track,true,5500),5500,[]));
+    calls.push(within(linkedin(term,track,true,5500),5500,[]));
   }
   const groups=await Promise.all(calls);
   return groups.flat();
@@ -53,7 +52,7 @@ export async function linkedinDeep(track:Track){
     const calls:Promise<Candidate[]>[]=[];
     for(const term of batch){
       calls.push(linkedin(term,track,false));
-      if(!cfg.localOnly) calls.push(linkedin(term,track,true));
+      calls.push(linkedin(term,track,true));
     }
     const groups=await Promise.all(calls);
     for(const g of groups) out.push(...g);
@@ -63,7 +62,6 @@ export async function linkedinDeep(track:Track){
 }
 
 export async function remotive(track:Track):Promise<Candidate[]>{
-  if(TRACKS[track].remoteBoards===false) return [];
   try{
     const r=await fetch("https://remotive.com/api/remote-jobs?limit=100",{headers:{"User-Agent":"RavenJobSearch/3.0"},signal:AbortSignal.timeout(6500)});
     if(!r.ok) return [];
@@ -77,7 +75,6 @@ export async function remotive(track:Track):Promise<Candidate[]>{
 }
 
 export async function remoteOk(track:Track):Promise<Candidate[]>{
-  if(TRACKS[track].remoteBoards===false) return [];
   try{
     const r=await fetch("https://remoteok.com/api",{headers:{"User-Agent":"RavenJobSearch/3.0"},signal:AbortSignal.timeout(6500)});
     if(!r.ok) return [];
@@ -108,7 +105,6 @@ export async function arbeitnow(track:Track):Promise<Candidate[]>{
 
 
 export async function jobicy(track:Track, termLimit=6):Promise<Candidate[]>{
-  if(TRACKS[track].remoteBoards===false) return [];
   try{
     const terms=TRACKS[track].terms.slice(0,termLimit);
     const calls=terms.map(async term=>{
@@ -129,7 +125,6 @@ export async function jobicy(track:Track, termLimit=6):Promise<Candidate[]>{
 }
 
 export async function himalayas(track:Track, termLimit=6):Promise<Candidate[]>{
-  if(TRACKS[track].remoteBoards===false) return [];
   try{
     const terms=TRACKS[track].terms.slice(0,termLimit);
     const calls=terms.map(async term=>{
@@ -170,8 +165,8 @@ async function atsSlice(source:string,track:Track,quick=false){
     const reader=r.body.getReader(), dec=new TextDecoder();
     let buf="", header:string[]|null=null, idx:any=null, bytes=0, lines=0;
     const out:Candidate[]=[];
-    const maxLines=quick ? 5000 : (track==="Professional"?12000:18000);
-    const maxBytes=quick ? 5*1024*1024 : (track==="Professional"?12*1024*1024:14*1024*1024);
+    const maxLines=quick ? 5000 : 12000;
+    const maxBytes=quick ? 5*1024*1024 : 12*1024*1024;
     while(out.length<80 && lines<maxLines){
       const {done,value}=await reader.read();
       if(value){
@@ -194,12 +189,10 @@ async function atsSlice(source:string,track:Track,quick=false){
         const hay=(title+" "+desc).toLowerCase();
         const titleHay=title.toLowerCase();
         const cfg=TRACKS[track];
-        const matched=cfg.include.some((q:string)=>titleHay.includes(q.toLowerCase())) ||
-          (track==="Professional" && cfg.include.some((q:string)=>hay.includes(q.toLowerCase())));
+        const matched=cfg.include.some((q:string)=>hay.includes(q.toLowerCase()));
         if(!matched) continue;
-        if(cfg.exclude.some((q:string)=>titleHay.includes(q.toLowerCase()))) continue;
+        if(cfg.exclude.some((q:string)=>hay.includes(q.toLowerCase()))) continue;
         const location=idx.location>=0?(c[idx.location]||""):"";
-        if(TRACKS[track].localOnly && !/(fort collins|loveland|windsor|timnath|laporte|wellington|johnstown|berthoud|greeley|northern colorado|remote|colorado)/i.test(location)) continue;
         const url=idx.url>=0?normalizeUrl(c[idx.url]||""):""; if(!validAtsRow(title,url)) continue;
         out.push({track,title,company:idx.company>=0?(c[idx.company]||source):source,location,url,snippet:desc.slice(0,6000),remote:idx.remote>=0?/true|1|yes/i.test(c[idx.remote]||""): /remote/i.test(location),posted_at:idx.posted>=0?(c[idx.posted]||""):"",source:"ATS:"+source} as Candidate);
         if(out.length>=80) break;
@@ -213,8 +206,7 @@ async function atsSlice(source:string,track:Track,quick=false){
 
 export async function atsWide(track:Track,quick=false){
   const out:Candidate[]=[];
-  const sources=TRACKS[track].atsSources||ATS_SOURCES;
-  for(const source of sources){
+  for(const source of ATS_SOURCES){
     const rows=await atsSlice(source,track,quick);
     out.push(...rows);
     if(out.length>=240) break;
