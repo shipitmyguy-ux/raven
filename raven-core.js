@@ -58,7 +58,7 @@
   }
   function generationFingerprint(job, masterResume, type="resume", templateVersion="modern-v1") {
     const canonical=normalizeJob(job);
-    return stableHash([type,templateVersion,canonical.id||canonical._canonicalUrl,text(canonical.notes),text(masterResume?.id),text(masterResume?.version||masterResume?.fileName),text(masterResume?.dataUrl)].join("|"));
+    return stableHash([type,templateVersion,canonical.id||canonical._canonicalUrl,text(canonical.notes),text(masterResume?.id),text(masterResume?.version||masterResume?.fileName),text(masterResume?.url),text(masterResume?.dataUrl)].join("|"));
   }
   function createCache(namespace="raven") {
     const key=(name)=>namespace+":"+name;
