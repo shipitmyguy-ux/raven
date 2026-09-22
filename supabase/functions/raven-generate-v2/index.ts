@@ -10,7 +10,7 @@ function allowed(req:Request){const origin=req.headers.get("origin")||"";if(orig
 function env(){const url=Deno.env.get("SUPABASE_URL")||"";const key=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";if(!url||!key)throw new Error("Supabase environment unavailable");return {url,key};}
 async function rest(path:string){const {url,key}=env();const r=await fetch(url+"/rest/v1/"+path,{headers:{apikey:key,Authorization:"Bearer "+key}});if(!r.ok)throw new Error("Database read failed ("+r.status+")");return await r.json();}
 async function rpc(name:string,payload:any){const {url,key}=env();const r=await fetch(url+"/rest/v1/rpc/"+name,{method:"POST",headers:{apikey:key,Authorization:"Bearer "+key,"Content-Type":"application/json"},body:JSON.stringify(payload)});if(!r.ok)throw new Error("RPC failed ("+r.status+")");const t=await r.text();return t?JSON.parse(t):null;}
-async function guard(){return await rpc("raven_request_guard",{p_kind:"generation_v2",p_scope:"resume",p_short_limit:6,p_short_seconds:60,p_long_limit:30,p_long_seconds:3600,p_failure_threshold:3,p_failure_window_seconds:300,p_circuit_seconds:600});}
+async function guard(){return await rpc("raven_request_guard",{p_kind:"generation_v2",p_scope:"resume",p_short_limit:12,p_short_seconds:60,p_long_limit:60,p_long_seconds:3600,p_failure_threshold:3,p_failure_window_seconds:300,p_circuit_seconds:600});}
 async function finish(id:number|null,status:string,http:number,detail?:string){if(!id)return;await rpc("raven_request_finish",{p_event_id:id,p_status:status,p_http_status:http,p_detail:detail||null}).catch(()=>{});}
 function clean(v:any,n=1000){return String(v||"").trim().replace(/\s+/g," ").slice(0,n);}
 
@@ -63,7 +63,7 @@ function templates(track:string){
     summary:"Project, implementation, and operations professional with 17 years of experience delivering complex work in cross-functional production environments. Background includes team leadership, mentoring and onboarding, project management, workflow development, troubleshooting, intermediate Excel, automation scripting, and database metadata, reporting, and query experience."
   };
   return {
-    headline:"Operations, Training & Customer Success Professional",
+    headline:"Implementation, Operations & Training Professional",
     summary:"Cross-functional professional with experience leading teams, mentoring and onboarding, managing projects, improving workflows, troubleshooting technical issues, delivering work on schedule, building automation modules, and working with production databases and reporting."
   };
 }
@@ -133,7 +133,7 @@ Deno.serve(async(req:Request)=>{
     "Games / 3D":"Select environment-art, world-building, engine, PBR, visual-quality, mentoring, and shipped-game facts relevant to the posting.",
     "Labor":"Lead with SoundAir maintenance and repair facts. Then select only technical troubleshooting, workflow, teamwork, and reliable-delivery facts that genuinely transfer. Do not make game-art facts sound like mechanical work.",
     "Professional":"Select leadership, project-management, onboarding/training, cross-functional delivery, workflow, troubleshooting, Excel, automation, database/reporting, and relevant technical-collaboration evidence. De-emphasize narrow art-production details.",
-    "Wildcard":"Select the strongest factual bridge to this target role: operations, training, onboarding, customer success, project coordination, troubleshooting, collaboration, automation, and delivery."
+    "Wildcard":"Select the strongest factual bridge to this target role: operations, training, onboarding, project coordination, troubleshooting, collaboration, automation, and delivery. Do not imply direct customer-success, account-management, SaaS, or implementation experience unless an explicit canonical fact supports it."
   };
   const compactProfile={
     skills:profile.skills,
