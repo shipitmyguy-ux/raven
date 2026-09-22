@@ -20,6 +20,8 @@ assert.match(resume,/RAVEN_GEMINI_FALLBACK_MODEL/,"Resume generator must support
 assert.match(cover,/RAVEN_GEMINI_FALLBACK_MODEL/,"Cover generator must support a fallback Gemini model.");
 assert.match(resume,/gemini-3\.5-flash/,"Fallback must use a currently supported Gemini 3.5 model.");
 assert.match(cover,/gemini-3\.5-flash/,"Fallback must use a currently supported Gemini 3.5 model.");
+assert.match(resume,/gemini-3\.1-flash-lite/,"Resume generator must retain a stable tertiary fallback.");
+assert.match(cover,/gemini-3\.1-flash-lite/,"Cover generator must retain a stable tertiary fallback.");
 assert.match(resume,/model:generated\.model/,"Resume response must report the model actually used.");
 assert.match(cover,/model:generated\.model/,"Cover response must report the model actually used.");
 for(const src of [resume,cover]){
