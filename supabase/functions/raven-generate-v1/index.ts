@@ -201,7 +201,6 @@ Deno.serve(async(req:Request)=>{
     "",
     "TARGET JOB TITLE: "+String(body.jobTitle||""),
     "TARGET COMPANY: "+String(body.company||""),
-    "TRACK: "+String(body.track||""),
     "",
     "JOB DESCRIPTION:",
     jobDescription,
