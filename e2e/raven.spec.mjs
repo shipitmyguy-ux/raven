@@ -434,3 +434,104 @@ test("malformed ATS rows are pruned from cached startup data before refresh",asy
   await expect(page.getByText("Coordinate internal teams and manage implementation",{exact:true})).toHaveCount(0);
   await expect(page.getByText("Description overflow fragment",{exact:true})).toHaveCount(0);
 });
+
+
+test("device backup restores profile, answer memory, and local master resume",async({page})=>{
+  await mockRaven(page);
+  await page.goto("/");
+  await page.evaluate(async()=>{
+    localStorage.setItem("ravenApplicationProfileV1",JSON.stringify({firstName:"Raven",lastName:"Tester",email:"raven@example.com"}));
+    localStorage.setItem("ravenAnswerMemoryV1",JSON.stringify({"are you willing to travel":"Yes"}));
+    localStorage.setItem("ravenMasterResumesV1",JSON.stringify([{id:"backup-master",name:"Backup master",sourceType:"local",fileName:"backup.txt",version:"1",tracks:["Professional"]}]));
+    await new Promise((resolve,reject)=>{
+      const request=indexedDB.open("ravenMasterResumeFilesV1",1);
+      request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains("files")) request.result.createObjectStore("files");};
+      request.onerror=()=>reject(request.error);
+      request.onsuccess=()=>{
+        const db=request.result;
+        const tx=db.transaction("files","readwrite");
+        tx.objectStore("files").put(new File(["MASTER BACKUP CONTENT"],"backup.txt",{type:"text/plain"}),"backup-master");
+        tx.oncomplete=()=>{db.close();resolve();};
+        tx.onerror=()=>reject(tx.error);
+      };
+    });
+  });
+  await page.locator("#optionsButton").click();
+  await page.locator('[data-options-target="device-backup"]').click();
+  const downloadPromise=page.waitForEvent("download");
+  await page.locator("#exportDeviceBackup").click();
+  const download=await downloadPromise;
+  const backupPath=await download.path();
+  expect(backupPath).toBeTruthy();
+
+  await page.evaluate(async()=>{
+    for(const key of ["ravenApplicationProfileV1","ravenAnswerMemoryV1","ravenMasterResumesV1","ravenGeneratorPreferencesV1","ravenUserSettingsV1","ravenDocumentApprovalsV1","ravenViewedJobsV1"]) localStorage.removeItem(key);
+    await new Promise((resolve)=>{const request=indexedDB.deleteDatabase("ravenMasterResumeFilesV1");request.onsuccess=request.onerror=request.onblocked=()=>resolve();});
+  });
+  await page.locator("#deviceBackupFile").setInputFiles(backupPath);
+  await expect(page.locator("#syncStatus")).toContainText("Device backup restored");
+
+  const restored=await page.evaluate(async()=>{
+    const profile=JSON.parse(localStorage.getItem("ravenApplicationProfileV1")||"{}");
+    const answers=JSON.parse(localStorage.getItem("ravenAnswerMemoryV1")||"{}");
+    const masters=JSON.parse(localStorage.getItem("ravenMasterResumesV1")||"[]");
+    const file=await new Promise((resolve,reject)=>{
+      const request=indexedDB.open("ravenMasterResumeFilesV1",1);
+      request.onerror=()=>reject(request.error);
+      request.onsuccess=()=>{
+        const db=request.result;
+        const tx=db.transaction("files","readonly");
+        const get=tx.objectStore("files").get("backup-master");
+        get.onsuccess=()=>{resolve(get.result||null);db.close();};
+        get.onerror=()=>reject(get.error);
+      };
+    });
+    return {profile,answers,masters,fileName:file?.name||"",fileText:file?await file.text():""};
+  });
+  expect(restored.profile.email).toBe("raven@example.com");
+  expect(restored.answers["are you willing to travel"]).toBe("Yes");
+  expect(restored.masters[0].id).toBe("backup-master");
+  expect(restored.fileName).toBe("backup.txt");
+  expect(restored.fileText).toBe("MASTER BACKUP CONTENT");
+});
+
+for(const site of [
+  {name:"Greenhouse",url:"https://job-boards.greenhouse.io/raven-test/jobs/1",resume:'<input id="resume" type="file" accept=".html">',cover:'<input id="cover_letter" type="file" accept=".html">'},
+  {name:"Lever",url:"https://jobs.lever.co/raven-test/1",resume:'<input name="resume" type="file" accept=".html">',cover:'<input name="cover_letter" type="file" accept=".html">'},
+  {name:"Ashby",url:"https://jobs.ashbyhq.com/raven-test/1",resume:'<input name="resume" type="file" accept=".html">',cover:'<input name="cover_letter" type="file" accept=".html">'}
+]){
+  test(site.name+" assistant attaches exact approved documents without submitting",async({page})=>{
+    const resumeValue="data:text/html;charset=utf-8,"+encodeURIComponent("<html><body>APPROVED RESUME EXACT</body></html>");
+    const coverValue="data:text/html;charset=utf-8,"+encodeURIComponent("<html><body>APPROVED COVER EXACT</body></html>");
+    await page.addInitScript(({url,resumeValue,coverValue})=>{
+      const store={
+        ravenApplicationPacket:{
+          version:1,createdAt:new Date().toISOString(),jobId:"job-1",jobUrl:url,title:"Test Role",company:"Test Company",
+          profile:{firstName:"Raven",lastName:"Tester",email:"raven@example.com"},answers:{},
+          resume:resumeValue,coverLetter:coverValue
+        }
+      };
+      globalThis.chrome={
+        storage:{local:{
+          get(keys,cb){const list=Array.isArray(keys)?keys:[keys];cb(Object.fromEntries(list.map(k=>[k,store[k]]).filter(([,v])=>v!==undefined)));},
+          set(values,cb){Object.assign(store,values);if(cb)cb();},
+          remove(keys,cb){for(const k of (Array.isArray(keys)?keys:[keys])) delete store[k];if(cb)cb();}
+        }},
+        runtime:{lastError:null,sendMessage(_m,cb){if(cb)cb();}}
+      };
+    },{url:site.url,resumeValue,coverValue});
+    await page.route(site.url,route=>route.fulfill({status:200,contentType:"text/html",body:'<!doctype html><html><body><form><input id="first_name" name="name" type="text"><input id="last_name" type="text"><input id="email" type="email">'+site.resume+site.cover+'<button type="submit">Submit application</button></form></body></html>'}));
+    await page.goto(site.url);
+    await page.addScriptTag({path:"extension/src/assistant-core.js"});
+    await page.addScriptTag({path:"extension/src/content.js"});
+    await expect(page.locator("#raven-assistant-banner")).toContainText("approved document");
+    const attached=await page.evaluate(async()=>{
+      const inputs=[...document.querySelectorAll('input[type="file"]')];
+      return Promise.all(inputs.map(async(input)=>({name:input.files?.[0]?.name||"",text:input.files?.[0]?await input.files[0].text():""})));
+    });
+    expect(attached).toHaveLength(2);
+    expect(attached[0].text).toContain("APPROVED RESUME EXACT");
+    expect(attached[1].text).toContain("APPROVED COVER EXACT");
+    expect(await page.locator("button[type=submit]").count()).toBe(1);
+  });
+}
