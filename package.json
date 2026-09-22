@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "test:e2e": "playwright test",
+    "test:smoke": "playwright test e2e/production-smoke.spec.mjs",
     "backup:raven": "node scripts/export-raven.mjs",
     "verify:backup": "node scripts/verify-raven-backup.mjs",
     "restore:raven": "node scripts/restore-raven.mjs"

@@ -39,11 +39,20 @@ No meaningful Work task is considered complete while its only record exists in c
 
 Push to `main`. The included GitHub Actions workflow deploys the repository to GitHub Pages automatically.
 
-Repository: `shipitmyguy-ux/raven`
+Repository: `shipitmyguy-ux.github.io/raven`
 
 Live site:
 
 `https://shipitmyguy-ux.github.io/raven/`
+
+## Automated Smoke Testing
+
+Automated headless Playwright smoke tests run against the deployed Raven app (`https://shipitmyguy-ux.github.io/raven/`) and synthetic Application Assistant flows covering all current ATS adapters (Greenhouse, Lever, Ashby, Workday, iCIMS, Taleo, and generic fallback).
+
+- **Local command:** `npm run test:smoke`
+- **GitHub Actions manual workflow:** `Production Smoke Tests` (`.github/workflows/production-smoke.yml`), triggered via `workflow_dispatch`
+
+Failure artifacts (screenshots and Playwright traces) and full test reports are uploaded automatically on GitHub Actions.
 
 ## Runtime APIs
 
