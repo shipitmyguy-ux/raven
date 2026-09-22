@@ -7,6 +7,9 @@ const generatedLetter={greeting:"Dear Hiring Manager,",paragraphs:["I am applyin
 async function mockRaven(page,{generatorFails=false,initialJob=null,dataDelayMs=0}={}){
   let job={...savedJob,...(initialJob||{})};
   let generationCalls=0;
+  const generationBodies=[];
+  const searchTracks=[];
+  const listTracks=[];
   await page.route("**/functions/v1/raven-data-v1**",async route=>{
     const req=route.request();
     if(req.method()==="GET"){ if(dataDelayMs) await new Promise(resolve=>setTimeout(resolve,dataDelayMs)); return route.fulfill({json:{ok:true,jobs:[job]}}); }
@@ -15,17 +18,31 @@ async function mockRaven(page,{generatorFails=false,initialJob=null,dataDelayMs=
     if(body.action==="addJob") return route.fulfill({json:{ok:true,job:{...body,id:"job-added"}}});
     return route.fulfill({json:{ok:true}});
   });
-  await page.route("**/functions/v1/raven-backend-v3**",route=>route.fulfill({json:{ok:true,jobs:[],results:[]}}));
+  await page.route("**/functions/v1/raven-backend-v3**",route=>{
+    const url=new URL(route.request().url());
+    const action=url.searchParams.get("action")||"";
+    const track=url.searchParams.get("track")||"";
+    if(action==="search") searchTracks.push(track);
+    if(action==="listResults") listTracks.push(track);
+    return route.fulfill({json:{ok:true,track,count:0,jobs:[],results:[],phase:"quick",deep_search:"started"}});
+  });
   await page.route("**/functions/v1/raven-enrich-v1**",route=>route.fulfill({json:{ok:true,description:savedJob.notes}}));
   await page.route("**/functions/v1/raven-commute-v1**",route=>route.fulfill({json:{ok:true,minutes:0}}));
   await page.route("**/functions/v1/raven-generate-v1**",async route=>{
     generationCalls++;
     if(generatorFails) return route.fulfill({status:503,json:{ok:false,error:"Mock generator unavailable"}});
     const body=JSON.parse(route.request().postData()||"{}");
+    generationBodies.push(body);
     if(body.documentType==="coverLetter") return route.fulfill({json:{ok:true,coverLetter:generatedLetter}});
     return route.fulfill({json:{ok:true,resume:generatedResume}});
   });
-  return {getJob:()=>job,getGenerationCalls:()=>generationCalls};
+  return {
+    getJob:()=>job,
+    getGenerationCalls:()=>generationCalls,
+    getGenerationBodies:()=>generationBodies.slice(),
+    getSearchTracks:()=>searchTracks.slice(),
+    getListTracks:()=>listTracks.slice()
+  };
 }
 
 test("loads mocked jobs and all tracks without page errors",async({page})=>{
@@ -34,6 +51,25 @@ test("loads mocked jobs and all tracks without page errors",async({page})=>{
   await expect(page.locator(".job-title").filter({ hasText: "Implementation Project Manager" })).toBeVisible();
   for(const track of ["Games / 3D","Professional","Labor","Wildcard"]){const tab=page.locator('[data-track="'+track+'"]');await expect(tab).toBeVisible();await tab.click();}
   expect(errors).toEqual([]);
+});
+
+test("refresh updates every job track and tabs are filter-only",async({page})=>{
+  const api=await mockRaven(page);
+  await page.goto("/");
+  await expect.poll(()=>api.getListTracks().length).toBe(4);
+  expect(new Set(api.getListTracks())).toEqual(new Set(["Games / 3D","Professional","Labor","Wildcard"]));
+  expect(api.getSearchTracks()).toEqual([]);
+
+  await page.locator("#searchJobsButton").click();
+  await expect.poll(()=>api.getSearchTracks().length).toBe(4);
+  expect(new Set(api.getSearchTracks())).toEqual(new Set(["Games / 3D","Professional","Labor","Wildcard"]));
+
+  const before=api.getSearchTracks().length;
+  for(const track of ["Professional","Labor","Wildcard","Games / 3D"]){
+    await page.locator('[data-track="'+track+'"]').click();
+  }
+  await page.waitForTimeout(100);
+  expect(api.getSearchTracks().length).toBe(before);
 });
 
 test("bookmark and applied status persist through reload",async({page})=>{
