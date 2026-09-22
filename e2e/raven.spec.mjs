@@ -53,6 +53,7 @@ test("loads mocked jobs and all tracks without page errors",async({page})=>{
   expect(errors).toEqual([]);
 });
 
+// Refresh is global; tabs only filter already-refreshed data.
 test("refresh updates every job track and tabs are filter-only",async({page})=>{
   const api=await mockRaven(page);
   await page.goto("/");
