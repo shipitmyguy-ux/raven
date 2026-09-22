@@ -47,7 +47,7 @@
     searchJobs(track) { return read(config.searchApiUrl, "search", { track }); },
     listResults(track) { return read(config.searchApiUrl, "listResults", { track }); },
     async listJobs() {
-      const data = await read(config.dataApiUrl, "jobs");
+      const data = await read(config.searchApiUrl, "jobs");
       return { ...data, jobs: (data.jobs || []).map(normalizeJob) };
     },
     addJob(job) { return write(config.searchApiUrl, "addJob", job); },
