@@ -45,10 +45,11 @@ export async function linkedinQuick(track:Track){
   return groups.flat();
 }
 
-export async function linkedinDeep(track:Track){
+export async function linkedinDeep(track:Track, termLimit=12){
   const cfg=TRACKS[track], out:Candidate[]=[];
-  for(let i=0;i<cfg.terms.length;i+=4){
-    const batch=cfg.terms.slice(i,i+4);
+  const terms=cfg.terms.slice(0,termLimit);
+  for(let i=0;i<terms.length;i+=4){
+    const batch=terms.slice(i,i+4);
     const calls:Promise<Candidate[]>[]=[];
     for(const term of batch){
       calls.push(linkedin(term,track,false));
@@ -187,7 +188,6 @@ async function atsSlice(source:string,track:Track,quick=false){
         lines++;
         const c=csvCells(record), title=String(c[idx.title]||"").trim(), desc=idx.description>=0?(c[idx.description]||""):"";
         const hay=(title+" "+desc).toLowerCase();
-        const titleHay=title.toLowerCase();
         const cfg=TRACKS[track];
         const matched=cfg.include.some((q:string)=>hay.includes(q.toLowerCase()));
         if(!matched) continue;
