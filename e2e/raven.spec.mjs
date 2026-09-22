@@ -137,7 +137,7 @@ test("offline resume fallback creates a local draft without network generation",
   await page.locator('[data-track="Professional"]').click();
   await page.locator(".job-card-summary").first().click();
   await page.context().setOffline(true);
-  await page.locator('[data-queue="resume"]').click();
+  await page.locator('[data-generate="resume"]').click();
   await expect(page.locator("#documentReviewDialog")).toBeVisible();
   expect(api.getGenerationCalls()).toBe(0);
   const pending=await page.evaluate(()=>JSON.parse(localStorage.getItem("ravenPendingDocumentSyncV1")||"{}"));
@@ -192,7 +192,7 @@ test("generation cache prevents a duplicate resume model call",async({page})=>{
 
   await page.locator('[data-track="Professional"]').click();
   await page.locator(".job-card-summary").first().click();
-  await page.locator('[data-queue="resume"]').click();
+  await page.locator('[data-generate="resume"]').click();
   await expect(page.locator("#documentReviewDialog")).toBeVisible();
   expect(api.getGenerationCalls()).toBe(0);
 });
@@ -254,7 +254,7 @@ test("review preserves approved document and revision invalidates approval",asyn
   await page.locator(".job-card-summary").first().click();
   await expect(page.locator("[data-approved-apply]")).toContainText("Apply");
 
-  await page.locator('[data-queue="resume"]').click();
+  await page.locator('[data-generate="resume"]').click();
   await expect(page.locator("#documentReviewDialog")).toBeVisible();
   expect(api.getGenerationCalls()).toBe(0);
 
