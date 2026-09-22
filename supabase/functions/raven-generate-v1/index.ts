@@ -1,4 +1,5 @@
 import { driveExportTarget } from "./drive-source.mjs";
+import { requestGuard, requestFinish } from "./request-budget.ts";
 const ALLOWED_ORIGINS=new Set([
   "https://shipitmyguy-ux.github.io",
   "http://localhost:8000",
@@ -153,10 +154,36 @@ Deno.serve(async(req:Request)=>{
   const masterUrl=String(body.masterResume?.url||"").trim();
   let masterMime=String(body.masterResume?.mimeType||"application/pdf").trim()||"application/pdf";
   if(!jobDescription) return json(req,{error:"Job description is required."},400);
+  if(!masterDataUrl&&!masterUrl) return json(req,{error:"Master resume file or Google Drive URL is required."},400);
+
+  let budget:any;
+  try{
+    budget=await requestGuard("generation","gemini",{
+      shortLimit:6,shortSeconds:60,
+      longLimit:30,longSeconds:3600,
+      failureThreshold:3,failureWindowSeconds:300,circuitSeconds:600
+    });
+  }catch(e){
+    return json(req,{error:"Generation safety budget is temporarily unavailable.",code:"REQUEST_BUDGET_UNAVAILABLE",detail:e instanceof Error?e.message:String(e)},503);
+  }
+  if(!budget?.allowed){
+    const circuit=budget?.reason==="circuit-open";
+    return json(req,{
+      error:circuit?"Gemini generation is temporarily paused after repeated provider failures.":"Generation request budget reached. Try again after the cooldown.",
+      code:circuit?"AI_CIRCUIT_OPEN":"REQUEST_BUDGET_EXCEEDED",
+      retryable:true,
+      retryAfterSeconds:Number(budget?.retry_after_seconds||60)
+    },circuit?503:429);
+  }
+  const budgetEventId=Number(budget.event_id||0)||null;
+
   let masterBase64="";
   if(masterDataUrl){
     const dataMatch=masterDataUrl.match(/^data:([^;,]+)?;base64,(.+)$/s);
-    if(!dataMatch) return json(req,{error:"Master resume must be provided as a base64 data URL."},400);
+    if(!dataMatch){
+      await requestFinish(budgetEventId,"rejected",400,"Invalid master resume data URL").catch(()=>{});
+      return json(req,{error:"Master resume must be provided as a base64 data URL."},400);
+    }
     masterMime=String(dataMatch[1]||masterMime||"application/pdf").trim()||"application/pdf";
     masterBase64=dataMatch[2];
   }else if(masterUrl){
@@ -165,10 +192,9 @@ Deno.serve(async(req:Request)=>{
       masterBase64=loaded.base64;
       masterMime=loaded.mimeType;
     }catch(e){
+      await requestFinish(budgetEventId,"rejected",400,e instanceof Error?e.message:String(e)).catch(()=>{});
       return json(req,{error:e instanceof Error?e.message:String(e),code:"MASTER_RESUME_SOURCE_ERROR"},400);
     }
-  }else{
-    return json(req,{error:"Master resume file or Google Drive URL is required."},400);
   }
 
   const documentType=body.documentType==="coverLetter"?"coverLetter":"resume";
@@ -237,16 +263,28 @@ Deno.serve(async(req:Request)=>{
     if(!r.ok){
       const message=raw?.error?.message||("Gemini request failed ("+r.status+")");
       const retryable=retryableProviderStatus(r.status);
+      await requestFinish(budgetEventId,"failure",r.status,message).catch(()=>{});
       return json(req,{error:message,code:retryable?"AI_PROVIDER_TEMPORARY":"AI_PROVIDER_ERROR",provider:"gemini",retryable,upstreamStatus:r.status},retryable?503:502);
     }
     const text=raw?.candidates?.[0]?.content?.parts?.map((p:any)=>p.text||"").join("")||"";
-    if(!text) return json(req,{error:"Gemini returned an empty response."},502);
+    if(!text){
+      await requestFinish(budgetEventId,"failure",502,"Gemini returned an empty response.").catch(()=>{});
+      return json(req,{error:"Gemini returned an empty response."},502);
+    }
     let document:any;
-    try{document=normalizeGeneratedDocument(documentType,JSON.parse(text));}catch{return json(req,{error:"Gemini returned invalid structured output.",code:"AI_OUTPUT_INVALID",provider:"gemini",retryable:true},502);}
+    try{document=normalizeGeneratedDocument(documentType,JSON.parse(text));}catch{
+      await requestFinish(budgetEventId,"failure",502,"Gemini returned invalid structured output.").catch(()=>{});
+      return json(req,{error:"Gemini returned invalid structured output.",code:"AI_OUTPUT_INVALID",provider:"gemini",retryable:true},502);
+    }
     const validationError=validateDocument(documentType,document);
-    if(validationError) return json(req,{error:validationError,code:"AI_OUTPUT_INVALID",provider:"gemini",retryable:true},502);
-    return json(req,{ok:true,provider:"gemini",route,model:GEMINI_MODEL,[documentType==="coverLetter"?"coverLetter":"resume"]:document});
+    if(validationError){
+      await requestFinish(budgetEventId,"failure",502,validationError).catch(()=>{});
+      return json(req,{error:validationError,code:"AI_OUTPUT_INVALID",provider:"gemini",retryable:true},502);
+    }
+    await requestFinish(budgetEventId,"success",200).catch(()=>{});
+    return json(req,{ok:true,provider:"gemini",route,model:GEMINI_MODEL,budget:{short_remaining:budget.short_remaining,long_remaining:budget.long_remaining},[documentType==="coverLetter"?"coverLetter":"resume"]:document});
   }catch(e){
+    await requestFinish(budgetEventId,"failure",500,e instanceof Error?e.message:String(e)).catch(()=>{});
     return json(req,{error:e instanceof Error?e.message:String(e)},500);
   }
 });
