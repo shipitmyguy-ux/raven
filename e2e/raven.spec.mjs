@@ -246,16 +246,14 @@ test("generation cache prevents a duplicate resume model call",async({page})=>{
 });
 
 test("application requires approval of both exact documents",async({page})=>{
-  await mockRaven(page);await page.goto("/");await page.locator('[data-track="Professional"]').click();await page.locator(".job-card-summary").first().click();
+  const resume="data:text/html,resume";
+  const letter="data:text/html,letter";
+  await mockRaven(page,{initialJob:{resume,cover_letter:letter}});
+  await page.goto("/");await page.locator('[data-track="Professional"]').click();await page.locator(".job-card-summary").first().click();
   await expect(page.locator("[data-approved-apply]")).toContainText("Approve docs");
-  await page.evaluate(()=>{
-    const job={id:"job-1",resume:"data:text/html,resume",coverLetter:"data:text/html,letter"};
-    localStorage.setItem("ravenDocumentApprovalsV1",JSON.stringify({"job-1|resume":{value:job.resume},"job-1|coverLetter":{value:job.coverLetter}}));
-  });
-  await page.route("**/functions/v1/raven-data-v1**",async route=>{
-    if(route.request().method()==="GET") return route.fulfill({json:{ok:true,jobs:[{...savedJob,resume:"data:text/html,resume",cover_letter:"data:text/html,letter"}]}});
-    return route.fulfill({json:{ok:true}});
-  });
+  await page.evaluate(({resume,letter})=>{
+    localStorage.setItem("ravenDocumentApprovalsV1",JSON.stringify({"job-1|resume":{value:resume},"job-1|coverLetter":{value:letter}}));
+  },{resume,letter});
   await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator(".job-card-summary").first().click();
   await expect(page.locator("[data-approved-apply]")).toContainText("Apply");
 });
