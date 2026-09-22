@@ -49,25 +49,16 @@ async function callGemini(prompt:string,key:string){
   throw new Error(last||"Gemini request failed");
 }
 
-function templates(track:string){
-  if(track==="Games / 3D") return {
-    headline:"Senior Environment Artist",
-    summary:"Senior Environment Artist with 17 years of professional game-development experience spanning world building, level development, asset creation, PBR workflows, visual-quality ownership, mentoring, and cross-functional collaboration with design and engineering teams."
-  };
-  if(track==="Labor") return {
-    headline:"Maintenance & Operations Professional",
-    summary:"Maintenance and operations professional with hands-on teardown and repair experience on coffee makers used on Boeing 747 and 737 aircraft, backed by extensive experience troubleshooting production issues, improving workflows, collaborating across technical teams, and delivering reliable work on schedule."
-  };
-  if(track==="Professional") return {
-    headline:"Project, Implementation & Operations Professional",
-    summary:"Project, implementation, and operations professional with 17 years of experience delivering complex work in cross-functional production environments. Background includes team leadership, mentoring and onboarding, project management, workflow development, troubleshooting, intermediate Excel, automation scripting, and database metadata, reporting, and query experience."
-  };
-  return {
-    headline:"Implementation, Operations & Training Professional",
-    summary:"Cross-functional professional with experience leading teams, mentoring and onboarding, managing projects, improving workflows, troubleshooting technical issues, delivering work on schedule, building automation modules, and working with production databases and reporting."
-  };
+function headlineForTrack(track:string){
+  if(track==="Games / 3D")return "Environment Art Professional";
+  if(track==="Labor")return "Maintenance & Operations Professional";
+  if(track==="Professional")return "Project & Operations Professional";
+  return "Operations & Training Professional";
 }
-
+function supportedSummary(skills:string[]){
+  const chosen=skills.slice(0,8);
+  return chosen.length ? "Selected strengths: "+chosen.join(", ")+"." : "Relevant experience selected from the canonical candidate profile.";
+}
 function build(profile:any,selection:any,track:string){
   const expMap=new Map<string,any>();
   const expFactMap=new Map<string,Map<string,string>>();
@@ -90,12 +81,12 @@ function build(profile:any,selection:any,track:string){
   const addMap=new Map((profile.shipped_titles||[]).map((s:string)=>[s.toLowerCase(),s]));
   const additional:string[]=[];
   for(const a0 of selection.additional||[]){const a=addMap.get(clean(a0,180).toLowerCase());if(a&&!additional.includes(a))additional.push(a);}
-  const t=templates(track);
+  const headline=headlineForTrack(track);
   return {
     name:clean(profile.name,120),
     contact:clean(profile.contact,300),
-    headline:t.headline,
-    summary:t.summary,
+    headline,
+    summary:supportedSummary(skills),
     skills:skills.slice(0,16),
     experience,
     education:(profile.education||[]).slice(0,3).map((e:any)=>({degree:clean(e.degree,180),school:clean(e.school,180),location:clean(e.location,120),dates:clean(e.dates,100)})),
