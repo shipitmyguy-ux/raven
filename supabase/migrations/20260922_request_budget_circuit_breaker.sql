@@ -44,6 +44,9 @@ declare
 begin
   perform pg_advisory_xact_lock(hashtext('raven-request-budget:' || p_kind));
 
+  delete from public.raven_request_events
+  where created_at < now() - interval '14 days';
+
   select max(created_at) into v_last_success
   from public.raven_request_events
   where kind=p_kind and scope=coalesce(nullif(p_scope,''),'global') and status='success';
