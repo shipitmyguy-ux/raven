@@ -66,6 +66,39 @@ const resumeSchema={
 };
 
 function validString(value:unknown){return typeof value==="string"&&value.trim().length>0;}
+function placeholderText(value:unknown){
+  return /^(?:not provided(?: in master resume)?|n\/?a|none|available upon request)$/i.test(String(value||"").trim());
+}
+function normalizeGeneratedDocument(type:string,doc:any){
+  if(!doc||typeof doc!=="object") return doc;
+  if(type==="coverLetter"){
+    return {
+      greeting:String(doc.greeting||"").trim(),
+      paragraphs:(Array.isArray(doc.paragraphs)?doc.paragraphs:[]).map((x:any)=>String(x||"").trim()).filter(Boolean).slice(0,3),
+      closing:String(doc.closing||"").trim(),
+      signature:String(doc.signature||"").trim()
+    };
+  }
+  const education=(Array.isArray(doc.education)?doc.education:[])
+    .map((x:any)=>({degree:String(x?.degree||"").trim(),school:String(x?.school||"").trim(),location:String(x?.location||"").trim(),dates:String(x?.dates||"").trim()}))
+    .filter((x:any)=>[x.degree,x.school,x.location,x.dates].some((v:any)=>validString(v)&&!placeholderText(v)))
+    .slice(0,3);
+  return {
+    name:String(doc.name||"").trim(),
+    contact:placeholderText(doc.contact)?"":String(doc.contact||"").trim(),
+    headline:String(doc.headline||"").trim(),
+    summary:String(doc.summary||"").trim().slice(0,1200),
+    skills:(Array.isArray(doc.skills)?doc.skills:[]).map((x:any)=>String(x||"").trim()).filter(Boolean).slice(0,16),
+    experience:(Array.isArray(doc.experience)?doc.experience:[]).slice(0,5).map((x:any)=>({
+      role:String(x?.role||"").trim(),
+      company:String(x?.company||"").trim(),
+      dates:String(x?.dates||"").trim(),
+      bullets:(Array.isArray(x?.bullets)?x.bullets:[]).map((b:any)=>String(b||"").trim()).filter(Boolean).slice(0,4)
+    })),
+    education,
+    additional:(Array.isArray(doc.additional)?doc.additional:[]).map((x:any)=>String(x||"").trim()).filter(Boolean).slice(0,6)
+  };
+}
 function validateDocument(type:string,doc:any){
   if(!doc||typeof doc!=="object") return "AI returned no structured document.";
   if(type==="coverLetter"){
@@ -176,7 +209,7 @@ Deno.serve(async(req:Request)=>{
     const text=raw?.candidates?.[0]?.content?.parts?.map((p:any)=>p.text||"").join("")||"";
     if(!text) return json(req,{error:"Gemini returned an empty response."},502);
     let document:any;
-    try{document=JSON.parse(text);}catch{return json(req,{error:"Gemini returned invalid structured output.",code:"AI_OUTPUT_INVALID",provider:"gemini",retryable:true},502);}
+    try{document=normalizeGeneratedDocument(documentType,JSON.parse(text));}catch{return json(req,{error:"Gemini returned invalid structured output.",code:"AI_OUTPUT_INVALID",provider:"gemini",retryable:true},502);}
     const validationError=validateDocument(documentType,document);
     if(validationError) return json(req,{error:validationError,code:"AI_OUTPUT_INVALID",provider:"gemini",retryable:true},502);
     return json(req,{ok:true,provider:"gemini",route,model:GEMINI_MODEL,[documentType==="coverLetter"?"coverLetter":"resume"]:document});
