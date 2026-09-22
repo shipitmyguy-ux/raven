@@ -9,7 +9,7 @@ Raven is the public web application for the job-application tracker.
 - **GitHub:** canonical source for Raven code, configuration, project state, handoffs, and deployment documentation
 - **GitHub Pages:** public static frontend
 - **runtime-config.json:** Raven UI/theme/status/feature defaults
-- **Supabase Edge Functions:** server-side search, data, task, enrichment, and commute APIs
+- **Supabase Edge Functions:** canonical search/job API plus enrichment, commute, generation, and bookmark services
 - **Supabase Postgres:** authoritative live Raven job/application/runtime data store
 - **Google Drive:** private resumes, cover letters, qualification profile, backups, and recovery artifacts where configured
 - **Google Sheets:** backup/export only; not the canonical live data store
@@ -48,11 +48,10 @@ Live site:
 ## Runtime APIs
 
 The current frontend configuration points to Supabase Edge Functions for:
-- search
-- job data
-- tasks
+- canonical search + saved-job data (`raven-backend-v3`)
 - job-description enrichment
 - commute data
+- document generation
 
 See `config.js` and `raven-api.js` for the current client-side API wiring.
 
@@ -85,4 +84,4 @@ Current/target source configuration is documented in `job-search-config.json`. S
 
 ## Verification
 
-Use [docs/TEST_CHECKLIST.md](docs/TEST_CHECKLIST.md) after meaningful production changes. A queued task is not considered verified until a real result is produced and persists correctly.
+Use [docs/TEST_CHECKLIST.md](docs/TEST_CHECKLIST.md) after meaningful production changes. Backup and disaster-recovery instructions are in [docs/BACKUP_RESTORE.md](docs/BACKUP_RESTORE.md).
