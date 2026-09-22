@@ -28,7 +28,7 @@ async function selectFacts(prompt:string,key:string){
     const r=await fetch(base+"/v1beta/models/"+MODEL+":generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:1200,responseMimeType:"application/json",responseSchema:schema}})});
     const raw=await r.json().catch(()=>({}));
     if(r.ok){const t=raw?.candidates?.[0]?.content?.parts?.map((p:any)=>p.text||"").join("")||"";if(!t)throw new Error("Empty model output");return JSON.parse(t);}
-    last=raw?.error?.message||("Gemini failed "+r.status);if(r.status!==401&&r.status!==403)break;
+    last=raw?.error?.message||("Gemini failed "+r.status);if(r.status!==401&&r.status!==403&&r.status!==429&&r.status<500)break;
   }
   throw new Error(last||"Gemini failed");
 }
