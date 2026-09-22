@@ -6,9 +6,14 @@ on:
       - "raven-core.js"
       - "raven-api.js"
       - "app.js"
+      - "index.html"
+      - "e2e/**"
+      - "playwright.config.mjs"
+      - "package.json"
       - "tests/**"
       - "extension/**"
       - "supabase/functions/raven-backend-v3/**"
+      - "supabase/functions/raven-generate-v1/**"
       - ".github/workflows/test.yml"
   push:
     branches: ["main", "refactor/reusable-core"]
@@ -16,9 +21,14 @@ on:
       - "raven-core.js"
       - "raven-api.js"
       - "app.js"
+      - "index.html"
+      - "e2e/**"
+      - "playwright.config.mjs"
+      - "package.json"
       - "tests/**"
       - "extension/**"
       - "supabase/functions/raven-backend-v3/**"
+      - "supabase/functions/raven-generate-v1/**"
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -42,3 +52,17 @@ jobs:
           node tests/raven-core.test.mjs
           node tests/assistant-core.test.mjs
           node tests/ats-csv.test.mjs
+
+  safety-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install test dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Approval and application safety tests
+        run: npx playwright test --grep "application requires approval of both exact documents|review preserves approved document and revision invalidates approval"
