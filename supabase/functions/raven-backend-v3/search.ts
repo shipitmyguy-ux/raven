@@ -6,15 +6,17 @@ import { upsertResults, createRun, finishRun, deepSearchRunning, deepSearchCoold
 import { enrichCandidate } from "./enrich.ts";
 
 export async function quickSearch(track:Track){
-  const [li,rem,rok,arb,jcy,him,ats]=await Promise.all([
+  // Keep peak memory below the Edge Runtime limit: finish the general sources
+  // before opening the large streamed ATS CSV slices.
+  const [li,rem,rok,arb,jcy,him]=await Promise.all([
     within(linkedinQuick(track),6000,[] as Candidate[]),
     within(remotive(track),5500,[] as Candidate[]),
     within(remoteOk(track),5500,[] as Candidate[]),
     within(arbeitnow(track),5500,[] as Candidate[]),
     within(jobicy(track),7000,[] as Candidate[]),
-    within(himalayas(track),7000,[] as Candidate[]),
-    within(atsWide(track),10500,[] as Candidate[])
+    within(himalayas(track),7000,[] as Candidate[])
   ]);
+  const ats=await within(atsWide(track),10500,[] as Candidate[]);
   const rows=rankCandidates(track,[...li,...rem,...rok,...arb,...jcy,...him,...ats],40);
   await upsertResults(rows);
   return rows;
