@@ -85,18 +85,10 @@ Deno.serve(async(req:Request)=>{
       const ambiguousRows: any[] = [];
 
       for (const job of missing) {
-        let recovered = recoverCompanyFromUrl(job.url);
-        if (!recovered) {
-          try {
-            const enriched = await enrichCandidate({
-              track: (job.track || "Professional") as Track, title: job.title || "", company: "", location: job.location || "",
-              remote: Boolean(job.remote), salary_text: job.salary_text || "", url: job.url || "", source: job.source || "Web", snippet: job.notes || ""
-            });
-            if (enriched.company && enriched.company.trim()) {
-              recovered = enriched.company.trim();
-            }
-          } catch {}
-        }
+        // Persistent recovery is intentionally deterministic. Generic enrichment can
+        // produce plausible company names without authoritative provenance, so it must
+        // never be used to mutate canonical Raven job data.
+        const recovered = recoverCompanyFromUrl(job.url);
 
         if (recovered) {
           await updateJob(job.id, { company: recovered });
