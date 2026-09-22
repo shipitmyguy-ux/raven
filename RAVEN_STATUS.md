@@ -7,9 +7,12 @@ Raven is a web-based job application tracker and application-assistant project.
 iOS and Android work are currently excluded.
 Final employer submission remains manual and requires user review.
 
+## Operational Flow
+`Chat -> Raven Control Plane -> Supabase/backend, with Jules only for source-code changes.`
+
 ## Canonical systems
 - Code/project state: GitHub `shipitmyguy-ux/raven`
-- Live application/job data: Supabase
+- Live application/job data & Control Plane: Supabase
 - Public UI/runtime defaults: `runtime-config.json`
 - Job-search defaults: `job-search-config.json`
 - Portable backup/recovery: private checksum-verified JSON snapshots via `scripts/export-raven.mjs` / `scripts/restore-raven.mjs`
@@ -23,6 +26,9 @@ Final employer submission remains manual and requires user review.
 - `raven-enrich-v1` is ACTIVE at version 5.
 - `raven-commute-v1` is ACTIVE at version 4.
 - `raven-generate-v1` is ACTIVE at version 15.
+- `raven-control-v1` is ACTIVE at version 1 (bounded Control Plane Edge Function).
+- Web Control Panel integrated into Options dialog with overall health summary, job data-quality metrics, task-health state, dedupe diagnostics, source diagnostics, recent control events, Refresh All, Run Source Diagnostics, Repair Descriptions, ATS Smoke Test, and read-only policies.
+- Policy mutation writes and employer application submission actions are explicitly blocked with HTTP 403.
 - Legacy data/search/queue/Sheets endpoints are retired or inert.
 - Tabs are view filters; Refresh all jobs refreshes every category through one shared search/parse pipeline.
 - Request budgets and circuit breakers protect search and Gemini.

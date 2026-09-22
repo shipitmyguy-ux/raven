@@ -3,9 +3,16 @@
 ## Principle
 GitHub stores durable project state. Supabase stores durable runtime application data.
 
+## Operational Flow & Control Plane
+`Chat -> Raven Control Plane -> Supabase/backend, with Jules only for source-code changes.`
+
+- Normal chat and Supabase management perform runtime operations, backend deployments, and control plane configuration directly.
+- Jules (the agent) is responsible solely for source-code changes, UI development, repository maintenance, and canonical GitHub source commits.
+- Edge Function `raven-control-v1` operates as the ACTIVE control plane API (version 1), exposing safe diagnostic, telemetry, and operational actions while enforcing strict origin boundaries and blocking arbitrary execution or submission capabilities.
+
 ## Components
 
-### Web frontend
+### Web frontend & Web Control Panel
 Primary files currently include:
 - `index.html`
 - `app.js`
@@ -17,13 +24,26 @@ Primary files currently include:
 - `raven-api.js`
 
 Hosted through the repository's web deployment/GitHub Pages flow.
+Includes a Raven Web Control Panel within Options/Admin providing:
+- overall health summary & job data-quality counts
+- current task-health state & identity/dedupe diagnostics
+- latest source diagnostics & recent control events
+- operational actions: Refresh All, Run Source Diagnostics, Repair Descriptions (bounded limit/offset), ATS Smoke Test
+- read-only displays for Generation Policy, Source Policy, and Feature Flags
 
 ### Chrome extension
 Located under `extension/`.
 Its responsibility is to capture/import jobs into Raven, including URL and extractable job metadata.
 
 ### Supabase
-Use as the authoritative live data store for jobs, statuses, descriptions, document records, and other Raven runtime state.
+Used as the authoritative live data store for jobs, statuses, descriptions, document records, source policies, feature flags, control events, and other Raven runtime state.
+
+### Control Plane Edge Function (`raven-control-v1`)
+Located under `supabase/functions/raven-control-v1/`.
+- `verify_jwt=false`, bounded browser actions origin-restricted to Raven GitHub Pages/localhost.
+- Exposes safe browser actions: `health`, `getConfig`, `recent`, `refreshAll`, `runSourceDiagnostics`, `repairDescriptions`, `smokeAts`.
+- Blocks policy mutations (`updateGenerationPolicy`, `updateSourcePolicy`, `setFeatureFlag`) returning HTTP 403 until authenticated admin support is available.
+- Explicitly blocks all employer application submission actions (`submitApplication`, `apply`, `finalize`) returning HTTP 403.
 
 ### Search / ingestion
 Desired flow:
@@ -42,8 +62,9 @@ A queue acknowledgement is not equivalent to a successful generated document.
 
 ## State ownership
 - GitHub: code, configuration, migrations, docs, project status.
-- Supabase: live jobs/application/document data.
-- Private JSON snapshots: portable Supabase data backup/recovery; see `docs/BACKUP_RESTORE.md`.\n- Google Sheets: retired; not part of the live or backup architecture.
+- Supabase: live jobs/application/document data, control plane logs, source policy, feature flags.
+- Private JSON snapshots: portable Supabase data backup/recovery; see `docs/BACKUP_RESTORE.md`.
+- Google Sheets: retired; not part of the live or backup architecture.
 - Work/Chat conversations: transient only.
 
 ## Change discipline

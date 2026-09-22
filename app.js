@@ -352,6 +352,129 @@
     setStatus("Master resume saved");
   }
 
+  async function loadControlPanelData() {
+    const statusMetric = document.getElementById("controlMetricStatus");
+    if (statusMetric) statusMetric.textContent = "Loading…";
+
+    const [healthRes, configRes, eventsRes] = await Promise.allSettled([
+      window.RavenAPI?.controlHealth ? window.RavenAPI.controlHealth() : Promise.reject(new Error("API unavailable")),
+      window.RavenAPI?.getControlConfig ? window.RavenAPI.getControlConfig() : Promise.reject(new Error("API unavailable")),
+      window.RavenAPI?.getControlEvents ? window.RavenAPI.getControlEvents() : Promise.reject(new Error("API unavailable"))
+    ]);
+
+    // Render System Health & Data Quality
+    if (healthRes.status === "fulfilled" && healthRes.value?.ok) {
+      const data = healthRes.value;
+      if (statusMetric) statusMetric.textContent = data.status || "Operational";
+      const jc = data.job_counts || {};
+      const jobsEl = document.getElementById("controlMetricJobs");
+      const savedEl = document.getElementById("controlMetricSaved");
+      const discEl = document.getElementById("controlMetricDiscovered");
+      const malfEl = document.getElementById("controlMetricMalformed");
+      const missEl = document.getElementById("controlMetricMissingDescr");
+
+      if (jobsEl) jobsEl.textContent = String(jc.total_jobs ?? 0);
+      if (savedEl) savedEl.textContent = String(jc.saved_jobs ?? 0);
+      if (discEl) discEl.textContent = String(jc.discovered_jobs ?? 0);
+      if (malfEl) malfEl.textContent = String(jc.malformed_ats_rows ?? 0);
+      if (missEl) missEl.textContent = String(jc.missing_descriptions ?? 0);
+
+      // Render Task Health
+      const taskHost = document.getElementById("controlTaskHealthList");
+      if (taskHost) {
+        const tasks = Array.isArray(data.task_health) ? data.task_health : [];
+        if (!tasks.length) {
+          taskHost.innerHTML = '<div class="control-item"><span>Tasks</span><strong class="control-badge is-healthy">Operational</strong></div>';
+        } else {
+          taskHost.innerHTML = tasks.map(t =>
+            `<div class="control-item"><span>${escapeHtml(t.category || t.name || 'Task')}</span><strong>${escapeHtml(String(t.healthy_tasks ?? t.total_tasks ?? 'OK'))} healthy / ${escapeHtml(String(t.failed_tasks ?? 0))} failed</strong></div>`
+          ).join("");
+        }
+      }
+
+      // Render Identity Diagnostics
+      const identityHost = document.getElementById("controlIdentityList");
+      if (identityHost) {
+        const idDiag = Array.isArray(data.identity_diagnostics) ? data.identity_diagnostics : [];
+        if (!idDiag.length) {
+          identityHost.innerHTML = '<div class="control-item"><span>Fingerprint Dedupe</span><strong class="control-badge is-healthy">Active (0 dupes)</strong></div>';
+        } else {
+          identityHost.innerHTML = idDiag.slice(0, 5).map(id =>
+            `<div class="control-item"><span>${escapeHtml(id.canonical_fingerprint || id.id || 'Cluster')}</span><strong>${escapeHtml(String(id.job_count || 1))} jobs (${id.has_dupes ? 'Dupes' : 'Clean'})</strong></div>`
+          ).join("");
+        }
+      }
+
+      // Render Source Diagnostics Summary
+      const srcHost = document.getElementById("controlSourceDiagnosticsList");
+      if (srcHost) {
+        const srcPolicies = Array.isArray(data.source_policies) ? data.source_policies : [];
+        if (!srcPolicies.length) {
+          srcHost.innerHTML = '<div class="control-item"><span>ATS Adapters</span><strong class="control-badge is-healthy">Greenhouse, Lever, Ashby, Workday Active</strong></div>';
+        } else {
+          srcHost.innerHTML = srcPolicies.map(sp =>
+            `<div class="control-item"><span>${escapeHtml(sp.source_name || sp.track || 'Source')}</span><strong class="control-badge ${sp.enabled ? 'is-pass' : 'is-disabled'}">${escapeHtml(sp.health_status || (sp.enabled ? 'PASS' : 'DISABLED'))}</strong></div>`
+          ).join("");
+        }
+      }
+    } else {
+      if (statusMetric) statusMetric.textContent = "Offline / Partial";
+      const taskHost = document.getElementById("controlTaskHealthList");
+      if (taskHost) taskHost.innerHTML = '<div class="control-item"><span>Task Health</span><strong class="control-badge is-bounded">Degraded</strong></div>';
+      const identityHost = document.getElementById("controlIdentityList");
+      if (identityHost) identityHost.innerHTML = '<div class="control-item"><span>Identity Dedupe</span><strong>Local fallback active</strong></div>';
+      const srcHost = document.getElementById("controlSourceDiagnosticsList");
+      if (srcHost) srcHost.innerHTML = '<div class="control-item"><span>Source Diagnostics</span><strong>Fallback active</strong></div>';
+    }
+
+    // Render Recent Events
+    const eventsHost = document.getElementById("controlEventsFeed");
+    if (eventsHost) {
+      if (eventsRes.status === "fulfilled" && eventsRes.value?.ok && Array.isArray(eventsRes.value.events) && eventsRes.value.events.length) {
+        eventsHost.innerHTML = eventsRes.value.events.slice(0, 10).map(ev =>
+          `<div class="control-event-item"><span><strong>${escapeHtml(ev.action || 'event')}</strong> · ${escapeHtml(ev.status || 'OK')}</span><small>${escapeHtml(relativeAdded(ev.created_at))}</small></div>`
+        ).join("");
+      } else {
+        eventsHost.innerHTML = '<p class="options-help">No recent control events logged.</p>';
+      }
+    }
+
+    // Render Read-Only Policies & Feature Flags
+    const flagsHost = document.getElementById("controlFeatureFlagsList");
+    const genView = document.getElementById("controlGenerationPolicyView");
+    const srcView = document.getElementById("controlSourcePolicyView");
+
+    if (configRes.status === "fulfilled" && configRes.value?.ok) {
+      const cfg = configRes.value;
+      if (flagsHost) {
+        const flags = Array.isArray(cfg.feature_flags) && cfg.feature_flags.length ? cfg.feature_flags : [
+          { key: "control_plane", enabled: true, mode: "bounded" },
+          { key: "browser_policy_writes", enabled: false, mode: "requires authenticated admin" },
+          { key: "employer_submit", enabled: false, mode: "locked" }
+        ];
+        flagsHost.innerHTML = flags.map(f =>
+          `<div class="control-item"><span>${escapeHtml(f.key || 'flag')}</span><strong class="control-badge ${f.enabled ? 'is-enabled' : 'is-locked'}">${escapeHtml(f.mode || (f.enabled ? 'enabled' : 'disabled'))}</strong></div>`
+        ).join("");
+      }
+      if (genView) {
+        genView.textContent = JSON.stringify(cfg.generation_policy || [{ track: "all", model: "gemini-2.5-flash-lite", max_pages: 2, mutation: "read_only" }], null, 2);
+      }
+      if (srcView) {
+        srcView.textContent = JSON.stringify(cfg.source_policy || [{ sources: ["Greenhouse", "Lever", "Ashby", "Workday"], policy: "read_only" }], null, 2);
+      }
+    } else {
+      if (flagsHost) {
+        flagsHost.innerHTML = `
+          <div class="control-item"><span>control_plane</span><strong class="control-badge is-enabled">enabled / bounded</strong></div>
+          <div class="control-item"><span>browser_policy_writes</span><strong class="control-badge is-locked">disabled / requires auth</strong></div>
+          <div class="control-item"><span>employer_submit</span><strong class="control-badge is-locked">disabled / locked</strong></div>
+        `;
+      }
+      if (genView) genView.textContent = JSON.stringify({ mode: "read_only", policy: "default_local" }, null, 2);
+      if (srcView) srcView.textContent = JSON.stringify({ mode: "read_only", policy: "default_local" }, null, 2);
+    }
+  }
+
   function hydrateImmediateData(){
     maintainCaches();
     const cachedJobs=readCache(CACHE_JOBS_KEY,null);
@@ -1612,7 +1735,7 @@
       const optionsCard=document.getElementById("optionsCard");
       const optionsCardTitle=document.getElementById("optionsCardTitle");
       const optionsBackButton=document.getElementById("optionsBackButton");
-      const categoryTitles={"master-resumes":"Master resumes","application-profile":"Application profile","answer-memory":"Answer memory","device-backup":"Device backup",layout:"Layout","job-info":"Job information",behavior:"Behavior"};
+      const categoryTitles={"control-panel":"Control panel","master-resumes":"Master resumes","application-profile":"Application profile","answer-memory":"Answer memory","device-backup":"Device backup",layout:"Layout","job-info":"Job information",behavior:"Behavior"};
 
       const showOptionsHome=()=>{
         if(!optionsCard || optionsCard.hidden) return;
@@ -1645,6 +1768,10 @@
         };
         optionsCard.addEventListener("animationend",finish);
         setTimeout(finish,220);
+
+        if (key === "control-panel") {
+          loadControlPanelData();
+        }
       };
 
       optionsButton.addEventListener("click",()=>{
@@ -1675,6 +1802,50 @@
         button.addEventListener("click",()=>showOptionsCard(button.dataset.optionsTarget));
       });
       if(optionsBackButton) optionsBackButton.addEventListener("click",showOptionsHome);
+
+      // Control Panel Action Event Handlers
+      document.getElementById("ctrlRefreshAllButton")?.addEventListener("click", async () => {
+        setStatus("Refreshing all tracks…");
+        await runJobSearch();
+        if (window.RavenAPI?.refreshAllControl) {
+          await window.RavenAPI.refreshAllControl().catch(() => {});
+        }
+        await loadControlPanelData();
+        setStatus("All tracks refreshed");
+      });
+
+      document.getElementById("ctrlRunSourceDiagnosticsButton")?.addEventListener("click", async () => {
+        const track = document.getElementById("ctrlSourceTrack")?.value || "all";
+        setStatus("Running source diagnostics…");
+        if (window.RavenAPI?.runSourceDiagnostics) {
+          await window.RavenAPI.runSourceDiagnostics(track).catch(() => {});
+        }
+        await loadControlPanelData();
+        setStatus("Source diagnostics complete");
+      });
+
+      document.getElementById("ctrlRepairDescriptionsButton")?.addEventListener("click", async () => {
+        const track = document.getElementById("ctrlRepairTrack")?.value || "all";
+        const limit = Number(document.getElementById("ctrlRepairLimit")?.value || 6);
+        const offset = Number(document.getElementById("ctrlRepairOffset")?.value || 0);
+        setStatus("Repairing descriptions…");
+        if (window.RavenAPI?.repairDescriptionsControl) {
+          await window.RavenAPI.repairDescriptionsControl(limit, offset, track).catch(() => {});
+        }
+        await loadControlPanelData();
+        setStatus("Description repair scan finished");
+      });
+
+      document.getElementById("ctrlSmokeAtsButton")?.addEventListener("click", async () => {
+        const track = document.getElementById("ctrlSmokeTrack")?.value || "Professional";
+        setStatus("Running ATS smoke test…");
+        if (window.RavenAPI?.smokeAts) {
+          await window.RavenAPI.smokeAts(track).catch(() => {});
+        }
+        await loadControlPanelData();
+        setStatus("ATS smoke test finished");
+      });
+
       optionsDialog.querySelectorAll("[data-setting-key]").forEach((control)=>{
         control.addEventListener("change",()=>{
           const value=control.type==="checkbox" ? control.checked : control.value;

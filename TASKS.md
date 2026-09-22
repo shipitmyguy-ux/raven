@@ -48,7 +48,8 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verificatio
 - [ ] Verify dialogs/panels do not break navigation.
 - [ ] Add useful backend/frontend error reporting.
 - [ ] Add deployment regression checklist.
-- [ ] Add basic health/status view.
+- [x] Add basic health/status view and Raven Web Control Panel in Options.
+- [x] Commit deployed raven-control-v1 source to canonical GitHub repository.
 - [x] Remove dead legacy backend/queue/Sheets paths. Keep localStorage only for cache, offline pending sync, application profile/answer memory, and device-local master resumes.
 - [ ] Review repository for accidentally committed secrets.
 
@@ -94,5 +95,5 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verificatio
 - [ ] Add browser-extension extraction fallback for job pages the user can view when server-side metadata is incomplete; avoid CAPTCHA/access-control bypass techniques.
 - [ ] Add rendered-page extraction only as a final compatibility fallback after structured/API/browser-extension paths fail.
 - [ ] Build an employer -> ATS identifier registry so Raven can query employer career systems directly instead of relying only on aggregator search ranking.
-- [ ] Add source health/coverage telemetry: successful fetches, missing descriptions, stale postings, adapter failures, and canonical-source resolution rate.
+- [x] Add source health/coverage telemetry: successful fetches, missing descriptions, stale postings, adapter failures, and canonical-source resolution rate.
 - [ ] Extend cross-source dedupe to merge aggregator and ATS copies while retaining every source URL/provenance record.

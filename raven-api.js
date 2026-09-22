@@ -2,7 +2,7 @@
   "use strict";
 
   const config = window.RAVEN_CONFIG || {};
-  const API_VERSION = 2;
+  const API_VERSION = 3;
 
   async function read(baseUrl, action, payload = {}) {
     if (!baseUrl) throw new Error("Raven API is not configured.");
@@ -19,7 +19,7 @@
     if (!baseUrl) throw new Error("Raven API is not configured.");
     const response = await fetch(baseUrl, {
       method: "POST",
-      headers: { "Content-Type": "text/plain;charset=UTF-8" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action, ...payload }),
       cache: "no-store"
     });
@@ -53,6 +53,16 @@
     addJob(job) { return write(config.searchApiUrl, "addJob", job); },
     updateJob(id, patch) { return write(config.searchApiUrl, "updateJob", { id, ...patch }); },
     describeJob(job) { return read(config.enrichApiUrl, "describe", job || {}); },
-    commute(location) { return read(config.commuteApiUrl, "commute", { location }); }
+    commute(location) { return read(config.commuteApiUrl, "commute", { location }); },
+    // Control Plane API methods
+    controlHealth() { return read(config.controlApiUrl, "health"); },
+    getControlConfig() { return read(config.controlApiUrl, "getConfig"); },
+    getControlEvents() { return read(config.controlApiUrl, "recent"); },
+    refreshAllControl() { return write(config.controlApiUrl, "refreshAll"); },
+    runSourceDiagnostics(track = "all") { return write(config.controlApiUrl, "runSourceDiagnostics", { track }); },
+    repairDescriptionsControl(limit = 6, offset = 0, track = "all") {
+      return write(config.controlApiUrl, "repairDescriptions", { limit, offset, track });
+    },
+    smokeAts(track = "Professional") { return write(config.controlApiUrl, "smokeAts", { track }); }
   });
 })();
