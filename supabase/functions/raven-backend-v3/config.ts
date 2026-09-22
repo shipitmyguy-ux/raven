@@ -1,7 +1,5 @@
 import type { Track } from "./types.ts";
 
-export const GATEWAY = "https://script.google.com/macros/s/AKfycbztpeEuCsgzKX6QUqxxxuthXI0jr6jRgX5CAZiW-_RL6eTw9AlthcKJcqdd7brOHFlhhQ/exec";
-
 export const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "content-type",
