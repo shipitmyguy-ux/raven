@@ -27,8 +27,8 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verificatio
 
 ## P1 - Import/search/extension
 - [ ] Verify Chrome extension import on LinkedIn, Indeed, Glassdoor, Monster, and similar sites.
-- [ ] Improve title/company extraction fallbacks.
-- [ ] Prevent duplicate extension/share imports.
+- [x] Improve title/company extraction fallbacks with high-confidence URL slug and ATS company recovery without overwriting nonblank values.
+- [x] Prevent duplicate extension/share imports and differentiate exact posting duplicates from same-title/company distinct postings using canonical identity fingerprinting.
 - [ ] Ensure imported jobs appear without manual recovery.
 - [ ] Preserve source provenance and original URL.
 
@@ -95,4 +95,4 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verificatio
 - [ ] Add rendered-page extraction only as a final compatibility fallback after structured/API/browser-extension paths fail.
 - [ ] Build an employer -> ATS identifier registry so Raven can query employer career systems directly instead of relying only on aggregator search ranking.
 - [ ] Add source health/coverage telemetry: successful fetches, missing descriptions, stale postings, adapter failures, and canonical-source resolution rate.
-- [ ] Extend cross-source dedupe to merge aggregator and ATS copies while retaining every source URL/provenance record.
+- [x] Extend cross-source dedupe to measure aggregator and ATS copies using canonical identity diagnostics while preserving every source URL/provenance record.

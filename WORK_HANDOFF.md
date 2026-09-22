@@ -19,9 +19,17 @@ Verified in this work:
 - backup contract tests cover tamper detection, chunking, verifier CLI, dry-run restore, and destructive guard;
 - backup/recovery procedure is documented in `docs/BACKUP_RESTORE.md`.
 
+Recent implementation - Company Recovery & Canonical Identity (2026-09-23):
+- Implemented `recoverCompanyFromUrl` and `formatCompanyName` in `raven-core.js` and `supabase/functions/raven-backend-v3/utils.ts`.
+- Supports high-confidence LinkedIn `-at-` slug parsing (e.g. Cloud Chamber, Swaybox Studios, CD Projekt Red, Epic Games, Eleventh Hour Games, Comploy, CBIZ, DealerBuilt) and ATS URL patterns (Greenhouse, Lever, Ashby, SmartRecruiters, Workday, Workable, iCIMS, Taleo, etc.).
+- Never overwrites nonblank company fields. Numeric/ambiguous URLs without `-at-` remain blank when source evidence is missing.
+- Added `getCanonicalIdentity` to generate strong provider posting keys (`linkedin:{id}`, `greenhouse:{board}:{id}`, `lever:{company}:{id}`, `ashby:{company}:{id}`, `workday:{company}:{id}`) and `analyzeCanonicalIdentity` for diagnostic classification.
+- Added `diagnoseCanonicalIdentity` and `recoverMissingCompanies` backend actions in `supabase/functions/raven-backend-v3/index.ts`.
+- Added unit tests in `tests/canonical-identity.test.mjs` covering company recovery, nonblank preservation, ambiguous handling, exact duplicate collapsing, distinct posting preservation, and diagnostic metrics.
+
 Exact next action:
-1. Continue with real-site Application Assistant verification and full frontend -> generation -> persistence -> application-assistant smoke testing.
-2. Then audit job-description completeness/canonical-source resolution across all tabs.
+1. Run real-site Application Assistant verification on Greenhouse, Lever, Ashby, Workday, and iCIMS.
+2. Verify approved document upload and completion detection on real employer sites.
 
 ## Usage failsafe
 At the beginning of substantial Work, apply the Raven usage guard from `AGENTS.md`:
