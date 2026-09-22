@@ -545,7 +545,19 @@
     const discovered = state.discovered[state.activeTrack] || [];
     const discoveredByUrl = new Map(discovered.map((job)=>[normalizeComparableUrl(job.url),job]));
     const saved = state.jobs
-      .filter((job)=>String(job.track||"").trim().toLowerCase()===state.activeTrack.toLowerCase())
+      .filter((job)=>{
+        if(String(job.track||"").trim().toLowerCase()!==state.activeTrack.toLowerCase()) return false;
+        const legacyAutoDiscovered=/^DISC-/i.test(String(job.id||""))
+          && String(job.status||"Saved").toLowerCase()==="saved"
+          && !parseBool(job.viewed,false)
+          && !job.resume && !job.coverLetter && !job.appliedDate;
+        // Older deep-search builds copied discovered rows into raven_jobs.
+        // Keep them visible only while the posting is still in the fresh
+        // discovered set. Any explicit user action changes status/identity and
+        // therefore preserves the job.
+        if(legacyAutoDiscovered && !discoveredByUrl.has(normalizeComparableUrl(job.url))) return false;
+        return true;
+      })
       .map((job)=>{
         const extra=discoveredByUrl.get(normalizeComparableUrl(job.url));
         if(!extra) return job;
