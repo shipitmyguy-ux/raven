@@ -19,6 +19,7 @@
   const searchBox = document.getElementById("searchBox");
   const statusFilter = document.getElementById("statusFilter");
   const trackTabs = [...document.querySelectorAll(".track-tab")];
+  const JOB_TRACKS = trackTabs.map((tab)=>tab.dataset.track).filter(Boolean);
   const searchJobsButton = document.getElementById("searchJobsButton");
 
   const CACHE_JOBS_KEY="ravenJobsCacheV1";
@@ -429,41 +430,50 @@
     return (results||[]).filter((job)=>job?.url && (!/^ATS:/i.test(String(job.source||"")) || /^https?:\/\//i.test(String(job.url||""))));
   }
 
-  async function loadDiscovered(track = state.activeTrack) {
-    try {
-      const payload = await window.RavenAPI.listResults(track);
-      state.discovered[track] = normalizeDiscovered(payload.results);
-      writeCache(CACHE_DISCOVERED_KEY,state.discovered);
-      render();
-      return true;
-    } catch (error) {
-      console.warn("Discovered jobs unavailable.", error);
-      return false;
+  async function loadAllDiscovered() {
+    const results=await Promise.allSettled(JOB_TRACKS.map(async(track)=>{
+      const payload=await window.RavenAPI.listResults(track);
+      return {track,rows:normalizeDiscovered(payload.results)};
+    }));
+    let loaded=0;
+    for(const result of results){
+      if(result.status!=="fulfilled"){
+        console.warn("Discovered jobs unavailable.",result.reason);
+        continue;
+      }
+      state.discovered[result.value.track]=result.value.rows;
+      loaded+=result.value.rows.length;
     }
+    writeCache(CACHE_DISCOVERED_KEY,state.discovered);
+    render();
+    return loaded;
   }
 
   async function runJobSearch() {
-    const original = searchJobsButton.textContent;
-    const track = state.activeTrack;
-    searchJobsButton.disabled = true;
-    searchJobsButton.textContent = "Searching…";
-    setStatus("Fast search…");
-    try {
-      const payload = await window.RavenAPI.searchJobs(track);
-      state.discovered[track] = normalizeDiscovered(payload.results);
-      writeCache(CACHE_DISCOVERED_KEY,state.discovered);
-      state.selectedId = null;
-      render();
-      setStatus(payload.count + " results · background enrichment may continue");
-
-      // Avoid timer-driven polling. Fresh data is loaded on explicit actions,
-      // tab changes, or when the user returns to Raven after a minute away.
-    } catch (error) {
-      setStatus("Search failed: " + error.message);
-    } finally {
-      searchJobsButton.disabled = false;
-      searchJobsButton.textContent = original;
+    const original=searchJobsButton.textContent;
+    searchJobsButton.disabled=true;
+    searchJobsButton.textContent="Refreshing all…";
+    state.selectedId=null;
+    let total=0;
+    const failed=[];
+    for(let i=0;i<JOB_TRACKS.length;i++){
+      const track=JOB_TRACKS[i];
+      setStatus("Refreshing all jobs · "+(i+1)+"/"+JOB_TRACKS.length+" · "+track);
+      try{
+        const payload=await window.RavenAPI.searchJobs(track);
+        state.discovered[track]=normalizeDiscovered(payload.results);
+        total+=Number(payload.count||state.discovered[track].length||0);
+        writeCache(CACHE_DISCOVERED_KEY,state.discovered);
+        render();
+      }catch(error){
+        failed.push(track);
+        console.warn("Job refresh failed for "+track,error);
+      }
     }
+    searchJobsButton.disabled=false;
+    searchJobsButton.textContent=original;
+    if(failed.length) setStatus(total+" refreshed · failed: "+failed.join(", "));
+    else setStatus(total+" jobs refreshed across all tabs · background enrichment may continue");
   }
 
   function pendingDocumentSync(){
@@ -597,26 +607,13 @@
   }
   function matchScore(job) {
     if (Number(job.fitScore)) return Math.round(Number(job.fitScore));
-    const title=String(job.title||"").toLowerCase();
-    const notes=String(job.notes||"").toLowerCase();
     let score=66;
-    if (job.remote) score+=4;
+    if (isRemoteJob(job)) score+=4;
     if (job.salaryText || job.salaryMin || job.salaryMax) score+=3;
     if (job.company) score+=2;
     if (job.location) score+=1;
-    const track=String(job.track||state.activeTrack);
-    if (track==="Professional") {
-      if (/implementation|project manager|program manager|operations manager|customer success|training|enablement|onboarding/.test(title)) score+=10;
-      if (/senior|lead|manager/.test(title)) score+=4;
-    } else if (track==="Labor") {
-      if (/maintenance|technician|parks|grounds|warehouse|repair|field service|production|painter/.test(title)) score+=11;
-      if (/mechanical|repair|maintenance|tools|equipment/.test(notes)) score+=4;
-    } else if (track==="Games / 3D") {
-      if (/environment artist|world artist|level artist|3d environment|3d artist|world builder/.test(title)) score+=14;
-      if (/senior|lead|staff/.test(title)) score+=5;
-    } else {
-      if (/operations|training|implementation|customer success|project|program|service/.test(title)) score+=8;
-    }
+    if (String(job.notes||"").trim().length>=180) score+=4;
+    if (String(job.title||"").trim()) score+=3;
     return Math.max(55,Math.min(96,score));
   }
   function pipelineBucket(job) {
@@ -1203,7 +1200,7 @@
     }
     setGenerationButton(button,true,navigator.onLine?"Generating…":"Offline draft…");
     try{
-      const masterResume=await masterResumeTaskInput(job.track||state.activeTrack);
+      const masterResume=await masterResumeTaskInput(job.track||"Professional");
       if(!masterResume) throw new Error("Assign a master resume to this job track first.");
       if(navigator.onLine===false){
         setStatus("Offline · building local resume…");
@@ -1257,7 +1254,7 @@
     if(masterResume?.sourceType==="drive" && !masterResume?.url) throw new Error("The assigned Google Drive master resume has no URL.");
     if(masterResume?.sourceType!=="drive" && !masterResume?.dataUrl) throw new Error("The assigned master resume file is not available on this device.");
     const response=await fetch(config.generateApiUrl,{method:"POST",headers:{"Content-Type":"application/json","X-Raven-Client":"raven-web-v1"},body:JSON.stringify({
-      documentType:type==="coverLetter"?"coverLetter":"resume",instructions,jobId:job.id,jobTitle:job.title||"",company:job.company||"",track:job.track||state.activeTrack,sourceUrl:job.url||"",jobDescription:job.notes||"",jobAnalysis:getJobAnalysis(job),
+      documentType:type==="coverLetter"?"coverLetter":"resume",instructions,jobId:job.id,jobTitle:job.title||"",company:job.company||"",track:job.track||"Professional",sourceUrl:job.url||"",jobDescription:job.notes||"",jobAnalysis:getJobAnalysis(job),
       masterResume:{id:masterResume.id||"",name:masterResume.name||"",sourceType:masterResume.sourceType||"",fileName:masterResume.fileName||"",mimeType:masterResume.mimeType||"",dataUrl:masterResume.dataUrl||"",url:masterResume.url||"",version:masterResume.version||""}
     })});
     const payload=await response.json().catch(()=>({}));
@@ -1271,7 +1268,7 @@
     const label=documentLabel(type);
     setStatus((instructions?"Revising ":"Generating ")+label+"...");
     try{
-      const masterResume=await masterResumeTaskInput(job.track||state.activeTrack);
+      const masterResume=await masterResumeTaskInput(job.track||"Professional");
       if(!masterResume) throw new Error("Assign a master resume to this job track first.");
       const document=instructions
         ? await generateDocumentOnline(job,masterResume,type,instructions)
@@ -1376,7 +1373,7 @@
     try{
       if(job._discovered){
         await window.RavenAPI.addJob({
-          track:job.track||state.activeTrack,
+          track:job.track||"Professional",
           title:job.title||"",
           company:job.company||"",
           location:job.location||"",
@@ -1433,7 +1430,7 @@
     try{
       if(job._discovered){
         await window.RavenAPI.addJob({
-          track:job.track||state.activeTrack,
+          track:job.track||"Professional",
           title:job.title||"",
           company:job.company||"",
           location:job.location||"",
@@ -1465,7 +1462,7 @@
     try{
       if(job._discovered){
         await window.RavenAPI.addJob({
-          track:job.track||state.activeTrack,
+          track:job.track||"Professional",
           title:job.title||"",
           company:job.company||"",
           location:job.location||"",
@@ -1674,7 +1671,7 @@
     }
 
     trackTabs.forEach((tab)=>{
-      tab.addEventListener("click",async()=>{
+      tab.addEventListener("click",()=>{
         state.activeTrack=tab.dataset.track;
         state.selectedId=null;
         trackTabs.forEach((item)=>{
@@ -1682,8 +1679,9 @@
           item.classList.toggle("active",active);
           item.setAttribute("aria-selected",String(active));
         });
+        // Tabs are filters only. Switching tabs never triggers a separate
+        // search, parser, enrichment, or generation path.
         render();
-        loadDiscovered(state.activeTrack);
       });
     });
     searchJobsButton.addEventListener("click",runJobSearch);
@@ -1742,10 +1740,10 @@
       document.getElementById("jobUrl").value=parts.find((part)=>/^https?:\/\//.test(part))||sharedUrl;
     }
   }
-  async function refreshCurrentTrack(options={}) {
+  async function refreshAllJobs(options={}) {
     const includeDiscovered=options.includeDiscovered!==false;
     const tasks=[loadJobs()];
-    if(includeDiscovered) tasks.push(loadDiscovered(state.activeTrack));
+    if(includeDiscovered) tasks.push(loadAllDiscovered());
     await Promise.allSettled(tasks);
     render();
   }
@@ -1755,14 +1753,14 @@
     hydrateImmediateData();
 
     const runtimePromise=loadRuntimeConfig();
-    const refreshPromise=refreshCurrentTrack();
+    const refreshPromise=refreshAllJobs();
     await Promise.allSettled([runtimePromise,refreshPromise]);
 
     let lastRefresh=Date.now();
     document.addEventListener("visibilitychange",()=>{
       if(!document.hidden && Date.now()-lastRefresh>60000){
         lastRefresh=Date.now();
-        refreshCurrentTrack({includeDiscovered:false});
+        refreshAllJobs({includeDiscovered:true});
       }
     });
   }
