@@ -1,20 +1,27 @@
 # Raven Work Handoff
 
-Last updated: 2026-09-20
+Last updated: 2026-09-22
 
 ## Purpose
 This file is the durable bridge between Chat and Work. Replace/update it at the end of each meaningful Work session.
 
 ## Current handoff
-Production `main` now includes the reusable core, Application Assistant hardening, and the Greenhouse/ATS multiline CSV repair.
+Production `main` now has a single Supabase data path, global all-tab refresh, shared tab search/parsing/generation logic, request budgets/circuit breakers, and portable backup/recovery tooling.
 
-Current known priorities:
-1. Real-site Application Assistant verification: Greenhouse, Lever, Ashby first; Workday, iCIMS, Taleo where practical.
-2. Verify approved resume/cover-letter upload into real employer file inputs.
-3. Full frontend -> generation -> persistence -> Application Assistant smoke test.
-4. Audit job-description completeness/canonical-source resolution across all tabs.
-5. Verify search persistence/deduplication/source health end to end.
-6. Safely clean legacy malformed ATS rows that are now hidden from the UI.
+Verified in this work:
+- saved-job read/add/update all use `raven-backend-v3`;
+- Google Sheets/Apps Script and legacy data/search/task write paths are retired;
+- active non-retired Edge Function bundles contain no legacy queue/Sheets/data-v1 references;
+- canonical CRUD and camelCase compatibility passed live production smoke tests;
+- core dataset currently serializes cleanly (358 jobs plus bookmark tables);
+- backup format includes per-table and whole-payload SHA-256 checksums;
+- restore defaults to dry-run and destructive replace is confirmation-gated;
+- backup contract tests cover tamper detection, chunking, verifier CLI, dry-run restore, and destructive guard;
+- backup/recovery procedure is documented in `docs/BACKUP_RESTORE.md`.
+
+Exact next action:
+1. Continue with real-site Application Assistant verification and full frontend -> generation -> persistence -> application-assistant smoke testing.
+2. Then audit job-description completeness/canonical-source resolution across all tabs.
 
 ## Usage failsafe
 At the beginning of substantial Work, apply the Raven usage guard from `AGENTS.md`:
@@ -36,6 +43,9 @@ At the beginning of substantial Work, apply the Raven usage guard from `AGENTS.m
   - verified behavior,
   - failures/blockers,
   - exact next action.
+
+## Recovery note
+Portable JSON backups cover Supabase data only. Device-local IndexedDB/localStorage master resumes, application profile/answer memory, browser caches, external Drive files, and raw secrets need separate recovery or regeneration.
 
 ## Verification note
 The previous document queue could accept requests, but successful generation must still be proven with a real output linked to the correct job and surviving refresh.
