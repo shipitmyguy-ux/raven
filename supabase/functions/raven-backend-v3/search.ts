@@ -40,15 +40,19 @@ async function enrichRows(rows:Candidate[]){
 export async function deepSearch(track:Track){
   const runId=await createRun(track,TRACKS[track].terms.length);
   try{
-    const [li,rem,rok,arb,jcy,him,ats]=await Promise.all([
-      linkedinDeep(track),
+    // Use the same staged workload for every category so one category with a
+    // larger term list cannot exceed the Edge Runtime resource budget.
+    const [li,rem,rok,arb]=await Promise.all([
+      linkedinDeep(track,12),
       remotive(track),
       remoteOk(track),
-      arbeitnow(track),
-      jobicy(track),
-      himalayas(track),
-      atsWide(track)
+      arbeitnow(track)
     ]);
+    const [jcy,him]=await Promise.all([
+      jobicy(track,6),
+      himalayas(track,6)
+    ]);
+    const ats=await atsWide(track);
     const ranked=rankCandidates(track,[...li,...rem,...rok,...arb,...jcy,...him,...ats],100);
     const rows=ranked
       .map(c=>({...c,score:score(track,c)}))
