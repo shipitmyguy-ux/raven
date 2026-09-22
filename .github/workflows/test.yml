@@ -11,6 +11,8 @@ on:
       - "playwright.config.mjs"
       - "package.json"
       - "tests/**"
+      - "scripts/**"
+      - "docs/BACKUP_RESTORE.md"
       - "extension/**"
       - "supabase/functions/raven-backend-v3/**"
       - "supabase/functions/raven-generate-v1/**"
@@ -26,6 +28,8 @@ on:
       - "playwright.config.mjs"
       - "package.json"
       - "tests/**"
+      - "scripts/**"
+      - "docs/BACKUP_RESTORE.md"
       - "extension/**"
       - "supabase/functions/raven-backend-v3/**"
       - "supabase/functions/raven-generate-v1/**"
@@ -46,6 +50,10 @@ jobs:
           node --check extension/src/content.js
           node --check extension/src/background.js
           node --check supabase/functions/raven-backend-v3/csv-records.mjs
+          node --check scripts/raven-backup-lib.mjs
+          node --check scripts/export-raven.mjs
+          node --check scripts/verify-raven-backup.mjs
+          node --check scripts/restore-raven.mjs
           node -e "JSON.parse(require('fs').readFileSync('extension/src/manifest.json','utf8'))"
       - name: Core regression tests
         run: |
@@ -56,6 +64,7 @@ jobs:
           node tests/tab-filter-architecture.test.mjs
           node tests/request-budget.test.mjs
           node tests/single-source.test.mjs
+          node tests/backup-contract.test.mjs
 
   safety-e2e:
     runs-on: ubuntu-latest
