@@ -16,6 +16,10 @@ assert.match(resume,/p_short_limit:12/);
 assert.match(cover,/p_short_limit:12/);
 assert.match(resume,/r\.status!==429&&r\.status<500/,"Resume generator must fall through to the alternate provider endpoint on 429/5xx.");
 assert.match(cover,/r\.status!==429&&r\.status<500/,"Cover generator must fall through to the alternate provider endpoint on 429/5xx.");
+assert.match(resume,/RAVEN_GEMINI_FALLBACK_MODEL/,"Resume generator must support a fallback Gemini model.");
+assert.match(cover,/RAVEN_GEMINI_FALLBACK_MODEL/,"Cover generator must support a fallback Gemini model.");
+assert.match(resume,/model:generated\.model/,"Resume response must report the model actually used.");
+assert.match(cover,/model:generated\.model/,"Cover response must report the model actually used.");
 for(const src of [resume,cover]){
   assert.match(src,/x-raven-client/,"Generator routes must require the Raven client header.");
   assert.doesNotMatch(src,/\|\|req\.method===[\"']GET[\"']/,"GET health routes must not bypass client authentication.");

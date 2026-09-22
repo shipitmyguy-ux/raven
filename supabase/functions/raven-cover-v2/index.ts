@@ -22,13 +22,17 @@ const schema={
  required:["experience_fact_ids","transferable_fact_ids"]
 };
 async function selectFacts(prompt:string,key:string){
+  const models=[MODEL,Deno.env.get("RAVEN_GEMINI_FALLBACK_MODEL")||"gemini-2.5-flash-lite"].filter((v,i,a)=>v&&a.indexOf(v)===i);
   const bases=["https://gateway.ai.cloudflare.com/v1/0be401023d08048c03bbfbb0576fa89f/raven/google-ai-studio","https://generativelanguage.googleapis.com"];
   let last="";
-  for(const base of bases){
-    const r=await fetch(base+"/v1beta/models/"+MODEL+":generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:1200,responseMimeType:"application/json",responseSchema:schema}})});
-    const raw=await r.json().catch(()=>({}));
-    if(r.ok){const t=raw?.candidates?.[0]?.content?.parts?.map((p:any)=>p.text||"").join("")||"";if(!t)throw new Error("Empty model output");return JSON.parse(t);}
-    last=raw?.error?.message||("Gemini failed "+r.status);if(r.status!==401&&r.status!==403&&r.status!==429&&r.status<500)break;
+  for(const model of models){
+    for(const base of bases){
+      const r=await fetch(base+"/v1beta/models/"+model+":generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:1200,responseMimeType:"application/json",responseSchema:schema}})});
+      const raw=await r.json().catch(()=>({}));
+      if(r.ok){const t=raw?.candidates?.[0]?.content?.parts?.map((p:any)=>p.text||"").join("")||"";if(!t)throw new Error("Empty model output");return {data:JSON.parse(t),model};}
+      last=raw?.error?.message||("Gemini failed "+r.status);
+      if(r.status!==401&&r.status!==403&&r.status!==429&&r.status<500)break;
+    }
   }
   throw new Error(last||"Gemini failed");
 }
@@ -72,9 +76,9 @@ Deno.serve(async(req:Request)=>{
     const catalog={experience:(profile.experience||[]).flatMap((e:any)=>(e.facts||[]).map((f:any)=>({id:f.id,text:f.text}))),transferable_facts:profile.transferable_facts||[]};
     const prompt=["Select the strongest factual evidence for a concise cover letter. Return IDs only. Do not invent or rewrite facts.","TRACK: "+track,"TARGET: "+title+" at "+company,"JOB DESCRIPTION:",desc,"FACT CATALOG:",JSON.stringify(catalog)].join("\n\n");
     const key=Deno.env.get("RAVEN_GEMINI_API_KEY")||Deno.env.get("GEMINI_API_KEY")||"";if(!key)throw new Error("Gemini not configured");
-    const sel=await selectFacts(prompt,key);
+    const generated=await selectFacts(prompt,key);\n    const sel=generated.data;
     const coverLetter=build(profile,sel,track,title,company);
     await finish(eid,"success",200);
-    return json(req,{ok:true,provider:"gemini",model:MODEL,architecture:"canonical-profile+fact-selection",selection:sel,coverLetter});
+    return json(req,{ok:true,provider:"gemini",model:generated.model,architecture:"canonical-profile+fact-selection",selection:sel,coverLetter});
   }catch(e){const m=e instanceof Error?e.message:String(e);await finish(eid,"failure",500,m);return json(req,{error:m},500);}
 });
