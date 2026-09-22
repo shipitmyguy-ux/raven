@@ -59,6 +59,7 @@
               <span>Master resumes</span><span aria-hidden="true">›</span>
             </button>
             <button type="button" class="options-category" data-options-target="application-profile"><span>Application profile</span><span aria-hidden="true">›</span></button>\n            <button type="button" class="options-category" data-options-target="answer-memory"><span>Answer memory</span><span aria-hidden="true">›</span></button>
+            <button type="button" class="options-category" data-options-target="device-backup"><span>Device backup</span><span aria-hidden="true">›</span></button>
             <button type="button" class="options-category" data-options-target="layout">
               <span>Layout</span><span aria-hidden="true">›</span>
             </button>
@@ -153,6 +154,15 @@
                 </div>
               </section>
             </div>
+            <div class="options-card-panel" data-options-panel="device-backup" hidden>
+              <p class="options-help">Export device-local Raven data, including local master-resume files, Application Profile, Answer Memory, approvals, and settings. The backup can contain personal information; store it securely.</p>
+              <div class="master-resume-actions">
+                <button id="exportDeviceBackup" type="button">Export device backup</button>
+                <button id="importDeviceBackup" type="button">Restore device backup</button>
+                <input id="deviceBackupFile" type="file" accept=".json,application/json" hidden>
+              </div>
+            </div>
+
             <div class="options-card-panel" data-options-panel="layout" hidden>
               <label class="option-row">
                 <span>Card density</span>
