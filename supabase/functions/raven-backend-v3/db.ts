@@ -191,3 +191,10 @@ export async function saveDiagnostics(rows:any[]){
   const r=await rest("raven_source_diagnostics",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(rows)});
   if(!r.ok) throw new Error("Diagnostics write failed ("+r.status+")");
 }
+
+
+export async function listTasks(){
+  const r=await rest("raven_tasks?select=task_id,job_id,type,status,attempts,max_attempts,created,updated,last_error,input_json&order=updated.desc&limit=500",{method:"GET"});
+  if(!r.ok) throw new Error("Tasks read failed ("+r.status+")");
+  return await r.json();
+}
