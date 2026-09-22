@@ -764,10 +764,10 @@
                 toggleApplied(job);
               });
             });
-            expanded.querySelectorAll("[data-queue]").forEach((button)=>{
+            expanded.querySelectorAll("[data-generate]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
-                enqueue(job,button.dataset.queue,button);
+                generateForJob(job,button.dataset.generate,button);
               });
             });
             expanded.querySelectorAll("[data-document-menu]").forEach((button)=>{
@@ -908,8 +908,8 @@
   function fallbackActions() {
     return [
       {key:"apply",label:"Apply",format:"external-link",visible:true,position:1},
-      {key:"resume",label:"Generate resume",format:"queue",visible:true,position:2},
-      {key:"coverLetter",label:"Generate cover letter",format:"queue",visible:true,position:3}
+      {key:"resume",label:"Generate resume",format:"generate",visible:true,position:2},
+      {key:"coverLetter",label:"Generate cover letter",format:"generate",visible:true,position:3}
     ];
   }
   function actionFeatureKey(key) {
@@ -944,7 +944,7 @@
         }
         const icon=item.key==="resume"?"R":item.key==="coverLetter"?"✉":"＋";
         const shortLabel=item.key==="resume"?"Resume":item.key==="coverLetter"?"Cover letter":label;
-        return '<button class="workflow-action" type="button" data-queue="'+escapeAttr(item.key)+'" aria-label="'+escapeAttr(label)+'" title="'+escapeAttr(label)+'"><span class="workflow-icon" aria-hidden="true">'+icon+'</span><span>'+escapeHtml(shortLabel)+'</span></button>';
+        return '<button class="workflow-action" type="button" data-generate="'+escapeAttr(item.key)+'" aria-label="'+escapeAttr(label)+'" title="'+escapeAttr(label)+'"><span class="workflow-icon" aria-hidden="true">'+icon+'</span><span>'+escapeHtml(shortLabel)+'</span></button>';
       }).join("");
 
     const fullDescription=cleanJobDescription(job.notes)||"Full job description not yet available.";
@@ -1049,7 +1049,7 @@
     const company=job.company||"";
     const topKeywords=keywords.slice(0,16).join(" · ");
     const bullets=selected.slice(0,16).map(line=>"<li>"+escapeHtml(line)+"</li>").join("");
-    const sourceNote=masterText ? "Prioritized directly from the assigned master resume." : "Master resume text could not be extracted locally; AI refinement queued.";
+    const sourceNote=masterText ? "Prioritized directly from the assigned master resume." : "Master resume text could not be extracted locally; use online generation for AI refinement.";
     return "<!doctype html><html><head><meta charset=\"utf-8\"><title>"+escapeHtml(title)+" Resume</title><style>"+
       "@page{size:letter;margin:.55in}body{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:10.5pt;line-height:1.28;max-width:7.4in;margin:0 auto}"+
       "h1{font-size:19pt;margin:0 0 3px}h2{font-size:11.5pt;text-transform:uppercase;border-bottom:1px solid #333;margin:12px 0 5px;padding-bottom:2px}"+
@@ -1170,7 +1170,7 @@
     return generateDocumentCached(job,masterResume,"resume");
   }
 
-  async function enqueue(job,type,button=null) {
+  async function generateForJob(job,type,button=null) {
     if(job[type]) return openDocumentReview(job,type);
     if(type!=="resume"){
       setGenerationButton(button,true,"Generating…");
@@ -1498,11 +1498,11 @@
     const fileLabel=String(label||"file").toLowerCase();
     if(!value){
       return '<span class="document-control is-empty">'+
-        '<button class="document-primary" type="button" data-queue="'+escapeAttr(key)+'">Generate</button>'+
+        '<button class="document-primary" type="button" data-generate="'+escapeAttr(key)+'">Generate</button>'+
       '</span>';
     }
     return '<span class="document-control has-file">'+
-      '<button class="document-primary" type="button" data-queue="'+escapeAttr(key)+'">Review</button>'+
+      '<button class="document-primary" type="button" data-generate="'+escapeAttr(key)+'">Review</button>'+
       '<span class="document-overflow">'+
         '<button class="document-menu-button" type="button" data-document-menu aria-haspopup="menu" aria-expanded="false" aria-label="More '+escapeAttr(fileLabel)+' options" title="More options">…</button>'+
         '<span class="document-menu" role="menu" hidden>'+
