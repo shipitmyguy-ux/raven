@@ -22,7 +22,7 @@ const schema={
  required:["experience_fact_ids","transferable_fact_ids"]
 };
 async function selectFacts(prompt:string,key:string){
-  const models=[MODEL,Deno.env.get("RAVEN_GEMINI_FALLBACK_MODEL")||"gemini-2.5-flash-lite"].filter((v,i,a)=>v&&a.indexOf(v)===i);
+  const models=[MODEL,Deno.env.get("RAVEN_GEMINI_FALLBACK_MODEL")||"gemini-3.5-flash"].filter((v,i,a)=>v&&a.indexOf(v)===i);
   const bases=["https://gateway.ai.cloudflare.com/v1/0be401023d08048c03bbfbb0576fa89f/raven/google-ai-studio","https://generativelanguage.googleapis.com"];
   let last="";
   for(const model of models){
