@@ -34,7 +34,8 @@
   const GENERATION_CACHE_KEY="ravenGenerationCacheV1";
   const CANDIDATE_PROFILE_CACHE_KEY="ravenCandidateProfileCacheV1";
   const JOB_ANALYSIS_CACHE_KEY="ravenJobAnalysisCacheV1";
-  const RESUME_TEMPLATE_VERSION="modern-v1";
+  const PENDING_DOCUMENT_SYNC_KEY="ravenPendingDocumentSyncV1";
+  const RESUME_TEMPLATE_VERSION="modern-v2";
   let editingMasterResumeId=null;
   let editingAnswerMemoryKey=null;
 
@@ -175,8 +176,8 @@
   async function masterResumeTaskInput(track){
     const item=masterResumeForTrack(track);
     if(!item) return null;
-    const base={id:item.id,name:item.name||"Master resume",sourceType:item.sourceType,tracks:item.tracks||[]};
-    if(item.sourceType==="drive") return {...base,url:item.url||""};
+    const base={id:item.id,name:item.name||"Master resume",sourceType:item.sourceType,tracks:item.tracks||[],version:item.version||"",url:item.url||""};
+    if(item.sourceType==="drive") return base;
     const file=await getMasterResumeFile(item.id);
     if(!file) return {...base,fileName:item.fileName||"",missingLocalFile:true};
     return {...base,fileName:file.name,mimeType:file.type||"application/octet-stream",dataUrl:await fileToDataUrl(file)};
@@ -239,7 +240,7 @@
     const items=readMasterResumes();
     const existing=items.find((item)=>item.id===editingMasterResumeId);
     const id=existing?.id||("master-"+Date.now());
-    const next={...(existing||{}),id,name,sourceType,tracks};
+    const next={...(existing||{}),id,name,sourceType,tracks,version:String(Date.now())};
     if(sourceType==="drive"){
       const url=document.getElementById("masterResumeDriveUrl").value.trim();
       if(!url){ setStatus("Add a Google Drive URL"); return; }
@@ -257,6 +258,12 @@
       }
       next.url="";
     }
+    // A track has exactly one master resume. Reassigning it here removes the
+    // same track from older masters instead of relying on "first one wins".
+    items.forEach((item)=>{
+      if(item.id===id || !Array.isArray(item.tracks)) return;
+      item.tracks=item.tracks.filter((track)=>!tracks.includes(track));
+    });
     const index=items.findIndex((item)=>item.id===id);
     if(index>=0) items[index]=next; else items.push(next);
     writeMasterResumes(items);
@@ -459,14 +466,53 @@
     }
   }
 
+  function pendingDocumentSync(){
+    const value=readCache(PENDING_DOCUMENT_SYNC_KEY,{});
+    return value&&typeof value==="object"&&!Array.isArray(value)?value:{};
+  }
+  function rememberPendingDocument(job,type,value){
+    if(!job?.id||!value) return;
+    const pending=pendingDocumentSync();
+    pending[job.id]={...(pending[job.id]||{}),[type]:{value,updatedAt:new Date().toISOString()}};
+    writeCache(PENDING_DOCUMENT_SYNC_KEY,pending);
+  }
+  function mergePendingDocuments(jobs){
+    const pending=pendingDocumentSync();
+    return jobs.map((job)=>{
+      const docs=pending[job.id]||{};
+      return {
+        ...job,
+        resume:docs.resume?.value||job.resume,
+        coverLetter:docs.coverLetter?.value||job.coverLetter
+      };
+    });
+  }
+  async function flushPendingDocuments(){
+    if(navigator.onLine===false) return;
+    const pending=pendingDocumentSync();
+    let changed=false;
+    for(const [jobId,docs] of Object.entries(pending)){
+      const patch={};
+      if(docs?.resume?.value) patch.resume=docs.resume.value;
+      if(docs?.coverLetter?.value) patch.coverLetter=docs.coverLetter.value;
+      if(!Object.keys(patch).length){ delete pending[jobId]; changed=true; continue; }
+      try{
+        await window.RavenAPI.updateJob(jobId,patch);
+        delete pending[jobId];
+        changed=true;
+      }catch{}
+    }
+    if(changed) writeCache(PENDING_DOCUMENT_SYNC_KEY,pending);
+  }
   async function loadJobs() {
     setStatus("Syncing jobs...");
     try {
       const payload = await window.RavenAPI.listJobs();
-      state.jobs = normalizeJobs(payload);
+      state.jobs = mergePendingDocuments(normalizeJobs(payload));
       writeCache(CACHE_JOBS_KEY,state.jobs);
       setStatus("Up to date");
       render();
+      flushPendingDocuments().catch(()=>{});
     } catch (error) {
       setStatus("Offline cache");
       if(!state.jobs.length) list.innerHTML = '<p class="empty">No cached jobs available.</p>';
@@ -1026,19 +1072,25 @@
   }
 
   async function createInstantResume(job,masterResume){
+    if(masterResume?.sourceType==="drive") throw new Error("Offline resume generation requires a local master resume file.");
     const profile=await getCandidateProfile(masterResume);
     const text=profile.text;
+    if(!String(text||"").trim()) throw new Error("Offline resume generation needs readable master-resume text. Open Raven online once to cache the file text, or use a TXT/RTF master resume.");
     const html=instantResumeHtml(job,text);
     const dataUrl="data:text/html;charset=utf-8,"+encodeURIComponent(html);
     if(!job._discovered){
-      await window.RavenAPI.updateJob(job.id,{resume:dataUrl});
       job.resume=dataUrl;
       const saved=state.jobs.find((item)=>item.id===job.id);
       if(saved) saved.resume=dataUrl;
       writeCache(CACHE_JOBS_KEY,state.jobs);
+      if(navigator.onLine===false) rememberPendingDocument(job,"resume",dataUrl);
+      else {
+        try{ await window.RavenAPI.updateJob(job.id,{resume:dataUrl}); }
+        catch{ rememberPendingDocument(job,"resume",dataUrl); }
+      }
     }
     setDocumentApproved(job,"resume",false);
-    return {url:dataUrl,extracted:Boolean(text)};
+    return {url:dataUrl,extracted:true};
   }
 
   function documentLabel(type) {
@@ -1100,18 +1152,22 @@
   function generationCache(){
     return readCache(GENERATION_CACHE_KEY,{})||{};
   }
-  function generationCacheId(job,masterResume){
-    return window.RavenCore?.generationFingerprint(job,masterResume,"resume",RESUME_TEMPLATE_VERSION) || [job.id||job.url,masterResume?.id||"",RESUME_TEMPLATE_VERSION].join("|");
+  function generationCacheId(job,masterResume,type="resume"){
+    return window.RavenCore?.generationFingerprint(job,masterResume,type,RESUME_TEMPLATE_VERSION) || [type,job.id||job.url,masterResume?.id||"",masterResume?.version||masterResume?.url||"",RESUME_TEMPLATE_VERSION].join("|");
+  }
+  async function generateDocumentCached(job,masterResume,type="resume"){
+    const key=type==="coverLetter"?"coverLetter":"resume";
+    const cacheId=generationCacheId(job,masterResume,type);
+    const cached=generationCache()[cacheId];
+    if(cached?.[key]) return cached[key];
+    const document=await generateDocumentOnline(job,masterResume,type,"");
+    const cache=generationCache();
+    cache[cacheId]={[key]:document,createdAt:new Date().toISOString()};
+    writeCache(GENERATION_CACHE_KEY,cache);
+    return document;
   }
   async function generateResumeOnline(job,masterResume){
-    const cacheId=generationCacheId(job,masterResume);
-    const cached=generationCache()[cacheId];
-    if(cached?.resume) return cached.resume;
-    const resume=await generateDocumentOnline(job,masterResume,"resume","");
-    const cache=generationCache();
-    cache[cacheId]={resume,createdAt:new Date().toISOString()};
-    writeCache(GENERATION_CACHE_KEY,cache);
-    return resume;
+    return generateDocumentCached(job,masterResume,"resume");
   }
 
   async function enqueue(job,type,button=null) {
@@ -1171,25 +1227,26 @@
     const html=type==="resume"?generatedResumeHtml(job,document):generatedCoverLetterHtml(job,document);
     const dataUrl="data:text/html;charset=utf-8,"+encodeURIComponent(html);
     if(!job._discovered){
-      await window.RavenAPI.updateJob(job.id,{[type]:dataUrl});
       job[type]=dataUrl;
       const saved=state.jobs.find((item)=>item.id===job.id); if(saved) saved[type]=dataUrl;
       writeCache(CACHE_JOBS_KEY,state.jobs);
+      try{ await window.RavenAPI.updateJob(job.id,{[type]:dataUrl}); }
+      catch{ rememberPendingDocument(job,type,dataUrl); }
     }
     setDocumentApproved(job,type,false);
     return dataUrl;
   }
   async function generateDocumentOnline(job,masterResume,type="resume",instructions=""){
     if(!config?.generateApiUrl) throw new Error("Online document generator is not configured.");
-    if(masterResume?.sourceType==="drive") throw new Error("Online generation currently requires a local master resume file.");
-    if(!masterResume?.dataUrl){
+    if(masterResume?.sourceType!=="drive" && !masterResume?.dataUrl){
       const file=await getMasterResumeFile(masterResume?.id);
       if(file) masterResume={...masterResume,fileName:file.name,mimeType:file.type||"application/octet-stream",dataUrl:await fileToDataUrl(file)};
     }
-    if(!masterResume?.dataUrl) throw new Error("The assigned master resume file is not available on this device.");
+    if(masterResume?.sourceType==="drive" && !masterResume?.url) throw new Error("The assigned Google Drive master resume has no URL.");
+    if(masterResume?.sourceType!=="drive" && !masterResume?.dataUrl) throw new Error("The assigned master resume file is not available on this device.");
     const response=await fetch(config.generateApiUrl,{method:"POST",headers:{"Content-Type":"application/json","X-Raven-Client":"raven-web-v1"},body:JSON.stringify({
       documentType:type==="coverLetter"?"coverLetter":"resume",instructions,jobId:job.id,jobTitle:job.title||"",company:job.company||"",track:job.track||state.activeTrack,sourceUrl:job.url||"",jobDescription:job.notes||"",jobAnalysis:getJobAnalysis(job),
-      masterResume:{id:masterResume.id||"",name:masterResume.name||"",sourceType:masterResume.sourceType||"",fileName:masterResume.fileName||"",mimeType:masterResume.mimeType||"",dataUrl:masterResume.dataUrl||""}
+      masterResume:{id:masterResume.id||"",name:masterResume.name||"",sourceType:masterResume.sourceType||"",fileName:masterResume.fileName||"",mimeType:masterResume.mimeType||"",dataUrl:masterResume.dataUrl||"",url:masterResume.url||"",version:masterResume.version||""}
     })});
     const payload=await response.json().catch(()=>({}));
     if(!response.ok){ const error=new Error(payload.error||("Online generation failed ("+response.status+")")); error.code=payload.code||""; error.provider=payload.provider||""; error.retryable=Boolean(payload.retryable); error.upstreamStatus=payload.upstreamStatus||0; throw error; }
@@ -1204,7 +1261,9 @@
     try{
       const masterResume=await masterResumeTaskInput(job.track||state.activeTrack);
       if(!masterResume) throw new Error("Assign a master resume to this job track first.");
-      const document=await generateDocumentOnline(job,masterResume,type,instructions);
+      const document=instructions
+        ? await generateDocumentOnline(job,masterResume,type,instructions)
+        : await generateDocumentCached(job,masterResume,type);
       await saveGeneratedDocument(job,type,document);
       setDocumentApproved(job,type,false);
       setStatus(label[0].toUpperCase()+label.slice(1)+" ready · approval required");
