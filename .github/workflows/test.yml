@@ -54,6 +54,7 @@ jobs:
           node tests/ats-csv.test.mjs
           node tests/drive-source.test.mjs
           node tests/tab-filter-architecture.test.mjs
+          node tests/request-budget.test.mjs
 
   safety-e2e:
     runs-on: ubuntu-latest
