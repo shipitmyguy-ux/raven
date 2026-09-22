@@ -52,6 +52,7 @@ jobs:
           node tests/raven-core.test.mjs
           node tests/assistant-core.test.mjs
           node tests/ats-csv.test.mjs
+          node tests/drive-source.test.mjs
 
   safety-e2e:
     runs-on: ubuntu-latest
