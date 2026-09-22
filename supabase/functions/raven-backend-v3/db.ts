@@ -1,4 +1,17 @@
 import type { Candidate, Track } from "./types.ts";
+import { validAtsRow } from "./csv-records.mjs";
+
+function isPersistableCandidate(c:Candidate){
+  const title=String(c?.title||"").trim();
+  const url=String(c?.url||"").trim();
+  const source=String(c?.source||"");
+  if(!title) return false;
+  let parsed:URL;
+  try{ parsed=new URL(url); }catch{ return false; }
+  if(parsed.protocol!=="http:"&&parsed.protocol!=="https:") return false;
+  if(/^ATS:/i.test(source) && !validAtsRow(title,url)) return false;
+  return true;
+}
 
 function env(){
   const url=Deno.env.get("SUPABASE_URL")||"";
@@ -18,9 +31,10 @@ async function rest(path:string,init:RequestInit={}){
 }
 
 export async function upsertResults(rows:Candidate[]){
-  if(!rows.length) return;
+  const validRows=rows.filter(isPersistableCandidate);
+  if(!validRows.length) return;
   const now=new Date().toISOString();
-  const body=rows.map(c=>({
+  const body=validRows.map(c=>({
     track:c.track||"Professional",
     title:c.title||"",
     company:c.company||null,
@@ -169,7 +183,7 @@ export async function updateJob(id:string,patch:any){
 export async function upsertJobsFromCandidates(rows:Candidate[]){
   const now=new Date().toISOString();
   const seen=new Set<string>();
-  const body=rows.filter(c=>{const url=String(c.url||"");if(!url||seen.has(url))return false;seen.add(url);return true;}).slice(0,100).map((c,i)=>({
+  const body=rows.filter(c=>{const url=String(c.url||"");if(!isPersistableCandidate(c)||seen.has(url))return false;seen.add(url);return true;}).slice(0,100).map((c,i)=>({
     id:"DISC-"+Date.now()+"-"+i,added:now,track:c.track||"Professional",title:c.title||"",company:c.company||"",location:c.location||"",remote:Boolean(c.remote),
     salary_min:null,salary_max:null,salary_text:c.salary_text||"",url:c.url,source:c.source||"",status:"Saved",viewed:false,applied_date:null,follow_up:null,
     resume:"",cover_letter:"",notes:c.snippet||"",last_updated:now
