@@ -21,7 +21,7 @@ A **full** backup additionally captures operational/search/cache/legacy tables:
 
 The two audit tables use generated identity IDs. They are exported for forensic/reference purposes but are intentionally **not replayed** by the restore tool.
 
-The backup does **not** include device-local IndexedDB/localStorage master-resume files, application profile/answer-memory data, browser caches, or external Google Drive files. Those need separate recovery if they matter.
+The backup does **not** include device-local IndexedDB/localStorage master-resume files, application profile/answer-memory data, browser caches, external Google Drive files, or any raw bookmark/API secret that is not stored in Postgres. Those need separate recovery or regeneration if they matter.
 
 ## Security
 
