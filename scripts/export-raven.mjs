@@ -31,7 +31,7 @@ async function api(table,query){
 
 async function fetchTable(meta){
   const rows=[];
-  const pageSize=1000;
+  const pageSize=100;
   for(let offset=0;;offset+=pageSize){
     const q=new URLSearchParams({
       select:"*",
