@@ -5,7 +5,7 @@ const TRACKS=new Set(["Professional","Labor","Wildcard","Games / 3D"]);
 const MODEL=Deno.env.get("RAVEN_GEMINI_MODEL")||"gemini-3.5-flash-lite";
 function cors(req:Request){const o=req.headers.get("origin")||"";return {"Access-Control-Allow-Origin":ALLOWED_ORIGINS.has(o)?o:"https://shipitmyguy-ux.github.io","Vary":"Origin","Access-Control-Allow-Headers":"content-type,x-raven-client","Access-Control-Allow-Methods":"GET,POST,OPTIONS","Content-Type":"application/json","Cache-Control":"no-store"};}
 function json(req:Request,d:unknown,s=200){return new Response(JSON.stringify(d),{status:s,headers:cors(req)});}
-function allowed(req:Request){const o=req.headers.get("origin")||"";if(o&&!ALLOWED_ORIGINS.has(o))return false;return req.headers.get("x-raven-client")==="raven-web-v1"||req.method==="GET";}
+function allowed(req:Request){const o=req.headers.get("origin")||"";if(o&&!ALLOWED_ORIGINS.has(o))return false;return req.headers.get("x-raven-client")==="raven-web-v1";}
 function env(){const url=Deno.env.get("SUPABASE_URL")||"";const key=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";if(!url||!key)throw new Error("Supabase unavailable");return {url,key};}
 async function rest(path:string){const {url,key}=env();const r=await fetch(url+"/rest/v1/"+path,{headers:{apikey:key,Authorization:"Bearer "+key}});if(!r.ok)throw new Error("DB read failed");return await r.json();}
 async function rpc(name:string,p:any){const {url,key}=env();const r=await fetch(url+"/rest/v1/rpc/"+name,{method:"POST",headers:{apikey:key,Authorization:"Bearer "+key,"Content-Type":"application/json"},body:JSON.stringify(p)});if(!r.ok)throw new Error("RPC failed");const t=await r.text();return t?JSON.parse(t):null;}
