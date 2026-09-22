@@ -65,5 +65,5 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Approval and application safety tests
-        run: npx playwright test --grep "application requires approval of both exact documents|review preserves approved document and revision invalidates approval"
+      - name: Targeted browser regression tests
+        run: npx playwright test --grep "application requires approval of both exact documents|review preserves approved document and revision invalidates approval|local master resume and track assignments persist through reload|offline resume fallback creates a local draft without network generation|generation cache prevents a duplicate resume model call"
