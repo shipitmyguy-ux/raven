@@ -1,3 +1,4 @@
+import { driveExportTarget } from "./drive-source.mjs";
 const ALLOWED_ORIGINS=new Set([
   "https://shipitmyguy-ux.github.io",
   "http://localhost:8000",
@@ -113,6 +114,25 @@ function validateDocument(type:string,doc:any){
   return "";
 }
 function retryableProviderStatus(status:number){return status===408||status===429||status>=500;}
+function bytesToBase64(bytes:Uint8Array){
+  let binary="";
+  for(let i=0;i<bytes.length;i+=0x8000) binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));
+  return btoa(binary);
+}
+async function loadDriveMaster(rawUrl:string){
+  const target=driveExportTarget(rawUrl);
+  const response=await fetch(target.url,{redirect:"follow",headers:{"User-Agent":"RavenResumeGenerator/1.0"},signal:AbortSignal.timeout(15000)});
+  if(!response.ok) throw new Error("Google Drive master resume could not be downloaded ("+response.status+").");
+  const contentType=(response.headers.get("content-type")||target.mimeType||"").split(";")[0].trim().toLowerCase();
+  if(response.url.includes("accounts.google.com")||contentType==="text/html") throw new Error("Google Drive master resume is private. Allow anyone with the link to view it, or add the resume as a local file.");
+  if(contentType.includes("wordprocessingml")) throw new Error("Drive-hosted DOCX is not supported directly. Use a Google Doc, PDF, or add the DOCX as a local file.");
+  const size=Number(response.headers.get("content-length")||0);
+  if(size>12*1024*1024) throw new Error("Google Drive master resume is larger than the 12 MB limit.");
+  const bytes=new Uint8Array(await response.arrayBuffer());
+  if(bytes.length>12*1024*1024) throw new Error("Google Drive master resume is larger than the 12 MB limit.");
+  if(!bytes.length) throw new Error("Google Drive master resume was empty.");
+  return {base64:bytesToBase64(bytes),mimeType:contentType||target.mimeType||"application/pdf"};
+}
 const GEMINI_MODEL="gemini-3.5-flash-lite";
 const DIRECT_GEMINI_BASE="https://generativelanguage.googleapis.com";
 const GATEWAY_GEMINI_BASE="https://gateway.ai.cloudflare.com/v1/0be401023d08048c03bbfbb0576fa89f/raven/google-ai-studio";
@@ -130,12 +150,26 @@ Deno.serve(async(req:Request)=>{
   try{body=JSON.parse(await req.text()||"{}");}catch{return json(req,{error:"Invalid JSON"},400);}
   const jobDescription=String(body.jobDescription||"").trim();
   const masterDataUrl=String(body.masterResume?.dataUrl||"").trim();
-  const masterMime=String(body.masterResume?.mimeType||"application/pdf").trim()||"application/pdf";
+  const masterUrl=String(body.masterResume?.url||"").trim();
+  let masterMime=String(body.masterResume?.mimeType||"application/pdf").trim()||"application/pdf";
   if(!jobDescription) return json(req,{error:"Job description is required."},400);
-  if(!masterDataUrl) return json(req,{error:"Master resume file is required."},400);
-  const dataMatch=masterDataUrl.match(/^data:([^;,]+)?;base64,(.+)$/s);
-  if(!dataMatch) return json(req,{error:"Master resume must be provided as a base64 data URL."},400);
-  const masterBase64=dataMatch[2];
+  let masterBase64="";
+  if(masterDataUrl){
+    const dataMatch=masterDataUrl.match(/^data:([^;,]+)?;base64,(.+)$/s);
+    if(!dataMatch) return json(req,{error:"Master resume must be provided as a base64 data URL."},400);
+    masterMime=String(dataMatch[1]||masterMime||"application/pdf").trim()||"application/pdf";
+    masterBase64=dataMatch[2];
+  }else if(masterUrl){
+    try{
+      const loaded=await loadDriveMaster(masterUrl);
+      masterBase64=loaded.base64;
+      masterMime=loaded.mimeType;
+    }catch(e){
+      return json(req,{error:e instanceof Error?e.message:String(e),code:"MASTER_RESUME_SOURCE_ERROR"},400);
+    }
+  }else{
+    return json(req,{error:"Master resume file or Google Drive URL is required."},400);
+  }
 
   const documentType=body.documentType==="coverLetter"?"coverLetter":"resume";
   const instructions=String(body.instructions||"").trim();
