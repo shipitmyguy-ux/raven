@@ -2,7 +2,7 @@ import type { Candidate, Track } from "./types.ts";
 import { TRACKS } from "./config.ts";
 import { rankCandidates, score, within } from "./utils.ts";
 import { linkedinQuick, linkedinDeep, remotive, remoteOk, arbeitnow, jobicy, himalayas, atsWide } from "./sources.ts";
-import { upsertResults, createRun, finishRun, deepSearchRunning, deepSearchCooldown, upsertJobsFromCandidates } from "./db.ts";
+import { upsertResults, createRun, finishRun, deepSearchRunning, deepSearchCooldown } from "./db.ts";
 import { enrichCandidate } from "./enrich.ts";
 
 export async function quickSearch(track:Track){
@@ -56,7 +56,6 @@ export async function deepSearch(track:Track){
     await upsertResults(rows);
     const enriched=await enrichRows(rows);
     await upsertResults(enriched);
-    await upsertJobsFromCandidates(enriched);
     await finishRun(runId,"completed",rows.length);
   }catch(e){
     await finishRun(runId,"failed",0,e instanceof Error?e.message:String(e));
