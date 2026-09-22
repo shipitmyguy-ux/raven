@@ -5,6 +5,7 @@ const app=fs.readFileSync(new URL("../app.js",import.meta.url),"utf8");
 const config=fs.readFileSync(new URL("../supabase/functions/raven-backend-v3/config.ts",import.meta.url),"utf8");
 const sources=fs.readFileSync(new URL("../supabase/functions/raven-backend-v3/sources.ts",import.meta.url),"utf8");
 const utils=fs.readFileSync(new URL("../supabase/functions/raven-backend-v3/utils.ts",import.meta.url),"utf8");
+const generator=fs.readFileSync(new URL("../supabase/functions/raven-generate-v1/index.ts",import.meta.url),"utf8");
 
 assert(app.includes("async function loadAllDiscovered()"),"Raven must load discovered jobs for every tab.");
 assert(app.includes('searchJobsButton.textContent="Refreshing all…"'),"Refresh control must be global.");
@@ -21,5 +22,6 @@ assert(!sources.includes(".remoteBoards"),"Source adapters must not branch on re
 assert(!sources.includes(".atsSources"),"ATS parser must use the same source set for every track.");
 assert(!sources.includes('track==="Professional"'),"ATS parsing must not special-case Professional.");
 assert(!utils.includes('track==="Wildcard"'),"Ranking must not special-case Wildcard.");
+assert(!generator.includes('"TRACK: "'),"Document generation must not change its prompt based on the selected Raven category.");
 
 console.log("Tab/filter architecture regression tests passed");
