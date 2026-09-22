@@ -1,0 +1,31 @@
+name: One-time Raven live generation smoke
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/live-generation-smoke.yml"
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify production generator health and synthetic documents
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://umvmilulnqnmeqvfoxxc.supabase.co/functions/v1/raven-generate-v1"
+          HEALTH="$(curl -fsS -H 'Origin: https://shipitmyguy-ux.github.io' "$BASE")"
+          echo "$HEALTH" | jq -e '.ok == true and .configured == true and .provider == "gemini"' >/dev/null
+          MASTER="$(printf '%s' 'Test Candidate
+test.candidate@example.com
+Project Delivery Lead
+2020-2025 Example Studio
+Led internal project delivery, schedules, onboarding, mentoring, and cross-functional coordination.
+Bachelor degree.' | base64 -w0)"
+          COMMON="$(jq -nc --arg data "data:text/plain;base64,$MASTER" '{jobId:"synthetic-smoke",jobTitle:"Implementation Project Manager",company:"Synthetic Test Company",track:"Professional",sourceUrl:"https://example.com/synthetic",jobDescription:"Coordinate implementation projects, schedules, internal stakeholders, onboarding, and delivery milestones.",masterResume:{id:"synthetic",name:"Synthetic QA master",sourceType:"local",fileName:"synthetic.txt",mimeType:"text/plain",dataUrl:$data,version:"1"}}')"
+          RESUME_PAYLOAD="$(echo "$COMMON" | jq '. + {documentType:"resume"}')"
+          RESUME="$(curl -fsS -H 'Origin: https://shipitmyguy-ux.github.io' -H 'X-Raven-Client: raven-web-v1' -H 'Content-Type: application/json' --data "$RESUME_PAYLOAD" "$BASE")"
+          echo "$RESUME" | jq -e '.ok == true and (.resume.name|length)>0 and (.resume.experience|length)>0' >/dev/null
+          LETTER_PAYLOAD="$(echo "$COMMON" | jq '. + {documentType:"coverLetter"}')"
+          LETTER="$(curl -fsS -H 'Origin: https://shipitmyguy-ux.github.io' -H 'X-Raven-Client: raven-web-v1' -H 'Content-Type: application/json' --data "$LETTER_PAYLOAD" "$BASE")"
+          echo "$LETTER" | jq -e '.ok == true and (.coverLetter.paragraphs|length)>=2' >/dev/null
+          echo "Production resume and cover-letter generation succeeded."
