@@ -50,8 +50,8 @@
       const data = await read(config.dataApiUrl, "jobs");
       return { ...data, jobs: (data.jobs || []).map(normalizeJob) };
     },
-    addJob(job) { return write(config.dataApiUrl, "addJob", job); },
-    updateJob(id, patch) { return write(config.dataApiUrl, "updateJob", { id, ...patch }); },
+    addJob(job) { return write(config.searchApiUrl, "addJob", job); },
+    updateJob(id, patch) { return write(config.searchApiUrl, "updateJob", { id, ...patch }); },
     describeJob(job) { return read(config.enrichApiUrl, "describe", job || {}); },
     commute(location) { return read(config.commuteApiUrl, "commute", { location }); }
   });
