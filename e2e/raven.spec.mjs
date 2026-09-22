@@ -331,6 +331,43 @@ test("completion event with host mismatch is ignored",async({page})=>{
 });
 
 
+test("iPhone SE viewport keeps Raven usable without page overflow",async({page})=>{
+  await page.setViewportSize({width:375,height:667});
+  const errors=[];page.on("pageerror",e=>errors.push(e.message));
+  await mockRaven(page);
+  await page.goto("/");
+  await expect(page.locator("#optionsButton")).toBeVisible();
+  await expect(page.locator("#searchJobsButton")).toBeVisible();
+
+  let layout=await page.evaluate(()=>({
+    innerWidth:window.innerWidth,
+    documentWidth:document.documentElement.scrollWidth,
+    bodyWidth:document.body.scrollWidth
+  }));
+  expect(layout.documentWidth).toBeLessThanOrEqual(layout.innerWidth+1);
+  expect(layout.bodyWidth).toBeLessThanOrEqual(layout.innerWidth+1);
+
+  await page.locator("#optionsButton").click();
+  await expect(page.locator("#optionsDialog")).toBeVisible();
+  const dialogBox=await page.locator("#optionsDialog").boundingBox();
+  expect(dialogBox).not.toBeNull();
+  expect(dialogBox.x).toBeGreaterThanOrEqual(0);
+  expect(dialogBox.x+dialogBox.width).toBeLessThanOrEqual(376);
+  await page.locator(".options-close").click();
+
+  await page.locator('[data-track="Professional"]').click();
+  await page.locator(".job-card-summary").first().click();
+  await expect(page.locator('[data-generate="resume"]')).toBeVisible();
+  await expect(page.locator("[data-approved-apply]")).toBeVisible();
+
+  layout=await page.evaluate(()=>({
+    innerWidth:window.innerWidth,
+    documentWidth:document.documentElement.scrollWidth
+  }));
+  expect(layout.documentWidth).toBeLessThanOrEqual(layout.innerWidth+1);
+  expect(errors).toEqual([]);
+});
+
 test("malformed ATS rows are pruned from cached startup data before refresh",async({page})=>{
   await page.addInitScript(()=>{
     localStorage.setItem("ravenJobsCacheV1",JSON.stringify([
