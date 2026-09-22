@@ -2,6 +2,11 @@
 
 Run after meaningful production changes.
 
+## Automated Headless Smoke Tests
+- Run `npm run test:smoke` locally to execute the Playwright production smoke test suite.
+- Trigger the `Production Smoke Tests` workflow via `workflow_dispatch` in GitHub Actions for automated verification.
+- Verify that tests cover deployed Raven app load, non-destructive document flows, bookmark persistence, tab filtering, and all Application Assistant ATS adapters (Greenhouse, Lever, Ashby, Workday, iCIMS, Taleo, and generic fallback) without clicking final submit.
+
 ## Load/state
 - Raven loads without blocking console errors.
 - Jobs load from the intended live source.

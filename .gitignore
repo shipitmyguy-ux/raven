@@ -5,3 +5,6 @@ Thumbs.db
 .env.*
 secrets.*
 private/
+node_modules/
+test-results/
+playwright-report/
