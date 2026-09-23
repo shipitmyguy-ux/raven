@@ -568,6 +568,30 @@ test("completion event with host mismatch is ignored",async({page})=>{
 });
 
 
+test("representative responsive widths keep primary Raven surfaces bounded",async({page})=>{
+  await mockRaven(page);
+  for(const viewport of [
+    {width:375,height:667},
+    {width:768,height:900},
+    {width:1024,height:768},
+    {width:1440,height:900}
+  ]){
+    await page.setViewportSize(viewport);
+    await page.goto("/");
+    await page.locator('[data-track="Professional"]').click();
+    await page.locator(".job-card-summary").first().click();
+    const layout=await page.evaluate(()=>({
+      innerWidth:window.innerWidth,
+      documentWidth:document.documentElement.scrollWidth,
+      bodyWidth:document.body.scrollWidth
+    }));
+    expect(layout.documentWidth).toBeLessThanOrEqual(layout.innerWidth+2);
+    expect(layout.bodyWidth).toBeLessThanOrEqual(layout.innerWidth+2);
+    await expect(page.locator("[data-lifecycle-status]")).toBeVisible();
+    await expect(page.locator(".evidence-coverage")).toBeVisible();
+  }
+});
+
 // iPhone SE 2nd gen CSS viewport in portrait.
 test("iPhone SE viewport keeps Raven usable without page overflow",async({page})=>{
   await page.setViewportSize({width:375,height:667});
