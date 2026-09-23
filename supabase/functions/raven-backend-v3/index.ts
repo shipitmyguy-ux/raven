@@ -4,7 +4,7 @@ import { json, normalizeUrl, recoverCompanyFromUrl, analyzeCanonicalIdentity } f
 import { quickSearch, maybeStartDeep } from "./search.ts";
 import { listResults, listJobs, addJob, updateJob, listTasksForHealth, getJobById, getJobByUrl, addJobEvent, listJobEvents, listAllJobEvents, ensureJobSnapshot, listJobSnapshots, getCanonicalProfile, listAllJobSnapshots } from "./db.ts";
 import { requestGuard, requestFinish } from "./request-budget.ts";
-import { classifyApplicationMessage } from "./signal-classifier.ts";
+import { classifyApplicationMessage } from "./signal-classifier.mjs";
 import { enrichCandidate } from "./enrich.ts";
 
 
