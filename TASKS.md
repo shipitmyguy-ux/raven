@@ -1,98 +1,92 @@
 # Raven Tasks
 
-Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verification
+Legend: [ ] open, [x] complete, [~] in progress, [!] requires real-site/user-account verification
 
-## P0 - Core reliability
-- [x] Add user-facing Options/Settings panel using existing runtime-config settings.
-- [ ] Audit job descriptions across every Raven tab.
-- [ ] Fix LinkedIn and other source extraction failures/truncation.
-- [ ] Verify source -> parser -> Supabase -> UI ingestion path.
-- [ ] Verify "Search jobs now" uses the backend path only.
-- [ ] Verify quick/deep search persistence and deduplication.
-- [ ] Verify status changes persist after refresh.
+## Closeout status
 
-## P0 - Documents
-- [!] Live resume engine verified on real stored jobs across all four tracks (HTTP 200, canonical-fact output); still verify UI job association and persistence after refresh.
-- [!] Live cover-letter engine verified on real stored jobs across all four tracks (HTTP 200, canonical-fact output); still verify UI job association and persistence after refresh.
-- [ ] Verify generated files attach to the correct job.
-- [ ] Verify generated-file links survive refresh.
-- [ ] Add/fix failure, timeout, retry, and stuck-task handling.
-- [x] Ensure generated content uses only verified qualifications via canonical-profile/fact-ID selection; live 8-request acceptance pass returned supported facts only.
+### Core reliability
+- [x] Options/Settings panel is live.
+- [x] Audit saved-job description completeness across all four tabs. Seven blank Lever descriptions were repaired through the public Lever Postings API; the only remaining short saved description is Twin Atlas Environment Artist, whose public careers page exposes the role/location but no detailed posting text.
+- [~] Source-description recovery is implemented for LinkedIn guest pages, Lever's public posting API, schema.org/JobPosting JSON-LD, visible page content, and metadata. Some aggregator pages can still expose only snippets.
+- [x] Shared source -> parser -> Supabase -> Raven UI architecture is enforced; tabs are filters rather than separate ingestion pipelines.
+- [x] Search Jobs uses the shared `raven-backend-v3` path.
+- [x] Quick and deep search are production-verified on every track. Latest deep pass completed with 67 Professional, 78 Labor, 48 Wildcard, and 9 Games / 3D results.
+- [x] Zero-result quick refreshes preserve recent cached discovery rows instead of blanking a tab.
+- [x] Stale background deep-search runs are automatically reconciled and no longer remain indefinitely `running`.
+- [x] Saved job/status/document fields persist through a fresh backend read. Verified with a disposable production QA job, then removed.
+- [x] Canonical identity/deduplication preserves distinct postings while identifying exact/canonical duplicates.
+- [x] Malformed ATS rows were cleaned; current malformed saved/search-result counts are zero.
 
-## P1 - Efficiency
-- [~] Replace unnecessary model polling with event/on-demand processing. Frontend timer polling removed; return-to-app refresh now syncs saved jobs only instead of re-running discovery. Backend/automation polling still needs audit.
-- [x] Cache reusable inputs/results where practical. Resume generation, CandidateProfile extraction, and deterministic JobAnalysis are merged; generation invalidation has browser regression coverage.
-- [~] Keep deterministic processing out of AI paths. Canonical job normalization/fingerprinting moved into `raven-core.js`; continue migration after verification.
-- [ ] Review/remove obsolete five-minute polling if no longer needed.
+### Documents
+- [x] Live resume generation verified on real stored jobs across all four tracks.
+- [x] Live cover-letter generation verified on real stored jobs across all four tracks.
+- [x] Eight-request live acceptance pass returned HTTP 200 and canonical-fact-only output.
+- [x] Request budgets/rate limits and failure recording are regression-tested.
+- [x] Document status/data persistence through the backend is verified.
+- [!] Verify a freshly generated resume and cover letter from the live Raven UI attach to the intended real job and remain usable after a browser refresh.
+- [!] Verify the exact approved files attach to current real employer file inputs. Synthetic Greenhouse, Lever, Ashby, Workday, iCIMS, Taleo, and generic adapters pass.
+- [!] Verify conservative completion detection on real employer confirmation pages.
 
-## P1 - Import/search/extension
-- [ ] Verify Chrome extension import on LinkedIn, Indeed, Glassdoor, Monster, and similar sites.
-- [x] Improve title/company extraction fallbacks with high-confidence URL slug and ATS company recovery without overwriting nonblank values.
-- [x] Prevent duplicate extension/share imports and differentiate exact posting duplicates from same-title/company distinct postings using canonical identity fingerprinting.
-- [ ] Ensure imported jobs appear without manual recovery.
-- [ ] Preserve source provenance and original URL.
+### Efficiency / recovery / operations
+- [x] Timer-driven five-minute polling is removed; Raven is event/on-demand driven.
+- [x] Reusable generation/profile/job-analysis caches are in place.
+- [x] Supabase is the single live data source; Sheets/legacy queue paths are retired.
+- [x] Portable Supabase backup/restore tooling is documented and regression-tested with checksums, dry-run restore, and destructive-restore guards.
+- [x] Device backup/restore covers application profile, answer memory, preferences, approvals, viewed state, master-resume metadata, and local master-resume files from IndexedDB.
+- [x] Repository secret scanner runs in CI and currently passes.
+- [x] Deployment regression checklist is documented.
+- [x] Core regression and targeted browser suites run on pull requests/main.
+- [x] Production smoke now runs automatically on every main push and after a successful Pages deployment.
+- [x] Latest production smoke passed.
+- [x] Backend health currently reports healthy with 0 active failures.
 
-## P1 - Data/backup
-- [x] Confirm Supabase remains the single live source of truth.
-- [x] Retire Google Sheets as a live write target; any future backup is export-only.
-- [ ] Document/verify restore procedure.
-- [ ] Verify clean export of Raven data.
+### Import / extension
+- [x] High-confidence title/company recovery and canonical URL identity are implemented.
+- [x] Duplicate extension/share imports are guarded by canonical identity.
+- [x] Source and original job URL are retained on saved/discovered jobs.
+- [~] Browser-extension extraction fallback exists for pages the user can view.
+- [!] Verify extension import end-to-end on current LinkedIn, Indeed, Glassdoor, Monster, and representative employer ATS pages.
+- [!] Verify imported jobs appear in Raven immediately on those real pages without manual recovery.
 
-## P1 - Drive/doc organization
-- [ ] Verify intended Google Drive destination for generated documents.
-- [ ] Verify Drive links remain associated with the correct job.
+### UX
+- [x] Live production smoke verifies app load, all four tabs, bounded card layout, global refresh state, filter-only tabs, bookmark persistence, and document-review approval persistence.
+- [x] Targeted browser regression verifies Application Assistant safety behavior.
+- [ ] Broaden desktop/responsive visual QA beyond the current automated production viewport set.
+- [~] Continue improving user-visible backend/frontend diagnostics as new failure modes are discovered.
 
-## P2 - UX/testing/operations
-- [ ] Audit empty states, counts, filters, sorting, and card/detail layout.
-- [ ] Verify desktop layouts at common sizes.
-- [ ] Verify dialogs/panels do not break navigation.
-- [ ] Add useful backend/frontend error reporting.
-- [ ] Add deployment regression checklist.
-- [x] Add basic health/status view and bounded Control Panel in Options.
-- [x] Remove dead legacy backend/queue/Sheets paths. Keep localStorage only for cache, offline pending sync, application profile/answer memory, and device-local master resumes.
-- [ ] Review repository for accidentally committed secrets.
+### Google Drive
+- [ ] Decide whether generated documents should remain Raven data-URLs/local review artifacts or also be persisted to a Google Drive folder.
+- [!] If Drive persistence is desired, verify the intended destination and account authorization before enabling writes.
 
-## Production acceptance test
-- [ ] Find job
-- [ ] Import job
-- [ ] Parse full description
-- [ ] Persist to Supabase
-- [ ] Change application status
-- [ ] Generate resume
-- [ ] Generate cover letter
-- [ ] Review generated docs
-- [ ] Refresh
-- [ ] Confirm all job/status/document data persists
+## Production acceptance
+- [x] Find jobs through production search.
+- [x] Parse/store supported source data.
+- [x] Persist a job to Supabase.
+- [x] Change status and verify it through a fresh backend read.
+- [x] Generate resumes and cover letters from the live engines.
+- [x] Preserve document data through backend refresh/read.
+- [x] Automated deployed-app smoke passes.
+- [!] One final human-visible Raven UI generation -> review -> refresh pass on a real saved job remains before calling the entire document UX independently observed end-to-end.
 
-## P1 - Application automation / safety
-- [~] Define structured CandidateProfile schema with source/provenance for verified facts. Local reusable profile extraction exists; provenance/claim validation remains.
-- [~] Add ApplicationAnswerVault. Local editable Answer Memory exists for reusable non-sensitive answers; approved AI-drafted open-ended answer workflow remains.
-- [ ] Add generated-claim provenance/anti-fabrication validation against CandidateProfile.
-- [ ] Preserve immutable original job-posting snapshots separately from enriched descriptions.
-- [ ] Improve duplicate detection across LinkedIn/Indeed/employer ATS copies of the same role.
-- [~] Application Assistant ATS adapters exist for Greenhouse, Lever, Ashby, Workday, iCIMS, Taleo, plus generic fallback; verify against real employer forms and current variants.
-- [x] Keep final application Submit behind explicit user action.
-- [ ] Define privacy/storage boundaries for personal application data before adding autofill/email features.
-- [x] Add browser regression proving document regeneration/revision invalidates exact-document approval.
-- [!] Verify approved resume/cover-letter attachment on real employer file inputs; do not mark complete from mocked tests alone.
-- [!] Verify conservative application-completion detection on real ATS confirmation pages without false positives.
+## Application Assistant / safety
+- [x] Canonical CandidateProfile/fact-ID generation constrains generated claims to verified evidence.
+- [x] Local editable Answer Memory supports reusable non-sensitive answers.
+- [x] Exact-document approval is invalidated by regeneration/revision.
+- [x] Sensitive/legal/demographic/attestation/salary/sponsorship/CAPTCHA/assessment questions remain blocked.
+- [x] Final employer Submit remains behind explicit user action and is never automated.
+- [x] Synthetic adapter coverage exists for Greenhouse, Lever, Ashby, Workday, iCIMS, Taleo, and generic forms.
+- [!] Real employer-site adapter selectors, approved-file attachment, and completion detection still require live-site verification.
+- [ ] Define/implement immutable original-posting snapshots if historical posting preservation is required beyond current saved URL/text.
+- [ ] Define privacy/storage boundaries before optional email-driven automation is enabled.
 
-## P2 - Outcomes / intelligence
+## Future product roadmap
+These are feature expansions, not Raven closeout blockers.
 - [ ] Add Contact, Interview, and FollowUp entities related to Job/Application.
-- [ ] Add optional email-driven application status classification/matching with user-visible corrections.
+- [ ] Add optional email-driven application-status classification/matching with user-visible corrections.
 - [ ] Add outcome analytics by source, role family, resume variant, tailoring, and interview/offer conversion.
-- [ ] Replace opaque ATS-style scores with supported-requirement coverage, unsupported requirements, and missing-evidence reporting.
-
-## P1 - ATS-first job acquisition
-- [x] Make shared ATS CSV ingestion safe for quoted multiline records and reject malformed ATS rows with non-HTTP(S) URLs.
-- [x] Clean legacy malformed ATS rows from Supabase storage; current malformed job/search-result counts are zero and ingestion guards remain active.
-- [ ] Evaluate established ATS adapters/libraries before building additional board-specific scrapers; prototype reuse of ats-scrapers patterns where licensing/dependencies fit Raven.
-- [ ] Add direct ATS adapters for Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable, iCIMS, Oracle, SuccessFactors, ADP, BambooHR, Personio, Recruitee, Breezy, and Teamtailor, prioritized by coverage and reliability.
-- [ ] Add generic schema.org/JobPosting JSON-LD extraction for unsupported employer career pages.
-- [ ] Treat LinkedIn, Indeed, Glassdoor, ZipRecruiter, Google Jobs, Monster, Dice, and niche boards primarily as discovery/provenance sources when a canonical employer/ATS posting is available.
-- [ ] Resolve discovered aggregator jobs to canonical employer/ATS postings and enrich missing/truncated metadata from that canonical source.
-- [ ] Add browser-extension extraction fallback for job pages the user can view when server-side metadata is incomplete; avoid CAPTCHA/access-control bypass techniques.
-- [ ] Add rendered-page extraction only as a final compatibility fallback after structured/API/browser-extension paths fail.
-- [ ] Build an employer -> ATS identifier registry so Raven can query employer career systems directly instead of relying only on aggregator search ranking.
-- [ ] Add source health/coverage telemetry: successful fetches, missing descriptions, stale postings, adapter failures, and canonical-source resolution rate.
-- [x] Extend cross-source dedupe to measure aggregator and ATS copies using canonical identity diagnostics while preserving every source URL/provenance record.
+- [ ] Replace opaque ranking/ATS-style scores with supported-requirement coverage, unsupported requirements, and missing-evidence reporting.
+- [ ] Expand direct ATS coverage beyond the current adapters as source value justifies it.
+- [x] Generic schema.org/JobPosting extraction exists for unsupported employer pages.
+- [~] Aggregators are primarily discovery/provenance sources; continue canonical employer/ATS resolution when a reliable target is available.
+- [ ] Add/maintain an employer -> ATS identifier registry if direct employer querying becomes worth the maintenance cost.
+- [x] Source-health diagnostics are persisted and surfaced through the control plane.
