@@ -49,6 +49,48 @@ function findPosting(v:any):any{
   }
   return null;
 }
+
+function leverParts(rawUrl:string){
+  try{
+    const u=new URL(rawUrl);
+    if(!/(^|\.)jobs(?:\.eu)?\.lever\.co$/i.test(u.hostname)) return null;
+    const parts=u.pathname.split("/").filter(Boolean);
+    if(parts.length<2) return null;
+    return {site:decodeURIComponent(parts[0]),postingId:decodeURIComponent(parts[1]),eu:/jobs\.eu\.lever\.co$/i.test(u.hostname)};
+  }catch{return null;}
+}
+async function leverPosting(c:Candidate):Promise<Candidate|null>{
+  const parts=leverParts(c.url);
+  if(!parts) return null;
+  const base=parts.eu?"https://api.eu.lever.co":"https://api.lever.co";
+  try{
+    const r=await fetch(base+"/v0/postings/"+encodeURIComponent(parts.site)+"/"+encodeURIComponent(parts.postingId),{
+      headers:{"Accept":"application/json","User-Agent":"RavenJobSearch/3.6"},
+      signal:AbortSignal.timeout(6500)
+    });
+    if(!r.ok) return null;
+    const j=await r.json();
+    const listText=Array.isArray(j?.lists)?j.lists.map((x:any)=>[x?.text,decodeHtml(x?.content||"")].filter(Boolean).join("\n")).filter(Boolean).join("\n\n"):"";
+    const description=[j?.descriptionPlain||decodeHtml(j?.description||""),listText,j?.additionalPlain||decodeHtml(j?.additional||"")].filter(Boolean).join("\n\n").trim();
+    const location=String(j?.categories?.location||c.location||"");
+    const workplace=String(j?.workplaceType||"").toLowerCase();
+    let salary=String(c.salary_text||"");
+    if(!salary&&j?.salaryRange){
+      const s=j.salaryRange;
+      const range=[s.min,s.max].filter((v:any)=>v!==undefined&&v!==null&&v!=="").join("–");
+      salary=[s.currency,range,s.interval].filter(Boolean).join(" ");
+    }
+    return {
+      ...c,
+      title:String(j?.text||c.title||""),
+      location,
+      remote:workplace==="remote"||Boolean(c.remote),
+      salary_text:salary,
+      snippet:(description||c.snippet||"").slice(0,10000)
+    };
+  }catch{return null;}
+}
+
 async function linkedinDescription(url:string){
   const id=linkedInId(url);
   if(!id) return "";
@@ -66,6 +108,11 @@ async function linkedinDescription(url:string){
 export async function enrichCandidate(c:Candidate):Promise<Candidate>{
   let current={...c};
   const isLinkedIn=current.source==="LinkedIn"||/linkedin\.com\/jobs\/view\//i.test(current.url);
+  const isLever=/jobs(?:\.eu)?\.lever\.co\//i.test(current.url)||/^ATS:lever$/i.test(String(current.source||""));
+  if(isLever && (!current.snippet||current.snippet.length<180)){
+    const lever=await leverPosting(current);
+    if(lever&&String(lever.snippet||"").length>=180) return lever;
+  }
   if(isLinkedIn && (!current.snippet||current.snippet.length<180)){
     const d=await linkedinDescription(current.url);
     if(d) return {...current,snippet:d.slice(0,10000)};
