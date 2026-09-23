@@ -399,6 +399,41 @@
     }
   }
 
+  async function loadAnalyticsData(){
+    const applications=document.getElementById("analyticsApplications");
+    const interviews=document.getElementById("analyticsInterviews");
+    const offers=document.getElementById("analyticsOffers");
+    const response=document.getElementById("analyticsResponse");
+    const byTrack=document.getElementById("analyticsByTrack");
+    const bySource=document.getElementById("analyticsBySource");
+    const renderBreakdown=(host,record)=>{
+      if(!host) return;
+      const rows=Object.entries(record||{}).sort((a,b)=>Number(b[1]?.applications||0)-Number(a[1]?.applications||0));
+      host.innerHTML=rows.length?rows.map(([name,value])=>{
+        const rate=Math.round(Number(value?.interview_rate||0)*100);
+        return '<div class="analytics-row"><span>'+escapeHtml(name)+'</span><strong>'+escapeHtml(String(value?.applications||0))+' apps · '+rate+'% interview</strong></div>';
+      }).join(""):'<p class="options-help">No application outcomes yet.</p>';
+    };
+    try{
+      const payload=await window.RavenAPI.analytics();
+      const data=payload.analytics||{};
+      state.analytics=data;
+      if(applications) applications.textContent=String(data.applications??0);
+      if(interviews) interviews.textContent=String(data.interviews??0);
+      if(offers) offers.textContent=String(data.offers??0);
+      if(response) response.textContent=Number.isFinite(Number(data.average_response_days))?Number(data.average_response_days).toFixed(1)+"d":"—";
+      renderBreakdown(byTrack,data.by_track);
+      renderBreakdown(bySource,data.by_source);
+    }catch(error){
+      if(applications) applications.textContent="—";
+      if(interviews) interviews.textContent="—";
+      if(offers) offers.textContent="—";
+      if(response) response.textContent="—";
+      if(byTrack) byTrack.innerHTML='<p class="options-help">Outcome analytics unavailable.</p>';
+      if(bySource) bySource.innerHTML='<p class="options-help">'+escapeHtml(error.message||String(error))+'</p>';
+    }
+  }
+
   function hydrateImmediateData(){
     maintainCaches();
     const cachedJobs=readCache(CACHE_JOBS_KEY,null);
@@ -1804,7 +1839,7 @@
       const optionsCard=document.getElementById("optionsCard");
       const optionsCardTitle=document.getElementById("optionsCardTitle");
       const optionsBackButton=document.getElementById("optionsBackButton");
-      const categoryTitles={"control-panel":"Control panel","master-resumes":"Master resumes","application-profile":"Application profile","answer-memory":"Answer memory","device-backup":"Device backup",layout:"Layout","job-info":"Job information",behavior:"Behavior"};
+      const categoryTitles={"control-panel":"Control panel",analytics:"Outcomes","master-resumes":"Master resumes","application-profile":"Application profile","answer-memory":"Answer memory","device-backup":"Device backup",layout:"Layout","job-info":"Job information",behavior:"Behavior"};
 
       const showOptionsHome=()=>{
         if(!optionsCard || optionsCard.hidden) return;
@@ -1838,6 +1873,7 @@
         optionsCard.addEventListener("animationend",finish);
         setTimeout(finish,220);
         if(key==="control-panel") loadControlPanelData();
+        if(key==="analytics") loadAnalyticsData();
       };
 
       optionsButton.addEventListener("click",()=>{
