@@ -10,6 +10,7 @@
     documentApprovals: {},
     viewedJobs: {},
     jobActivity: {},
+    jobCoverage: {},
     analytics: null,
     generatorJob: null,
     generatorType: null,
@@ -424,6 +425,7 @@
       if(response) response.textContent=Number.isFinite(Number(data.average_response_days))?Number(data.average_response_days).toFixed(1)+"d":"—";
       renderBreakdown(byTrack,data.by_track);
       renderBreakdown(bySource,data.by_source);
+      renderBreakdown(document.getElementById("analyticsByResume"),data.by_resume_variant);
     }catch(error){
       if(applications) applications.textContent="—";
       if(interviews) interviews.textContent="—";
@@ -866,6 +868,38 @@
     }
     if(state.selectedId===job.id) render();
   }
+  async function loadJobCoverage(job,force=false){
+    if(!job||job._discovered||!job.id) return;
+    const key=String(job.id);
+    const current=state.jobCoverage[key];
+    if(current?.loading || (!force&&current?.loaded)) return;
+    state.jobCoverage[key]={...(current||{}),loading:true,loaded:false};
+    try{
+      const payload=await window.RavenAPI.coverage(key);
+      state.jobCoverage[key]={loading:false,loaded:true,data:payload.coverage||null};
+    }catch(error){
+      state.jobCoverage[key]={loading:false,loaded:true,data:null,error:String(error.message||error)};
+    }
+    if(state.selectedId===job.id) render();
+  }
+  function renderCoverage(job){
+    if(job._discovered) return "";
+    const record=state.jobCoverage[String(job.id)]||{};
+    if(!record.loaded) return '<section class="evidence-coverage"><h3>Evidence coverage</h3><p class="activity-empty">Analyzing verified evidence…</p></section>';
+    if(record.error||!record.data) return '<section class="evidence-coverage"><h3>Evidence coverage</h3><p class="activity-empty">Evidence coverage unavailable.</p></section>';
+    const data=record.data;
+    if(!Number(data.total||0)) return '<section class="evidence-coverage"><h3>Evidence coverage</h3><p class="activity-empty">No clear requirements could be extracted from this posting.</p></section>';
+    const pct=Math.round(Number(data.supported_ratio||0)*100);
+    const missing=(data.requirements||[]).filter((item)=>item.status==="missing").slice(0,4);
+    const partial=(data.requirements||[]).filter((item)=>item.status==="partial").slice(0,3);
+    const issues=[...missing,...partial].map((item)=>
+      '<li class="coverage-'+escapeAttr(item.status)+'"><span>'+escapeHtml(item.requirement)+'</span><strong>'+escapeHtml(item.status==="missing"?"No evidence found":"Partial evidence")+'</strong></li>'
+    ).join("");
+    return '<section class="evidence-coverage"><div class="coverage-heading"><h3>Evidence coverage</h3><strong>'+pct+'% supported</strong></div>'+
+      '<p class="coverage-summary">'+escapeHtml(String(data.supported||0))+' supported · '+escapeHtml(String(data.partial||0))+' partial · '+escapeHtml(String(data.missing||0))+' missing</p>'+
+      (issues?'<ul class="coverage-issues">'+issues+'</ul>':'<p class="activity-empty">No unsupported requirements detected in the extracted set.</p>')+
+    '</section>';
+  }
   async function addJobActivity(job,type,summary){
     if(!job||job._discovered||!job.id) return;
     const impliedSignal=["interview_requested","interview_scheduled","offer_received","rejected"].includes(type);
@@ -1198,7 +1232,10 @@
             if(opening) markViewed(job);
             state.selectedId = opening ? job.id : null;
             render();
-            if(opening) loadJobActivity(job,true);
+            if(opening){
+              loadJobActivity(job,true);
+              loadJobCoverage(job,true);
+            }
 
             requestAnimationFrame(()=>{
               const anchor=document.querySelector('[data-job-id="'+CSS.escape(String(job.id||""))+'"]');
@@ -1311,6 +1348,7 @@
       '<div class="detail-actions">'+
         '<div class="workflow-actions" aria-label="Application actions">'+actions+applyGate+appliedAction+'</div>'+
       '</div>'+
+      renderCoverage(job)+
       renderJobActivity(job)+
     '</section>';
   }
