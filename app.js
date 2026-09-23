@@ -1198,7 +1198,7 @@
             if(opening) markViewed(job);
             state.selectedId = opening ? job.id : null;
             render();
-            if(opening) loadJobActivity(job);
+            if(opening) loadJobActivity(job,true);
 
             requestAnimationFrame(()=>{
               const anchor=document.querySelector('[data-job-id="'+CSS.escape(String(job.id||""))+'"]');
