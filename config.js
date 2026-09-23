@@ -3,6 +3,7 @@ window.RAVEN_CONFIG = {
   enrichApiUrl: "https://umvmilulnqnmeqvfoxxc.supabase.co/functions/v1/raven-enrich-v1",
   commuteApiUrl: "https://umvmilulnqnmeqvfoxxc.supabase.co/functions/v1/raven-commute-v1",
   generateApiUrl: "https://umvmilulnqnmeqvfoxxc.supabase.co/functions/v1/raven-generate-v1",
+  controlApiUrl: "https://umvmilulnqnmeqvfoxxc.supabase.co/functions/v1/raven-control-v1",
   chromeExtensionArchiveName: "raven-capture-extension.zip"
 };
 window.JOBTRACK_CONFIG = window.RAVEN_CONFIG;
