@@ -166,9 +166,10 @@ async function atsSlice(source:string,track:Track,quick=false){
     const reader=r.body.getReader(), dec=new TextDecoder();
     let buf="", header:string[]|null=null, idx:any=null, bytes=0, lines=0;
     const out:Candidate[]=[];
-    const maxLines=quick ? 5000 : 12000;
-    const maxBytes=quick ? 5*1024*1024 : 12*1024*1024;
-    while(out.length<80 && lines<maxLines){
+    const maxLines=quick ? 2200 : 7000;
+    const maxBytes=quick ? 2*1024*1024 : 7*1024*1024;
+    const maxRows=quick ? 40 : 80;
+    while(out.length<maxRows && lines<maxLines){
       const {done,value}=await reader.read();
       if(value){
         bytes+=value.byteLength;
@@ -195,7 +196,7 @@ async function atsSlice(source:string,track:Track,quick=false){
         const location=idx.location>=0?(c[idx.location]||""):"";
         const url=idx.url>=0?normalizeUrl(c[idx.url]||""):""; if(!validAtsRow(title,url)) continue;
         out.push({track,title,company:idx.company>=0?(c[idx.company]||source):source,location,url,snippet:desc.slice(0,6000),remote:idx.remote>=0?/true|1|yes/i.test(c[idx.remote]||""): /remote/i.test(location),posted_at:idx.posted>=0?(c[idx.posted]||""):"",source:"ATS:"+source} as Candidate);
-        if(out.length>=80) break;
+        if(out.length>=maxRows) break;
       }
       if(done) break;
     }
@@ -206,12 +207,16 @@ async function atsSlice(source:string,track:Track,quick=false){
 
 export async function atsWide(track:Track,quick=false){
   const out:Candidate[]=[];
-  for(const source of ATS_SOURCES){
+  // Quick refresh favors the broadest ATS providers and stays tightly bounded;
+  // deep search can cover the full configured ATS set afterward.
+  const sources=quick ? ATS_SOURCES.slice(0,4) : ATS_SOURCES;
+  const maxRows=quick ? 100 : 240;
+  for(const source of sources){
     const rows=await atsSlice(source,track,quick);
     out.push(...rows);
-    if(out.length>=240) break;
+    if(out.length>=maxRows) break;
   }
-  return out.slice(0,240);
+  return out.slice(0,maxRows);
 }
 
 export async function atsDiagnostics(track:Track){

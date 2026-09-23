@@ -2,7 +2,7 @@ import type { Candidate, Track } from "./types.ts";
 import { TRACKS } from "./config.ts";
 import { rankCandidates, score, within } from "./utils.ts";
 import { linkedinQuick, linkedinDeep, remotive, remoteOk, arbeitnow, jobicy, himalayas, atsWide } from "./sources.ts";
-import { upsertResults, createRun, finishRun, deepSearchRunning, deepSearchCooldown } from "./db.ts";
+import { upsertResults, listResults, createRun, finishRun, deepSearchRunning, deepSearchCooldown } from "./db.ts";
 import { enrichCandidate } from "./enrich.ts";
 
 export async function quickSearch(track:Track){
@@ -18,8 +18,14 @@ export async function quickSearch(track:Track){
     within(jobicy(track,3),6500,[] as Candidate[]),
     within(himalayas(track,3),6500,[] as Candidate[])
   ]);
-  const ats=await within(atsWide(track,true),9000,[] as Candidate[]);
+  const ats=await within(atsWide(track,true),6500,[] as Candidate[]);
   const rows=rankCandidates(track,[...li,...rem,...rok,...arb,...jcy,...him,...ats],40);
+  if(!rows.length){
+    // A transient provider drought must not wipe a tab that already has valid
+    // persisted discovery results. Return the current cache and let deep search
+    // replenish it asynchronously.
+    return await listResults(track).catch(()=>[] as Candidate[]);
+  }
   await upsertResults(rows);
   return rows;
 }
@@ -43,14 +49,14 @@ export async function deepSearch(track:Track){
     // Use the same staged workload for every category so one category with a
     // larger term list cannot exceed the Edge Runtime resource budget.
     const [li,rem,rok,arb]=await Promise.all([
-      linkedinDeep(track,12),
+      linkedinDeep(track,6),
       remotive(track),
       remoteOk(track),
       arbeitnow(track)
     ]);
     const [jcy,him]=await Promise.all([
-      jobicy(track,6),
-      himalayas(track,6)
+      jobicy(track,4),
+      himalayas(track,4)
     ]);
     const ats=await atsWide(track);
     const ranked=rankCandidates(track,[...li,...rem,...rok,...arb,...jcy,...him,...ats],100);
@@ -58,8 +64,9 @@ export async function deepSearch(track:Track){
       .map(c=>({...c,score:score(track,c)}))
       .sort((a,b)=>(b.score||0)-(a.score||0));
     await upsertResults(rows);
-    const enriched=await enrichRows(rows);
-    await upsertResults(enriched);
+    // Deep discovery must finish within the Edge Runtime lifecycle. Description
+    // enrichment happens when a job is saved (and through repairDescriptions),
+    // so it must not keep a background search run alive for dozens of page fetches.
     await finishRun(runId,"completed",rows.length);
   }catch(e){
     await finishRun(runId,"failed",0,e instanceof Error?e.message:String(e));

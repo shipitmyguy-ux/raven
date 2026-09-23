@@ -64,6 +64,7 @@ jobs:
           node tests/tab-filter-architecture.test.mjs
           node tests/request-budget.test.mjs
           node tests/single-source.test.mjs
+          node tests/search-resilience.test.mjs
           node tests/backup-contract.test.mjs
 
   safety-e2e:
