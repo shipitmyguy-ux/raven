@@ -22,3 +22,8 @@ assert.match(workflow,/supabase\/functions\/raven-generate-v2\/\*\*/,"CI must ru
 assert.match(workflow,/node tests\/resume-quality-v3\.test\.mjs/,"CI must execute the resume quality regression test.");
 
 console.log("resume quality v3 tests passed");
+
+assert.match(generator,/track==="Games \/ 3D" \? selectedTitles/,"Only Games / 3D resumes should render shipped-title highlights.");
+assert.match(generator,/return additional as an empty array/,"Non-game tracks must not spend resume space on shipped titles.");
+assert.doesNotMatch(generator,/Verified experience includes/,"Summary should not assemble awkward evidence fragments into prose.");
+assert.match(generator,/hands-on repair experience"\?"Maintenance & operations professional"/,"Labor summaries must preserve hands-on maintenance positioning.");
