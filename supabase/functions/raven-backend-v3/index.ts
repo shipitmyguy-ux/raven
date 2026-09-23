@@ -42,15 +42,20 @@ async function transitionStoredJob(jobId:string,nextStatus:string,options:any={}
   }
 
   const updated=await updateJob(jobId,patch);
-  const event=await addJobEvent({
-    jobId,
-    eventType:lifecycleEventType(nextStatus),
-    occurredAt,
-    source:options.source||"raven",
-    confidence:options.confidence,
-    summary:options.summary||("Status changed from "+previous+" to "+nextStatus),
-    metadata:{from_status:previous,to_status:nextStatus,...(options.metadata||{})}
-  });
+  const sameStatus=previous===nextStatus;
+  const followUpChanged=Object.prototype.hasOwnProperty.call(options,"followUp")&&String(before.follow_up||"")!==String(options.followUp||"");
+  let event=null;
+  if(!sameStatus||followUpChanged){
+    event=await addJobEvent({
+      jobId,
+      eventType:followUpChanged&&sameStatus?"follow_up_changed":lifecycleEventType(nextStatus),
+      occurredAt,
+      source:options.source||"raven",
+      confidence:options.confidence,
+      summary:options.summary||(followUpChanged&&sameStatus?"Follow-up date updated":("Status changed from "+previous+" to "+nextStatus)),
+      metadata:{from_status:previous,to_status:nextStatus,...(options.metadata||{})}
+    });
+  }
   let snapshot=null;
   if(nextStatus==="Applied"&&previous!=="Applied"){
     snapshot=await ensureJobSnapshot(updated,"application");
