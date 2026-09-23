@@ -12,12 +12,12 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verificatio
 - [ ] Verify status changes persist after refresh.
 
 ## P0 - Documents
-- [!] Verify live end-to-end resume generation on a real job, correct job association, and persistence after refresh.
-- [!] Verify live end-to-end cover-letter generation on a real job, correct job association, and persistence after refresh.
+- [!] Live resume engine verified on real stored jobs across all four tracks (HTTP 200, canonical-fact output); still verify UI job association and persistence after refresh.
+- [!] Live cover-letter engine verified on real stored jobs across all four tracks (HTTP 200, canonical-fact output); still verify UI job association and persistence after refresh.
 - [ ] Verify generated files attach to the correct job.
 - [ ] Verify generated-file links survive refresh.
 - [ ] Add/fix failure, timeout, retry, and stuck-task handling.
-- [ ] Ensure generated content uses only verified qualifications.
+- [x] Ensure generated content uses only verified qualifications via canonical-profile/fact-ID selection; live 8-request acceptance pass returned supported facts only.
 
 ## P1 - Efficiency
 - [~] Replace unnecessary model polling with event/on-demand processing. Frontend timer polling removed; return-to-app refresh now syncs saved jobs only instead of re-running discovery. Backend/automation polling still needs audit.
@@ -48,7 +48,7 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verificatio
 - [ ] Verify dialogs/panels do not break navigation.
 - [ ] Add useful backend/frontend error reporting.
 - [ ] Add deployment regression checklist.
-- [ ] Add basic health/status view.
+- [x] Add basic health/status view and bounded Control Panel in Options.
 - [x] Remove dead legacy backend/queue/Sheets paths. Keep localStorage only for cache, offline pending sync, application profile/answer memory, and device-local master resumes.
 - [ ] Review repository for accidentally committed secrets.
 
@@ -85,7 +85,7 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] blocked / needs verificatio
 
 ## P1 - ATS-first job acquisition
 - [x] Make shared ATS CSV ingestion safe for quoted multiline records and reject malformed ATS rows with non-HTTP(S) URLs.
-- [!] Clean legacy malformed ATS rows from Supabase storage; frontend filtering is active and new malformed rows are blocked.
+- [x] Clean legacy malformed ATS rows from Supabase storage; current malformed job/search-result counts are zero and ingestion guards remain active.
 - [ ] Evaluate established ATS adapters/libraries before building additional board-specific scrapers; prototype reuse of ats-scrapers patterns where licensing/dependencies fit Raven.
 - [ ] Add direct ATS adapters for Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable, iCIMS, Oracle, SuccessFactors, ADP, BambooHR, Personio, Recruitee, Breezy, and Teamtailor, prioritized by coverage and reliability.
 - [ ] Add generic schema.org/JobPosting JSON-LD extraction for unsupported employer career pages.
