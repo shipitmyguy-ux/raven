@@ -109,11 +109,19 @@ test("shared lifecycle transitions schedule follow-up and handle post-applicatio
   await expect.poll(()=>api.getJob().status).toBe("Applied");
   await expect.poll(()=>String(api.getJob().followUp||"")).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   await expect(page.locator(".next-action")).toContainText(/Follow up/);
+  await expect(page.locator("[data-follow-up-date]")).toHaveValue(String(api.getJob().followUp));
+
+  const customFollowUp="2026-10-15";
+  await page.locator("[data-follow-up-date]").fill(customFollowUp);
+  await page.locator("[data-follow-up-date]").dispatchEvent("change");
+  await expect.poll(()=>api.getJob().followUp).toBe(customFollowUp);
 
   await page.locator("[data-lifecycle-status]").selectOption("Interview");
   await expect.poll(()=>api.getJob().status).toBe("Interview");
   expect(api.getJob().followUp).toBeNull();
   await expect(page.locator(".next-action")).toHaveCount(0);
+  await expect(page.locator("[data-approved-apply]")).toHaveCount(0);
+  await expect(page.getByRole("button",{name:"Mark as applied"})).toHaveCount(0);
 
   await page.locator("[data-lifecycle-status]").selectOption("Rejected");
   await expect.poll(()=>api.getJob().status).toBe("Rejected");
