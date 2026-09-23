@@ -81,6 +81,14 @@ Still requires real employer-site verification:
 - Durable Raven backups now include lifecycle events and application snapshots.
 - `raven-backend-v3` production v40 contains the shared transition, event, snapshot, signal, and analytics endpoints.
 
+## Evidence coverage and outcome learning
+- Expanded saved jobs now show deterministic verified-evidence coverage rather than a user-facing opaque fit score.
+- Posting requirement candidates are compared only against the canonical skills/fact catalog and reported as supported, partial, or missing evidence; missing evidence is never rewritten into a qualification.
+- Outcome analytics now include stable submitted-resume variants derived from the immutable application snapshot, in addition to source and track.
+- Search ranking scores remain internal discovery signals and are not presented as candidate-quality judgments.
+- Responsive regression coverage now exercises mobile, tablet, laptop, and desktop widths.
+- Production `raven-backend-v3` v41 includes the evidence-coverage and resume-variant analytics endpoints.
+
 ## Backup / recovery
 - `npm run backup:raven` creates the durable Supabase snapshot.
 - `npm run backup:raven -- --scope=full` includes operational/audit history.
