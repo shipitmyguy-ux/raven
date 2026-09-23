@@ -61,3 +61,68 @@ External adapters may submit raw message text through the shared signal endpoint
 ```
 
 Raven classifies the message server-side. Only the matched evidence excerpt and classifier reason are persisted in event metadata; adapters do not need to create a separate Gmail-specific status system.
+
+
+## Interview classification
+
+High-confidence interview signals describe an actual invitation or scheduling step, for example:
+
+- invite you to interview
+- would like to schedule an interview
+- choose/select an interview time
+- schedule a phone screen or screening call
+- meet or speak with the hiring manager as the next hiring step
+- invite you to a second/final interview
+
+Public interview templates use the same structure: the employer states interest in the application, explicitly asks to schedule an interview, identifies the interviewer, and often supplies time slots.
+
+### Synthetic soft-interview example
+
+> We enjoyed learning more about your background and would like to continue the conversation with our operations team. Could you choose one of the available times next week to meet with the hiring manager and discuss the Project Coordinator role?
+
+Expected Raven classification:
+- type: interview
+- confidence: high
+
+### Interview negative control
+
+This is **not** an interview invitation:
+
+> We received your application and will be in touch to schedule an interview if your background matches what we're looking for.
+
+That language describes a future possibility, not an actual advancement decision.
+
+## Offer classification
+
+High-confidence offer signals include:
+
+- pleased/excited/delighted to offer you the position
+- formally offer you the role
+- official/formal offer letter
+- accept or decline this offer
+- compensation/start-date terms presented as an employment offer
+
+Observed real example:
+- Wencor Group / SoundAir: “pleased to offer you” the Technician I position and provided an official offer letter for signature.
+
+Public offer templates use the same semantic family: a direct statement that the candidate is being offered the job, followed by terms such as title, compensation, start date, and acceptance instructions.
+
+### Synthetic soft-offer example
+
+> The team was impressed with your background and would be happy to welcome you as our Implementation Coordinator. We have prepared the employment details, including compensation and a proposed October 12 start date, for your review. Please let us know whether you would like to move forward with joining the team.
+
+Expected Raven classification:
+- type: offer
+- confidence: high
+
+### Offer negative controls
+
+These are **not** offers by themselves:
+
+- we think you would be a great fit
+- we would like to discuss compensation
+- we are preparing next steps
+- we hope you will join us someday
+- recruiter marketing saying a company “may want to hire you”
+
+The classifier requires an actual employment-offer decision or clear offer-document/acceptance language.
