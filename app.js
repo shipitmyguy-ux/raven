@@ -866,9 +866,9 @@
           const rawStatus=String(job.status||"Saved");
           const meaningfulStatus=!/^(saved|discovered)$/i.test(rawStatus);
           const statusLabel=rawStatus.toLowerCase()==="interested"?"Bookmarked":rawStatus;
-          const attentionIndicator=!viewed
-            ? '<span class="job-status is-new-status">New</span>'
-            : (meaningfulStatus?'<span class="job-status">'+escapeHtml(statusLabel)+'</span>':'');
+          const attentionIndicator=meaningfulStatus
+            ? '<span class="job-status">'+escapeHtml(statusLabel)+'</span>'
+            : '';
           const isIgnored=rawStatus.toLowerCase()==="ignored";
           const isBookmarked=rawStatus.toLowerCase()==="interested";
           const bookmarkStar=/^(applied|ignored)$/i.test(rawStatus) ? "" :
