@@ -2,7 +2,7 @@ import type { Track, Candidate } from "./types.ts";
 import { CORS, TRACKS } from "./config.ts";
 import { json, normalizeUrl, recoverCompanyFromUrl, analyzeCanonicalIdentity } from "./utils.ts";
 import { quickSearch, maybeStartDeep } from "./search.ts";
-import { listResults, listJobs, addJob, updateJob, listTasksForHealth, getJobById, getJobByUrl, addJobEvent, listJobEvents, listAllJobEvents, ensureJobSnapshot, listJobSnapshots } from "./db.ts";
+import { listResults, listJobs, addJob, updateJob, listTasksForHealth, getJobById, getJobByUrl, addJobEvent, listJobEvents, listAllJobEvents, ensureJobSnapshot, listJobSnapshots, getCanonicalProfile, listAllJobSnapshots } from "./db.ts";
 import { requestGuard, requestFinish } from "./request-budget.ts";
 import { enrichCandidate } from "./enrich.ts";
 
@@ -82,8 +82,81 @@ async function matchSignalJob(body:any){
   }
   return null;
 }
+
+const COVERAGE_STOPWORDS=new Set([
+  "the","and","for","with","that","this","from","your","you","our","are","will","have","has","into","about","their","they","who","but","not","all","any","can","job","role","work","team","years","experience","skills","using","use","strong","ability","required","preferred","responsibilities","responsibility","qualification","qualifications","including","within","across","support","supporting","must","should","would","plus"
+]);
+function coverageTokens(value:any){
+  return (String(value||"").toLowerCase().match(/[a-z][a-z0-9+#./-]{2,}/g)||[])
+    .filter((word:string)=>!COVERAGE_STOPWORDS.has(word));
+}
+function requirementCandidates(description:string){
+  const clean=String(description||"").replace(/\r/g,"\n").replace(/[•●▪◦]/g,"\n- ");
+  const parts=clean.split(/\n+|(?<=[.!?])\s+/)
+    .map(x=>x.replace(/^[-*–—]\s*/,"").trim())
+    .filter(x=>x.length>=24&&x.length<=420);
+  const marked=parts.filter(x=>/\b(required|requirements?|must|need(?:ed)?|proficien|knowledge|ability|skills?|experience|preferred|responsib|qualif|familiar|expertise)\b/i.test(x));
+  const pool=(marked.length>=4?marked:parts).slice(0,24);
+  const unique:string[]=[];
+  const seen=new Set<string>();
+  for(const item of pool){
+    const key=item.toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+    if(!key||seen.has(key)) continue;
+    seen.add(key); unique.push(item);
+    if(unique.length>=12) break;
+  }
+  return unique;
+}
+function canonicalEvidence(profile:any){
+  const rows:any[]=[];
+  for(const skill of profile?.skills||[]) rows.push({id:"skill:"+String(skill),text:String(skill),kind:"skill"});
+  for(const fact of profile?.transferable_facts||[]) rows.push({id:String(fact.id||""),text:String(fact.text||""),kind:"transferable"});
+  for(const exp of profile?.experience||[]){
+    for(const fact of exp?.facts||[]) rows.push({id:String(fact.id||""),text:String(fact.text||""),kind:"experience",role:String(exp.role||""),company:String(exp.company||"")});
+  }
+  return rows.filter(x=>x.text);
+}
+function evidenceCoverage(job:any,profile:any){
+  const requirements=requirementCandidates(String(job?.notes||""));
+  const evidence=canonicalEvidence(profile).map((item:any)=>({...item,tokens:new Set(coverageTokens(item.text)),lower:item.text.toLowerCase()}));
+  const skills=(profile?.skills||[]).map((x:any)=>String(x)).filter(Boolean);
+  const analyzed=requirements.map((text:string)=>{
+    const tokens=[...new Set(coverageTokens(text))];
+    const lower=text.toLowerCase();
+    const exactSkills=skills.filter((skill:string)=>skill.length>=3&&lower.includes(skill.toLowerCase()));
+    const ranked=evidence.map((item:any)=>{
+      let overlap=0;
+      for(const token of tokens) if(item.tokens.has(token)) overlap++;
+      const phrase=exactSkills.some((skill:string)=>item.lower.includes(skill.toLowerCase()));
+      return {item,overlap,phrase,score:overlap+(phrase?3:0)};
+    }).filter((x:any)=>x.score>0).sort((a:any,b:any)=>b.score-a.score).slice(0,3);
+    const max=ranked[0]?.score||0;
+    const state=max>=3?"supported":max===2?"partial":"missing";
+    return {
+      requirement:text.slice(0,360),
+      status:state,
+      evidence:ranked.filter((x:any)=>x.score>=2||x.phrase).map((x:any)=>({id:x.item.id,text:x.item.text,kind:x.item.kind})).slice(0,2)
+    };
+  });
+  const supported=analyzed.filter((x:any)=>x.status==="supported").length;
+  const partial=analyzed.filter((x:any)=>x.status==="partial").length;
+  const missing=analyzed.filter((x:any)=>x.status==="missing").length;
+  return {
+    total:analyzed.length,supported,partial,missing,
+    supported_ratio:analyzed.length?supported/analyzed.length:0,
+    requirements:analyzed
+  };
+}
+function contentVariant(value:any){
+  const text=String(value||"");
+  if(!text) return "";
+  let hash=2166136261;
+  for(let i=0;i<text.length;i++){hash^=text.charCodeAt(i);hash=Math.imul(hash,16777619);}
+  return "v-"+(hash>>>0).toString(36);
+}
+
 async function buildAnalytics(){
-  const [jobs,events]=await Promise.all([listJobs(),listAllJobEvents()]);
+  const [jobs,events,snapshots]=await Promise.all([listJobs(),listAllJobEvents(),listAllJobSnapshots()]);
   const byJob=new Map<string,any[]>();
   for(const event of events){
     const id=String(event.job_id||"");
@@ -97,6 +170,12 @@ async function buildAnalytics(){
   const responseDays:number[]=[];
   const source:any={};
   const track:any={};
+  const resumeVariant:any={};
+  const latestSnapshotByJob=new Map<string,any>();
+  for(const snapshot of snapshots){
+    const id=String(snapshot.job_id||"");
+    if(id&&!latestSnapshotByJob.has(id)) latestSnapshotByJob.set(id,snapshot);
+  }
   for(const job of appliedJobs){
     const id=String(job.id);
     const jobEvents=byJob.get(id)||[];
@@ -110,7 +189,10 @@ async function buildAnalytics(){
     const trackKey=String(job.track||"Unknown")||"Unknown";
     source[sourceKey]=source[sourceKey]||{applications:0,interviews:0,offers:0,rejections:0};
     track[trackKey]=track[trackKey]||{applications:0,interviews:0,offers:0,rejections:0};
-    for(const bucket of [source[sourceKey],track[trackKey]]){
+    const snapshot=latestSnapshotByJob.get(id)?.snapshot||{};
+    const variant=contentVariant(snapshot.resume||job.resume||"");
+    if(variant) resumeVariant[variant]=resumeVariant[variant]||{applications:0,interviews:0,offers:0,rejections:0};
+    for(const bucket of [source[sourceKey],track[trackKey],variant?resumeVariant[variant]:null].filter(Boolean)){
       bucket.applications++;
       if(hasInterview) bucket.interviews++;
       if(hasOffer) bucket.offers++;
@@ -134,7 +216,8 @@ async function buildAnalytics(){
     offer_rate:appliedJobs.length?offerIds.size/appliedJobs.length:0,
     average_response_days:responseDays.length?responseDays.reduce((a,b)=>a+b,0)/responseDays.length:null,
     by_source:decorate(source),
-    by_track:decorate(track)
+    by_track:decorate(track),
+    by_resume_variant:decorate(resumeVariant)
   };
 }
 
@@ -176,7 +259,7 @@ Deno.serve(async(req:Request)=>{
       };
       const categories=tasks.map(classify);
       const counts={total:tasks.length,operationalActive:categories.filter(x=>x==="operational_active").length,activeFailures:categories.filter(x=>x==="operational_failure").length,manualBlocked:categories.filter(x=>x==="manual_blocked").length,historicalLegacy:categories.filter(x=>x==="historical_legacy").length,disposableTest:categories.filter(x=>x==="disposable_test").length};
-      return json({ok:true,status:counts.activeFailures?"degraded":"healthy",healthy:counts.activeFailures===0,counts,service:"raven-backend-v3",version:1,features:["quick-search","deep-search","descriptions","persistence","commute","jobicy","himalayas","ats-wide","lifecycle-events","posting-snapshots","application-signals","outcome-analytics"]});
+      return json({ok:true,status:counts.activeFailures?"degraded":"healthy",healthy:counts.activeFailures===0,counts,service:"raven-backend-v3",version:1,features:["quick-search","deep-search","descriptions","persistence","commute","jobicy","himalayas","ats-wide","lifecycle-events","posting-snapshots","application-signals","outcome-analytics","evidence-coverage"]});
     }
 
     if(action==="jobs"){
@@ -335,6 +418,15 @@ Deno.serve(async(req:Request)=>{
         metadata
       });
       return json({ok:true,matched:true,auto_applied:false,suggested_status:target||null,job,event});
+    }
+
+    if(action==="coverage"){
+      const id=String(body.id||body.jobId||u.searchParams.get("jobId")||"");
+      if(!id) return json({error:"jobId required"},400);
+      const [job,profile]=await Promise.all([getJobById(id),getCanonicalProfile()]);
+      if(!job) return json({error:"Job not found"},404);
+      if(!profile) return json({error:"Canonical profile unavailable"},503);
+      return json({ok:true,coverage:evidenceCoverage(job,profile)});
     }
 
     if(action==="analytics"){
