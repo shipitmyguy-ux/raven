@@ -45,7 +45,9 @@ const STRONG_OFFER_PATTERNS=[
 ];
 
 const APPLICATION_RECEIVED_PATTERNS=[
-  /\b(?:we(?:'ve| have)|your application has been) received your application\b/i,
+  /\bwe (?:received|have received) your application\b/i,
+  /\bwe've received your application\b/i,
+  /\byour application has been received\b/i,
   /\bapplication (?:has been )?received\b/i,
   /\bapplication submitted\b/i
 ];
