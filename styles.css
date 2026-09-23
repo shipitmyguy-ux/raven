@@ -2215,3 +2215,98 @@ body.options-open > :not(main):not(.options-dialog) {
 .control-events-feed{max-height:180px;overflow:auto}
 .control-json-view{margin:0;max-height:220px;overflow:auto;padding:9px;border:1px solid var(--panel-border,rgba(255,255,255,.14));border-radius:8px;background:rgba(0,0,0,.18);font-size:.64rem;white-space:pre-wrap;overflow-wrap:anywhere}
 @media (max-width:600px){.control-action-row{align-items:stretch;flex-direction:column}.control-action-row input[type="number"]{width:100%}}
+
+
+/* UI overlap QA: reserve action space, wrap long labels, and mark new jobs without text */
+.job-card.is-new {
+  border-left: 1px solid var(--border-color);
+  background:
+    linear-gradient(270deg, rgba(212, 175, 55, .24) 0%, rgba(212, 175, 55, .10) 24%, rgba(212, 175, 55, 0) 62%),
+    var(--surface);
+}
+
+.job-card.is-new.is-remote {
+  background:
+    linear-gradient(270deg, rgba(212, 175, 55, .24) 0%, rgba(212, 175, 55, .10) 24%, rgba(212, 175, 55, 0) 62%),
+    linear-gradient(135deg, rgba(255,255,255,.055), rgba(255,255,255,.015)),
+    var(--surface);
+}
+
+.job-card.is-new:hover {
+  background:
+    linear-gradient(270deg, rgba(212, 175, 55, .28) 0%, rgba(212, 175, 55, .12) 24%, rgba(212, 175, 55, 0) 62%),
+    var(--surface-hover);
+}
+
+.job-card.is-new.active {
+  background:
+    linear-gradient(270deg, rgba(212, 175, 55, .28) 0%, rgba(212, 175, 55, .12) 24%, rgba(212, 175, 55, 0) 62%),
+    #202020;
+}
+
+.card-main {
+  min-width: 0;
+  padding-right: 38px;
+}
+
+.job-title,
+.company-name,
+.job-location,
+.job-salary,
+.job-age,
+.job-summary,
+.job-status,
+.workflow-action span,
+.options-category span,
+.control-item,
+.control-event-item {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.job-status {
+  max-width: calc(100% - 76px);
+  white-space: normal;
+  text-align: right;
+}
+
+.topbar-actions #syncStatus {
+  min-width: 0;
+  max-width: min(48vw, 520px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workflow-actions .workflow-action {
+  min-width: 0;
+}
+
+.workflow-actions .workflow-action span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .topbar h1 {
+    flex: 0 0 auto;
+  }
+
+  .topbar-actions {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .topbar-actions #syncStatus {
+    max-width: none;
+  }
+
+  .card-main {
+    padding-right: 36px;
+  }
+
+  .job-status {
+    max-width: calc(100% - 72px);
+  }
+}
