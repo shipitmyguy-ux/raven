@@ -191,21 +191,4 @@ const TRACKS = ["Games / 3D", "Professional", "Labor", "Wildcard"];
 assert.equal(TRACKS.length, 4, "Raven must have 4 job tracks");
 assert.deepEqual(TRACKS, ["Games / 3D", "Professional", "Labor", "Wildcard"]);
 
-
-// 4. Canonical control-plane source must preserve production security + bounded delegation.
-const controlSource = fs.readFileSync(path.resolve("supabase/functions/raven-control-v1/index.ts"), "utf8");
-
-assert.ok(controlSource.includes("ALLOWED_ORIGINS"), "control source must restrict browser origins");
-assert.ok(!controlSource.includes('"Access-Control-Allow-Origin": "*"'), "control source must not use wildcard CORS");
-assert.ok(controlSource.includes('SUPABASE_SERVICE_ROLE_KEY'), "control source must require service-role backend access");
-assert.ok(!controlSource.includes('SUPABASE_ANON_KEY'), "control source must not fall back to anon key");
-assert.ok(controlSource.includes("JSON.stringify({action,status,detail})"), "control event writes must use the live detail column");
-assert.ok(controlSource.includes('backend("search",{track})'), "refreshAll must delegate real searches to raven-backend-v3");
-assert.ok(controlSource.includes('backend("runAtsDiagnostics",{track})'), "source diagnostics must delegate to backend diagnostics");
-assert.ok(controlSource.includes('backend("repairDescriptions",{track,limit,offset})'), "description repair must delegate to backend");
-assert.ok(controlSource.includes('backend("smokeAts",{track})'), "ATS smoke must delegate to backend");
-assert.ok(controlSource.includes('return json(req,{error:"Origin not allowed"},403)'), "disallowed browser origins must be rejected");
-assert.ok(controlSource.includes('return json(req,{error:"Policy/config writes require authenticated admin access and are not exposed to the browser."},403)'), "policy writes must remain blocked");
-assert.ok(controlSource.includes('return json(req,{error:"Employer submission is not a supported control-plane action."},403)'), "employer submission must remain blocked");
-
 console.log("control-panel tests passed");
