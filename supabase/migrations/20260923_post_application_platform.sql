@@ -38,7 +38,7 @@ create index if not exists raven_job_snapshots_job_time_idx
 alter table public.raven_job_events enable row level security;
 alter table public.raven_job_snapshots enable row level security;
 
-revoke all on table public.raven_job_events from anon, authenticated;
-revoke all on table public.raven_job_snapshots from anon, authenticated;
+revoke all on table public.raven_job_events from anon, authenticated, service_role;
+revoke all on table public.raven_job_snapshots from anon, authenticated, service_role;
 grant select, insert, update, delete on table public.raven_job_events to service_role;
 grant select, insert, delete on table public.raven_job_snapshots to service_role;
