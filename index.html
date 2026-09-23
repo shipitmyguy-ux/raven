@@ -55,6 +55,9 @@
 
         <div class="options-viewport">
           <section id="optionsHome" class="options-screen options-home" aria-label="Option categories">
+            <button type="button" class="options-category" data-options-target="control-panel">
+              <span>Control panel</span><span aria-hidden="true">›</span>
+            </button>
             <button type="button" class="options-category" data-options-target="master-resumes">
               <span>Master resumes</span><span aria-hidden="true">›</span>
             </button>
@@ -77,6 +80,51 @@
               <button id="optionsBackButton" class="options-back" type="button" aria-label="Back to option categories" title="Back">←</button>
               <h3 id="optionsCardTitle">Options</h3>
             </header>
+
+            <div class="options-card-panel control-panel-panel" data-options-panel="control-panel" hidden>
+              <p class="options-help">Live Raven backend status and bounded maintenance actions.</p>
+              <section class="control-section">
+                <h4>System</h4>
+                <div class="control-grid-metrics">
+                  <div class="control-metric"><span>Service</span><strong id="controlMetricService">raven-control-v1</strong></div>
+                  <div class="control-metric"><span>Jobs</span><strong id="controlMetricJobs">—</strong></div>
+                  <div class="control-metric"><span>Short descriptions</span><strong id="controlMetricShort">—</strong></div>
+                  <div class="control-metric"><span>Current task failures</span><strong id="controlMetricFailures">—</strong></div>
+                </div>
+              </section>
+              <section class="control-section">
+                <h4>Actions</h4>
+                <div class="control-actions-grid">
+                  <button id="ctrlRefreshAllButton" type="button">Refresh all tracks</button>
+                  <div class="control-action-row">
+                    <select id="ctrlSourceTrack"><option value="all">All tracks</option><option>Professional</option><option>Labor</option><option>Wildcard</option><option>Games / 3D</option></select>
+                    <button id="ctrlRunSourceDiagnosticsButton" type="button">Run source diagnostics</button>
+                  </div>
+                  <div class="control-action-row">
+                    <select id="ctrlRepairTrack"><option value="">All tracks</option><option>Professional</option><option>Labor</option><option>Wildcard</option><option>Games / 3D</option></select>
+                    <input id="ctrlRepairLimit" type="number" min="1" max="8" value="6" aria-label="Repair limit">
+                    <button id="ctrlRepairDescriptionsButton" type="button">Repair descriptions</button>
+                  </div>
+                  <div class="control-action-row">
+                    <select id="ctrlSmokeTrack"><option>Professional</option><option>Labor</option><option>Wildcard</option><option>Games / 3D</option></select>
+                    <button id="ctrlSmokeAtsButton" type="button">ATS smoke test</button>
+                  </div>
+                </div>
+              </section>
+              <section class="control-section">
+                <h4>Latest source diagnostics</h4>
+                <div id="controlSourceDiagnosticsList" class="control-list-compact"><p class="options-help">Open the panel to load.</p></div>
+              </section>
+              <section class="control-section">
+                <h4>Recent control events</h4>
+                <div id="controlEventsFeed" class="control-events-feed"><p class="options-help">Open the panel to load.</p></div>
+              </section>
+              <section class="control-section">
+                <h4>Policies</h4>
+                <p class="options-help">Policy/config writes and employer submission remain blocked from the browser.</p>
+                <pre id="controlPolicyView" class="control-json-view">Loading…</pre>
+              </section>
+            </div>
 
             <div class="options-card-panel master-resumes-panel" data-options-panel="master-resumes" hidden>
               <p class="options-help">Add one or more source resumes, then assign each to the tracks it should drive.</p>
@@ -229,9 +277,9 @@
   </main>
 
   <script src="./snapshot.js?v=20260918-0518"></script>
-  <script src="./config.js?v=7"></script>
+  <script src="./config.js?v=8"></script>
   <script src="./raven-core.js?v=3"></script>
-  <script src="./raven-api.js?v=7"></script>
-  <script src="./app.js?v=35"></script>
+  <script src="./raven-api.js?v=8"></script>
+  <script src="./app.js?v=36"></script>
 </body>
 </html>
