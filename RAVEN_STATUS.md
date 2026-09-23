@@ -3,92 +3,78 @@
 Last normalized: 2026-09-23
 
 ## Scope
-Raven is a web-based job application tracker and application-assistant project.
-iOS and Android work are currently excluded.
-Final employer submission remains manual and requires user review.
+Raven is a web-based job application tracker and application-assistant project. iOS and Android work are excluded. Final employer submission remains manual and requires user review.
 
 ## Canonical systems
 - Code/project state: GitHub `shipitmyguy-ux/raven`
 - Live application/job data: Supabase
 - Public UI/runtime defaults: `runtime-config.json`
 - Job-search defaults: `job-search-config.json`
-- Portable backup/recovery: private checksum-verified JSON snapshots via `scripts/export-raven.mjs` / `scripts/restore-raven.mjs`
+- Portable backup/recovery: checksum-verified JSON via `scripts/export-raven.mjs` / `scripts/restore-raven.mjs`
+- Device-local recovery: Raven Options -> Device backup
 - Google Sheets: retired
+
+## Active production services
+- `raven-backend-v3`: ACTIVE v39
+- `raven-enrich-v1`: ACTIVE v6
+- `raven-commute-v1`: ACTIVE v5
+- `raven-generate-v1`: ACTIVE v18
+- `raven-generate-v2`: ACTIVE v8
+- `raven-cover-v2`: ACTIVE v7
+- `raven-control-v1`: ACTIVE v2
+- `raven-bookmark-v1`: ACTIVE v2
 
 ## Verified production baseline
 - GitHub `main` is canonical source.
 - Supabase is the single live Raven data source.
-- Saved-job read/add/update and search all use `raven-backend-v3`.
-- High-confidence company recovery and canonical identity strategy are active in `raven-core.js` and `raven-backend-v3`.
-- `raven-backend-v3` is ACTIVE at version 33.
-- `raven-enrich-v1` is ACTIVE at version 5.
-- `raven-commute-v1` is ACTIVE at version 4.
-- `raven-generate-v1` is ACTIVE at version 15.
-- Legacy data/search/queue/Sheets endpoints are retired or inert.
-- Tabs are view filters; Refresh all jobs refreshes every category through one shared search/parse pipeline.
-- Request budgets and circuit breakers protect search and Gemini.
-- Portable backup/restore tooling is committed and covered by checksum, tamper, dry-run, and destructive-restore guard tests.
+- Saved-job read/add/update and search use `raven-backend-v3`.
+- Tabs are filters; refresh searches all four tracks through one shared path.
+- Quick refresh is resource-bounded and preserves cached results during transient provider droughts.
+- Deep search is resource-bounded; stale background runs are automatically closed.
+- Latest production deep pass completed on all four tracks: Professional 67, Labor 78, Wildcard 48, Games / 3D 9.
+- Backend health reports healthy: 18 tracked tasks, 0 active failures, 2 expected manual blockers, 14 historical/legacy records.
+- A disposable production persistence QA job verified add -> status/document update -> fresh jobs read; the QA row was removed afterward.
+- Generator acceptance: resume + cover letter across all four tracks returned 8/8 HTTP 200 responses using canonical fact selection.
+- Generation budget/rate-limit behavior is verified.
+- The repository secret scan, core regressions, targeted browser tests, and latest production smoke all pass.
+- Production smoke runs automatically on each main push and after successful Pages deployment.
+- Current malformed ATS saved/search-result counts are zero.
 
-## Application Assistant state
+## Description/source quality
+- Saved-job description audit is complete.
+- Seven previously blank Lever postings were repaired through Lever's public posting-detail API and now contain multi-thousand-character descriptions.
+- One saved Twin Atlas Environment Artist row remains short because the public careers page exposes the opening and location but no detailed job description.
+- LinkedIn guest-page, Lever API, schema.org/JobPosting, visible-content, and metadata enrichment paths are available.
+- Source diagnostics are stored in `raven_source_diagnostics` and surfaced through the control plane.
+
+## Application Assistant
 Implemented and browser-regression tested:
-- exact resume and cover-letter approval gating,
+- exact resume/cover-letter approval gating,
 - regeneration/revision invalidates approval,
-- Application Profile contact/address fields,
-- local Answer Memory UI for reusable non-sensitive answers,
+- Application Profile and reusable non-sensitive Answer Memory,
 - sensitive/legal/demographic/attestation/salary/sponsorship/CAPTCHA/assessment blocking,
 - host-scoped, single-use, expiring application packets,
-- initial Greenhouse, Lever, Ashby, Workday, iCIMS, Taleo, and generic adapter rules,
-- conservative application-completion handoff,
+- Greenhouse, Lever, Ashby, Workday, iCIMS, Taleo, and generic adapter rules,
+- conservative completion handoff,
 - final employer submission remains manual.
 
 Still requires real employer-site verification:
-- approved resume/cover-letter file attachment behavior,
-- adapter selectors across current ATS variants,
+- approved resume/cover-letter attachment on current employer forms,
+- adapter selectors against current live variants,
 - completion detection on real confirmation pages,
-- full frontend -> generation -> persistence -> application-assistant smoke flow.
-
-## ATS ingestion repair
-Root cause of the Greenhouse overflow-card bug was CSV record framing: quoted multiline job descriptions were split on raw newlines before CSV quoting was respected.
-
-Production safeguards now:
-- quoted multiline ATS CSV records are parsed as one record,
-- ATS candidates require a normal single-line title and HTTP(S) URL,
-- the frontend rejects malformed ATS rows before rendering,
-- regression coverage includes a multiline Greenhouse-style description.
-
-Observed before the fix:
-- `raven_jobs`: 81 Greenhouse rows; 68 had non-HTTP URLs and were malformed.
-- `raven_search_results`: 83 Greenhouse rows; 69 had non-HTTP URLs and were malformed.
-- valid Greenhouse rows were distinguishable by normal HTTP(S) job URLs.
-
-The malformed ATS rows were subsequently cleaned from production; current malformed ATS job/search-result counts are zero, and persistence guards prevent recurrence.
-
-## Company recovery & Canonical identity
-Implemented high-confidence company-recovery and canonical posting deduplication:
-- Safe URL recovery (`recoverCompanyFromUrl`) extracts employer names from LinkedIn `-at-` slugs (e.g., Cloud Chamber, Swaybox Studios, CD Projekt Red, Epic Games, Eleventh Hour Games, Comploy, CBIZ, DealerBuilt) and ATS URLs (Greenhouse, Lever, Ashby, SmartRecruiters, Workday, Workable, iCIMS, Taleo, etc.).
-- Never overwrites existing nonblank company values; leaves ambiguous URLs (such as numeric LinkedIn URLs without `-at-`) blank when evidence is absent.
-- Canonical posting identity (`getCanonicalIdentity`) uses provider posting keys (e.g. `linkedin:{id}`, `greenhouse:{board}:{id}`, `lever:{company}:{id}`) to distinguish exact duplicates from same-title/company distinct postings (such as 1840&Company's 7 Lever URLs or EmotaInizioEngage's 3 Greenhouse URLs).
-- Diagnostic reporting (`analyzeCanonicalIdentity` & `diagnoseCanonicalIdentity`) and idempotent backfill (`recoverMissingCompanies`) provided in `raven-backend-v3`.
-
-## Highest-priority unfinished work
-1. Run real-site Application Assistant tests on Greenhouse, Lever, and Ashby, then Workday/iCIMS/Taleo where practical.
-2. Verify approved document upload on employer file inputs without changing the approved version.
-3. Run full frontend/generation/persistence/application-assistant smoke tests.
-4. Audit job-description completeness and canonical-source resolution across every Raven tab.
-5. Verify quick/deep search persistence, deduplication, and source health end to end.
-6. Review repository for accidentally committed secrets.
-7. Define recovery for device-local master resumes/profile/answer-memory data if those must survive device loss.
+- extension import on current LinkedIn/Indeed/Glassdoor/Monster and representative ATS pages.
 
 ## Backup / recovery
-- `npm run backup:raven` creates a core durable-data snapshot.
-- `npm run backup:raven -- --scope=full` captures operational/audit history as well.
-- Exports include per-table and whole-payload SHA-256 checksums.
-- Restore defaults to dry-run.
-- Destructive replace requires both `--apply --replace` and `RAVEN_RESTORE_CONFIRM=RESTORE_RAVEN`.
-- Audit identity tables are exported for reference but intentionally not replayed.
-- Full procedure: `docs/BACKUP_RESTORE.md`.
+- `npm run backup:raven` creates the durable Supabase snapshot.
+- `npm run backup:raven -- --scope=full` includes operational/audit history.
+- Exports contain per-table and whole-payload SHA-256 checksums.
+- Restore defaults to dry-run; destructive replace is explicitly confirmation-gated.
+- `docs/BACKUP_RESTORE.md` documents the procedure.
+- Device backup/restore exports/restores the relevant localStorage state plus local master-resume files stored in IndexedDB.
 
-## Important verification boundary
-A feature is not considered complete merely because code is deployed or a request is queued.
-For document generation, successful verification still requires a real generated output attached to the correct job and surviving refresh.
-For employer application assistance, final submission is never automated.
+## Remaining closeout blockers
+1. Human-visible live Raven UI generation -> review -> browser refresh on a real saved job, confirming the freshly generated documents remain attached to the intended job.
+2. Real employer-site Application Assistant/extension verification, including file inputs and completion detection.
+3. Decide whether Google Drive persistence for generated documents is desired; current Raven document persistence does not require Drive.
+
+Everything else still listed in `TASKS.md` is either a continuing quality improvement or future product expansion rather than a current runtime/merge blocker.
