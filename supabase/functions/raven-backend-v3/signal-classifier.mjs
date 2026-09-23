@@ -18,6 +18,12 @@ export const STRONG_REJECTION_PATTERNS=[
   {re:/\bmoving ahead with applicant(?:s)? whose (?:background|experience|qualifications|skills)[\s\S]{0,120}\b(?:more closely )?(?:align|match)\b/i,reason:"moving-ahead-closer-aligned-applicants"}
 ];
 
+const CONDITIONAL_INTERVIEW_PATTERNS=[
+  /\b(?:we(?:'ll| will)|we may|we might) (?:be in touch to )?(?:schedule|arrange|set up) (?:an? )?interview\b[\s\S]{0,120}\bif\b/i,
+  /\bif (?:your|the) (?:background|experience|qualifications|skills)[\s\S]{0,120}\b(?:match|align|meet)\b[\s\S]{0,120}\b(?:schedule|invite|contact)\b/i,
+  /\bif selected\b[\s\S]{0,120}\b(?:interview|contact|next step)\b/i
+];
+
 const STRONG_INTERVIEW_PATTERNS=[
   {re:/\b(?:would|we'd|we would) like to (?:invite you to|schedule) (?:an? )?interview\b/i,reason:"explicit-interview-invitation"},
   {re:/\binvite you to (?:a|an|the|our) (?:first|second|final|virtual|phone|video|onsite|on-site )?interview\b/i,reason:"invite-to-interview"},
@@ -69,7 +75,8 @@ export function classifyApplicationMessage(text){
       };
     }
   }
-  for(const pattern of STRONG_INTERVIEW_PATTERNS){
+  const conditionalInterview=CONDITIONAL_INTERVIEW_PATTERNS.some(pattern=>pattern.test(normalized));
+  if(!conditionalInterview) for(const pattern of STRONG_INTERVIEW_PATTERNS){
     const match=normalized.match(pattern.re);
     if(match){
       return {
