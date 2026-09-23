@@ -2310,3 +2310,62 @@ body.options-open > :not(main):not(.options-dialog) {
     max-width: calc(100% - 72px);
   }
 }
+
+
+/* Shared post-application lifecycle controls */
+.job-lifecycle-row {
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:10px;
+  min-width:0;
+}
+
+.lifecycle-control {
+  display:grid;
+  gap:4px;
+  min-width:0;
+  width:min(220px,100%);
+}
+
+.lifecycle-control > span {
+  color:var(--text-muted);
+  font-size:.66rem;
+}
+
+.lifecycle-control select {
+  width:100%;
+  min-width:0;
+  min-height:34px;
+  height:34px;
+  padding:3px 28px 3px 8px;
+  font-size:.72rem;
+}
+
+.next-action {
+  min-width:0;
+  padding:5px 8px;
+  color:var(--warning);
+  background:rgba(255,216,74,.08);
+  border:1px solid rgba(255,216,74,.24);
+  border-radius:var(--radius-sm);
+  font-size:.68rem;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+  text-align:right;
+}
+
+@media (max-width:480px) {
+  .job-lifecycle-row {
+    align-items:stretch;
+    flex-direction:column;
+  }
+
+  .lifecycle-control {
+    width:100%;
+  }
+
+  .next-action {
+    text-align:left;
+  }
+}
