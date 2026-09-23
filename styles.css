@@ -2525,3 +2525,16 @@ body.options-open > :not(main):not(.options-dialog) {
     white-space:normal;
   }
 }
+
+
+.activity-suggestion {
+  justify-self:start;
+  width:max-content;
+  min-height:28px;
+  margin-top:3px;
+  padding:3px 7px;
+  font-size:.64rem;
+  color:var(--warning);
+  background:rgba(255,216,74,.07);
+  border-color:rgba(255,216,74,.24);
+}
