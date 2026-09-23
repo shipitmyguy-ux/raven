@@ -16,6 +16,7 @@ on:
       - "extension/**"
       - "supabase/functions/raven-backend-v3/**"
       - "supabase/functions/raven-generate-v1/**"
+      - "supabase/functions/raven-generate-v2/**"
       - ".github/workflows/test.yml"
   push:
     branches: ["main", "refactor/reusable-core"]
@@ -33,6 +34,7 @@ on:
       - "extension/**"
       - "supabase/functions/raven-backend-v3/**"
       - "supabase/functions/raven-generate-v1/**"
+      - "supabase/functions/raven-generate-v2/**"
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -70,6 +72,7 @@ jobs:
           node tests/final-closeout.test.mjs
           node tests/task-health-current.test.mjs
           node tests/generator-consolidation-v2.test.mjs
+          node tests/resume-quality-v3.test.mjs
           node tests/control-panel.test.mjs
           node tests/canonical-identity.test.mjs
           node tests/backup-contract.test.mjs
