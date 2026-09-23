@@ -67,9 +67,13 @@ function resumePhrase(text:string){
   const value=clean(text,320).replace(/^Has\s+/i,"").replace(/\.$/,"");
   return value ? value.charAt(0).toUpperCase()+value.slice(1) : "";
 }
+function summaryPhrase(text:string){
+  const value=resumePhrase(text);
+  return value ? value.charAt(0).toLowerCase()+value.slice(1) : "";
+}
 function supportedSummary(track:string,skills:string[],transferable:string[],experienceIds:Set<string>){
   const strengths=naturalList(skills.slice(0,6));
-  const evidence=transferable.slice(0,2).map(resumePhrase).filter(Boolean);
+  const evidence=transferable.slice(0,2).map(summaryPhrase).filter(Boolean);
   let lead="Operations & training professional";
   if(track==="Games / 3D") lead="Environment art professional";
   else if(track==="Labor") lead=experienceIds.has("exp_soundair")?"Maintenance & operations professional with hands-on repair experience":"Maintenance & operations professional";
