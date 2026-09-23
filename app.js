@@ -40,7 +40,7 @@
     MASTER_RESUMES_KEY,APPLICATION_PROFILE_KEY,ANSWER_MEMORY_KEY,GENERATOR_PREFS_KEY,
     USER_SETTINGS_KEY,DOCUMENT_APPROVALS_KEY,VIEWED_JOBS_KEY
   ];
-  const RESUME_TEMPLATE_VERSION="modern-v2";
+  const RESUME_TEMPLATE_VERSION="modern-v3";
   let editingMasterResumeId=null;
   let editingAnswerMemoryKey=null;
 
@@ -1280,7 +1280,7 @@
       '<h2>Core Skills</h2><ul class="skills">'+list(resume.skills)+'</ul>'+
       '<h2>Professional Experience</h2>'+experiences+
       (education?'<h2>Education</h2>'+education:'')+
-      ((resume.additional||[]).length?'<h2>Additional</h2><ul class="additional">'+list(resume.additional)+'</ul>':'')+
+      ((resume.additional||[]).length?'<h2>Career Highlights</h2><ul class="additional">'+list(resume.additional)+'</ul>':'')+
       '</body></html>';
   }
 
