@@ -25,6 +25,13 @@ Raven's core runtime/backend closeout is complete and no longer depends on ChatG
 2. Exercise Application Assistant/extension against live employer pages (Greenhouse/Lever/Ashby first, then Workday/iCIMS/Taleo and aggregator pages) to validate current selectors, approved-file attachment, and conservative completion detection.
 3. Decide whether Raven should additionally write generated documents to Google Drive. Current Raven persistence is independent of Drive.
 
+### Post-application platform
+- Shared lifecycle/event architecture is implemented without ChatGPT Work or Jules.
+- Production `raven-backend-v3` v40 owns lifecycle transitions, events, application snapshots, signal matching, and outcome analytics.
+- Raven UI surfaces activity history, editable follow-up dates, snapshot-backed Interview mode, reviewable signal suggestions, and Outcomes.
+- Durable Supabase backup scope includes `raven_job_events` and `raven_job_snapshots`.
+- Personal email/OAuth is not connected; future email integrations should feed the existing `receiveApplicationSignal` contract rather than creating a new status system.
+
 ### Future roadmap, not closeout blockers
 - Contacts/interviews/follow-ups.
 - Optional email status matching.
