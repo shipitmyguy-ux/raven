@@ -18,6 +18,26 @@ export const STRONG_REJECTION_PATTERNS=[
   {re:/\bmoving ahead with applicant(?:s)? whose (?:background|experience|qualifications|skills)[\s\S]{0,120}\b(?:more closely )?(?:align|match)\b/i,reason:"moving-ahead-closer-aligned-applicants"}
 ];
 
+const STRONG_INTERVIEW_PATTERNS=[
+  {re:/\b(?:would|we'd|we would) like to (?:invite you to|schedule) (?:an? )?interview\b/i,reason:"explicit-interview-invitation"},
+  {re:/\binvite you to (?:a|an|the|our) (?:first|second|final|virtual|phone|video|onsite|on-site )?interview\b/i,reason:"invite-to-interview"},
+  {re:/\b(?:schedule|set up|arrange) (?:a|an|your) (?:phone |video |virtual |onsite |on-site )?(?:screen|screening|interview)\b/i,reason:"schedule-interview"},
+  {re:/\b(?:choose|select|pick) (?:a|one of the following) (?:time|times|time slots?)\b[\s\S]{0,180}\binterview\b/i,reason:"choose-interview-time"},
+  {re:/\b(?:meet|speak|chat) with (?:the |our )?(?:hiring manager|recruiter|team|manager)\b[\s\S]{0,160}\b(?:role|position|opportunity|interview)\b/i,reason:"meet-hiring-team"},
+  {re:/\bnext step(?:s)?\b[\s\S]{0,160}\b(?:interview|phone screen|screening call)\b/i,reason:"next-step-interview"}
+];
+
+const STRONG_OFFER_PATTERNS=[
+  {re:/\b(?:pleased|excited|delighted|happy) to offer you (?:the |a )?.{1,100}\bposition\b/i,reason:"pleased-to-offer-position"},
+  {re:/\b(?:we|i) would like to (?:formally )?offer you (?:the |a )?.{1,100}\b(?:position|role|job)\b/i,reason:"formal-offer"},
+  {re:/\bformal offer letter\b/i,reason:"formal-offer-letter"},
+  {re:/\bofficial offer letter\b/i,reason:"official-offer-letter"},
+  {re:/\bjob offer from\b/i,reason:"job-offer-subject-language"},
+  {re:/\b(?:to accept|if you accept|accept this) (?:the |this )?(?:job )?offer\b/i,reason:"offer-acceptance-language"},
+  {re:/\b(?:offer|offering) you (?:an? )?(?:annual|hourly|starting )?(?:salary|rate|compensation)\b/i,reason:"offer-compensation-language"},
+  {re:/\b(?:anticipated|expected|proposed) start date\b[\s\S]{0,140}\b(?:offer|position|role)\b/i,reason:"offer-start-date"}
+];
+
 const APPLICATION_RECEIVED_PATTERNS=[
   /\b(?:we(?:'ve| have)|your application has been) received your application\b/i,
   /\bapplication (?:has been )?received\b/i,
@@ -33,6 +53,28 @@ export function classifyApplicationMessage(text){
       return {
         type:"rejection",
         confidence:/closer-alignment|continue-with|moving-ahead/.test(pattern.reason)?0.95:0.99,
+        evidence:String(match[0]||"").slice(0,240),
+        reason:pattern.reason
+      };
+    }
+  }
+  for(const pattern of STRONG_OFFER_PATTERNS){
+    const match=normalized.match(pattern.re);
+    if(match){
+      return {
+        type:"offer",
+        confidence:0.99,
+        evidence:String(match[0]||"").slice(0,240),
+        reason:pattern.reason
+      };
+    }
+  }
+  for(const pattern of STRONG_INTERVIEW_PATTERNS){
+    const match=normalized.match(pattern.re);
+    if(match){
+      return {
+        type:"interview",
+        confidence:0.97,
         evidence:String(match[0]||"").slice(0,240),
         reason:pattern.reason
       };
