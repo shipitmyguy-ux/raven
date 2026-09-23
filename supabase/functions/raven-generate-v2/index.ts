@@ -138,7 +138,7 @@ function validate(resume:any,profile:any,track:string){
 Deno.serve(async(req:Request)=>{
   if(req.method==="OPTIONS")return new Response("ok",{headers:cors(req)});
   if(!allowed(req))return json(req,{error:"Forbidden"},403);
-  if(req.method==="GET")return json(req,{ok:true,service:"raven-generate-v2",version:2,architecture:"canonical-profile+fact-selection",model:GEMINI_MODEL});
+  if(req.method==="GET")return json(req,{ok:true,service:"raven-generate-v2",version:3,architecture:"canonical-profile+fact-selection-v3",model:GEMINI_MODEL});
   if(req.method!=="POST")return json(req,{error:"GET or POST required"},405);
   let body:any={};try{body=JSON.parse(await req.text()||"{}");}catch{return json(req,{error:"Invalid JSON"},400);}
   const track=String(body.track||"Professional");if(!TRACKS.has(track))return json(req,{error:"Invalid track"},400);
@@ -180,6 +180,6 @@ Deno.serve(async(req:Request)=>{
     const errors=validate(resume,profile,track);
     if(errors.length){await finish(eid,"failure",502,errors.join(","));return json(req,{error:"Deterministic validation failed",validation_errors:errors},502);}
     await finish(eid,"success",200);
-    return json(req,{ok:true,provider:"gemini",model:generated.model,architecture:"canonical-profile+fact-selection",selection,validation_errors:[],budget:{short_remaining:b.short_remaining,long_remaining:b.long_remaining},resume});
+    return json(req,{ok:true,provider:"gemini",model:generated.model,architecture:"canonical-profile+fact-selection-v3",selection,validation_errors:[],budget:{short_remaining:b.short_remaining,long_remaining:b.long_remaining},resume});
   }catch(e){const m=e instanceof Error?e.message:String(e);await finish(eid,"failure",500,m);return json(req,{error:m},500);}
 });
