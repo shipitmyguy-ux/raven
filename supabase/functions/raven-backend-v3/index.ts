@@ -2,9 +2,141 @@ import type { Track, Candidate } from "./types.ts";
 import { CORS, TRACKS } from "./config.ts";
 import { json, normalizeUrl, recoverCompanyFromUrl, analyzeCanonicalIdentity } from "./utils.ts";
 import { quickSearch, maybeStartDeep } from "./search.ts";
-import { listResults, listJobs, addJob, updateJob, listTasksForHealth } from "./db.ts";
+import { listResults, listJobs, addJob, updateJob, listTasksForHealth, getJobById, getJobByUrl, addJobEvent, listJobEvents, listAllJobEvents, ensureJobSnapshot, listJobSnapshots } from "./db.ts";
 import { requestGuard, requestFinish } from "./request-budget.ts";
 import { enrichCandidate } from "./enrich.ts";
+
+
+const LIFECYCLE_STATUSES=new Set(["Saved","Interested","Ready","Applied","Interview","Offer","Rejected","Ignored"]);
+const STATUS_RANK:any={Saved:10,Interested:12,Ready:20,Applied:30,Interview:40,Offer:50,Rejected:50,Ignored:60};
+
+function cleanSignalText(value:any){
+  return String(value||"").trim().replace(/\s+/g," ").slice(0,1000);
+}
+function lifecycleEventType(status:string){
+  return ({Applied:"applied",Interview:"interview",Offer:"offer",Rejected:"rejected",Ignored:"ignored",Interested:"bookmarked",Ready:"ready",Saved:"saved"} as any)[status]||"status_changed";
+}
+function followUpIso(fromValue:any,days=7){
+  const start=Date.parse(String(fromValue||""));
+  const date=new Date(Number.isFinite(start)?start:Date.now());
+  date.setUTCDate(date.getUTCDate()+Math.max(1,Math.min(30,Number(days)||7)));
+  return date.toISOString();
+}
+async function transitionStoredJob(jobId:string,nextStatus:string,options:any={}){
+  if(!LIFECYCLE_STATUSES.has(nextStatus)) throw new Error("Unsupported lifecycle status");
+  const before=await getJobById(jobId);
+  if(!before) throw new Error("Job not found");
+  const previous=String(before.status||"Saved");
+  const occurredAt=String(options.occurredAt||new Date().toISOString());
+  const patch:any={status:nextStatus,viewed:true};
+
+  if(nextStatus==="Applied"){
+    patch.appliedDate=before.applied_date||occurredAt;
+    if(Object.prototype.hasOwnProperty.call(options,"followUp")) patch.followUp=options.followUp||null;
+    else patch.followUp=before.follow_up||followUpIso(patch.appliedDate,options.followUpDays||7);
+  }else if(["Saved","Interested","Ready"].includes(nextStatus)&&previous==="Applied"){
+    patch.appliedDate=null;
+    patch.followUp=null;
+  }else if(["Interview","Offer","Rejected","Ignored"].includes(nextStatus)){
+    patch.followUp=null;
+  }
+
+  const updated=await updateJob(jobId,patch);
+  const sameStatus=previous===nextStatus;
+  const followUpChanged=Object.prototype.hasOwnProperty.call(options,"followUp")&&String(before.follow_up||"")!==String(options.followUp||"");
+  let event=null;
+  if(!sameStatus||followUpChanged){
+    event=await addJobEvent({
+      jobId,
+      eventType:followUpChanged&&sameStatus?"follow_up_changed":lifecycleEventType(nextStatus),
+      occurredAt,
+      source:options.source||"raven",
+      confidence:options.confidence,
+      summary:options.summary||(followUpChanged&&sameStatus?"Follow-up date updated":("Status changed from "+previous+" to "+nextStatus)),
+      metadata:{from_status:previous,to_status:nextStatus,...(options.metadata||{})}
+    });
+  }
+  let snapshot=null;
+  if(nextStatus==="Applied"&&previous!=="Applied"){
+    snapshot=await ensureJobSnapshot(updated,"application");
+  }
+  return {job:updated,event,snapshot};
+}
+async function matchSignalJob(body:any){
+  const explicit=String(body.jobId||body.job_id||"").trim();
+  if(explicit){
+    const found=await getJobById(explicit);
+    if(found) return found;
+  }
+  const url=normalizeUrl(String(body.url||body.jobUrl||""));
+  if(url){
+    const found=await getJobByUrl(url);
+    if(found) return found;
+  }
+  const title=cleanSignalText(body.title).toLowerCase();
+  const company=cleanSignalText(body.company).toLowerCase();
+  if(title&&company){
+    const jobs=await listJobs();
+    const matches=jobs.filter((job:any)=>cleanSignalText(job.title).toLowerCase()===title&&cleanSignalText(job.company).toLowerCase()===company);
+    if(matches.length===1) return matches[0];
+  }
+  return null;
+}
+async function buildAnalytics(){
+  const [jobs,events]=await Promise.all([listJobs(),listAllJobEvents()]);
+  const byJob=new Map<string,any[]>();
+  for(const event of events){
+    const id=String(event.job_id||"");
+    if(!byJob.has(id)) byJob.set(id,[]);
+    byJob.get(id)!.push(event);
+  }
+  const appliedJobs=jobs.filter((job:any)=>Boolean(job.applied_date)||["Applied","Interview","Offer","Rejected"].includes(String(job.status||"")));
+  const interviewIds=new Set<string>();
+  const offerIds=new Set<string>();
+  const rejectedIds=new Set<string>();
+  const responseDays:number[]=[];
+  const source:any={};
+  const track:any={};
+  for(const job of appliedJobs){
+    const id=String(job.id);
+    const jobEvents=byJob.get(id)||[];
+    const hasInterview=["Interview","Offer"].includes(String(job.status||""))||jobEvents.some((e:any)=>/interview/.test(String(e.event_type||"")));
+    const hasOffer=String(job.status||"")==="Offer"||jobEvents.some((e:any)=>String(e.event_type||"")==="offer");
+    const hasRejected=String(job.status||"")==="Rejected"||jobEvents.some((e:any)=>String(e.event_type||"")==="rejected");
+    if(hasInterview) interviewIds.add(id);
+    if(hasOffer) offerIds.add(id);
+    if(hasRejected) rejectedIds.add(id);
+    const sourceKey=String(job.source||"Unknown")||"Unknown";
+    const trackKey=String(job.track||"Unknown")||"Unknown";
+    source[sourceKey]=source[sourceKey]||{applications:0,interviews:0,offers:0,rejections:0};
+    track[trackKey]=track[trackKey]||{applications:0,interviews:0,offers:0,rejections:0};
+    for(const bucket of [source[sourceKey],track[trackKey]]){
+      bucket.applications++;
+      if(hasInterview) bucket.interviews++;
+      if(hasOffer) bucket.offers++;
+      if(hasRejected) bucket.rejections++;
+    }
+    const appliedAt=Date.parse(String(job.applied_date||jobEvents.find((e:any)=>e.event_type==="applied")?.occurred_at||""));
+    const response=jobEvents
+      .filter((e:any)=>["recruiter_contact","interview","interview_requested","interview_scheduled"].includes(String(e.event_type||"")))
+      .map((e:any)=>Date.parse(String(e.occurred_at||"")))
+      .filter((t:number)=>Number.isFinite(t)&&Number.isFinite(appliedAt)&&t>=appliedAt)
+      .sort((a:number,b:number)=>a-b)[0];
+    if(Number.isFinite(response)&&Number.isFinite(appliedAt)) responseDays.push((response-appliedAt)/86400000);
+  }
+  const decorate=(record:any)=>Object.fromEntries(Object.entries(record).map(([key,value]:any)=>[key,{...value,interview_rate:value.applications?value.interviews/value.applications:0,offer_rate:value.applications?value.offers/value.applications:0}]));
+  return {
+    applications:appliedJobs.length,
+    interviews:interviewIds.size,
+    offers:offerIds.size,
+    rejections:rejectedIds.size,
+    interview_rate:appliedJobs.length?interviewIds.size/appliedJobs.length:0,
+    offer_rate:appliedJobs.length?offerIds.size/appliedJobs.length:0,
+    average_response_days:responseDays.length?responseDays.reduce((a,b)=>a+b,0)/responseDays.length:null,
+    by_source:decorate(source),
+    by_track:decorate(track)
+  };
+}
 
 async function runAndSaveAtsDiagnostics(track:Track="Professional"){
   const { atsDiagnostics }=await import("./sources.ts");
@@ -44,7 +176,7 @@ Deno.serve(async(req:Request)=>{
       };
       const categories=tasks.map(classify);
       const counts={total:tasks.length,operationalActive:categories.filter(x=>x==="operational_active").length,activeFailures:categories.filter(x=>x==="operational_failure").length,manualBlocked:categories.filter(x=>x==="manual_blocked").length,historicalLegacy:categories.filter(x=>x==="historical_legacy").length,disposableTest:categories.filter(x=>x==="disposable_test").length};
-      return json({ok:true,status:counts.activeFailures?"degraded":"healthy",healthy:counts.activeFailures===0,counts,service:"raven-backend-v3",version:1,features:["quick-search","deep-search","descriptions","persistence","commute","jobicy","himalayas","ats-wide"]});
+      return json({ok:true,status:counts.activeFailures?"degraded":"healthy",healthy:counts.activeFailures===0,counts,service:"raven-backend-v3",version:1,features:["quick-search","deep-search","descriptions","persistence","commute","jobicy","himalayas","ats-wide","lifecycle-events","posting-snapshots","application-signals","outcome-analytics"]});
     }
 
     if(action==="jobs"){
@@ -124,6 +256,89 @@ Deno.serve(async(req:Request)=>{
       if(!id) return json({error:"ID required"},400);
       const job=await updateJob(id,body);
       return json(job);
+    }
+
+    if(action==="transitionJob"){
+      const id=String(body.id||body.jobId||"");
+      const nextStatus=String(body.status||body.nextStatus||"");
+      if(!id) return json({error:"ID required"},400);
+      try{
+        const result=await transitionStoredJob(id,nextStatus,{
+          occurredAt:body.occurredAt,
+          followUp:Object.prototype.hasOwnProperty.call(body,"followUp")?body.followUp:undefined,
+          followUpDays:body.followUpDays,
+          source:body.source||"raven-ui",
+          confidence:body.confidence,
+          summary:body.summary,
+          metadata:body.metadata
+        });
+        return json({ok:true,...result});
+      }catch(e){
+        return json({error:e instanceof Error?e.message:String(e)},400);
+      }
+    }
+
+    if(action==="jobEvents"){
+      const id=String(body.id||body.jobId||u.searchParams.get("jobId")||"");
+      if(!id) return json({error:"jobId required"},400);
+      return json({ok:true,events:await listJobEvents(id)});
+    }
+
+    if(action==="addJobEvent"){
+      const id=String(body.id||body.jobId||"");
+      if(!id) return json({error:"jobId required"},400);
+      const event=await addJobEvent({
+        jobId:id,
+        eventType:body.eventType||"note",
+        occurredAt:body.occurredAt,
+        source:body.source||"manual",
+        summary:cleanSignalText(body.summary),
+        confidence:body.confidence,
+        metadata:body.metadata
+      });
+      return json({ok:true,event});
+    }
+
+    if(action==="jobSnapshots"){
+      const id=String(body.id||body.jobId||u.searchParams.get("jobId")||"");
+      if(!id) return json({error:"jobId required"},400);
+      return json({ok:true,snapshots:await listJobSnapshots(id)});
+    }
+
+    if(action==="receiveApplicationSignal"){
+      const type=cleanSignalText(body.type||body.signalType).toLowerCase().replace(/[^a-z0-9]+/g,"_");
+      const confidence=Math.max(0,Math.min(1,Number(body.confidence??0.5)));
+      if(!type) return json({error:"signal type required"},400);
+      const job=await matchSignalJob(body);
+      if(!job) return json({ok:true,matched:false,signal:{type,confidence}});
+      const target=({submitted:"Applied",application_submitted:"Applied",interview:"Interview",interview_requested:"Interview",interview_scheduled:"Interview",offer:"Offer",offer_received:"Offer",rejection:"Rejected",rejected:"Rejected"} as any)[type]||"";
+      const current=String(job.status||"Saved");
+      const canAdvance=target&&Number(STATUS_RANK[target]||0)>=Number(STATUS_RANK[current]||0);
+      const metadata={signal_type:type,evidence:cleanSignalText(body.evidence),suggested_status:target||null,auto_applied:false};
+      if(target&&confidence>=0.85&&canAdvance){
+        const result=await transitionStoredJob(String(job.id),target,{
+          occurredAt:body.occurredAt,
+          source:body.source||"signal",
+          confidence,
+          summary:cleanSignalText(body.summary)||("Detected "+type.replace(/_/g," ")),
+          metadata:{...metadata,auto_applied:true}
+        });
+        return json({ok:true,matched:true,auto_applied:true,...result});
+      }
+      const event=await addJobEvent({
+        jobId:String(job.id),
+        eventType:"signal_"+type,
+        occurredAt:body.occurredAt,
+        source:body.source||"signal",
+        confidence,
+        summary:cleanSignalText(body.summary)||("Detected "+type.replace(/_/g," ")),
+        metadata
+      });
+      return json({ok:true,matched:true,auto_applied:false,suggested_status:target||null,job,event});
+    }
+
+    if(action==="analytics"){
+      return json({ok:true,analytics:await buildAnalytics()});
     }
 
     if(action==="repairDescriptions"){

@@ -10,6 +10,41 @@ async function mockRaven(page,{generatorFails=false,initialJob=null,dataDelayMs=
   const generationBodies=[];
   const searchTracks=[];
   const listTracks=[];
+  const events=[];
+  const snapshots=[];
+  const lifecycleEventType=(status)=>({Applied:"applied",Interview:"interview",Offer:"offer",Rejected:"rejected",Ignored:"ignored",Interested:"bookmarked",Ready:"ready",Saved:"saved"})[status]||"status_changed";
+  const transition=(status,body={})=>{
+    const previous=job.status||"Saved";
+    const occurredAt=body.occurredAt||new Date().toISOString();
+    if(status==="Applied"){
+      job.applied_date=job.applied_date||job.appliedDate||occurredAt;
+      job.appliedDate=job.applied_date;
+      const base=new Date(job.applied_date);
+      base.setUTCDate(base.getUTCDate()+7);
+      job.follow_up=Object.prototype.hasOwnProperty.call(body,"followUp")?(body.followUp||null):(job.follow_up||job.followUp||base.toISOString().slice(0,10));
+      job.followUp=job.follow_up;
+    }else if(["Interview","Offer","Rejected","Ignored"].includes(status)){
+      job.follow_up=null;
+      job.followUp=null;
+    }else if(["Saved","Interested","Ready"].includes(status)&&previous==="Applied"){
+      job.applied_date=null;
+      job.appliedDate=null;
+      job.follow_up=null;
+      job.followUp=null;
+    }
+    job.status=status;
+    job.viewed=true;
+    if(previous!==status || Object.prototype.hasOwnProperty.call(body,"followUp")){
+      events.unshift({
+        id:"event-"+(events.length+1),job_id:job.id,event_type:previous===status&&Object.prototype.hasOwnProperty.call(body,"followUp")?"follow_up_changed":lifecycleEventType(status),
+        occurred_at:occurredAt,source:body.source||"raven-ui",summary:body.summary||("Status changed from "+previous+" to "+status),metadata:{from_status:previous,to_status:status}
+      });
+    }
+    if(status==="Applied"&&previous!=="Applied"){
+      snapshots.unshift({id:"snapshot-"+(snapshots.length+1),job_id:job.id,snapshot_type:"application",captured_at:occurredAt,snapshot:{...job}});
+    }
+    return {ok:true,job:{...job},event:events[0]||null,snapshot:snapshots[0]||null};
+  };
   await page.route("**/functions/v1/raven-data-v1**",route=>route.fulfill({status:410,json:{ok:false,error:"retired"}}));
   await page.route("**/functions/v1/raven-backend-v3**",async route=>{
     const req=route.request();
@@ -30,7 +65,36 @@ async function mockRaven(page,{generatorFails=false,initialJob=null,dataDelayMs=
       return route.fulfill({json:{...job,ok:true}});
     }
     if(action==="addJob"){
-      return route.fulfill({json:{...body,id:"job-added",ok:true}});
+      job={...job,...body,id:body.id||job.id||"job-added"};delete job.action;
+      return route.fulfill({json:{...job,ok:true}});
+    }
+    if(action==="transitionJob"){
+      return route.fulfill({json:transition(body.status,body)});
+    }
+    if(action==="jobEvents"){
+      return route.fulfill({json:{ok:true,events}});
+    }
+    if(action==="jobSnapshots"){
+      return route.fulfill({json:{ok:true,snapshots}});
+    }
+    if(action==="addJobEvent"){
+      const event={id:"event-"+(events.length+1),job_id:body.jobId,event_type:body.eventType||"note",occurred_at:body.occurredAt||new Date().toISOString(),source:body.source||"manual",summary:body.summary||"",metadata:body.metadata||{}};
+      events.unshift(event);
+      return route.fulfill({json:{ok:true,event}});
+    }
+    if(action==="receiveApplicationSignal"){
+      const map={submitted:"Applied",application_submitted:"Applied",interview:"Interview",interview_requested:"Interview",interview_scheduled:"Interview",offer:"Offer",offer_received:"Offer",rejection:"Rejected",rejected:"Rejected"};
+      const next=map[body.type];
+      if(next&&Number(body.confidence||0)>=0.85) return route.fulfill({json:{matched:true,auto_applied:true,...transition(next,body)}});
+      const event={id:"event-"+(events.length+1),job_id:job.id,event_type:"signal_"+body.type,occurred_at:new Date().toISOString(),source:body.source||"signal",summary:body.summary||"",metadata:{suggested_status:next||null}};
+      events.unshift(event);
+      return route.fulfill({json:{ok:true,matched:true,auto_applied:false,suggested_status:next||null,event,job}});
+    }
+    if(action==="analytics"){
+      const applied=Boolean(job.applied_date)||["Applied","Interview","Offer","Rejected"].includes(job.status);
+      const interview=["Interview","Offer"].includes(job.status)||events.some(e=>/interview/.test(e.event_type));
+      const offer=job.status==="Offer"||events.some(e=>e.event_type==="offer");
+      return route.fulfill({json:{ok:true,analytics:{applications:applied?1:0,interviews:interview?1:0,offers:offer?1:0,rejections:job.status==="Rejected"?1:0,interview_rate:applied&&interview?1:0,offer_rate:applied&&offer?1:0,average_response_days:null,by_source:{Mock:{applications:applied?1:0,interviews:interview?1:0,offers:offer?1:0,rejections:job.status==="Rejected"?1:0,interview_rate:applied&&interview?1:0,offer_rate:applied&&offer?1:0}},by_track:{Professional:{applications:applied?1:0,interviews:interview?1:0,offers:offer?1:0,rejections:job.status==="Rejected"?1:0,interview_rate:applied&&interview?1:0,offer_rate:applied&&offer?1:0}}}}});
     }
     if(action==="search") searchTracks.push(track);
     if(action==="listResults") listTracks.push(track);
@@ -51,7 +115,9 @@ async function mockRaven(page,{generatorFails=false,initialJob=null,dataDelayMs=
     getGenerationCalls:()=>generationCalls,
     getGenerationBodies:()=>generationBodies.slice(),
     getSearchTracks:()=>searchTracks.slice(),
-    getListTracks:()=>listTracks.slice()
+    getListTracks:()=>listTracks.slice(),
+    getEvents:()=>events.slice(),
+    getSnapshots:()=>snapshots.slice()
   };
 }
 
@@ -126,6 +192,81 @@ test("shared lifecycle transitions schedule follow-up and handle post-applicatio
   await page.locator("[data-lifecycle-status]").selectOption("Rejected");
   await expect.poll(()=>api.getJob().status).toBe("Rejected");
   await expect(page.locator(".stage-header h2").filter({hasText:"Rejected"})).toBeVisible();
+});
+
+test("activity timeline reuses signals and snapshots for interview mode",async({page})=>{
+  const api=await mockRaven(page,{initialJob:{resume:"data:text/html,resume",cover_letter:"data:text/html,letter"}});
+  await page.goto("/");
+  await page.locator('[data-track="Professional"]').click();
+  await page.locator(".job-card-summary").first().click();
+
+  await page.locator("[data-lifecycle-status]").selectOption("Applied");
+  await expect.poll(()=>api.getSnapshots().length).toBe(1);
+  await page.locator("[data-lifecycle-status]").selectOption("Interview");
+  await expect.poll(()=>api.getJob().status).toBe("Interview");
+
+  await expect(page.locator(".interview-context")).toContainText("Interview prep");
+  await expect(page.locator(".interview-context")).toContainText("Application snapshot");
+  await expect(page.locator(".snapshot-links")).toContainText("Original posting");
+
+  const form=page.locator("[data-add-activity]");
+  await form.locator('select[name="type"]').selectOption("recruiter_contact");
+  await form.locator('input[name="summary"]').fill("Recruiter confirmed next steps.");
+  await form.locator('button[type="submit"]').click();
+  await expect.poll(()=>api.getEvents().some(e=>e.event_type==="recruiter_contact")).toBeTruthy();
+  await expect(page.locator(".job-activity")).toContainText("Recruiter confirmed next steps.");
+});
+
+test("manual outcome signals advance lifecycle through the shared signal path",async({page})=>{
+  const api=await mockRaven(page);
+  await page.goto("/");
+  await page.locator('[data-track="Professional"]').click();
+  await page.locator(".job-card-summary").first().click();
+
+  const form=page.locator("[data-add-activity]");
+  await form.locator('select[name="type"]').selectOption("interview_requested");
+  await form.locator('input[name="summary"]').fill("Interview requested by recruiter.");
+  await form.locator('button[type="submit"]').click();
+  await expect.poll(()=>api.getJob().status).toBe("Interview");
+  await expect(page.locator(".stage-header h2").filter({hasText:"Interview"})).toBeVisible();
+});
+
+test("outcome analytics panel renders shared lifecycle metrics",async({page})=>{
+  await mockRaven(page,{initialJob:{status:"Interview",applied_date:new Date().toISOString()}});
+  await page.goto("/");
+  await page.locator("#optionsButton").click();
+  await page.locator('[data-options-target="analytics"]').click();
+  await expect(page.locator("#analyticsApplications")).toHaveText("1");
+  await expect(page.locator("#analyticsInterviews")).toHaveText("1");
+  await expect(page.locator("#analyticsByTrack")).toContainText("Professional");
+  await expect(page.locator("#analyticsBySource")).toContainText("Mock");
+});
+
+test("medium-confidence external signals stay reviewable until accepted",async({page})=>{
+  const api=await mockRaven(page);
+  await page.goto("/");
+  await page.locator('[data-track="Professional"]').click();
+  const summary=page.locator(".job-card-summary").first();
+  await summary.click();
+
+  await page.evaluate(async()=>{
+    await window.RavenAPI.receiveApplicationSignal({
+      jobId:"job-1",
+      type:"interview_requested",
+      confidence:.6,
+      source:"email",
+      summary:"Possible interview invitation."
+    });
+  });
+
+  await summary.click();
+  await summary.click();
+  expect(api.getJob().status).toBe("Saved");
+
+  const suggestion=page.locator('[data-apply-suggested-status="Interview"]');
+  await expect(suggestion).toBeVisible();
+  await suggestion.click();
+  await expect.poll(()=>api.getJob().status).toBe("Interview");
 });
 
 test("generator API can be fully mocked without spending model tokens",async({page})=>{

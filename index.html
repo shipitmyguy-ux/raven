@@ -58,6 +58,9 @@
             <button type="button" class="options-category" data-options-target="control-panel">
               <span>Control panel</span><span aria-hidden="true">›</span>
             </button>
+            <button type="button" class="options-category" data-options-target="analytics">
+              <span>Outcomes</span><span aria-hidden="true">›</span>
+            </button>
             <button type="button" class="options-category" data-options-target="master-resumes">
               <span>Master resumes</span><span aria-hidden="true">›</span>
             </button>
@@ -123,6 +126,24 @@
                 <h4>Policies</h4>
                 <p class="options-help">Policy/config writes and employer submission remain blocked from the browser.</p>
                 <pre id="controlPolicyView" class="control-json-view">Loading…</pre>
+              </section>
+            </div>
+
+            <div class="options-card-panel analytics-panel" data-options-panel="analytics" hidden>
+              <p class="options-help">Application outcomes calculated from Raven jobs and lifecycle activity.</p>
+              <div class="analytics-metrics">
+                <div class="control-metric"><span>Applications</span><strong id="analyticsApplications">—</strong></div>
+                <div class="control-metric"><span>Interviews</span><strong id="analyticsInterviews">—</strong></div>
+                <div class="control-metric"><span>Offers</span><strong id="analyticsOffers">—</strong></div>
+                <div class="control-metric"><span>Avg. response</span><strong id="analyticsResponse">—</strong></div>
+              </div>
+              <section class="control-section">
+                <h4>By track</h4>
+                <div id="analyticsByTrack" class="analytics-breakdown"><p class="options-help">Open the panel to load.</p></div>
+              </section>
+              <section class="control-section">
+                <h4>By source</h4>
+                <div id="analyticsBySource" class="analytics-breakdown"><p class="options-help">Open the panel to load.</p></div>
               </section>
             </div>
 
@@ -279,7 +300,7 @@
   <script src="./snapshot.js?v=20260918-0518"></script>
   <script src="./config.js?v=8"></script>
   <script src="./raven-core.js?v=3"></script>
-  <script src="./raven-api.js?v=8"></script>
-  <script src="./app.js?v=37"></script>
+  <script src="./raven-api.js?v=9"></script>
+  <script src="./app.js?v=38"></script>
 </body>
 </html>

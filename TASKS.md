@@ -76,14 +76,14 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] requires real-site/user-acc
 - [x] Final employer Submit remains behind explicit user action and is never automated.
 - [x] Synthetic adapter coverage exists for Greenhouse, Lever, Ashby, Workday, iCIMS, Taleo, and generic forms.
 - [!] Real employer-site adapter selectors, approved-file attachment, and completion detection still require live-site verification.
-- [ ] Define/implement immutable original-posting snapshots if historical posting preservation is required beyond current saved URL/text.
+- [x] Immutable application-time posting/document snapshots are persisted server-side and surfaced in Interview mode.
 - [ ] Define privacy/storage boundaries before optional email-driven automation is enabled.
 
 ## Future product roadmap
 These are feature expansions, not Raven closeout blockers.
-- [~] Shared post-application lifecycle transitions and persisted follow-up scheduling are implemented on the existing Job model; dedicated Contact/Interview/FollowUp event entities remain a later expansion.
-- [ ] Add optional email-driven application-status classification/matching with user-visible corrections.
-- [ ] Add outcome analytics by source, role family, resume variant, tailoring, and interview/offer conversion.
+- [x] Shared post-application lifecycle is implemented: persisted follow-up scheduling, generic job activity/events, interview/offer/rejection transitions, recruiter/follow-up/assessment activity, and snapshot-backed interview context all reuse one event model.
+- [~] Generic application-signal classification/matching is implemented with confidence-gated automatic transitions and user-visible suggestions. A personal email/OAuth adapter is intentionally not connected yet.
+- [~] Outcome analytics are implemented for applications, interviews, offers, response timing, source, and track. Resume/tailoring variant analytics remain pending until those variants have stable identifiers.
 - [ ] Replace opaque ranking/ATS-style scores with supported-requirement coverage, unsupported requirements, and missing-evidence reporting.
 - [ ] Expand direct ATS coverage beyond the current adapters as source value justifies it.
 - [x] Generic schema.org/JobPosting extraction exists for unsupported employer pages.

@@ -9,6 +9,8 @@
     commutes: {},
     documentApprovals: {},
     viewedJobs: {},
+    jobActivity: {},
+    analytics: null,
     generatorJob: null,
     generatorType: null,
     returnScrollY: null
@@ -394,6 +396,41 @@
       if(diagEl) diagEl.innerHTML='<p class="options-help">Control service unavailable.</p>';
       if(eventsEl) eventsEl.innerHTML='<p class="options-help">'+escapeHtml(error.message||String(error))+'</p>';
       if(policyEl) policyEl.textContent="Read-only control data unavailable.";
+    }
+  }
+
+  async function loadAnalyticsData(){
+    const applications=document.getElementById("analyticsApplications");
+    const interviews=document.getElementById("analyticsInterviews");
+    const offers=document.getElementById("analyticsOffers");
+    const response=document.getElementById("analyticsResponse");
+    const byTrack=document.getElementById("analyticsByTrack");
+    const bySource=document.getElementById("analyticsBySource");
+    const renderBreakdown=(host,record)=>{
+      if(!host) return;
+      const rows=Object.entries(record||{}).sort((a,b)=>Number(b[1]?.applications||0)-Number(a[1]?.applications||0));
+      host.innerHTML=rows.length?rows.map(([name,value])=>{
+        const rate=Math.round(Number(value?.interview_rate||0)*100);
+        return '<div class="analytics-row"><span>'+escapeHtml(name)+'</span><strong>'+escapeHtml(String(value?.applications||0))+' apps · '+rate+'% interview</strong></div>';
+      }).join(""):'<p class="options-help">No application outcomes yet.</p>';
+    };
+    try{
+      const payload=await window.RavenAPI.analytics();
+      const data=payload.analytics||{};
+      state.analytics=data;
+      if(applications) applications.textContent=String(data.applications??0);
+      if(interviews) interviews.textContent=String(data.interviews??0);
+      if(offers) offers.textContent=String(data.offers??0);
+      if(response) response.textContent=Number.isFinite(Number(data.average_response_days))?Number(data.average_response_days).toFixed(1)+"d":"—";
+      renderBreakdown(byTrack,data.by_track);
+      renderBreakdown(bySource,data.by_source);
+    }catch(error){
+      if(applications) applications.textContent="—";
+      if(interviews) interviews.textContent="—";
+      if(offers) offers.textContent="—";
+      if(response) response.textContent="—";
+      if(byTrack) byTrack.innerHTML='<p class="options-help">Outcome analytics unavailable.</p>';
+      if(bySource) bySource.innerHTML='<p class="options-help">'+escapeHtml(error.message||String(error))+'</p>';
     }
   }
 
@@ -790,6 +827,106 @@
     if(days===1) return "Follow up tomorrow";
     return "Follow up in "+days+" days";
   }
+
+  const ACTIVITY_TYPES=[
+    ["note","Note"],
+    ["recruiter_contact","Recruiter contact"],
+    ["follow_up_sent","Follow-up sent"],
+    ["assessment","Assessment"],
+    ["interview_requested","Interview requested"],
+    ["interview_scheduled","Interview scheduled"],
+    ["interview_completed","Interview completed"],
+    ["offer_received","Offer received"],
+    ["rejected","Rejected"]
+  ];
+  function activityLabel(type){
+    const found=ACTIVITY_TYPES.find(([key])=>key===String(type||""));
+    if(found) return found[1];
+    return String(type||"Activity").replace(/^signal_/,"").replace(/_/g," ").replace(/\b\w/g,(char)=>char.toUpperCase());
+  }
+  function formatActivityDate(value){
+    const time=Date.parse(value||"");
+    if(!Number.isFinite(time)) return "";
+    return new Date(time).toLocaleString([], {month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"});
+  }
+  async function loadJobActivity(job,force=false){
+    if(!job||job._discovered||!job.id) return;
+    const key=String(job.id);
+    const current=state.jobActivity[key];
+    if(current?.loading || (!force&&current?.loaded)) return;
+    state.jobActivity[key]={...(current||{}),loading:true,loaded:false};
+    try{
+      const [eventsPayload,snapshotsPayload]=await Promise.all([
+        window.RavenAPI.listJobEvents(key),
+        window.RavenAPI.listJobSnapshots(key)
+      ]);
+      state.jobActivity[key]={loading:false,loaded:true,events:eventsPayload.events||[],snapshots:snapshotsPayload.snapshots||[]};
+    }catch(error){
+      state.jobActivity[key]={loading:false,loaded:true,events:[],snapshots:[],error:String(error.message||error)};
+    }
+    if(state.selectedId===job.id) render();
+  }
+  async function addJobActivity(job,type,summary){
+    if(!job||job._discovered||!job.id) return;
+    const impliedSignal=["interview_requested","interview_scheduled","offer_received","rejected"].includes(type);
+    setStatus("Saving activity...");
+    try{
+      if(impliedSignal){
+        await window.RavenAPI.receiveApplicationSignal({
+          jobId:job.id,
+          type,
+          confidence:1,
+          source:"manual",
+          summary
+        });
+        await loadJobs();
+      }else{
+        await window.RavenAPI.addJobEvent(job.id,{eventType:type,source:"manual",summary});
+      }
+      await loadJobActivity(job,true);
+      setStatus("Activity saved");
+    }catch(error){
+      setStatus("Could not save activity: "+error.message);
+    }
+  }
+  function renderJobActivity(job){
+    if(job._discovered) return "";
+    const activity=state.jobActivity[String(job.id)]||{};
+    const events=Array.isArray(activity.events)?activity.events:[];
+    const snapshots=Array.isArray(activity.snapshots)?activity.snapshots:[];
+    const latestSnapshot=snapshots.find((item)=>item.snapshot_type==="application")||snapshots[0]||null;
+    const interviewMode=String(job.status||"").toLowerCase()==="interview";
+    const rows=events.slice(0,10).map((event)=>{
+      const suggested=String(event?.metadata?.suggested_status||"");
+      const autoApplied=event?.metadata?.auto_applied===true;
+      const suggestion=suggested&&!autoApplied&&suggested!==String(job.status||"")
+        ? '<button type="button" class="activity-suggestion" data-apply-suggested-status="'+escapeAttr(suggested)+'">Move to '+escapeHtml(suggested)+'</button>'
+        : '';
+      return '<li><div><strong>'+escapeHtml(activityLabel(event.event_type))+'</strong>'+
+        (event.summary?'<span>'+escapeHtml(event.summary)+'</span>':'')+suggestion+'</div>'+
+        '<time>'+escapeHtml(formatActivityDate(event.occurred_at))+'</time></li>';
+    }).join("");
+    const loading=!activity.loaded
+      ? '<p class="activity-empty">Loading activity…</p>'
+      : (activity.error?'<p class="activity-empty">Activity unavailable.</p>':(rows?'<ol class="activity-list">'+rows+'</ol>':'<p class="activity-empty">No activity recorded yet.</p>'));
+    const typeOptions=ACTIVITY_TYPES.map(([key,label])=>'<option value="'+escapeAttr(key)+'">'+escapeHtml(label)+'</option>').join("");
+    const addForm='<form class="activity-add" data-add-activity><select name="type" aria-label="Activity type">'+typeOptions+'</select><input name="summary" type="text" maxlength="500" placeholder="Optional detail"><button type="submit">Add</button></form>';
+    let interview="";
+    if(interviewMode){
+      const snapshot=latestSnapshot?.snapshot||{};
+      const description=cleanJobDescription(snapshot.notes||job.notes||"").replace(/\s+/g," ").trim();
+      const excerpt=description.length>420?description.slice(0,417).replace(/\s+\S*$/,"")+"…":description;
+      interview='<section class="interview-context"><h3>Interview prep</h3>'+
+        (latestSnapshot?'<p class="snapshot-meta">Application snapshot · '+escapeHtml(formatActivityDate(latestSnapshot.captured_at))+'</p>':'<p class="snapshot-meta">No application snapshot is available yet.</p>')+
+        (excerpt?'<p>'+escapeHtml(excerpt)+'</p>':'')+
+        '<div class="snapshot-links">'+
+          (snapshot.resume?'<a href="'+escapeAttr(snapshot.resume)+'" target="_blank" rel="noopener">Submitted resume</a>':'')+
+          (snapshot.cover_letter?'<a href="'+escapeAttr(snapshot.cover_letter)+'" target="_blank" rel="noopener">Submitted cover letter</a>':'')+
+          (snapshot.url?'<a href="'+escapeAttr(snapshot.url)+'" target="_blank" rel="noopener">Original posting</a>':'')+
+        '</div></section>';
+    }
+    return interview+'<section class="job-activity"><h3>Activity</h3>'+loading+addForm+'</section>';
+  }
   function isRemoteJob(job) {
     if (job.remote===true) return true;
     const remote=String(job.remote||"").toLowerCase();
@@ -950,6 +1087,20 @@
                 transitionJob(job,"Applied",{followUp:input.value,statusMessage:input.value?"Follow-up scheduled":"Follow-up cleared"});
               });
             });
+            expanded.querySelectorAll("[data-add-activity]").forEach((form)=>{
+              form.addEventListener("submit",(event)=>{
+                event.preventDefault();
+                event.stopPropagation();
+                const data=new FormData(form);
+                addJobActivity(job,String(data.get("type")||"note"),String(data.get("summary")||"").trim());
+              });
+            });
+            expanded.querySelectorAll("[data-apply-suggested-status]").forEach((button)=>{
+              button.addEventListener("click",(event)=>{
+                event.stopPropagation();
+                transitionJob(job,button.dataset.applySuggestedStatus,{source:"signal-review",statusMessage:"Signal suggestion applied"});
+              });
+            });
             expanded.querySelectorAll("[data-generate]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
@@ -1047,6 +1198,7 @@
             if(opening) markViewed(job);
             state.selectedId = opening ? job.id : null;
             render();
+            if(opening) loadJobActivity(job,true);
 
             requestAnimationFrame(()=>{
               const anchor=document.querySelector('[data-job-id="'+CSS.escape(String(job.id||""))+'"]');
@@ -1159,6 +1311,7 @@
       '<div class="detail-actions">'+
         '<div class="workflow-actions" aria-label="Application actions">'+actions+applyGate+appliedAction+'</div>'+
       '</div>'+
+      renderJobActivity(job)+
     '</section>';
   }
 
@@ -1561,24 +1714,12 @@
       setStatus("Unsupported job status");
       return;
     }
-    const previousStatus=String(job.status||"Saved");
-    const now=options.occurredAt||new Date().toISOString();
-    const patch={status:nextStatus,viewed:true};
-
-    if(nextStatus==="Applied"){
-      patch.appliedDate=job.appliedDate||now;
-      patch.followUp=options.followUp!==undefined ? options.followUp : (job.followUp||defaultFollowUpDate(patch.appliedDate));
-    }else if(["Saved","Interested","Ready"].includes(nextStatus) && previousStatus==="Applied"){
-      patch.appliedDate=null;
-      patch.followUp=null;
-    }else if(["Interview","Offer","Rejected","Ignored"].includes(nextStatus)){
-      patch.followUp=null;
-    }
-
+    const occurredAt=options.occurredAt||new Date().toISOString();
     setStatus(options.pendingMessage||("Updating status to "+nextStatus+"..."));
     try{
+      let targetId=job.id;
       if(job._discovered){
-        await window.RavenAPI.addJob({
+        const saved=await window.RavenAPI.addJob({
           track:job.track||"Professional",
           title:job.title||"",
           company:job.company||"",
@@ -1587,30 +1728,25 @@
           salaryText:job.salaryText||"",
           url:job.url||"",
           source:job.source||"",
-          status:nextStatus,
+          status:"Saved",
           viewed:true,
-          appliedDate:patch.appliedDate||null,
-          followUp:patch.followUp||null,
           notes:job.notes||""
         });
-      }else{
-        await window.RavenAPI.updateJob(job.id,patch);
+        targetId=saved.id||targetId;
       }
-
-      job.status=nextStatus;
-      job.viewed=true;
-      if(Object.prototype.hasOwnProperty.call(patch,"appliedDate")) job.appliedDate=patch.appliedDate||"";
-      if(Object.prototype.hasOwnProperty.call(patch,"followUp")) job.followUp=patch.followUp||"";
-
+      if(!targetId) throw new Error("Job could not be persisted.");
+      await window.RavenAPI.transitionJob(targetId,nextStatus,{
+        occurredAt,
+        followUp:Object.prototype.hasOwnProperty.call(options,"followUp")?options.followUp:undefined,
+        followUpDays:followUpDays(),
+        source:options.source||"raven-ui",
+        summary:options.summary||""
+      });
       if(options.collapse) state.selectedId=null;
-      if(job._discovered){
-        await loadJobs();
-      }else{
-        const saved=state.jobs.find((item)=>item.id===job.id);
-        if(saved) Object.assign(saved,job);
-        writeCache(CACHE_JOBS_KEY,state.jobs);
-        render();
-      }
+      await loadJobs();
+      const refreshed=state.jobs.find((item)=>String(item.id)===String(targetId));
+      if(refreshed&&!options.collapse) state.selectedId=refreshed.id;
+      if(refreshed) await loadJobActivity(refreshed,true);
       setStatus(options.statusMessage||("Moved to "+nextStatus));
     }catch(error){
       setStatus("Status update failed: "+error.message);
@@ -1714,7 +1850,7 @@
       const optionsCard=document.getElementById("optionsCard");
       const optionsCardTitle=document.getElementById("optionsCardTitle");
       const optionsBackButton=document.getElementById("optionsBackButton");
-      const categoryTitles={"control-panel":"Control panel","master-resumes":"Master resumes","application-profile":"Application profile","answer-memory":"Answer memory","device-backup":"Device backup",layout:"Layout","job-info":"Job information",behavior:"Behavior"};
+      const categoryTitles={"control-panel":"Control panel",analytics:"Outcomes","master-resumes":"Master resumes","application-profile":"Application profile","answer-memory":"Answer memory","device-backup":"Device backup",layout:"Layout","job-info":"Job information",behavior:"Behavior"};
 
       const showOptionsHome=()=>{
         if(!optionsCard || optionsCard.hidden) return;
@@ -1748,6 +1884,7 @@
         optionsCard.addEventListener("animationend",finish);
         setTimeout(finish,220);
         if(key==="control-panel") loadControlPanelData();
+        if(key==="analytics") loadAnalyticsData();
       };
 
       optionsButton.addEventListener("click",()=>{

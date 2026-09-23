@@ -71,6 +71,16 @@ Still requires real employer-site verification:
 - Post-application stages suppress the old re-apply/bookmark controls that could otherwise move jobs backward accidentally.
 - Strong browser-extension application completion signals route through the same lifecycle transition logic.
 
+## Post-application platform
+- `raven_job_events` is the shared timeline for lifecycle changes, recruiter contacts, follow-ups, assessments, interview activity, offers, rejections, notes, and external signals.
+- `raven_job_snapshots` captures immutable application-time job/document state. Browser roles have no direct access; snapshots are service-role readable/insertable/deletable but not updateable.
+- Applied jobs create an application snapshot automatically through the shared backend transition path.
+- Interview mode surfaces the application snapshot, submitted documents, original posting, and activity timeline.
+- Manual activity and future external adapters use the same signal/event path. High-confidence signals can advance lifecycle state; lower-confidence signals remain reviewable suggestions.
+- Outcome analytics are derived from jobs + lifecycle events instead of maintained counters, with current breakdowns by source and track.
+- Durable Raven backups now include lifecycle events and application snapshots.
+- `raven-backend-v3` production v40 contains the shared transition, event, snapshot, signal, and analytics endpoints.
+
 ## Backup / recovery
 - `npm run backup:raven` creates the durable Supabase snapshot.
 - `npm run backup:raven -- --scope=full` includes operational/audit history.
