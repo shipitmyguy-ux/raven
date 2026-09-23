@@ -237,6 +237,33 @@ test("outcome analytics panel renders shared lifecycle metrics",async({page})=>{
   await expect(page.locator("#analyticsBySource")).toContainText("Mock");
 });
 
+test("medium-confidence external signals stay reviewable until accepted",async({page})=>{
+  const api=await mockRaven(page);
+  await page.goto("/");
+  await page.locator('[data-track="Professional"]').click();
+  const summary=page.locator(".job-card-summary").first();
+  await summary.click();
+
+  await page.evaluate(async()=>{
+    await window.RavenAPI.receiveApplicationSignal({
+      jobId:"job-1",
+      type:"interview_requested",
+      confidence:.6,
+      source:"email",
+      summary:"Possible interview invitation."
+    });
+  });
+
+  await summary.click();
+  await summary.click();
+  expect(api.getJob().status).toBe("Saved");
+
+  const suggestion=page.locator('[data-apply-suggested-status="Interview"]');
+  await expect(suggestion).toBeVisible();
+  await suggestion.click();
+  await expect.poll(()=>api.getJob().status).toBe("Interview");
+});
+
 test("generator API can be fully mocked without spending model tokens",async({page})=>{
   const api=await mockRaven(page);await page.goto("/");
   const response=await page.evaluate(async()=>{const r=await fetch(window.RAVEN_CONFIG.generateApiUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({documentType:"resume"})});return r.json();});
