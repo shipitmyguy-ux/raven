@@ -20,14 +20,39 @@ function allowed(req:Request){
 }
 function base(){return Deno.env.get("SUPABASE_URL")||"";}
 async function proxy(req:Request,slug:string,body:any){
-  const r=await fetch(base()+"/functions/v1/"+slug,{
+  const url=base()+"/functions/v1/"+slug;
+  const init={
     method:"POST",
     headers:{"Content-Type":"application/json","x-raven-client":"raven-web-v1"},
     body:JSON.stringify(body)
-  });
-  const text=await r.text();
-  const headers=cors(req);
-  return new Response(text,{status:r.status,headers});
+  };
+  let lastStatus=502;
+  let lastText="";
+  for(let attempt=0;attempt<2;attempt++){
+    try{
+      const r=await fetch(url,init);
+      const text=await r.text();
+      lastStatus=r.status;
+      lastText=text;
+      const structured=/^\s*[{[]/.test(text);
+      const retryableBareFailure=r.status>=500&&!structured;
+      if(!retryableBareFailure||attempt===1){
+        const headers=cors(req);
+        if(retryableBareFailure){
+          return new Response(JSON.stringify({error:"Generator upstream unavailable",retryable:true,upstreamStatus:r.status}),{status:502,headers});
+        }
+        return new Response(text,{status:r.status,headers});
+      }
+    }catch(error){
+      lastStatus=502;
+      lastText=error instanceof Error?error.message:String(error);
+      if(attempt===1){
+        return json(req,{error:"Generator upstream unavailable",retryable:true,detail:lastText},502);
+      }
+    }
+    await new Promise(resolve=>setTimeout(resolve,150));
+  }
+  return json(req,{error:"Generator upstream unavailable",retryable:true,detail:lastText,upstreamStatus:lastStatus},502);
 }
 
 Deno.serve(async(req:Request)=>{

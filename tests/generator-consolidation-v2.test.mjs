@@ -9,6 +9,9 @@ assert.match(router,/version:17/);
 assert.match(router,/raven-generate-v2/);
 assert.match(router,/raven-cover-v2/);
 assert.match(router,/x-raven-client/);
+assert.match(router,/for\(let attempt=0;attempt<2;attempt\+\+\)/,"Generator router should retry one transient bare upstream failure.");
+assert.match(router,/retryableBareFailure/,"Generator router should distinguish bare transient 5xx failures from structured generator errors.");
+assert.match(router,/Generator upstream unavailable/,"Generator router should return a structured retryable error after retry exhaustion.");
 
 assert.match(resume,/raven_canonical_profiles/);
 assert.match(cover,/raven_canonical_profiles/);
