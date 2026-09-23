@@ -207,3 +207,102 @@ export async function listTasksForHealth(){
   if(!r.ok) throw new Error("Task health read failed ("+r.status+")");
   return await r.json();
 }
+
+
+export async function getJobById(id:string){
+  const r=await rest("raven_jobs?select=*&id=eq."+encodeURIComponent(id)+"&limit=1",{method:"GET"});
+  if(!r.ok) throw new Error("Job lookup failed ("+r.status+")");
+  const rows=await r.json();
+  return rows?.[0]||null;
+}
+
+export async function addJobEvent(input:any){
+  const row={
+    job_id:String(input.jobId||input.job_id||""),
+    event_type:String(input.eventType||input.event_type||"note"),
+    occurred_at:input.occurredAt||input.occurred_at||new Date().toISOString(),
+    source:String(input.source||"manual"),
+    summary:String(input.summary||""),
+    confidence:input.confidence===undefined||input.confidence===null||input.confidence===""?null:Number(input.confidence),
+    metadata:input.metadata&&typeof input.metadata==="object"&&!Array.isArray(input.metadata)?input.metadata:{}
+  };
+  if(!row.job_id) throw new Error("jobId required");
+  const r=await rest("raven_job_events",{
+    method:"POST",
+    headers:{Prefer:"return=representation"},
+    body:JSON.stringify(row)
+  });
+  if(!r.ok) throw new Error("Job event save failed ("+r.status+"): "+(await r.text().catch(()=>"")).slice(0,500));
+  const rows=await r.json();
+  return rows?.[0]||null;
+}
+
+export async function listJobEvents(jobId:string){
+  const r=await rest("raven_job_events?select=*&job_id=eq."+encodeURIComponent(jobId)+"&order=occurred_at.desc,id.desc&limit=200",{method:"GET"});
+  if(!r.ok) throw new Error("Job events read failed ("+r.status+")");
+  return await r.json();
+}
+
+export async function listAllJobEvents(limit=5000){
+  const safe=Math.max(1,Math.min(10000,Number(limit)||5000));
+  const r=await rest("raven_job_events?select=*&order=occurred_at.desc,id.desc&limit="+safe,{method:"GET"});
+  if(!r.ok) throw new Error("Job events read failed ("+r.status+")");
+  return await r.json();
+}
+
+function stableSnapshotHash(value:string){
+  let hash=2166136261;
+  for(let i=0;i<value.length;i++){hash^=value.charCodeAt(i);hash=Math.imul(hash,16777619);}
+  return (hash>>>0).toString(36);
+}
+
+export async function ensureJobSnapshot(job:any,snapshotType="application"){
+  if(!job?.id) throw new Error("Job required");
+  const snapshot={
+    id:String(job.id||""),
+    added:job.added||null,
+    track:String(job.track||""),
+    title:String(job.title||""),
+    company:String(job.company||""),
+    location:String(job.location||""),
+    remote:Boolean(job.remote),
+    salary_min:job.salary_min??null,
+    salary_max:job.salary_max??null,
+    salary_text:String(job.salary_text||""),
+    url:String(job.url||""),
+    source:String(job.source||""),
+    status:String(job.status||""),
+    applied_date:job.applied_date||null,
+    follow_up:job.follow_up||null,
+    resume:String(job.resume||""),
+    cover_letter:String(job.cover_letter||""),
+    notes:String(job.notes||"")
+  };
+  const serialized=JSON.stringify(snapshot);
+  const contentHash=stableSnapshotHash(serialized);
+  const row={
+    job_id:String(job.id),
+    snapshot_type:String(snapshotType||"application"),
+    captured_at:new Date().toISOString(),
+    content_hash:contentHash,
+    snapshot
+  };
+  const r=await rest("raven_job_snapshots?on_conflict=job_id,snapshot_type,content_hash",{
+    method:"POST",
+    headers:{Prefer:"resolution=ignore-duplicates,return=representation"},
+    body:JSON.stringify(row)
+  });
+  if(!r.ok) throw new Error("Job snapshot save failed ("+r.status+"): "+(await r.text().catch(()=>"")).slice(0,500));
+  const rows=await r.json().catch(()=>[]);
+  if(rows?.[0]) return rows[0];
+  const existing=await rest("raven_job_snapshots?select=*&job_id=eq."+encodeURIComponent(String(job.id))+"&snapshot_type=eq."+encodeURIComponent(String(snapshotType||"application"))+"&content_hash=eq."+encodeURIComponent(contentHash)+"&limit=1",{method:"GET"});
+  if(!existing.ok) return null;
+  const found=await existing.json();
+  return found?.[0]||null;
+}
+
+export async function listJobSnapshots(jobId:string){
+  const r=await rest("raven_job_snapshots?select=*&job_id=eq."+encodeURIComponent(jobId)+"&order=captured_at.desc,id.desc&limit=50",{method:"GET"});
+  if(!r.ok) throw new Error("Job snapshots read failed ("+r.status+")");
+  return await r.json();
+}
