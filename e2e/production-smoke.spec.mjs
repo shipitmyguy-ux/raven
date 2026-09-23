@@ -44,8 +44,39 @@ async function mockRavenBackend(page, initialJob = syntheticTestJob) {
       delete job.action;
       return route.fulfill({ json: { ...job, ok: true } });
     }
+    if (action === "transitionJob") {
+      const previous = job.status || "Saved";
+      job = { ...job, status: body.status, viewed: true };
+      if (body.status === "Applied") {
+        job.applied_date = job.applied_date || body.occurredAt || new Date().toISOString();
+        job.follow_up = body.followUp || job.follow_up || new Date(Date.parse(job.applied_date) + 7 * 86400000).toISOString().slice(0, 10);
+      } else if (["Interview", "Offer", "Rejected", "Ignored"].includes(body.status)) {
+        job.follow_up = null;
+      } else if (["Saved", "Interested", "Ready"].includes(body.status) && previous === "Applied") {
+        job.applied_date = null;
+        job.follow_up = null;
+      }
+      return route.fulfill({ json: { ok: true, job: { ...job }, event: { event_type: body.status.toLowerCase() } } });
+    }
+    if (action === "jobEvents") {
+      return route.fulfill({ json: { ok: true, events: [] } });
+    }
+    if (action === "jobSnapshots") {
+      return route.fulfill({ json: { ok: true, snapshots: [] } });
+    }
+    if (action === "analytics") {
+      return route.fulfill({ json: { ok: true, analytics: { applications: 0, interviews: 0, offers: 0, rejections: 0, by_source: {}, by_track: {} } } });
+    }
+    if (action === "addJobEvent") {
+      return route.fulfill({ json: { ok: true, event: { event_type: body.eventType || "note" } } });
+    }
+    if (action === "receiveApplicationSignal") {
+      return route.fulfill({ json: { ok: true, matched: true, auto_applied: false, job } });
+    }
     if (action === "addJob") {
-      return route.fulfill({ json: { ...body, id: "job-added", ok: true } });
+      job = { ...job, ...body, id: job.id || "job-added" };
+      delete job.action;
+      return route.fulfill({ json: { ...job, ok: true } });
     }
     if (action === "search") {
       searchTracks.push(track);
