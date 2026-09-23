@@ -770,12 +770,15 @@
     const parsed=Date.parse(fromValue||"");
     const date=new Date(Number.isFinite(parsed)?parsed:Date.now());
     date.setDate(date.getDate()+followUpDays());
-    return date.toISOString().slice(0,10);
+    const year=date.getFullYear();
+    const month=String(date.getMonth()+1).padStart(2,"0");
+    const day=String(date.getDate()).padStart(2,"0");
+    return year+"-"+month+"-"+day;
   }
   function followUpSummary(job) {
     const value=String(job.followUp||"").trim();
     if(!value) return "";
-    const due=Date.parse(value+"T12:00:00");
+    const due=/^\d{4}-\d{2}-\d{2}$/.test(value) ? Date.parse(value+"T12:00:00") : Date.parse(value);
     if(!Number.isFinite(due)) return "";
     const now=new Date();
     const today=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());
@@ -907,7 +910,7 @@
             : '';
           const isIgnored=rawStatus.toLowerCase()==="ignored";
           const isBookmarked=rawStatus.toLowerCase()==="interested";
-          const bookmarkStar=/^(applied|ignored)$/i.test(rawStatus) ? "" :
+          const bookmarkStar=/^(applied|interview|offer|rejected|ignored)$/i.test(rawStatus) ? "" :
             '<button class="bookmark-star'+(isBookmarked?' is-bookmarked':'')+'" type="button" data-card-bookmark aria-pressed="'+String(isBookmarked)+'" aria-label="'+(isBookmarked?'Remove bookmark':'Bookmark job')+'" title="'+(isBookmarked?'Remove bookmark':'Bookmark job')+'">'+(isBookmarked?'★':'☆')+'</button>';
           const ignoreControl='<button class="ignore-job-button'+(isIgnored?' is-restore':'')+'" type="button" data-ignore-job aria-label="'+(isIgnored?'Restore job':'Ignore job')+'" title="'+(isIgnored?'Restore job':'Ignore job')+'">'+(isIgnored?'↩':'×')+'</button>';
           card.innerHTML=
@@ -939,6 +942,12 @@
               select.addEventListener("change",(event)=>{
                 event.stopPropagation();
                 transitionJob(job,select.value,{statusMessage:"Moved to "+select.options[select.selectedIndex]?.text});
+              });
+            });
+            expanded.querySelectorAll("[data-follow-up-date]").forEach((input)=>{
+              input.addEventListener("change",(event)=>{
+                event.stopPropagation();
+                transitionJob(job,"Applied",{followUp:input.value,statusMessage:input.value?"Follow-up scheduled":"Follow-up cleared"});
               });
             });
             expanded.querySelectorAll("[data-generate]").forEach((button)=>{
@@ -1110,11 +1119,15 @@
     const lifecycleOptions=(currentIsDiscovered?'<option value="Discovered" selected disabled>Discovered</option>':"")+
       lifecycleRows.map((item)=>'<option value="'+escapeAttr(item.key)+'"'+(item.key===currentStatus?' selected':'')+'>'+escapeHtml(item.label)+'</option>').join("");
     const nextAction=followUpSummary(job);
+    const followUpValue=String(job.followUp||"").slice(0,10);
+    const followUpControl=isApplied?'<label class="follow-up-control"><span>Follow up</span><input type="date" data-follow-up-date value="'+escapeAttr(followUpValue)+'" aria-label="Follow-up date"></label>':"";
     const lifecycleControl='<div class="job-lifecycle-row"><label class="lifecycle-control"><span>Status</span><select data-lifecycle-status aria-label="Job status">'+lifecycleOptions+'</select></label>'+
-      (nextAction?'<span class="next-action">'+escapeHtml(nextAction)+'</span>':'')+'</div>';
+      followUpControl+(nextAction?'<span class="next-action">'+escapeHtml(nextAction)+'</span>':'')+'</div>';
     const docsReady=documentsReadyForApplication(job);
-    const applyGate=job.url?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply aria-label="Open application with approved documents" title="'+(docsReady?'Open application':'Approve resume and cover letter first')+'"><span class="workflow-icon" aria-hidden="true">↗</span><span>'+(docsReady?'Apply':'Approve docs')+'</span></button>':"";
-    const appliedAction='<button class="workflow-action'+(isApplied?' is-applied':'')+'" type="button" data-apply-status="'+(isApplied?'saved':'applied')+'" aria-pressed="'+String(isApplied)+'" aria-label="'+(isApplied?'Unmark as applied':'Mark as applied')+'" title="'+(isApplied?'Unmark as applied':'Mark as applied')+'"><span class="workflow-icon" aria-hidden="true">✓</span><span>Applied</span></button>';
+    const statusLower=currentStatus.toLowerCase();
+    const postApplication=["applied","interview","offer","rejected"].includes(statusLower);
+    const applyGate=job.url&&!postApplication?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply aria-label="Open application with approved documents" title="'+(docsReady?'Open application':'Approve resume and cover letter first')+'"><span class="workflow-icon" aria-hidden="true">↗</span><span>'+(docsReady?'Apply':'Approve docs')+'</span></button>':"";
+    const appliedAction=!["interview","offer","rejected","ignored"].includes(statusLower)?'<button class="workflow-action'+(isApplied?' is-applied':'')+'" type="button" data-apply-status="'+(isApplied?'saved':'applied')+'" aria-pressed="'+String(isApplied)+'" aria-label="'+(isApplied?'Unmark as applied':'Mark as applied')+'" title="'+(isApplied?'Unmark as applied':'Mark as applied')+'"><span class="workflow-icon" aria-hidden="true">✓</span><span>Applied</span></button>':"";
     const configuredActions=uiRows("detail-action");
     const actions=(configuredActions.length?configuredActions:fallbackActions())
       .filter((item)=>{
