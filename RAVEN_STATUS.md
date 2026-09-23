@@ -64,6 +64,13 @@ Still requires real employer-site verification:
 - completion detection on real confirmation pages,
 - extension import on current LinkedIn/Indeed/Glassdoor/Monster and representative ATS pages.
 
+## Post-application lifecycle
+- Shared lifecycle transitions now use one frontend persistence path rather than separate bookmark/applied/ignore implementations.
+- Applied jobs receive a configurable default follow-up date using the existing persisted `follow_up` field; the initial default is 7 days and can be edited from the job detail.
+- Interview, Offer, Rejected, and Ignored are handled through the same lifecycle control. Rejected now has a proper pipeline bucket.
+- Post-application stages suppress the old re-apply/bookmark controls that could otherwise move jobs backward accidentally.
+- Strong browser-extension application completion signals route through the same lifecycle transition logic.
+
 ## Backup / recovery
 - `npm run backup:raven` creates the durable Supabase snapshot.
 - `npm run backup:raven -- --scope=full` includes operational/audit history.
