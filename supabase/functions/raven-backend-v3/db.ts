@@ -87,7 +87,17 @@ export async function updateDescription(url:string,c:Candidate){
   if(!r.ok) throw new Error("Description save failed ("+r.status+")");
 }
 
+async function closeStaleRuns(track:Track){
+  const cutoff=new Date(Date.now()-3*60*1000).toISOString();
+  await rest("raven_search_runs?track=eq."+encodeURIComponent(track)+"&status=eq.running&created_at=lt."+encodeURIComponent(cutoff),{
+    method:"PATCH",
+    headers:{Prefer:"return=minimal"},
+    body:JSON.stringify({status:"failed",result_count:0,error:"stale background search automatically closed"})
+  }).catch(()=>{});
+}
+
 export async function createRun(track:Track,queryCount:number){
+  await closeStaleRuns(track);
   const r=await rest("raven_search_runs",{
     method:"POST",
     headers:{Prefer:"return=representation"},

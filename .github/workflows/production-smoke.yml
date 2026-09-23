@@ -1,13 +1,15 @@
 name: Production Smoke Tests
 on:
   workflow_dispatch:
+  push:
+    branches: ["main"]
   workflow_run:
     workflows: ["Deploy Raven to GitHub Pages"]
     types: [completed]
 
 jobs:
   smoke:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     name: Headless Production Smoke Test
     runs-on: ubuntu-latest
     timeout-minutes: 10

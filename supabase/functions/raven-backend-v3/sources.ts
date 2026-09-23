@@ -166,8 +166,8 @@ async function atsSlice(source:string,track:Track,quick=false){
     const reader=r.body.getReader(), dec=new TextDecoder();
     let buf="", header:string[]|null=null, idx:any=null, bytes=0, lines=0;
     const out:Candidate[]=[];
-    const maxLines=quick ? 2200 : 7000;
-    const maxBytes=quick ? 2*1024*1024 : 7*1024*1024;
+    const maxLines=quick ? 2200 : 3500;
+    const maxBytes=quick ? 2*1024*1024 : 4*1024*1024;
     const maxRows=quick ? 40 : 80;
     while(out.length<maxRows && lines<maxLines){
       const {done,value}=await reader.read();
