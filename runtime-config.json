@@ -78,7 +78,8 @@
     "empty-list-text": "No matching jobs.",
     "empty-detail-title": "Select a job",
     "empty-detail-text": "Tap a job to view its description and actions.",
-    "public-site-url": "https://shipitmyguy-ux.github.io/raven/"
+    "public-site-url": "https://shipitmyguy-ux.github.io/raven/",
+    "follow-up-days": 7
   },
   "ui": [
     {

@@ -96,6 +96,38 @@ test("bookmark and applied status persist through reload",async({page})=>{
   await expect(page.getByRole("button",{name:"Unmark as applied"})).toBeVisible();
 });
 
+test("shared lifecycle transitions schedule follow-up and handle post-application states",async({page})=>{
+  const api=await mockRaven(page);
+  await page.goto("/");
+  await page.locator('[data-track="Professional"]').click();
+  await page.locator(".job-card-summary").first().click();
+
+  const lifecycle=page.locator("[data-lifecycle-status]");
+  await expect(lifecycle).toHaveValue("Saved");
+  await lifecycle.selectOption("Applied");
+
+  await expect.poll(()=>api.getJob().status).toBe("Applied");
+  await expect.poll(()=>String(api.getJob().followUp||"")).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  await expect(page.locator(".next-action")).toContainText(/Follow up/);
+  await expect(page.locator("[data-follow-up-date]")).toHaveValue(String(api.getJob().followUp));
+
+  const customFollowUp="2026-10-15";
+  await page.locator("[data-follow-up-date]").fill(customFollowUp);
+  await page.locator("[data-follow-up-date]").dispatchEvent("change");
+  await expect.poll(()=>api.getJob().followUp).toBe(customFollowUp);
+
+  await page.locator("[data-lifecycle-status]").selectOption("Interview");
+  await expect.poll(()=>api.getJob().status).toBe("Interview");
+  expect(api.getJob().followUp).toBeNull();
+  await expect(page.locator(".next-action")).toHaveCount(0);
+  await expect(page.locator("[data-approved-apply]")).toHaveCount(0);
+  await expect(page.getByRole("button",{name:"Mark as applied"})).toHaveCount(0);
+
+  await page.locator("[data-lifecycle-status]").selectOption("Rejected");
+  await expect.poll(()=>api.getJob().status).toBe("Rejected");
+  await expect(page.locator(".stage-header h2").filter({hasText:"Rejected"})).toBeVisible();
+});
+
 test("generator API can be fully mocked without spending model tokens",async({page})=>{
   const api=await mockRaven(page);await page.goto("/");
   const response=await page.evaluate(async()=>{const r=await fetch(window.RAVEN_CONFIG.generateApiUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({documentType:"resume"})});return r.json();});

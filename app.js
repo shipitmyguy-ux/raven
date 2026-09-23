@@ -41,6 +41,7 @@
     USER_SETTINGS_KEY,DOCUMENT_APPROVALS_KEY,VIEWED_JOBS_KEY
   ];
   const RESUME_TEMPLATE_VERSION="modern-v3";
+  const DEFAULT_FOLLOW_UP_DAYS=7;
   let editingMasterResumeId=null;
   let editingAnswerMemoryKey=null;
 
@@ -745,12 +746,49 @@
   function pipelineBucket(job) {
     const s=String(job.status||"Saved").toLowerCase();
     if (s.includes("ignored")) return "Ignored";
+    if (s.includes("rejected")) return "Rejected";
     if (s.includes("offer")) return "Offer";
     if (s.includes("interview")) return "Interview";
     if (s.includes("applied")) return "Applied";
     if (s.includes("interested")) return "Interested";
     if (s.includes("ready") || s.includes("tailor")) return "Tailoring";
     return "Saved";
+  }
+  function lifecycleStatuses() {
+    const configured=Array.isArray(state.runtime.statuses)?state.runtime.statuses:[];
+    const fallback=["Saved","Ready","Applied","Interview","Offer","Rejected","Ignored"];
+    const rows=configured.length
+      ? configured.filter((item)=>parseBool(item.visible,true)).sort((a,b)=>Number(a.order||0)-Number(b.order||0))
+      : fallback.map((key,index)=>({key,label:key,order:index}));
+    return rows.map((item)=>({key:String(item.key||item.label||""),label:String(item.label||item.key||"")})).filter((item)=>item.key);
+  }
+  function followUpDays() {
+    const configured=Number(state.runtime.settings["follow-up-days"]);
+    return Number.isFinite(configured)&&configured>0 ? Math.min(30,Math.round(configured)) : DEFAULT_FOLLOW_UP_DAYS;
+  }
+  function defaultFollowUpDate(fromValue) {
+    const parsed=Date.parse(fromValue||"");
+    const date=new Date(Number.isFinite(parsed)?parsed:Date.now());
+    date.setDate(date.getDate()+followUpDays());
+    const year=date.getFullYear();
+    const month=String(date.getMonth()+1).padStart(2,"0");
+    const day=String(date.getDate()).padStart(2,"0");
+    return year+"-"+month+"-"+day;
+  }
+  function followUpSummary(job) {
+    const value=String(job.followUp||"").trim();
+    if(!value) return "";
+    const due=/^\d{4}-\d{2}-\d{2}$/.test(value) ? Date.parse(value+"T12:00:00") : Date.parse(value);
+    if(!Number.isFinite(due)) return "";
+    const now=new Date();
+    const today=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());
+    const target=new Date(due);
+    const targetDay=Date.UTC(target.getFullYear(),target.getMonth(),target.getDate());
+    const days=Math.round((targetDay-today)/86400000);
+    if(days<0) return "Follow up overdue by "+Math.abs(days)+" day"+(Math.abs(days)===1?"":"s");
+    if(days===0) return "Follow up today";
+    if(days===1) return "Follow up tomorrow";
+    return "Follow up in "+days+" days";
   }
   function isRemoteJob(job) {
     if (job.remote===true) return true;
@@ -844,6 +882,7 @@
       {bucket:"Applied",label:"Applied"},
       {bucket:"Interview",label:"Interview"},
       {bucket:"Offer",label:"Offer"},
+      {bucket:"Rejected",label:"Rejected"},
       {bucket:"Ignored",label:"Ignored"}
     ];
     groups.forEach((group)=>{
@@ -871,7 +910,7 @@
             : '';
           const isIgnored=rawStatus.toLowerCase()==="ignored";
           const isBookmarked=rawStatus.toLowerCase()==="interested";
-          const bookmarkStar=/^(applied|ignored)$/i.test(rawStatus) ? "" :
+          const bookmarkStar=/^(applied|interview|offer|rejected|ignored)$/i.test(rawStatus) ? "" :
             '<button class="bookmark-star'+(isBookmarked?' is-bookmarked':'')+'" type="button" data-card-bookmark aria-pressed="'+String(isBookmarked)+'" aria-label="'+(isBookmarked?'Remove bookmark':'Bookmark job')+'" title="'+(isBookmarked?'Remove bookmark':'Bookmark job')+'">'+(isBookmarked?'★':'☆')+'</button>';
           const ignoreControl='<button class="ignore-job-button'+(isIgnored?' is-restore':'')+'" type="button" data-ignore-job aria-label="'+(isIgnored?'Restore job':'Ignore job')+'" title="'+(isIgnored?'Restore job':'Ignore job')+'">'+(isIgnored?'↩':'×')+'</button>';
           card.innerHTML=
@@ -897,6 +936,18 @@
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
                 toggleApplied(job);
+              });
+            });
+            expanded.querySelectorAll("[data-lifecycle-status]").forEach((select)=>{
+              select.addEventListener("change",(event)=>{
+                event.stopPropagation();
+                transitionJob(job,select.value,{statusMessage:"Moved to "+select.options[select.selectedIndex]?.text});
+              });
+            });
+            expanded.querySelectorAll("[data-follow-up-date]").forEach((input)=>{
+              input.addEventListener("change",(event)=>{
+                event.stopPropagation();
+                transitionJob(job,"Applied",{followUp:input.value,statusMessage:input.value?"Follow-up scheduled":"Follow-up cleared"});
               });
             });
             expanded.querySelectorAll("[data-generate]").forEach((button)=>{
@@ -1062,9 +1113,21 @@
     }).join("");
 
     const isApplied=String(job.status||"").toLowerCase()==="applied";
+    const currentStatus=String(job.status||"Saved");
+    const lifecycleRows=lifecycleStatuses().filter((item)=>item.key!=="Discovered");
+    const currentIsDiscovered=currentStatus==="Discovered";
+    const lifecycleOptions=(currentIsDiscovered?'<option value="Discovered" selected disabled>Discovered</option>':"")+
+      lifecycleRows.map((item)=>'<option value="'+escapeAttr(item.key)+'"'+(item.key===currentStatus?' selected':'')+'>'+escapeHtml(item.label)+'</option>').join("");
+    const nextAction=followUpSummary(job);
+    const followUpValue=String(job.followUp||"").slice(0,10);
+    const followUpControl=isApplied?'<label class="follow-up-control"><span>Follow up</span><input type="date" data-follow-up-date value="'+escapeAttr(followUpValue)+'" aria-label="Follow-up date"></label>':"";
+    const lifecycleControl='<div class="job-lifecycle-row"><label class="lifecycle-control"><span>Status</span><select data-lifecycle-status aria-label="Job status">'+lifecycleOptions+'</select></label>'+
+      followUpControl+(nextAction?'<span class="next-action">'+escapeHtml(nextAction)+'</span>':'')+'</div>';
     const docsReady=documentsReadyForApplication(job);
-    const applyGate=job.url?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply aria-label="Open application with approved documents" title="'+(docsReady?'Open application':'Approve resume and cover letter first')+'"><span class="workflow-icon" aria-hidden="true">↗</span><span>'+(docsReady?'Apply':'Approve docs')+'</span></button>':"";
-    const appliedAction='<button class="workflow-action'+(isApplied?' is-applied':'')+'" type="button" data-apply-status="'+(isApplied?'saved':'applied')+'" aria-pressed="'+String(isApplied)+'" aria-label="'+(isApplied?'Unmark as applied':'Mark as applied')+'" title="'+(isApplied?'Unmark as applied':'Mark as applied')+'"><span class="workflow-icon" aria-hidden="true">✓</span><span>Applied</span></button>';
+    const statusLower=currentStatus.toLowerCase();
+    const postApplication=["applied","interview","offer","rejected"].includes(statusLower);
+    const applyGate=job.url&&!postApplication?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply aria-label="Open application with approved documents" title="'+(docsReady?'Open application':'Approve resume and cover letter first')+'"><span class="workflow-icon" aria-hidden="true">↗</span><span>'+(docsReady?'Apply':'Approve docs')+'</span></button>':"";
+    const appliedAction=!["interview","offer","rejected","ignored"].includes(statusLower)?'<button class="workflow-action'+(isApplied?' is-applied':'')+'" type="button" data-apply-status="'+(isApplied?'saved':'applied')+'" aria-pressed="'+String(isApplied)+'" aria-label="'+(isApplied?'Unmark as applied':'Mark as applied')+'" title="'+(isApplied?'Unmark as applied':'Mark as applied')+'"><span class="workflow-icon" aria-hidden="true">✓</span><span>Applied</span></button>':"";
     const configuredActions=uiRows("detail-action");
     const actions=(configuredActions.length?configuredActions:fallbackActions())
       .filter((item)=>{
@@ -1086,6 +1149,7 @@
     const summary=jobDetailSummary(job);
     const canExpand=fullDescription.length>summary.length+40;
     return '<section class="inline-job-detail">'+
+      lifecycleControl+
       '<section class="job-description"><h3>Job summary</h3>'+
         '<p class="job-description-text" data-description-summary>'+escapeHtml(summary)+'</p>'+
         (canExpand?'<p class="job-description-text full-description" data-description-full hidden>'+escapeHtml(fullDescription)+'</p>':'')+
@@ -1491,11 +1555,27 @@
     }
   }
 
-  async function toggleApplied(job) {
-    const isApplied=String(job.status||"").toLowerCase()==="applied";
-    const nextStatus=isApplied?"Saved":"Applied";
-    const appliedDate=isApplied?null:new Date().toISOString();
-    setStatus(isApplied?"Unmarking applied...":"Marking applied...");
+  async function transitionJob(job,nextStatus,options={}) {
+    const allowed=new Set(lifecycleStatuses().map((item)=>item.key));
+    if(!allowed.has(nextStatus) && nextStatus!=="Discovered"){
+      setStatus("Unsupported job status");
+      return;
+    }
+    const previousStatus=String(job.status||"Saved");
+    const now=options.occurredAt||new Date().toISOString();
+    const patch={status:nextStatus,viewed:true};
+
+    if(nextStatus==="Applied"){
+      patch.appliedDate=job.appliedDate||now;
+      patch.followUp=options.followUp!==undefined ? options.followUp : (job.followUp||defaultFollowUpDate(patch.appliedDate));
+    }else if(["Saved","Interested","Ready"].includes(nextStatus) && previousStatus==="Applied"){
+      patch.appliedDate=null;
+      patch.followUp=null;
+    }else if(["Interview","Offer","Rejected","Ignored"].includes(nextStatus)){
+      patch.followUp=null;
+    }
+
+    setStatus(options.pendingMessage||("Updating status to "+nextStatus+"..."));
     try{
       if(job._discovered){
         await window.RavenAPI.addJob({
@@ -1508,20 +1588,42 @@
           url:job.url||"",
           source:job.source||"",
           status:nextStatus,
-          appliedDate,
+          viewed:true,
+          appliedDate:patch.appliedDate||null,
+          followUp:patch.followUp||null,
           notes:job.notes||""
         });
       }else{
-        await window.RavenAPI.updateJob(job.id,{status:nextStatus,appliedDate});
+        await window.RavenAPI.updateJob(job.id,patch);
       }
+
       job.status=nextStatus;
-      job.appliedDate=appliedDate||"";
-      state.selectedId=null;
-      if(job._discovered) await loadJobs(); else { writeCache(CACHE_JOBS_KEY,state.jobs); render(); }
-      setStatus(isApplied?"Marked not applied":"Marked applied");
+      job.viewed=true;
+      if(Object.prototype.hasOwnProperty.call(patch,"appliedDate")) job.appliedDate=patch.appliedDate||"";
+      if(Object.prototype.hasOwnProperty.call(patch,"followUp")) job.followUp=patch.followUp||"";
+
+      if(options.collapse) state.selectedId=null;
+      if(job._discovered){
+        await loadJobs();
+      }else{
+        const saved=state.jobs.find((item)=>item.id===job.id);
+        if(saved) Object.assign(saved,job);
+        writeCache(CACHE_JOBS_KEY,state.jobs);
+        render();
+      }
+      setStatus(options.statusMessage||("Moved to "+nextStatus));
     }catch(error){
-      setStatus("Update failed: "+error.message);
+      setStatus("Status update failed: "+error.message);
     }
+  }
+
+  async function toggleApplied(job) {
+    const isApplied=String(job.status||"").toLowerCase()==="applied";
+    await transitionJob(job,isApplied?"Saved":"Applied",{
+      collapse:true,
+      pendingMessage:isApplied?"Unmarking applied...":"Marking applied...",
+      statusMessage:isApplied?"Marked not applied":"Marked applied"
+    });
   }
 
   function viewedKey(job) {
@@ -1551,64 +1653,20 @@
   }
 
   async function setJobIgnored(job,ignored) {
-    const nextStatus=ignored?"Ignored":"Saved";
-    setStatus(ignored?"Ignoring job...":"Restoring job...");
-    try{
-      if(job._discovered){
-        await window.RavenAPI.addJob({
-          track:job.track||"Professional",
-          title:job.title||"",
-          company:job.company||"",
-          location:job.location||"",
-          remote:isRemoteJob(job),
-          salaryText:job.salaryText||"",
-          url:job.url||"",
-          source:job.source||"",
-          status:nextStatus,
-          viewed:true,
-          notes:job.notes||""
-        });
-      }else{
-        await window.RavenAPI.updateJob(job.id,{status:nextStatus,viewed:true});
-      }
-      job.status=nextStatus;
-      job.viewed=true;
-      state.selectedId=null;
-      if(job._discovered) await loadJobs(); else { writeCache(CACHE_JOBS_KEY,state.jobs); render(); }
-      setStatus(ignored?"Moved to ignored":"Job restored");
-    }catch(error){
-      setStatus("Ignore update failed: "+error.message);
-    }
+    await transitionJob(job,ignored?"Ignored":"Saved",{
+      collapse:true,
+      pendingMessage:ignored?"Ignoring job...":"Restoring job...",
+      statusMessage:ignored?"Moved to ignored":"Job restored"
+    });
   }
 
   async function toggleBookmark(job) {
     const interested=String(job.status||"").toLowerCase()==="interested";
-    const nextStatus=interested?"Saved":"Interested";
-    setStatus(interested?"Removing bookmark...":"Saving bookmark...");
-    try{
-      if(job._discovered){
-        await window.RavenAPI.addJob({
-          track:job.track||"Professional",
-          title:job.title||"",
-          company:job.company||"",
-          location:job.location||"",
-          remote:isRemoteJob(job),
-          salaryText:job.salaryText||"",
-          url:job.url||"",
-          source:job.source||"",
-          status:nextStatus,
-          notes:job.notes||""
-        });
-      }else{
-        await window.RavenAPI.updateJob(job.id,{status:nextStatus});
-      }
-      job.status=nextStatus;
-      state.selectedId=null;
-      if(job._discovered) await loadJobs(); else { writeCache(CACHE_JOBS_KEY,state.jobs); render(); }
-      setStatus(interested?"Bookmark removed":"Bookmarked");
-    }catch(error){
-      setStatus("Bookmark failed: "+error.message);
-    }
+    await transitionJob(job,interested?"Saved":"Interested",{
+      collapse:true,
+      pendingMessage:interested?"Removing bookmark...":"Saving bookmark...",
+      statusMessage:interested?"Bookmark removed":"Bookmarked"
+    });
   }
 
   function escapeHtml(value) {
@@ -1883,16 +1941,11 @@
       if(!jobHost||jobHost!==completionHost) return;
       if(String(job.status||"").toLowerCase()==="applied") return;
       const appliedDate=completion.completedAt||new Date().toISOString();
-      try{
-        await window.RavenAPI.updateJob(job.id,{status:"Applied",appliedDate});
-        job.status="Applied";
-        job.appliedDate=appliedDate;
-        writeCache(CACHE_JOBS_KEY,state.jobs);
-        render();
-        setStatus("Application completion confirmed · marked Applied");
-      }catch(error){
-        setStatus("Application completion detected, but Raven could not update status: "+error.message);
-      }
+      await transitionJob(job,"Applied",{
+        occurredAt:appliedDate,
+        pendingMessage:"Application completion confirmed · updating status...",
+        statusMessage:"Application completion confirmed · marked Applied"
+      });
     });
   }
   function applySharedParams() {

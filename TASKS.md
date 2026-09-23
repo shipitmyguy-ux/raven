@@ -81,7 +81,7 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] requires real-site/user-acc
 
 ## Future product roadmap
 These are feature expansions, not Raven closeout blockers.
-- [ ] Add Contact, Interview, and FollowUp entities related to Job/Application.
+- [~] Shared post-application lifecycle transitions and persisted follow-up scheduling are implemented on the existing Job model; dedicated Contact/Interview/FollowUp event entities remain a later expansion.
 - [ ] Add optional email-driven application-status classification/matching with user-visible corrections.
 - [ ] Add outcome analytics by source, role family, resume variant, tailoring, and interview/offer conversion.
 - [ ] Replace opaque ranking/ATS-style scores with supported-requirement coverage, unsupported requirements, and missing-evidence reporting.
