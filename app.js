@@ -896,11 +896,16 @@
     const snapshots=Array.isArray(activity.snapshots)?activity.snapshots:[];
     const latestSnapshot=snapshots.find((item)=>item.snapshot_type==="application")||snapshots[0]||null;
     const interviewMode=String(job.status||"").toLowerCase()==="interview";
-    const rows=events.slice(0,10).map((event)=>
-      '<li><div><strong>'+escapeHtml(activityLabel(event.event_type))+'</strong>'+
-      (event.summary?'<span>'+escapeHtml(event.summary)+'</span>':'')+'</div>'+
-      '<time>'+escapeHtml(formatActivityDate(event.occurred_at))+'</time></li>'
-    ).join("");
+    const rows=events.slice(0,10).map((event)=>{
+      const suggested=String(event?.metadata?.suggested_status||"");
+      const autoApplied=event?.metadata?.auto_applied===true;
+      const suggestion=suggested&&!autoApplied&&suggested!==String(job.status||"")
+        ? '<button type="button" class="activity-suggestion" data-apply-suggested-status="'+escapeAttr(suggested)+'">Move to '+escapeHtml(suggested)+'</button>'
+        : '';
+      return '<li><div><strong>'+escapeHtml(activityLabel(event.event_type))+'</strong>'+
+        (event.summary?'<span>'+escapeHtml(event.summary)+'</span>':'')+suggestion+'</div>'+
+        '<time>'+escapeHtml(formatActivityDate(event.occurred_at))+'</time></li>';
+    }).join("");
     const loading=!activity.loaded
       ? '<p class="activity-empty">Loading activity…</p>'
       : (activity.error?'<p class="activity-empty">Activity unavailable.</p>':(rows?'<ol class="activity-list">'+rows+'</ol>':'<p class="activity-empty">No activity recorded yet.</p>'));
@@ -1088,6 +1093,12 @@
                 event.stopPropagation();
                 const data=new FormData(form);
                 addJobActivity(job,String(data.get("type")||"note"),String(data.get("summary")||"").trim());
+              });
+            });
+            expanded.querySelectorAll("[data-apply-suggested-status]").forEach((button)=>{
+              button.addEventListener("click",(event)=>{
+                event.stopPropagation();
+                transitionJob(job,button.dataset.applySuggestedStatus,{source:"signal-review",statusMessage:"Signal suggestion applied"});
               });
             });
             expanded.querySelectorAll("[data-generate]").forEach((button)=>{
