@@ -4,6 +4,7 @@ import { json, normalizeUrl, recoverCompanyFromUrl, analyzeCanonicalIdentity } f
 import { quickSearch, maybeStartDeep } from "./search.ts";
 import { listResults, listJobs, addJob, updateJob, listTasksForHealth, getJobById, getJobByUrl, addJobEvent, listJobEvents, listAllJobEvents, ensureJobSnapshot, listJobSnapshots, getCanonicalProfile, listAllJobSnapshots } from "./db.ts";
 import { requestGuard, requestFinish } from "./request-budget.ts";
+import { classifyApplicationMessage } from "./signal-classifier.ts";
 import { enrichCandidate } from "./enrich.ts";
 
 
@@ -259,7 +260,7 @@ Deno.serve(async(req:Request)=>{
       };
       const categories=tasks.map(classify);
       const counts={total:tasks.length,operationalActive:categories.filter(x=>x==="operational_active").length,activeFailures:categories.filter(x=>x==="operational_failure").length,manualBlocked:categories.filter(x=>x==="manual_blocked").length,historicalLegacy:categories.filter(x=>x==="historical_legacy").length,disposableTest:categories.filter(x=>x==="disposable_test").length};
-      return json({ok:true,status:counts.activeFailures?"degraded":"healthy",healthy:counts.activeFailures===0,counts,service:"raven-backend-v3",version:1,features:["quick-search","deep-search","descriptions","persistence","commute","jobicy","himalayas","ats-wide","lifecycle-events","posting-snapshots","application-signals","outcome-analytics","evidence-coverage"]});
+      return json({ok:true,status:counts.activeFailures?"degraded":"healthy",healthy:counts.activeFailures===0,counts,service:"raven-backend-v3",version:1,features:["quick-search","deep-search","descriptions","persistence","commute","jobicy","himalayas","ats-wide","lifecycle-events","posting-snapshots","application-signals","outcome-analytics","evidence-coverage","message-classification"]});
     }
 
     if(action==="jobs"){
@@ -389,15 +390,22 @@ Deno.serve(async(req:Request)=>{
     }
 
     if(action==="receiveApplicationSignal"){
-      const type=cleanSignalText(body.type||body.signalType).toLowerCase().replace(/[^a-z0-9]+/g,"_");
-      const confidence=Math.max(0,Math.min(1,Number(body.confidence??0.5)));
+      const classified=classifyApplicationMessage(String(body.messageText||body.text||body.body||""));
+      const type=cleanSignalText(body.type||body.signalType||classified?.type).toLowerCase().replace(/[^a-z0-9]+/g,"_");
+      const confidence=Math.max(0,Math.min(1,Number(body.confidence??classified?.confidence??0.5)));
       if(!type) return json({error:"signal type required"},400);
       const job=await matchSignalJob(body);
       if(!job) return json({ok:true,matched:false,signal:{type,confidence}});
       const target=({submitted:"Applied",application_submitted:"Applied",interview:"Interview",interview_requested:"Interview",interview_scheduled:"Interview",offer:"Offer",offer_received:"Offer",rejection:"Rejected",rejected:"Rejected"} as any)[type]||"";
       const current=String(job.status||"Saved");
       const canAdvance=target&&Number(STATUS_RANK[target]||0)>=Number(STATUS_RANK[current]||0);
-      const metadata={signal_type:type,evidence:cleanSignalText(body.evidence),suggested_status:target||null,auto_applied:false};
+      const metadata={
+        signal_type:type,
+        evidence:cleanSignalText(body.evidence||classified?.evidence),
+        classifier_reason:classified?.reason||null,
+        suggested_status:target||null,
+        auto_applied:false
+      };
       if(target&&confidence>=0.85&&canAdvance){
         const result=await transitionStoredJob(String(job.id),target,{
           occurredAt:body.occurredAt,
@@ -418,6 +426,11 @@ Deno.serve(async(req:Request)=>{
         metadata
       });
       return json({ok:true,matched:true,auto_applied:false,suggested_status:target||null,job,event});
+    }
+
+    if(action==="classifyApplicationMessage"){
+      const classified=classifyApplicationMessage(String(body.messageText||body.text||body.body||""));
+      return json({ok:true,classification:classified});
     }
 
     if(action==="coverage"){
