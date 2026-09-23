@@ -51,7 +51,7 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] requires real-site/user-acc
 ### UX
 - [x] Live production smoke verifies app load, all four tabs, bounded card layout, global refresh state, filter-only tabs, bookmark persistence, and document-review approval persistence.
 - [x] Targeted browser regression verifies Application Assistant safety behavior.
-- [ ] Broaden desktop/responsive visual QA beyond the current automated production viewport set.
+- [x] Responsive browser regression now covers representative mobile, tablet, laptop, and desktop widths in addition to the production smoke viewport.
 - [~] Continue improving user-visible backend/frontend diagnostics as new failure modes are discovered.
 
 ### Google Drive
@@ -83,8 +83,8 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] requires real-site/user-acc
 These are feature expansions, not Raven closeout blockers.
 - [x] Shared post-application lifecycle is implemented: persisted follow-up scheduling, generic job activity/events, interview/offer/rejection transitions, recruiter/follow-up/assessment activity, and snapshot-backed interview context all reuse one event model.
 - [~] Generic application-signal classification/matching is implemented with confidence-gated automatic transitions and user-visible suggestions. A personal email/OAuth adapter is intentionally not connected yet.
-- [~] Outcome analytics are implemented for applications, interviews, offers, response timing, source, and track. Resume/tailoring variant analytics remain pending until those variants have stable identifiers.
-- [ ] Replace opaque ranking/ATS-style scores with supported-requirement coverage, unsupported requirements, and missing-evidence reporting.
+- [x] Outcome analytics cover applications, interviews, offers, response timing, source, track, and stable submitted-resume variants derived from immutable application snapshots.
+- [x] User-facing fit analysis uses deterministic verified-evidence coverage with supported, partial, and missing-evidence requirements; opaque search scores remain internal ranking signals only.
 - [ ] Expand direct ATS coverage beyond the current adapters as source value justifies it.
 - [x] Generic schema.org/JobPosting extraction exists for unsupported employer pages.
 - [~] Aggregators are primarily discovery/provenance sources; continue canonical employer/ATS resolution when a reliable target is available.
