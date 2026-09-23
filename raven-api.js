@@ -68,6 +68,7 @@
     addJobEvent(jobId, event = {}) { return write(config.searchApiUrl, "addJobEvent", { jobId, ...event }); },
     listJobSnapshots(jobId) { return read(config.searchApiUrl, "jobSnapshots", { jobId }); },
     receiveApplicationSignal(signal = {}) { return write(config.searchApiUrl, "receiveApplicationSignal", signal); },
+    classifyApplicationMessage(messageText) { return write(config.searchApiUrl, "classifyApplicationMessage", { messageText }); },
     analytics() { return read(config.searchApiUrl, "analytics"); },
     coverage(jobId) { return read(config.searchApiUrl, "coverage", { jobId }); },
     describeJob(job) { return read(config.enrichApiUrl, "describe", job || {}); },

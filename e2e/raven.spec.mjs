@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { classifyApplicationMessage } from "../supabase/functions/raven-backend-v3/signal-classifier.mjs";
 
 const savedJob={id:"job-1",track:"Professional",title:"Implementation Project Manager",company:"Acme Health",location:"Remote",remote:true,salary_text:"$90,000",url:"https://example.com/job/1?utm_source=test",source:"Mock",status:"Saved",notes:"Lead implementation projects, coordinate internal teams, manage schedules and stakeholder communication.",added:new Date().toISOString(),resume:"",cover_letter:""};
 const generatedResume={name:"Test Candidate",headline:"Project & Implementation Leader",contact:"candidate@example.com",summary:"Experienced delivery leader.",skills:["Project delivery","Team leadership"],experience:[{role:"Environment Artist",company:"Example Studio",dates:"2020–2025",bullets:["Led delivery across internal teams."]}],education:[{degree:"Bachelor's Degree",school:"Example University",location:"",dates:""}],additional:[]};
@@ -167,6 +168,46 @@ test("bookmark and applied status persist through reload",async({page})=>{
   await expect.poll(()=>api.getJob().status).toBe("Applied");
   await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator(".job-card-summary").first().click();
   await expect(page.getByRole("button",{name:"Unmark as applied"})).toBeVisible();
+});
+
+test("application message classifier recognizes rejection interview and offer language",async()=>{
+  const cases=[
+    {
+      text:"We regret to inform you that your application has not been selected for further consideration.",
+      type:"rejection"
+    },
+    {
+      text:"After reviewing the applicant pool, we have chosen to continue the process with candidates whose backgrounds more closely align with our current needs.",
+      type:"rejection"
+    },
+    {
+      text:"We would like to invite you to an interview for the Operations Project Manager role. Please choose one of the available times.",
+      type:"interview"
+    },
+    {
+      text:"We enjoyed reviewing your background and would like to schedule an interview with our hiring manager next week.",
+      type:"interview"
+    },
+    {
+      text:"Wencor Group LLC is pleased to offer you the Technician I position. The official Offer Letter is available for review and signature.",
+      type:"offer"
+    },
+    {
+      text:"We are excited to offer you the Project Coordinator role. If you accept this offer, your proposed start date is October 12.",
+      type:"offer"
+    }
+  ];
+  for(const row of cases){
+    expect(classifyApplicationMessage(row.text)?.type).toBe(row.type);
+  }
+});
+
+test("application message classifier avoids conditional interview and receipt false positives",async()=>{
+  const receipt="We received your application and look forward to reviewing it. We'll be in touch to schedule an interview if your background and experience match what we're looking for.";
+  expect(classifyApplicationMessage(receipt)?.type).toBe("application_submitted");
+
+  const plainReceipt="Thank you for applying. Our hiring team will review your application and contact qualified applicants.";
+  expect(classifyApplicationMessage(plainReceipt)).toBeNull();
 });
 
 test("shared lifecycle transitions schedule follow-up and handle post-application states",async({page})=>{
