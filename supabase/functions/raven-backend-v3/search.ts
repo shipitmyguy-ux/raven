@@ -3,7 +3,6 @@ import { TRACKS } from "./config.ts";
 import { rankCandidates, score, within } from "./utils.ts";
 import { linkedinQuick, linkedinDeep, remotive, remoteOk, arbeitnow, jobicy, himalayas, atsWide } from "./sources.ts";
 import { upsertResults, listResults, createRun, finishRun, deepSearchRunning, deepSearchCooldown } from "./db.ts";
-import { enrichCandidate } from "./enrich.ts";
 
 export async function quickSearch(track:Track){
   // Keep peak memory below the Edge Runtime limit by using staged quick-search
@@ -30,33 +29,20 @@ export async function quickSearch(track:Track){
   return rows;
 }
 
-async function enrichRows(rows:Candidate[]){
-  const enriched:Candidate[]=[];
-  for(let i=0;i<rows.length;i+=10){
-    const batch=rows.slice(i,i+10);
-    const values=await Promise.all(batch.map(async(candidate)=>{
-      if(String(candidate.snippet||"").trim().length>=180) return candidate;
-      try{return await enrichCandidate(candidate);}catch{return candidate;}
-    }));
-    enriched.push(...values);
-  }
-  return enriched;
-}
-
 export async function deepSearch(track:Track){
   const runId=await createRun(track,TRACKS[track].terms.length);
   try{
     // Use the same staged workload for every category so one category with a
     // larger term list cannot exceed the Edge Runtime resource budget.
     const [li,rem,rok,arb]=await Promise.all([
-      linkedinDeep(track,6),
+      linkedinDeep(track,4),
       remotive(track),
       remoteOk(track),
       arbeitnow(track)
     ]);
     const [jcy,him]=await Promise.all([
-      jobicy(track,4),
-      himalayas(track,4)
+      jobicy(track,3),
+      himalayas(track,3)
     ]);
     const ats=await atsWide(track);
     const ranked=rankCandidates(track,[...li,...rem,...rok,...arb,...jcy,...him,...ats],100);
