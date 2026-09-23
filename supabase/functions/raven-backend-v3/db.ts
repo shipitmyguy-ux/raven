@@ -306,3 +306,18 @@ export async function listJobSnapshots(jobId:string){
   if(!r.ok) throw new Error("Job snapshots read failed ("+r.status+")");
   return await r.json();
 }
+
+
+export async function getCanonicalProfile(){
+  const r=await rest("raven_canonical_profiles?profile_key=eq.default&select=profile&limit=1",{method:"GET"});
+  if(!r.ok) throw new Error("Canonical profile read failed ("+r.status+")");
+  const rows=await r.json();
+  return rows?.[0]?.profile||null;
+}
+
+export async function listAllJobSnapshots(limit=5000){
+  const safe=Math.max(1,Math.min(10000,Number(limit)||5000));
+  const r=await rest("raven_job_snapshots?select=*&snapshot_type=eq.application&order=captured_at.desc&limit="+safe,{method:"GET"});
+  if(!r.ok) throw new Error("Job snapshots read failed ("+r.status+")");
+  return await r.json();
+}
