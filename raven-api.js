@@ -69,6 +69,7 @@
     listJobSnapshots(jobId) { return read(config.searchApiUrl, "jobSnapshots", { jobId }); },
     receiveApplicationSignal(signal = {}) { return write(config.searchApiUrl, "receiveApplicationSignal", signal); },
     analytics() { return read(config.searchApiUrl, "analytics"); },
+    coverage(jobId) { return read(config.searchApiUrl, "coverage", { jobId }); },
     describeJob(job) { return read(config.enrichApiUrl, "describe", job || {}); },
     commute(location) { return read(config.commuteApiUrl, "commute", { location }); },
     controlHealth() { return read(config.controlApiUrl, "health"); },

@@ -94,7 +94,14 @@ async function mockRaven(page,{generatorFails=false,initialJob=null,dataDelayMs=
       const applied=Boolean(job.applied_date)||["Applied","Interview","Offer","Rejected"].includes(job.status);
       const interview=["Interview","Offer"].includes(job.status)||events.some(e=>/interview/.test(e.event_type));
       const offer=job.status==="Offer"||events.some(e=>e.event_type==="offer");
-      return route.fulfill({json:{ok:true,analytics:{applications:applied?1:0,interviews:interview?1:0,offers:offer?1:0,rejections:job.status==="Rejected"?1:0,interview_rate:applied&&interview?1:0,offer_rate:applied&&offer?1:0,average_response_days:null,by_source:{Mock:{applications:applied?1:0,interviews:interview?1:0,offers:offer?1:0,rejections:job.status==="Rejected"?1:0,interview_rate:applied&&interview?1:0,offer_rate:applied&&offer?1:0}},by_track:{Professional:{applications:applied?1:0,interviews:interview?1:0,offers:offer?1:0,rejections:job.status==="Rejected"?1:0,interview_rate:applied&&interview?1:0,offer_rate:applied&&offer?1:0}}}}});
+      return route.fulfill({json:{ok:true,analytics:{applications:applied?1:0,interviews:interview?1:0,offers:offer?1:0,rejections:job.status==="Rejected"?1:0,interview_rate:applied&&interview?1:0,offer_rate:applied&&offer?1:0,average_response_days:null,by_source:{Mock:{applications:applied?1:0,interviews:interview?1:0,offers:offer?1:0,rejections:job.status==="Rejected"?1:0,interview_rate:applied&&interview?1:0,offer_rate:applied&&offer?1:0}},by_track:{Professional:{applications:applied?1:0,interviews:interview?1:0,offers:offer?1:0,rejections:job.status==="Rejected"?1:0,interview_rate:applied&&interview?1:0,offer_rate:applied&&offer?1:0}},by_resume_variant:{"v-test":{applications:applied?1:0,interviews:interview?1:0,offers:offer?1:0,rejections:job.status==="Rejected"?1:0,interview_rate:applied&&interview?1:0,offer_rate:applied&&offer?1:0}}}}});
+    }
+    if(action==="coverage"){
+      return route.fulfill({json:{ok:true,coverage:{total:3,supported:2,partial:0,missing:1,supported_ratio:2/3,requirements:[
+        {requirement:"Project management experience",status:"supported",evidence:[{id:"xfer_3",text:"Has project-management experience and a track record of on-time delivery.",kind:"transferable"}]},
+        {requirement:"Team leadership",status:"supported",evidence:[{id:"xfer_2",text:"Has led teams, mentored artists, and supported onboarding and training.",kind:"transferable"}]},
+        {requirement:"Direct enterprise SaaS implementation experience",status:"missing",evidence:[]}
+      ]}}});
     }
     if(action==="search") searchTracks.push(track);
     if(action==="listResults") listTracks.push(track);
@@ -231,6 +238,16 @@ test("manual outcome signals advance lifecycle through the shared signal path",a
   await expect(page.locator(".stage-header h2").filter({hasText:"Interview"})).toBeVisible();
 });
 
+test("expanded jobs show verified evidence coverage instead of an opaque fit score",async({page})=>{
+  await mockRaven(page);
+  await page.goto("/");
+  await page.locator('[data-track="Professional"]').click();
+  await page.locator(".job-card-summary").first().click();
+  await expect(page.locator(".evidence-coverage")).toContainText("67% supported");
+  await expect(page.locator(".evidence-coverage")).toContainText("Direct enterprise SaaS implementation experience");
+  await expect(page.locator(".evidence-coverage")).toContainText("No evidence found");
+});
+
 test("outcome analytics panel renders shared lifecycle metrics",async({page})=>{
   await mockRaven(page,{initialJob:{status:"Interview",applied_date:new Date().toISOString()}});
   await page.goto("/");
@@ -240,6 +257,7 @@ test("outcome analytics panel renders shared lifecycle metrics",async({page})=>{
   await expect(page.locator("#analyticsInterviews")).toHaveText("1");
   await expect(page.locator("#analyticsByTrack")).toContainText("Professional");
   await expect(page.locator("#analyticsBySource")).toContainText("Mock");
+  await expect(page.locator("#analyticsByResume")).toContainText("v-test");
 });
 
 test("medium-confidence external signals stay reviewable until accepted",async({page})=>{
@@ -549,6 +567,30 @@ test("completion event with host mismatch is ignored",async({page})=>{
   expect(api.getJob().status).toBe("Saved");
 });
 
+
+test("representative responsive widths keep primary Raven surfaces bounded",async({page})=>{
+  await mockRaven(page);
+  for(const viewport of [
+    {width:375,height:667},
+    {width:768,height:900},
+    {width:1024,height:768},
+    {width:1440,height:900}
+  ]){
+    await page.setViewportSize(viewport);
+    await page.goto("/");
+    await page.locator('[data-track="Professional"]').click();
+    await page.locator(".job-card-summary").first().click();
+    const layout=await page.evaluate(()=>({
+      innerWidth:window.innerWidth,
+      documentWidth:document.documentElement.scrollWidth,
+      bodyWidth:document.body.scrollWidth
+    }));
+    expect(layout.documentWidth).toBeLessThanOrEqual(layout.innerWidth+2);
+    expect(layout.bodyWidth).toBeLessThanOrEqual(layout.innerWidth+2);
+    await expect(page.locator("[data-lifecycle-status]")).toBeVisible();
+    await expect(page.locator(".evidence-coverage")).toBeVisible();
+  }
+});
 
 // iPhone SE 2nd gen CSS viewport in portrait.
 test("iPhone SE viewport keeps Raven usable without page overflow",async({page})=>{
