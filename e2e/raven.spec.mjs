@@ -17,15 +17,20 @@ async function mockRaven(page,{generatorFails=false,initialJob=null,dataDelayMs=
     const previous=job.status||"Saved";
     const occurredAt=body.occurredAt||new Date().toISOString();
     if(status==="Applied"){
-      job.applied_date=job.applied_date||occurredAt;
+      job.applied_date=job.applied_date||job.appliedDate||occurredAt;
+      job.appliedDate=job.applied_date;
       const base=new Date(job.applied_date);
       base.setUTCDate(base.getUTCDate()+7);
-      job.follow_up=Object.prototype.hasOwnProperty.call(body,"followUp")?(body.followUp||null):(job.follow_up||base.toISOString().slice(0,10));
+      job.follow_up=Object.prototype.hasOwnProperty.call(body,"followUp")?(body.followUp||null):(job.follow_up||job.followUp||base.toISOString().slice(0,10));
+      job.followUp=job.follow_up;
     }else if(["Interview","Offer","Rejected","Ignored"].includes(status)){
       job.follow_up=null;
+      job.followUp=null;
     }else if(["Saved","Interested","Ready"].includes(status)&&previous==="Applied"){
       job.applied_date=null;
+      job.appliedDate=null;
       job.follow_up=null;
+      job.followUp=null;
     }
     job.status=status;
     job.viewed=true;
