@@ -1086,8 +1086,8 @@
           const location=[job.location,job.remote].filter(Boolean).join(" · ")||"Location not captured";
           const salary=job.salaryText||"";
           const rawStatus=String(job.status||"Saved");
-          const meaningfulStatus=!/^(saved|discovered)$/i.test(rawStatus);
-          const statusLabel=rawStatus.toLowerCase()==="interested"?"Bookmarked":rawStatus;
+          const meaningfulStatus=!/^(saved|discovered|interested)$/i.test(rawStatus);
+          const statusLabel=rawStatus;
           const attentionIndicator=meaningfulStatus
             ? '<span class="job-status">'+escapeHtml(statusLabel)+'</span>'
             : '';
