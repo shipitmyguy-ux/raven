@@ -923,6 +923,27 @@ test("resume generation stays visibly active and does not pop review after leavi
   await expect(page.locator('[data-generate="resume"]')).toHaveText("Review");
 });
 
+test("requested document changes show persistent AI processing feedback",async({page})=>{
+  await mockRaven(page,{generatorDelayMs:700});
+  await page.goto("/");
+  await page.locator('[data-track="Professional"]').click();
+  await page.locator(".job-card-summary").first().click();
+  await page.locator('[data-generate="resume"]').click();
+  await expect(page.locator("#documentReviewDialog")).toBeVisible();
+  await page.locator("#reviewInstructions").fill("Make the summary shorter.");
+  await page.locator("#reviewSubmit").click();
+
+  await expect(page.locator("#reviewSubmit")).toBeDisabled();
+  await expect(page.locator("#reviewSubmit")).toContainText("AI applying changes");
+  await expect(page.locator("#reviewFeedback")).toHaveClass(/is-processing/);
+  await expect(page.locator("#reviewFeedback")).toContainText("AI is rewriting and fact-checking");
+  await expect(page.locator("#syncStatus")).toContainText("AI is applying requested changes");
+
+  await expect(page.locator("#reviewSubmit")).toBeEnabled({timeout:5000});
+  await expect(page.locator("#reviewFeedback")).toContainText("Updated draft saved");
+  await expect(page.locator("#reviewFeedback")).not.toHaveClass(/is-processing/);
+});
+
 test("generation indicator survives job object refresh while generation is active",async({page})=>{
   await page.addInitScript(()=>{
     localStorage.setItem("ravenMasterResumesV1",JSON.stringify([{
