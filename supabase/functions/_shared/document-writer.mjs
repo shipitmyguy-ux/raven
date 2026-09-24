@@ -110,18 +110,23 @@ export function createGeminiCompletion({apiKey,model=DEFAULT_MODEL,fallbackModel
   const bases=["https://gateway.ai.cloudflare.com/v1/0be401023d08048c03bbfbb0576fa89f/raven/google-ai-studio","https://generativelanguage.googleapis.com"];
   return async({instructions,input,schema,name,maxOutputTokens=6000})=>{
     let lastStatus=503;
+    // Give drafting and factual review independent budgets so a slower draft
+    // cannot consume the verifier's entire request window.
+    const stageTimeoutMs=name==="raven_factual_review"?50000:80000;
+    const stageSignal=AbortSignal.timeout(stageTimeoutMs);
+    const requestSignal=signal&&typeof AbortSignal.any==="function"?AbortSignal.any([signal,stageSignal]):(signal||stageSignal);
     for(const candidateModel of models){
       for(const base of bases){
         let response;
         try{
           response=await fetchImpl(base+"/v1beta/models/"+encodeURIComponent(candidateModel)+":generateContent",{
-            method:"POST",signal,headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},
+            method:"POST",signal:requestSignal,headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},
             body:JSON.stringify({systemInstruction:{parts:[{text:instructions}]},
               contents:[{role:"user",parts:[{text:JSON.stringify(input)}]}],
               generationConfig:{maxOutputTokens,responseMimeType:"application/json",responseSchema:providerSchema(schema)}})
           });
         }catch{
-          if(signal?.aborted)throw new WriterError("Writing took too long. Please try again.","GEMINI_UNAVAILABLE",503);
+          if(stageSignal.aborted||signal?.aborted)throw new WriterError("Writing took too long. Please try again.","GEMINI_UNAVAILABLE",503);
           continue;
         }
         const raw=await response.json().catch(()=>null);
