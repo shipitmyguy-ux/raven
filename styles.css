@@ -1425,6 +1425,8 @@ main {
 .review-prompt{display:grid;gap:5px;color:var(--text-soft);font-size:.72rem}
 .review-prompt textarea{width:100%;resize:vertical}
 .document-review-dialog footer{justify-content:flex-end}
+#reviewSubmit.is-generating{display:inline-flex;align-items:center;gap:7px;cursor:wait;border-color:var(--accent-border);box-shadow:var(--glow-accent);color:var(--accent-strong)}
+#reviewFeedback.is-processing{display:flex;align-items:center;gap:8px;min-height:30px;padding:7px 9px;border:1px solid var(--accent-border);border-radius:var(--radius-sm);background:var(--accent-dim);color:var(--accent-strong);font-weight:var(--font-weight-strong)}
 @media(max-width:520px){.document-review-dialog{width:100vw;height:100vh;max-width:none;max-height:none;border-radius:0}}
 
 
