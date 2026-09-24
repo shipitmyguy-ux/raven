@@ -2611,16 +2611,18 @@ body.options-open > :not(main):not(.options-dialog) {
 }
 
 
+
+
+
 /* Remote job at-a-glance background mark */
 .job-card.is-remote {
   position: relative;
   overflow: hidden;
   isolation: isolate;
 }
-.job-card.is-remote::after {
-  content: "⌂";
+.remote-watermark {
   position: absolute;
-  z-index: 1;
+  z-index: 0;
   top: 50%;
   right: clamp(64px, 16%, 104px);
   transform: translateY(-50%);
@@ -2628,8 +2630,8 @@ body.options-open > :not(main):not(.options-dialog) {
   line-height: 1;
   font-family: Arial, sans-serif;
   font-weight: 700;
-  color: currentColor;
-  opacity: .12;
+  color: var(--text-soft);
+  opacity: .13;
   pointer-events: none;
   user-select: none;
 }
@@ -2638,8 +2640,6 @@ body.options-open > :not(main):not(.options-dialog) {
   position: relative;
   z-index: 1;
 }
-
-/* Preserve the existing top-right card controls above the remote watermark. */
 .job-card.is-remote > .bookmark-star {
   position: absolute !important;
   top: 8px !important;
@@ -2657,9 +2657,9 @@ body.options-open > :not(main):not(.options-dialog) {
   z-index: 3;
 }
 @media (max-width: 480px) {
-  .job-card.is-remote::after {
+  .remote-watermark {
     right: 62px;
     font-size: 68px;
-    opacity: .10;
+    opacity: .11;
   }
 }
