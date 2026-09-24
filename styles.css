@@ -2633,9 +2633,17 @@ body.options-open > :not(main):not(.options-dialog) {
   pointer-events: none;
   user-select: none;
 }
-.job-card.is-remote > * {
+.job-card.is-remote > *:not(.bookmark-star) {
   position: relative;
   z-index: 1;
+}
+
+/* Keep the bookmark exactly in its original absolute card position. */
+.job-card.is-remote > .bookmark-star {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
 }
 @media (max-width: 480px) {
   .job-card.is-remote::after {
