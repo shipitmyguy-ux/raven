@@ -18,7 +18,12 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
     if((origin&&!ORIGINS.has(origin))||req.headers.get("x-raven-client")!=="raven-web-v1")return json({error:"Forbidden"},403);
     const apiKey=getEnv("RAVEN_GEMINI_API_KEY")||getEnv("GEMINI_API_KEY")||"";
     const model=getEnv("RAVEN_GEMINI_MODEL")||DEFAULT_MODEL;
-    if(req.method==="GET")return json({ok:true,service,architecture:WRITER_VERSION,provider:"gemini",model,configured:Boolean(apiKey)});
+    const providers={
+      openrouter:Boolean(getEnv("RAVEN_OPENROUTER_API_KEY")||getEnv("OPENROUTER_API_KEY")),
+      openai:Boolean(getEnv("RAVEN_OPENAI_API_KEY")||getEnv("OPENAI_API_KEY")),
+      gemini:Boolean(apiKey)
+    };
+    if(req.method==="GET")return json({ok:true,service,architecture:WRITER_VERSION,provider:"gemini",model,configured:Boolean(apiKey),providers});
     if(req.method!=="POST")return json({error:"GET or POST required"},405);
     let eid=null;
     const rpc=async(name,payload,timeout=10000)=>{
