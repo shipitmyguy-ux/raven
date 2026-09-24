@@ -1014,39 +1014,69 @@
     return [context,...useful].slice(0,4).join(" ");
   }
 
-  const SUMMARY_JARGON=/\b(?:about us|who we are|why join|what makes us|our mission|our vision|our culture|we are (?:a|an|the)|at the core|prides itself|award[- ]winning|world[- ]class|industry[- ]leading|fast[- ]growing|passionate people|equal opportunity|affirmative action|benefits include|in return,? we offer)\b/i;
-  const SUMMARY_ACTION=/\b(?:manage|lead|coordinate|build|create|develop|deliver|design|maintain|support|train|implement|oversee|produce|model|texture|light|schedule|repair|service|operate|facilitate|analyze|own|drive|plan|execute|collaborate|mentor|supervise|dispatch|install|troubleshoot)\w*\b/i;
-  const SUMMARY_REQUIREMENT=/\b(?:experience|proficien|knowledge|skill|unreal|unity|zbrush|substance|excel|project management|customer|maintenance|training|operations|3d|modeling|texturing|leadership)\b/i;
+  const SUMMARY_JARGON=/\b(?:about us|who we are|why join|what makes us|our mission|our vision|our culture|we are (?:a|an|the)|at the core|prides itself|award[- ]winning|world[- ]class|industry[- ]leading|fast[- ]growing|passionate people|equal opportunity|affirmative action|benefits include|in return,? we offer|ideal candidate|successful candidate|excited to|opportunity to|dynamic|innovative|collaborative environment|business goals|strategic|stakeholder engagement|operational excellence|best[- ]in[- ]class|measurable impact|drive results|cross[- ]functional collaboration)\b/i;
+  const SUMMARY_ACTION=/\b(?:manage|lead|coordinate|build|create|develop|deliver|design|maintain|support|train|implement|oversee|produce|model|texture|light|schedule|repair|service|operate|facilitate|analyze|own|plan|execute|mentor|supervise|dispatch|install|troubleshoot|track|report|budget|hire|onboard|document|procure|review|monitor)\w*\b/i;
+  const SUMMARY_REQUIREMENT=/\b(?:experience|proficien|knowledge|skill|unreal|unity|zbrush|substance|excel|project management|customer|maintenance|training|operations|3d|modeling|texturing|leadership|agile|scrum|jira|asana|cad|revit)\b/i;
 
-  function summarySentences(value){
-    const cleaned=cleanJobDescription(value)
+  function normalizedPostingLines(value){
+    return cleanJobDescription(value)
       .replace(/Employer posting re-verified[^.]*\.\s*/gi," ")
-      .replace(/[•●▪◦]/g,". ")
+      .replace(/&amp;/gi,"&")
+      .split(/\n+/)
+      .map(line=>line.replace(/^[\s•●▪◦*\-–—]+/,"").replace(/\s+/g," ").trim())
+      .filter(Boolean);
+  }
+
+  function summaryClauses(value){
+    const lines=normalizedPostingLines(value);
+    const heading=/^(?:job description|description|about(?: us)?|who we are|why join.*|what we offer|benefits|qualifications?|requirements?|preferred qualifications?|education|compensation|salary|location|work schedule|employment type|position summary|job summary|summary|responsibilities|primary responsibilities(?: and duties)?|specific responsibilities(?: and duties)?|key responsibilities|what you(?:'|’)ll do|what you'll own|duties|essential duties.*)$/i;
+    const clauses=[];
+    for(const line of lines){
+      if(heading.test(line)) continue;
+      for(const part of line.split(/(?<=[.!?;])\s+|\s+[|]\s+/)){
+        const sentence=part.trim();
+        if(sentence.length<24||sentence.length>280) continue;
+        if(SUMMARY_JARGON.test(sentence)) continue;
+        if(/\b(?:benefits?|pto|401\(?k\)?|insurance|equal opportunity|accommodation|applicant|salary range|compensation|tuition|holidays?)\b/i.test(sentence)) continue;
+        clauses.push(sentence);
+      }
+    }
+    return clauses;
+  }
+
+  function plainLanguageClause(sentence){
+    return String(sentence||"")
+      .replace(/^(?:the\s+)?(?:successful|ideal) candidate\s+(?:will|should)\s+/i,"")
+      .replace(/^(?:this|the)\s+(?:position|role)\s+(?:is responsible for|will be responsible for|will)\s+/i,"")
+      .replace(/^you\s+(?:will|are expected to)\s+/i,"")
+      .replace(/^(?:responsible for|responsibilities include)\s+/i,"")
+      .replace(/\b(?:in order to|with the ability to|while ensuring|to ensure|ensuring)\b/gi,",")
+      .replace(/\b(?:successful|seamless|effective|efficient|strategic)\s+(?=project|program|delivery|execution|operations?)/gi,"")
       .replace(/\s+/g," ")
-      .trim();
-    return (cleaned.match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[])
-      .map(s=>s.trim())
-      .filter(s=>s.length>=28&&s.length<=320)
-      .filter(s=>!SUMMARY_JARGON.test(s));
+      .replace(/\s+,/g,",")
+      .trim()
+      .replace(/^[a-z]/,m=>m.toUpperCase());
   }
 
   function conciseJobSummary(job){
-    const sentences=summarySentences(job.notes);
-    const scored=sentences.map((sentence,index)=>{
+    const clauses=summaryClauses(job.notes);
+    const scored=clauses.map((sentence,index)=>{
       let score=0;
-      if(SUMMARY_ACTION.test(sentence)) score+=5;
-      if(SUMMARY_REQUIREMENT.test(sentence)) score+=3;
-      if(/\b(?:responsibilit|you will|role will|job summary|what you'll do|duties)\b/i.test(sentence)) score+=3;
-      if(/\b(?:salary|benefit|401k|pto|insurance|equal opportunity|applicant|accommodation)\b/i.test(sentence)) score-=6;
-      score-=Math.min(3,index*.08);
+      if(SUMMARY_ACTION.test(sentence)) score+=6;
+      if(SUMMARY_REQUIREMENT.test(sentence)) score+=2;
+      if(/^\s*(?:manage|lead|coordinate|build|create|develop|deliver|design|maintain|support|train|implement|oversee|plan|execute|track|monitor|hire|schedule|review|analyze)\b/i.test(sentence)) score+=4;
+      if(/\b(?:responsibilit|you will|role will|job summary|what you'll do|duties)\b/i.test(sentence)) score+=1;
+      if(SUMMARY_JARGON.test(sentence)) score-=8;
+      score-=Math.min(3,index*.04);
       return {sentence,score};
     }).sort((a,b)=>b.score-a.score);
     const chosen=[];
     for(const item of scored){
-      if(item.score<2) continue;
-      const normalized=item.sentence.toLowerCase().replace(/[^a-z0-9 ]/g,"");
-      if(chosen.some(x=>x.normalized===normalized)) continue;
-      chosen.push({text:item.sentence,normalized});
+      if(item.score<5) continue;
+      const text=plainLanguageClause(item.sentence);
+      const normalized=text.toLowerCase().replace(/[^a-z0-9 ]/g,"");
+      if(text.length<20||chosen.some(x=>x.normalized===normalized)) continue;
+      chosen.push({text,normalized});
       if(chosen.length===2) break;
     }
     let summary=chosen.map(x=>x.text).join(" ");
@@ -1054,11 +1084,7 @@
       const role=String(job.title||"Role").trim();
       summary=(isRemoteJob(job)?"Remote ":"")+role+(job.company?" at "+job.company:"");
     }
-    summary=summary
-      .replace(/^(?:job summary|summary|responsibilities|what you'll do|duties)\s*[:\-]?\s*/i,"")
-      .replace(/\s+/g," ")
-      .trim();
-    return summary.length>210?summary.slice(0,207).replace(/\s+\S*$/,"")+"…":summary;
+    return summary.length>190?summary.slice(0,187).replace(/\s+\S*$/,"")+"…":summary;
   }
 
   function degreeAlert(job){
@@ -1073,8 +1099,6 @@
       const fieldMatch=phrase.match(/\b(?:in|of)\s+([A-Za-z][A-Za-z &/\-]{2,70}?)(?=\s*(?:,|\.|;|or a related|or related|preferred|required|and \d|with \d|$))/i);
       const field=fieldMatch?.[1]?.trim()||"";
       const required=/\b(?:required|requirement|must|minimum|qualifications?)\b/i.test(phrase)||!/\bpreferred\b/i.test(phrase);
-      // User has a bachelor's in Video Game Art. A generic bachelor's is met;
-      // flag higher degrees or bachelor's requirements in a different named field.
       const lowerDegree=degree.toLowerCase();
       const missingLevel=/master|ph\.?d|doctorate/i.test(lowerDegree);
       const differentBachelor=/bachelor/i.test(lowerDegree)&&field&&!/\b(?:video game art|game art|3d art|art|fine art|digital art|visual art)\b/i.test(field);
