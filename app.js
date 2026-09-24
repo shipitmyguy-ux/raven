@@ -45,7 +45,7 @@
   ];
   const RESUME_TEMPLATE_VERSION="modern-v7";
   const DEFAULT_FOLLOW_UP_DAYS=7;
-  const activeGeneration=new WeakMap();
+  const activeGeneration=new Map();
   let editingMasterResumeId=null;
   let editingAnswerMemoryKey=null;
 
@@ -1044,7 +1044,8 @@
   function render() {
     renderJobs();
   }
-  function generationSession(job){ return activeGeneration.get(job)||null; }
+  function generationKey(job){ return String(job?.id??""); }
+  function generationSession(job){ return activeGeneration.get(generationKey(job))||null; }
   function knownJobById(id){
     if(id===null||id===undefined) return null;
     const discovered=Object.values(state.discovered||{}).flat();
@@ -1619,7 +1620,7 @@
     if(job[type]) return openDocumentReview(job,type);
     if(generationSession(job)) return;
     const session={type,autoOpen:state.selectedId===job.id,startedAt:Date.now()};
-    activeGeneration.set(job,session);
+    activeGeneration.set(generationKey(job),session);
     setGenerationButton(button,true,type==="resume"?(navigator.onLine?"Generating resume…":"Building offline resume…"):"Generating cover letter…");
     render();
     try{
@@ -1642,11 +1643,11 @@
       }
       }
       const shouldOpen=session.autoOpen&&state.selectedId===job.id;
-      activeGeneration.delete(job);
+      activeGeneration.delete(generationKey(job));
       render();
       if(shouldOpen) openDocumentReview(job,type);
     }catch(error){
-      activeGeneration.delete(job);
+      activeGeneration.delete(generationKey(job));
       render();
       setStatus((type==="resume"?"Resume":"Cover letter")+" generation failed: "+error.message);
       console.error(documentLabel(type)+" generation failed",error);
