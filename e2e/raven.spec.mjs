@@ -396,7 +396,7 @@ test("local master resume and track assignments persist through reload",async({p
   expect(persisted.text).toContain("Persistent master resume text");
 });
 
-test("offline resume fallback creates a local draft without network generation",async({page})=>{
+test("offline resume generation refuses to create a non-LLM document",async({page})=>{
   await page.addInitScript(()=>{
     localStorage.setItem("ravenMasterResumesV1",JSON.stringify([{
       id:"offline-master",name:"Offline master",sourceType:"local",fileName:"offline.txt",version:"1",tracks:["Professional"]
@@ -404,30 +404,15 @@ test("offline resume fallback creates a local draft without network generation",
   });
   const api=await mockRaven(page);
   await page.goto("/");
-  await page.evaluate(()=>new Promise((resolve,reject)=>{
-    const request=indexedDB.open("ravenMasterResumeFilesV1",1);
-    request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains("files")) request.result.createObjectStore("files");};
-    request.onerror=()=>reject(request.error);
-    request.onsuccess=()=>{
-      const db=request.result;
-      const tx=db.transaction("files","readwrite");
-      tx.objectStore("files").put(new File([
-        "Project coordination and team leadership across complex production milestones.\n",
-        "Mentored and onboarded team members while delivering work on schedule.\n",
-        "Built automation modules, reports, and asset database workflows."
-      ],"offline.txt",{type:"text/plain"}),"offline-master");
-      tx.oncomplete=()=>{db.close();resolve();};
-      tx.onerror=()=>reject(tx.error);
-    };
-  }));
   await page.locator('[data-track="Professional"]').click();
   await page.locator(".job-card-summary").first().click();
   await page.context().setOffline(true);
   await page.locator('[data-generate="resume"]').click();
-  await expect(page.locator("#documentReviewDialog")).toBeVisible();
+  await expect(page.locator("#documentReviewDialog")).not.toBeVisible();
+  await expect(page.locator("#syncStatus")).toContainText("internet connection is required for AI resume generation");
   expect(api.getGenerationCalls()).toBe(0);
   const pending=await page.evaluate(()=>JSON.parse(localStorage.getItem("ravenPendingDocumentSyncV1")||"{}"));
-  expect(String(pending["job-1"]?.resume?.value||"")).toContain("data:text/html");
+  expect(pending["job-1"]?.resume).toBeUndefined();
   await page.context().setOffline(false);
 });
 
