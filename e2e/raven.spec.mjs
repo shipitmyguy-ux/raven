@@ -864,6 +864,35 @@ test("listing and direct application remain available without approved documents
   await expect(page.locator("#syncStatus")).toContainText("Approve the resume and cover letter");
 });
 
+test("remote watermark keeps one visual treatment across card states",async({page})=>{
+  const api=await mockRaven(page);
+  await page.goto("/");
+  await page.locator('[data-track="Professional"]').click();
+
+  const watermark=page.locator(".job-card.is-remote .remote-watermark").first();
+  await expect(watermark).toBeVisible();
+  const style=()=>watermark.evaluate(el=>{
+    const computed=getComputedStyle(el);
+    return {color:computed.color,opacity:computed.opacity};
+  });
+  const baseline=await style();
+
+  await page.locator(".job-card.is-remote").first().hover();
+  expect(await style()).toEqual(baseline);
+
+  await page.locator(".job-card-summary").first().click();
+  expect(await style()).toEqual(baseline);
+
+  await page.getByRole("button",{name:"Bookmark job"}).click();
+  await expect.poll(()=>api.getJob().status).toBe("Interested");
+  expect(await style()).toEqual(baseline);
+
+  await page.locator(".job-card-summary").first().click();
+  await page.getByRole("button",{name:"Mark as applied"}).click();
+  await expect.poll(()=>api.getJob().status).toBe("Applied");
+  expect(await style()).toEqual(baseline);
+});
+
 test("generators save discovery jobs and recover descriptions before generating both documents",async({page})=>{
   await page.addInitScript(()=>{
     localStorage.setItem("ravenMasterResumesV1",JSON.stringify([{
@@ -880,6 +909,7 @@ test("generators save discovery jobs and recover descriptions before generating 
   await page.locator('[data-generate="resume"]').click();
   await expect(page.locator("#documentReviewDialog")).toBeVisible();
   await expect(page.frameLocator("#reviewFrame").getByText("Test Candidate",{exact:true})).toBeVisible();
+  await expect(page.frameLocator("#reviewFrame").locator("body")).not.toContainText("Remote");
   await page.getByRole("button",{name:"Close",exact:true}).click();
   await page.locator('[data-generate="coverLetter"]').click();
   await expect(page.locator("#documentReviewDialog")).toBeVisible();
@@ -887,6 +917,7 @@ test("generators save discovery jobs and recover descriptions before generating 
   await page.getByRole("button",{name:"Close",exact:true}).click();
   expect(api.getGenerationCalls()).toBe(2);
   expect(api.getGenerationBodies().every(body=>body.jobId==="job-1" && body.jobDescription===savedJob.notes)).toBe(true);
+  expect(api.getGenerationBodies().every(body=>!("location" in body) && !("jobLocation" in body))).toBe(true);
   expect(api.getJob().resume).toContain("data:text/html");
   expect(api.getJob().coverLetter).toContain("data:text/html");
   await page.reload();
