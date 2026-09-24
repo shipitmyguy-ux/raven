@@ -16,6 +16,13 @@ function combineSignals(signals){
 function timeoutFor(input){
   return String(input?.revisionRequest||"").trim()?14000:26000;
 }
+function openAICompatibleSchema(schema){
+  if(Array.isArray(schema))return schema.map(openAICompatibleSchema);
+  if(!schema||typeof schema!=="object")return schema;
+  return Object.fromEntries(Object.entries(schema)
+    .filter(([key])=>key!=="minItems"&&key!=="maxItems")
+    .map(([key,value])=>[key,openAICompatibleSchema(value)]));
+}
 function geminiSchema(schema){
   if(Array.isArray(schema))return schema.map(geminiSchema);
   if(!schema||typeof schema!=="object")return schema;
@@ -40,7 +47,7 @@ async function openAICompatibleComplete({provider,baseUrl,apiKey,model,fetchImpl
     body:JSON.stringify({
       model,
       messages:[{role:"system",content:instructions},{role:"user",content:JSON.stringify(input)}],
-      response_format:{type:"json_schema",json_schema:{name:name||"raven_document",strict:true,schema}},
+      response_format:{type:"json_schema",json_schema:{name:name||"raven_document",strict:true,schema:openAICompatibleSchema(schema)}},
       max_completion_tokens:maxOutputTokens,
       reasoning_effort:"low"
     })
