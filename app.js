@@ -1083,6 +1083,9 @@
           const isBookmarked=rawStatus.toLowerCase()==="interested";
           const bookmarkStar=/^(applied|interview|offer|rejected|ignored)$/i.test(rawStatus) ? "" :
             '<button class="bookmark-star'+(isBookmarked?' is-bookmarked':'')+'" type="button" data-card-bookmark aria-pressed="'+String(isBookmarked)+'" aria-label="'+(isBookmarked?'Remove bookmark':'Bookmark job')+'" title="'+(isBookmarked?'Remove bookmark':'Bookmark job')+'">'+(isBookmarked?'★':'☆')+'</button>';
+          const remoteWatermark=isRemoteJob(job)
+            ? '<span class="remote-watermark" aria-hidden="true">⌂</span>'
+            : '';
           const ignoreControl='<button class="ignore-job-button'+(isIgnored?' is-restore':'')+'" type="button" data-ignore-job aria-label="'+(isIgnored?'Restore job':'Ignore job')+'" title="'+(isIgnored?'Restore job':'Ignore job')+'">'+(isIgnored?'↩':'×')+'</button>';
           card.innerHTML=
             '<button class="job-card-summary" type="button" aria-expanded="'+String(job.id===state.selectedId)+'">'+
@@ -1096,7 +1099,7 @@
                 '<span class="job-age">'+escapeHtml(relativeAdded(job.added))+'</span>'+
               '</span>'+
               (!isRemoteJob(job) && job.location ? '<span class="commute-footer" data-commute-key="'+escapeAttr(commuteCacheKey(job.location))+'" hidden></span>' : '')+
-            '</button>'+bookmarkStar+ignoreControl;
+            '</button>'+remoteWatermark+bookmarkStar+ignoreControl;
           if (job.id===state.selectedId) {
             const expanded=document.createElement("span");
             expanded.className="job-card-expanded";
