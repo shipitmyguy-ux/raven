@@ -40,6 +40,37 @@ export function daysOld(date?:string){
   return Number.isFinite(t)?(Date.now()-t)/86400000:0;
 }
 
+// Remote is an evidence-backed classification, never an inference from the
+// search query that happened to return a job. This function is shared by all
+// tracks so Games / 3D, Professional, Labor, and Wildcard cannot drift.
+const REMOTE_ONLY_SOURCES=new Set(["Remotive","RemoteOK","Jobicy","Himalayas"]);
+const STRONG_REMOTE_TEXT=/\b(?:fully|100%|entirely|completely)\s+remote\b|\bremote\s+(?:position|role|job|workplace)\b|\bwork(?:ing)?\s+(?:fully\s+)?remotely\b|\bwork\s+from\s+home\b|\btelecommut(?:e|ing|er)\b/i;
+const NON_REMOTE_LOCATION=/\b(?:hybrid|on[- ]?site|in[- ]office)\b/i;
+
+export function explicitlyRemote(c:Candidate,structuredRemote=false){
+  const source=String(c?.source||"").trim();
+  const location=String(c?.location||"").trim();
+  const title=String(c?.title||"").trim();
+  const snippet=String(c?.snippet||"");
+  const locationBlocks=NON_REMOTE_LOCATION.test(location);
+
+  // Boards whose contract is remote-only are explicit evidence by source.
+  if(REMOTE_ONLY_SOURCES.has(source)) return true;
+
+  // Structured source fields (ATS remote boolean, jobLocationType=TELECOMMUTE,
+  // workplaceType=remote) are explicit evidence unless the location itself
+  // explicitly says hybrid/on-site.
+  if(structuredRemote&&!locationBlocks) return true;
+  if(c?.remote===true&&!locationBlocks&&(source==="Arbeitnow"||/^ATS:/i.test(source))) return true;
+
+  // Plain text must itself say remote. A city/state returned from a remote
+  // search filter is not evidence that the posting is remote.
+  if(!locationBlocks&&/\bremote\b/i.test(location)) return true;
+  if(!/\bhybrid\b/i.test(title)&&/\bremote\b/i.test(title)) return true;
+  if(STRONG_REMOTE_TEXT.test(snippet)) return true;
+  return false;
+}
+
 export function score(track:Track,c:Candidate){
   const text=[c.title,c.company,c.location,c.snippet].filter(Boolean).join(" ").toLowerCase();
   const title=(c.title||"").toLowerCase();
@@ -447,7 +478,7 @@ export function rankCandidates(track:Track,candidates:Candidate[],limit=40){
   for(const c0 of candidates){
     const url=normalizeUrl(c0.url);
     if(!url) continue;
-    const c={...c0,url};
+    const c={...c0,url,remote:explicitlyRemote(c0)};
     c.score=score(track,c);
     if((c.score||0)<3) continue;
     if(c.posted_at&&daysOld(c.posted_at)>60) continue;
