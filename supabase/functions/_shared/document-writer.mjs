@@ -197,8 +197,12 @@ export function buildDeterministicDocument(kind,profile,target,instructions=""){
   if(kind==="resume"){
     const required=new Set(Array.isArray(profile.resume_required_experience_ids)?profile.resume_required_experience_ids:[]);
     const experience=(profile.experience||[]).filter(item=>{
-      if(track==="Games / 3D"&&String(item.company||"").toLowerCase()==="soundair"&&!explicitSoundAir)return false;
-      return required.has(item.id)||track!=="Games / 3D";
+      const isSoundAir=String(item.company||"").toLowerCase()==="soundair";
+      if(track==="Games / 3D"){
+        if(isSoundAir)return explicitSoundAir;
+        return required.has(item.id);
+      }
+      return true;
     }).map(item=>({
       role:item.role||"",
       company:item.company||"",
