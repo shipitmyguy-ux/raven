@@ -740,7 +740,7 @@
           ...job,
           company:job.company||extra.company,
           location:job.location||extra.location,
-          remote:job.remote||extra.remote,
+          remote:extra.remote,
           salaryText:job.salaryText||extra.salaryText,
           source:job.source||extra.source,
           notes:preferredDescription(job.notes,extra.notes),
