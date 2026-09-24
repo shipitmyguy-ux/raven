@@ -2742,3 +2742,29 @@ body.options-open > :not(main):not(.options-dialog) {
     opacity: .12 !important;
   }
 }
+
+
+/* Remote watermark interaction states: never shift color on hover. */
+.job-card.is-remote .remote-watermark,
+.job-card.is-remote:hover .remote-watermark,
+.job-card.is-remote:focus-within .remote-watermark,
+.job-card.is-remote.active .remote-watermark {
+  color: color-mix(in srgb, var(--accent-strong) 62%, var(--text-muted) 38%) !important;
+}
+
+/* New remote jobs: brighter gold watermark, same color while hovering/selecting. */
+.job-card.is-new.is-remote .remote-watermark,
+.job-card.is-new.is-remote:hover .remote-watermark,
+.job-card.is-new.is-remote:focus-within .remote-watermark,
+.job-card.is-new.is-remote.active .remote-watermark {
+  color: #f2c94c !important;
+  opacity: .20 !important;
+}
+@media (max-width:480px) {
+  .job-card.is-new.is-remote .remote-watermark,
+  .job-card.is-new.is-remote:hover .remote-watermark,
+  .job-card.is-new.is-remote:focus-within .remote-watermark,
+  .job-card.is-new.is-remote.active .remote-watermark {
+    opacity: .18 !important;
+  }
+}
