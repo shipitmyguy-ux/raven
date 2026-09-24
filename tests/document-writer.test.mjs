@@ -92,7 +92,7 @@ test("refusal, incomplete response, bad JSON and provider errors never become do
  let attempts=0;
  const complete=createGeminiCompletion({apiKey:"test",fetchImpl:async()=>{attempts++;return Response.json({error:{message:"private input secret"}},{status:401});}});
  await assert.rejects(complete({input:{},schema:{},name:"test"}),e=>e.status===503&&!e.message.includes("private input"));
- assert.equal(attempts,4,"provider retries are bounded");
+ assert.equal(attempts,6,"provider retries are bounded across the stable model cascade");
  assert.throws(()=>createGeminiCompletion({apiKey:""}),e=>e.code==="GEMINI_NOT_CONFIGURED");
 });
 test("transient endpoint failure uses the same schema and records actual fallback model",async()=>{
