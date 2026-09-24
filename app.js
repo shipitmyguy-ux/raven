@@ -1757,6 +1757,8 @@
     link.textContent="Open "+label+" in a new tab";
     document.getElementById("reviewFrame").src=previewableDocumentUrl(value);
     document.getElementById("reviewInstructions").value="";
+    const feedback=document.getElementById("reviewFeedback");
+    if(feedback) feedback.textContent="";
     const approve=document.getElementById("reviewApprove"); if(approve){ approve.textContent=isDocumentApproved(job,type)?"Approved ✓":"Approve document"; approve.classList.toggle("is-approved",isDocumentApproved(job,type)); }
     document.getElementById("documentReviewDialog").showModal();
   }
@@ -1780,6 +1782,8 @@
     if(!job||!type||!instructions) return;
     const button=document.getElementById("reviewSubmit");
     button.disabled=true;
+    const feedback=document.getElementById("reviewFeedback");
+    if(feedback) feedback.textContent="Writing and checking your document...";
     try{
       await generateDocumentForJob(job,type,instructions);
       const value=String(job[type]||"");
@@ -1788,7 +1792,10 @@
       document.getElementById("reviewInstructions").value="";
       const approve=document.getElementById("reviewApprove");
       if(approve){ approve.textContent="Approve document"; approve.classList.remove("is-approved"); }
+      if(feedback) feedback.textContent="Updated draft saved. Please review it before approving.";
       render();
+    }catch(error){
+      if(feedback) feedback.textContent=error.message+" Your previous document is unchanged.";
     }finally{
       button.disabled=false;
     }

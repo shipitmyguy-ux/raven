@@ -62,7 +62,7 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
     }catch(error){
       const known=error instanceof WriterError;
       const status=known?error.status:503,code=known?error.code:"GENERATION_UNAVAILABLE";
-      await finish("failure",status,code);
+      await finish("failure",status,code+(known?": "+error.message:""));
       return json({error:known?error.message:"Document generation is temporarily unavailable. Please try again.",code,provider:"gemini",retryable:status>=500&&code!=="GEMINI_NOT_CONFIGURED"},status);
     }
   };

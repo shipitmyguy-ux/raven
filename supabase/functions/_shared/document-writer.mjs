@@ -2,14 +2,14 @@
 export const WRITER_VERSION="gemini-prose-v1";
 export const DEFAULT_MODEL="gemini-3.5-flash";
 const str={type:"string"};
-const arr=(items)=>({type:"array",items});
+const arr=(items,minItems=0,maxItems=20)=>({type:"array",items,minItems,maxItems});
 const obj=(properties)=>({type:"object",properties,required:Object.keys(properties),additionalProperties:false});
 export const resumeSchema=obj({
-  headline:str,summary:str,skills:arr(str),
-  experience:arr(obj({experience_id:str,bullets:arr(str)})),
-  additional:arr(str)
+  headline:str,summary:str,skills:arr(str,1,20),
+  experience:arr(obj({experience_id:str,bullets:arr(str,1,6)}),1,12),
+  additional:arr(str,0,7)
 });
-export const coverSchema=obj({greeting:str,paragraphs:arr(str),closing:str});
+export const coverSchema=obj({greeting:str,paragraphs:arr(str,2,6),closing:str});
 const reviewSchema=obj({supported:{type:"boolean"},issues:arr(str)});
 
 export class WriterError extends Error{
@@ -108,13 +108,24 @@ export function createGeminiCompletion({apiKey,model=DEFAULT_MODEL,fallbackModel
 export async function writeDocument({kind,profile,target,instructions="",currentDocument="",complete}){
   if(!["resume","coverLetter"].includes(kind))throw new WriterError("Invalid document type.","INVALID_INPUT",400);
   if(!profile?.name||!Array.isArray(profile.experience)||!profile.experience.length)throw new WriterError("Verified candidate background is missing.","PROFILE_MISSING",503);
-  const schema=kind==="resume"?resumeSchema:coverSchema;
+  const schema=structuredClone(kind==="resume"?resumeSchema:coverSchema);
+  if(kind==="resume"){
+    schema.properties.skills.items={type:"string",enum:profile.skills||[]};
+    schema.properties.experience.maxItems=profile.experience.length;
+    schema.properties.experience.items.properties.experience_id={type:"string",enum:profile.experience.map(e=>e.id)};
+  }
   const context={documentType:kind,verifiedBackground:profile,target,revisionRequest:instructions,currentDraft:currentDocument};
   let correction=null;
   // Normally two requests: write, fact-check. One bounded factual repair if needed.
   for(let attempt=0;attempt<2;attempt++){
     const written=await complete({instructions:writingInstructions,input:{...context,...(correction?{factualCorrection:correction}: {})},schema,name:"raven_"+kind});
-    const document=validateDraft(kind,written.data,profile);
+    let document;
+    try{document=validateDraft(kind,written.data,profile);}
+    catch(error){
+      if(!(error instanceof WriterError)||attempt===1)throw error;
+      correction={draft:written.data,issues:[error.message+" Follow the schema limits and preserve verified skill names."]};
+      continue;
+    }
     const reviewed=await complete({instructions:reviewInstructions,
       input:{verifiedBackground:profile,target,draft:document},schema:reviewSchema,name:"raven_factual_review",maxOutputTokens:2500});
     const review=reviewed.data;

@@ -130,3 +130,12 @@ test("rate limit stops all profile/model calls; failed writer records failure",a
  assert.equal(response.status,503);assert.equal(events[0].p_status,"failure");
  assert.equal((await response.json()).resume,undefined);
 });
+
+test("schema bounds and enum choices include all verified options; malformed draft can be repaired",async()=>{
+ const requests=[],bad={...resume,skills:[]};
+ const result=await writeDocument({kind:"resume",profile,target,complete:sequence([bad,resume,accepted],requests)});
+ assert.deepEqual(requests[0].schema.properties.skills.items.enum,profile.skills);
+ assert.equal(requests[0].schema.properties.experience.maxItems,2);
+ assert.equal(requests[0].schema.properties.experience.items.properties.bullets.maxItems,6);
+ assert.ok(requests[1].input.factualCorrection);assert.equal(result.document.summary,resume.summary);
+});

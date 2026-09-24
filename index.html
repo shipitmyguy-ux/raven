@@ -291,6 +291,7 @@
         <header><div><h2 id="reviewTitle">Review document</h2><p id="reviewContext"></p></div><button type="button" data-review-close aria-label="Close and save" title="Close and save">×</button></header>
         <div class="document-preview"><iframe id="reviewFrame" title="Generated document preview"></iframe><a id="reviewOpenFile" href="#" target="_blank" rel="noopener">Open file in a new tab</a></div>
         <label class="review-prompt"><span>Ask AI for a change</span><textarea id="reviewInstructions" rows="3" placeholder="Optional: Make the summary shorter, emphasize specific experience, or adjust the tone."></textarea></label>
+        <p id="reviewFeedback" role="status" aria-live="polite"></p>
         <footer><button type="button" data-review-close>Close</button><button type="button" id="reviewApprove">Approve document</button><button type="submit" id="reviewSubmit">Apply requested changes</button></footer>
       </form>
     </dialog>
@@ -305,6 +306,6 @@
   <script src="./config.js?v=8"></script>
   <script src="./raven-core.js?v=3"></script>
   <script src="./raven-api.js?v=10"></script>
-  <script src="./app.js?v=41"></script>
+  <script src="./app.js?v=42"></script>
 </body>
 </html>
