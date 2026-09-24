@@ -11,6 +11,7 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] requires real-site/user-acc
 - [x] Shared source -> parser -> Supabase -> Raven UI architecture is enforced; tabs are filters rather than separate ingestion pipelines.
 - [x] Search Jobs uses the shared `raven-backend-v3` path.
 - [x] Remote status uses one shared evidence-backed classifier across all four tracks; LinkedIn remote-query false positives were removed and existing Epic/Blizzard misclassifications were repaired.
+- [x] Games / 3D hard eligibility removes programmer/engineer/developer titles and clearly non-English postings before ranking/persistence; stale matching discovery rows and the unapplied Gameplay Programmer saved row were removed.
 - [x] Quick and deep search are production-verified on every track. Latest deep pass completed with 67 Professional, 78 Labor, 48 Wildcard, and 9 Games / 3D results.
 - [x] Zero-result quick refreshes preserve recent cached discovery rows instead of blanking a tab.
 - [x] Stale background deep-search runs are automatically reconciled and no longer remain indefinitely `running`.
