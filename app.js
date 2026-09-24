@@ -1198,9 +1198,10 @@
                 generationIndicator+
                 '<span class="job-title">'+escapeHtml(job.title||"Untitled job")+'</span>'+
                 '<span class="company-name">'+escapeHtml(company)+'</span>'+
-                '<span class="job-location">'+escapeHtml(location)+'</span>'+
+                '<span class="job-location-line"><span class="job-location">'+escapeHtml(location)+'</span>'+
+                  (degreeGap?'<span class="degree-gap-icon'+(degreeGap.required?' is-required':'')+'" role="img" aria-label="'+escapeAttr(degreeGap.text)+'" title="'+escapeAttr(degreeGap.text)+'"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5.2 8.2 14.8 3l4 2.2-9.6 5.2-4-2.2Zm4 2.2v5.3l5.6 3.1v-5.3l-5.6-3.1Zm5.6 3.1 4-2.2V6l-4 2.2v5.3ZM5.2 8.2v5.3l4 2.2v-5.3l-4-2.2Zm2.1 8.7 2.5 1.4 2.5-1.4 1.5.8-4 2.3-4-2.3 1.5-.8Z"/></svg></span>':'')+
+                '</span>'+
                 '<span class="job-summary">'+escapeHtml(jobSummary(job))+'</span>'+
-                (degreeGap?'<span class="degree-gap'+(degreeGap.required?' is-required':'')+'"><strong>'+escapeHtml(degreeGap.label)+'</strong><span>'+escapeHtml(degreeGap.text)+'</span></span>':'')+
                 (salary?'<span class="job-salary">'+escapeHtml(salary)+'</span>':'')+
                 '<span class="job-age">'+escapeHtml(relativeAdded(job.added))+'</span>'+
               '</span>'+
