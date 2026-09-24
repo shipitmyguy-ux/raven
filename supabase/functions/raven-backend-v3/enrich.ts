@@ -1,5 +1,5 @@
 import type { Candidate } from "./types.ts";
-import { decodeHtml } from "./utils.ts";
+import { decodeHtml, explicitlyRemote } from "./utils.ts";
 
 function linkedInId(url:string){
   return (url.match(/(?:-|\/)(\d{7,})(?:\?|$|\/)/)||[])[1]||"";
@@ -80,14 +80,16 @@ async function leverPosting(c:Candidate):Promise<Candidate|null>{
       const range=[s.min,s.max].filter((v:any)=>v!==undefined&&v!==null&&v!=="").join("–");
       salary=[s.currency,range,s.interval].filter(Boolean).join(" ");
     }
-    return {
+    const next={
       ...c,
       title:String(j?.text||c.title||""),
       location,
-      remote:workplace==="remote"||Boolean(c.remote),
+      remote:false,
       salary_text:salary,
       snippet:(description||c.snippet||"").slice(0,10000)
     };
+    next.remote=explicitlyRemote(next,workplace==="remote");
+    return next;
   }catch{return null;}
 }
 
@@ -136,7 +138,7 @@ export async function enrichCandidate(c:Candidate):Promise<Candidate>{
         let loc="";
         if(Array.isArray(jl)&&jl[0]) loc=[jl[0]?.address?.addressLocality,jl[0]?.address?.addressRegion].filter(Boolean).join(", ");
         else if(jl) loc=[jl?.address?.addressLocality,jl?.address?.addressRegion].filter(Boolean).join(", ");
-        const remote=String(job.jobLocationType||"").toUpperCase().includes("TELECOMMUTE")||Boolean(current.remote);
+        const structuredRemote=String(job.jobLocationType||"").toUpperCase().includes("TELECOMMUTE");
         let salary=current.salary_text||"";
         const bs=job.baseSalary;
         if(!salary&&bs?.value){
@@ -145,20 +147,23 @@ export async function enrichCandidate(c:Candidate):Promise<Candidate>{
           if(salary&&bs.currency) salary=bs.currency+" "+salary;
         }
         const description=decodeHtml(job.description||"");
-        return {
+        const next={
           ...current,
           title:job.title||current.title,
           company:typeof org==="string"&&org?org:current.company,
           location:loc||current.location,
-          remote,
+          remote:false,
           salary_text:salary,
           snippet:(description||current.snippet||"").slice(0,10000)
         };
+        next.remote=explicitlyRemote(next,structuredRemote);
+        return next;
       }catch{}
     }
 
     const fallback=(isLinkedIn?extractLinkedIn(html):"")||extractVisible(html)||extractMeta(html)||current.snippet||"";
-    return {...current,snippet:fallback.slice(0,10000)};
+    const snippet=fallback.slice(0,10000);
+    return {...current,snippet,remote:explicitlyRemote({...current,snippet,remote:false} as Candidate)};
   }catch{
     return current;
   }
