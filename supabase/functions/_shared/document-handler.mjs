@@ -1,4 +1,4 @@
-import {createGeminiCompletion,writeDocument,WriterError,WRITER_VERSION,DEFAULT_MODEL} from "./document-writer.mjs";
+import {buildDeterministicDocument,createGeminiCompletion,writeDocument,WriterError,WRITER_VERSION,DEFAULT_MODEL} from "./document-writer.mjs";
 const ORIGINS=new Set(["https://shipitmyguy-ux.github.io","http://localhost:8000","http://127.0.0.1:8000"]);
 const TRACKS=new Set(["Professional","Labor","Wildcard","Games / 3D"]);
 function field(value,max,label){
@@ -54,10 +54,25 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
       if(!r.ok)throw new WriterError("Could not load your verified background.","PROFILE_UNAVAILABLE",503);
       const rows=await r.json(),profile=rows?.[0]?.profile;
       if(!profile||JSON.stringify(profile).length>150000)throw new WriterError("Verified candidate background is missing or too large.","PROFILE_UNAVAILABLE",503);
-      const written=await writeDocument({kind,profile,target,instructions,currentDocument,complete});
-      await finish("success",200);
+      let written;
+      let fallbackReason="";
+      try{
+        written=await writeDocument({kind,profile,target,instructions,currentDocument,complete});
+      }catch(error){
+        const recoverable=error instanceof WriterError&&["GEMINI_UNAVAILABLE","INVALID_DRAFT","FACT_CHECK_FAILED","INCOMPLETE_DRAFT","WRITING_REFUSED"].includes(error.code);
+        if(!recoverable)throw error;
+        fallbackReason=error.code;
+        written={
+          document:buildDeterministicDocument(kind,profile,target,instructions),
+          provider:"raven-fallback",
+          model:"deterministic",
+          verification_model:"deterministic",
+          architecture:WRITER_VERSION+"-fallback"
+        };
+      }
+      await finish("success",200,fallbackReason?("fallback:"+fallbackReason):null);
       return json({ok:true,provider:written.provider,model:written.model,verification_model:written.verification_model,
-        architecture:written.architecture,validation_errors:[],[kind]:written.document,
+        architecture:written.architecture,validation_errors:[],fallback_reason:fallbackReason||undefined,[kind]:written.document,
         budget:{short_remaining:budget.short_remaining,long_remaining:budget.long_remaining}});
     }catch(error){
       const known=error instanceof WriterError;
