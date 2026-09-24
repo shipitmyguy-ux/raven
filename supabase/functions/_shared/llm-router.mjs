@@ -25,44 +25,14 @@ function timeoutFor(name,input){
 }
 function configured(getEnv){
   return {
-    openrouter:Boolean(getEnv("RAVEN_OPENROUTER_API_KEY")||getEnv("OPENROUTER_API_KEY")),
     openai:Boolean(getEnv("RAVEN_OPENAI_API_KEY")||getEnv("OPENAI_API_KEY")),
     gemini:Boolean(getEnv("RAVEN_GEMINI_API_KEY")||getEnv("GEMINI_API_KEY"))
   };
 }
 function providerOrder(getEnv){
-  const requested=String(getEnv("RAVEN_LLM_PROVIDER_ORDER")||"openrouter,openai,gemini")
+  const requested=String(getEnv("RAVEN_LLM_PROVIDER_ORDER")||"openai,gemini")
     .split(",").map(v=>v.trim().toLowerCase()).filter(Boolean);
-  return [...new Set(requested.filter(v=>["openrouter","openai","gemini"].includes(v)))];
-}
-async function openRouterComplete({getEnv,fetchImpl,signal,instructions,input,schema,name,maxOutputTokens}){
-  const apiKey=getEnv("RAVEN_OPENROUTER_API_KEY")||getEnv("OPENROUTER_API_KEY");
-  if(!apiKey)throw new WriterError("OpenRouter is not configured.","PROVIDER_NOT_CONFIGURED",503);
-  const model=getEnv("RAVEN_OPENROUTER_MODEL")||"openrouter/free";
-  const response=await fetchImpl("https://openrouter.ai/api/v1/chat/completions",{
-    method:"POST",signal,
-    headers:{
-      "Authorization":"Bearer "+apiKey,
-      "Content-Type":"application/json",
-      "HTTP-Referer":"https://shipitmyguy-ux.github.io/raven/",
-      "X-Title":"Raven"
-    },
-    body:JSON.stringify({
-      model,
-      messages:[{role:"system",content:instructions},{role:"user",content:JSON.stringify(input)}],
-      response_format:{type:"json_schema",json_schema:{name:name||"raven_document",strict:true,schema:cleanSchema(schema)}},
-      max_tokens:maxOutputTokens,
-      provider:{require_parameters:true,allow_fallbacks:true,sort:"latency",data_collection:"deny"}
-    })
-  });
-  const raw=await response.json().catch(()=>null);
-  if(!response.ok)throw new WriterError("OpenRouter is temporarily unavailable.","PROVIDER_UNAVAILABLE",response.status>=500||response.status===429?503:502);
-  const choice=raw?.choices?.[0];
-  if(choice?.finish_reason&& !["stop","length"].includes(String(choice.finish_reason).toLowerCase()))
-    throw new WriterError("OpenRouter did not finish the document.","INCOMPLETE_DRAFT",502);
-  const content=choice?.message?.content;
-  const text=Array.isArray(content)?content.map(p=>p?.text||"").join(""):content;
-  return {data:parseJsonText(text),provider:"openrouter",model:raw?.model||model};
+  return [...new Set(requested.filter(v=>["openai","gemini"].includes(v)))];
 }
 async function openAIComplete({getEnv,fetchImpl,signal,instructions,input,schema,name,maxOutputTokens}){
   const apiKey=getEnv("RAVEN_OPENAI_API_KEY")||getEnv("OPENAI_API_KEY");
@@ -138,7 +108,6 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
     const errors=[];
     for(const provider of order){
       try{
-        if(provider==="openrouter")return await openRouterComplete({getEnv,fetchImpl,signal:stageSignal,instructions,input,schema,name,maxOutputTokens});
         if(provider==="openai")return await openAIComplete({getEnv,fetchImpl,signal:stageSignal,instructions,input,schema,name,maxOutputTokens});
         if(provider==="gemini")return await geminiComplete({getEnv,fetchImpl,signal:stageSignal,instructions,input,schema,name,maxOutputTokens});
       }catch(error){
