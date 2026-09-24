@@ -2672,3 +2672,41 @@ body.options-open > :not(main):not(.options-dialog) {
   height: 100%;
   fill: currentColor;
 }
+
+
+/* Keep the remote identifier visible in every card interaction state. */
+.job-card.is-remote .remote-watermark,
+.job-card.is-remote:hover .remote-watermark,
+.job-card.is-remote:focus-within .remote-watermark,
+.job-card.is-remote.active .remote-watermark,
+.job-card.is-remote.is-new:hover .remote-watermark,
+.job-card.is-remote.is-new.active .remote-watermark {
+  display: block !important;
+  visibility: visible !important;
+  width: clamp(150px, 18vw, 220px);
+  height: clamp(150px, 18vw, 220px);
+  color: var(--accent-strong);
+  opacity: .30 !important;
+  z-index: 1;
+}
+
+.job-card.is-remote .job-card-summary,
+.job-card.is-remote .job-card-expanded {
+  z-index: 2;
+}
+
+.job-card.is-remote .bookmark-star,
+.job-card.is-remote .ignore-job-button {
+  z-index: 4;
+}
+
+@media (max-width:480px) {
+  .job-card.is-remote .remote-watermark,
+  .job-card.is-remote:hover .remote-watermark,
+  .job-card.is-remote:focus-within .remote-watermark,
+  .job-card.is-remote.active .remote-watermark {
+    width: 138px;
+    height: 138px;
+    opacity: .26 !important;
+  }
+}
