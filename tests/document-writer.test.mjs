@@ -175,7 +175,9 @@ test("schema bounds guide document length; malformed draft can be repaired",asyn
 
 test("deterministic evidence validation rejects unsupported specifics and accepts requested playful style",()=>{
  assert.throws(()=>validateDraft("resume",{...resume,summary:claim("Led a team of 50.",["f2"])},profile,{target}),/unsupported number/i);
- assert.throws(()=>validateDraft("resume",{...resume,summary:claim("Expert in Photoshop.",["f1"])},profile,{target}),/without citing evidence|unsupported embellishment/i);
+ const profileWithPhotoshop={...profile,skills:[...profile.skills,"Photoshop"]};
+ assert.doesNotThrow(()=>validateDraft("resume",{...resume,summary:claim("Works with Photoshop and builds game environments.",["f1"])},profileWithPhotoshop,{target}));
+ assert.throws(()=>validateDraft("resume",{...resume,experience:[{experience_id:"art",bullets:[claim("Used Photoshop to build game environments.",["f1"])]}]},profileWithPhotoshop,{target}),/without citing evidence/i);
  const playful={
    ...resume,
    headline:claim("Meow! Artist and mentor cat",["f1","f2"]),
