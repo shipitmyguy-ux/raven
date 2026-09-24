@@ -2620,16 +2620,16 @@ body.options-open > :not(main):not(.options-dialog) {
 .job-card.is-remote::after {
   content: "⌂";
   position: absolute;
-  z-index: 0;
+  z-index: 1;
   top: 50%;
-  right: clamp(62px, 14%, 92px);
+  right: clamp(64px, 16%, 104px);
   transform: translateY(-50%);
   font-size: clamp(64px, 8vw, 104px);
   line-height: 1;
   font-family: Arial, sans-serif;
   font-weight: 700;
   color: currentColor;
-  opacity: .045;
+  opacity: .12;
   pointer-events: none;
   user-select: none;
 }
@@ -2658,8 +2658,8 @@ body.options-open > :not(main):not(.options-dialog) {
 }
 @media (max-width: 480px) {
   .job-card.is-remote::after {
-    right: 58px;
+    right: 62px;
     font-size: 68px;
-    opacity: .04;
+    opacity: .10;
   }
 }
