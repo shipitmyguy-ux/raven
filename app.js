@@ -1557,9 +1557,9 @@
       '</header>'+
       '<h2>Professional Summary</h2><p class="summary">'+escapeHtml(resume.summary||"")+'</p>'+
       '<h2>Core Skills</h2><ul class="skills">'+list(resume.skills)+'</ul>'+
-      '<h2>Professional Experience</h2>'+experiences+
+      '<h2>'+(job.track==="Games / 3D"?"Professional Experience":"Relevant Experience")+'</h2>'+experiences+
       (education?'<h2>Education</h2>'+education:'')+
-      ((resume.additional||[]).length?'<h2>Career Highlights</h2><ul class="additional">'+list(resume.additional)+'</ul>':'')+
+      ((resume.additional||[]).length?'<h2>'+(job.track==="Games / 3D"?"Career Highlights":"Transferable Qualifications")+'</h2><ul class="additional">'+list(resume.additional)+'</ul>':'')+
       '</body></html>';
   }
 
