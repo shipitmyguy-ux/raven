@@ -2,6 +2,12 @@
 
 Last updated: 2026-09-24
 
+## Remote classification parity patch
+Production `raven-backend-v3` v47 now classifies remote status from explicit evidence through one shared normalization path used by Professional, Labor, Wildcard, and Games / 3D. LinkedIn's remote-search filter no longer sets `remote=true` by itself. Enrichment revalidates workplace/jobLocationType evidence instead of preserving stale LinkedIn remote flags, and the frontend prefers fresh discovered classification over stale saved flags.
+
+Existing LinkedIn rows were reclassified. Blizzard Irvine and Epic Cary environment-art postings are now non-remote in both discovered and saved data. Fresh production searches returned HTTP 200 for all four tracks, and a live Steel browser check showed the Epic/Blizzard Games / 3D cards without Remote and with commute times. Basic production smoke also passed.
+
+
 ## Completed release
 User chose Gemini using Raven's existing connection. No OpenAI key or new provider setup is needed.
 
