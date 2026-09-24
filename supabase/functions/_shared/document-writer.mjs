@@ -56,7 +56,7 @@ function roots(text){
   }).filter(Boolean)||[];
 }
 function exactNumbers(text){return String(text||"").match(/\b\d+(?:[.,]\d+)?%?\b/g)||[];}
-function claimEvidenceIssues(value,facts,profile,{target=null,instructions="",cover=false}={}){
+function claimEvidenceIssues(value,facts,profile,{target=null,instructions="",cover=false,roleId=null}={}){
   const issues=[];
   const evidenceText=facts.map(f=>[f.text,f.company].filter(Boolean).join(" ")).join(" ");
   const evidenceLower=evidenceText.toLowerCase();
@@ -72,9 +72,13 @@ function claimEvidenceIssues(value,facts,profile,{target=null,instructions="",co
       issues.push("The passage introduced an unsupported number: "+number+".");
   }
   const evidenceRootSet=new Set(roots(evidenceText));
+  const namesEmployer=(profile.experience||[]).some(e=>value.toLowerCase().includes(String(e.company||"").toLowerCase()));
   for(const skill of (profile.skills||[]).filter(Boolean)){
     const lower=String(skill).toLowerCase();
     if(!value.toLowerCase().includes(lower))continue;
+    // A canonical skill is safe in general prose. Employer-specific attribution still
+    // requires that employer's evidence to establish use there.
+    if(!roleId&&!namesEmployer)continue;
     const skillRoots=roots(skill);
     const supported=skillRoots.length&&skillRoots.every(root=>evidenceRootSet.has(root));
     if(!supported&&!instructionLower.includes(lower)&&!targetLower.includes(lower))
@@ -111,7 +115,7 @@ function groundedText(claim,profile,{roleId=null,cover=false,max=1800,target=nul
     if(employers.length&&(!facts.length||facts.some(f=>!employers.some(e=>e.id===f.experience_id))))
       fail("An employer-specific paragraph used general or unrelated experience. Separate general background from employer-specific paragraphs.");
   }
-  const issues=claimEvidenceIssues(value,facts,profile,{target,instructions,cover});
+  const issues=claimEvidenceIssues(value,facts,profile,{target,instructions,cover,roleId});
   if(issues.length)fail(issues[0]);
   return value;
 }
