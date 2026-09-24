@@ -1776,6 +1776,24 @@
     state.generatorType=null;
     render();
   }
+  function normalizedDocumentText(value){
+    return String(value||"").replace(/\s+/g," ").trim();
+  }
+  function documentRevisionChanged(type,before,after){
+    if(type==="resume"){
+      const fields=["headline","summary"];
+      if(fields.some(key=>normalizedDocumentText(before?.[key])!==normalizedDocumentText(after?.[key]))) return true;
+      const beforeSkills=(before?.skills||[]).map(normalizedDocumentText).join("|");
+      const afterSkills=(after?.skills||[]).map(normalizedDocumentText).join("|");
+      if(beforeSkills!==afterSkills) return true;
+      const flatten=(doc)=>(doc?.experience||[]).flatMap(x=>[x.role,x.company,x.dates,...(x.bullets||[])]).map(normalizedDocumentText).join("|");
+      if(flatten(before)!==flatten(after)) return true;
+      return (before?.additional||[]).map(normalizedDocumentText).join("|")!==(after?.additional||[]).map(normalizedDocumentText).join("|");
+    }
+    return [before?.greeting,...(before?.paragraphs||[]),before?.closing]
+      .map(normalizedDocumentText).join("|")!==[after?.greeting,...(after?.paragraphs||[]),after?.closing].map(normalizedDocumentText).join("|");
+  }
+
   async function submitDocumentRevision(event) {
     event.preventDefault();
     const job=state.generatorJob;
@@ -1795,8 +1813,14 @@
     }
     setStatus("AI is applying requested changes to your "+documentLabel(type)+"…");
     try{
-      await generateDocumentForJob(job,type,instructions);
+      const beforeValue=String(job[type]||"");
+      const beforeText=currentDocumentText(job,type);
+      const updated=await generateDocumentForJob(job,type,instructions);
       const value=String(job[type]||"");
+      const afterText=currentDocumentText(job,type);
+      if(!documentRevisionChanged(type,{summary:beforeText,paragraphs:[beforeText]},{...updated,summary:updated?.summary||afterText,paragraphs:updated?.paragraphs||[afterText]}) && normalizedDocumentText(beforeText)===normalizedDocumentText(afterText)){
+        throw new Error("AI returned the same document without applying the requested change. Please retry or make the request more specific.");
+      }
       document.getElementById("reviewOpenFile").href=value;
       document.getElementById("reviewFrame").src=previewableDocumentUrl(value);
       document.getElementById("reviewInstructions").value="";
