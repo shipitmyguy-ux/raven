@@ -1084,7 +1084,7 @@
           const bookmarkStar=/^(applied|interview|offer|rejected|ignored)$/i.test(rawStatus) ? "" :
             '<button class="bookmark-star'+(isBookmarked?' is-bookmarked':'')+'" type="button" data-card-bookmark aria-pressed="'+String(isBookmarked)+'" aria-label="'+(isBookmarked?'Remove bookmark':'Bookmark job')+'" title="'+(isBookmarked?'Remove bookmark':'Bookmark job')+'">'+(isBookmarked?'★':'☆')+'</button>';
           const remoteWatermark=isRemoteJob(job)
-            ? '<span class="remote-watermark" aria-hidden="true">⌂</span>'
+            ? '<span class="remote-watermark" aria-hidden="true"><svg viewBox="0 0 100 100" focusable="false"><path d="M14 46 50 16l36 30v38H60V60H40v24H14V46Zm50-23h13v15L64 27V23Z"/></svg></span>'
             : '';
           const ignoreControl='<button class="ignore-job-button'+(isIgnored?' is-restore':'')+'" type="button" data-ignore-job aria-label="'+(isIgnored?'Restore job':'Ignore job')+'" title="'+(isIgnored?'Restore job':'Ignore job')+'">'+(isIgnored?'↩':'×')+'</button>';
           card.innerHTML=
