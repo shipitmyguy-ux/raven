@@ -129,7 +129,7 @@ test("handler checks access and configuration before spending model budget",asyn
  assert.equal(calls,0);
  assert.equal((await handler(req({jobTitle:"Job",jobDescription:"x".repeat(60001)}))).status,400);
 });
-test("handler preserves request budget and records success for a reviewed document",async()=>{
+test("handler preserves request budget and records success for a grounded document",async()=>{
  const calls=[],responses=[cover];
  const fetchImpl=async(url,init)=>{
   calls.push({url,body:init.body?JSON.parse(init.body):null});
@@ -222,13 +222,14 @@ test("cover letter validator tolerates blank optional greeting closing and extra
  assert.equal(validated.paragraphs.length,2);
 });
 
-test("cover letter checks each sentence and prevents a duplicate signature",async()=>{
+test("cover letter preserves grounded multi-sentence prose and canonical signature",async()=>{
  const requests=[];
  const letter={...cover,paragraphs:[claim("I built game environments. I mentored newer artists.",["f1","f2"]),claim("I would welcome a conversation.",[])],closing:"Sincerely, Test Candidate"};
- const r=await writeDocument({kind:"coverLetter",profile,target,complete:sequence([letter,accepted],requests)});
+ const r=await writeDocument({kind:"coverLetter",profile,target,complete:sequence([letter],requests)});
  assert.equal(r.document.closing,"Sincerely,");
- assert.equal(requests[1].input.passages.length,5);
- assert.equal(requests[1].input.passages[2].text,"I mentored newer artists.");
+ assert.equal(r.document.signature,profile.name);
+ assert.equal(requests.length,1);
+ assert.equal(r.document.paragraphs[0],"I built game environments. I mentored newer artists.");
 });
 
 test("general software skills cannot be reassigned to an employer",()=>{
