@@ -43,8 +43,9 @@
     MASTER_RESUMES_KEY,APPLICATION_PROFILE_KEY,ANSWER_MEMORY_KEY,GENERATOR_PREFS_KEY,
     USER_SETTINGS_KEY,DOCUMENT_APPROVALS_KEY,VIEWED_JOBS_KEY
   ];
-  const RESUME_TEMPLATE_VERSION="modern-v5";
+  const RESUME_TEMPLATE_VERSION="modern-v6";
   const DEFAULT_FOLLOW_UP_DAYS=7;
+  const activeGeneration=new WeakMap();
   let editingMasterResumeId=null;
   let editingAnswerMemoryKey=null;
 
@@ -1043,6 +1044,17 @@
   function render() {
     renderJobs();
   }
+  function generationSession(job){ return activeGeneration.get(job)||null; }
+  function knownJobById(id){
+    if(id===null||id===undefined) return null;
+    const discovered=Object.values(state.discovered||{}).flat();
+    return [...state.jobs,...discovered].find(item=>String(item?.id)===String(id))||null;
+  }
+  function suppressGenerationAutoOpen(jobId){
+    const job=knownJobById(jobId);
+    const session=job&&generationSession(job);
+    if(session) session.autoOpen=false;
+  }
   function renderJobs() {
     list.innerHTML="";
     const jobs=filteredJobs();
@@ -1067,7 +1079,8 @@
       groupJobs.forEach((job)=>{
           const card=document.createElement("article");
           const viewed=hasViewed(job);
-          card.className="job-card"+(job.id===state.selectedId?" active":"")+(isRemoteJob(job)?" is-remote":"")+(job.status==="Applied"?" is-applied":"")+(job.status==="Interested"?" is-interested":"")+(job.status==="Ignored"?" is-ignored":"")+(viewed?" is-viewed":" is-new");
+          const generating=generationSession(job);
+          card.className="job-card"+(job.id===state.selectedId?" active":"")+(isRemoteJob(job)?" is-remote":"")+(job.status==="Applied"?" is-applied":"")+(job.status==="Interested"?" is-interested":"")+(job.status==="Ignored"?" is-ignored":"")+(viewed?" is-viewed":" is-new")+(generating?" is-generating-document":"");
           card.dataset.status=statusToken(job.status);
           card.dataset.jobId=String(job.id||"");
           const company=job.company||"Company not captured";
@@ -1078,6 +1091,9 @@
           const statusLabel=rawStatus.toLowerCase()==="interested"?"Bookmarked":rawStatus;
           const attentionIndicator=meaningfulStatus
             ? '<span class="job-status">'+escapeHtml(statusLabel)+'</span>'
+            : '';
+          const generationIndicator=generating
+            ? '<span class="generation-card-status" role="status" aria-live="polite"><span class="generation-spinner" aria-hidden="true"></span><span>Generating '+escapeHtml(documentLabel(generating.type))+'…</span></span>'
             : '';
           const isIgnored=rawStatus.toLowerCase()==="ignored";
           const isBookmarked=rawStatus.toLowerCase()==="interested";
@@ -1091,6 +1107,7 @@
             '<button class="job-card-summary" type="button" aria-expanded="'+String(job.id===state.selectedId)+'">'+
               '<span class="card-main">'+
                 (attentionIndicator?'<span class="card-topline">'+attentionIndicator+'</span>':'')+
+                generationIndicator+
                 '<span class="job-title">'+escapeHtml(job.title||"Untitled job")+'</span>'+
                 '<span class="company-name">'+escapeHtml(company)+'</span>'+
                 '<span class="job-location">'+escapeHtml(location)+'</span>'+
@@ -1232,8 +1249,10 @@
               return;
             }
             const opening=state.selectedId!==job.id;
+            const nextSelectedId=opening?job.id:null;
+            if(state.selectedId!==nextSelectedId) suppressGenerationAutoOpen(state.selectedId);
             if(opening) markViewed(job);
-            state.selectedId = opening ? job.id : null;
+            state.selectedId=nextSelectedId;
             render();
             if(opening){
               loadJobActivity(job,true);
@@ -1598,25 +1617,15 @@
 
   async function generateForJob(job,type,button=null) {
     if(job[type]) return openDocumentReview(job,type);
-    if(type!=="resume"){
-      setGenerationButton(button,true,"Generating…");
-      try{
-        await generateDocumentForJob(job,type,"");
-        setGenerationButton(button,false);
-        openDocumentReview(job,type);
-      }catch(error){
-        setGenerationButton(button,false);
-        if(button){
-          button.classList.add("generation-failed");
-          button.title=String(error.message||"Document generation failed");
-          const label=button.querySelector("span:last-child");
-          if(label) label.textContent="Retry";
-        }
-      }
-      return;
-    }
-    setGenerationButton(button,true,navigator.onLine?"Generating…":"Offline draft…");
+    if(generationSession(job)) return;
+    const session={type,autoOpen:state.selectedId===job.id,startedAt:Date.now()};
+    activeGeneration.set(job,session);
+    setGenerationButton(button,true,type==="resume"?(navigator.onLine?"Generating resume…":"Building offline resume…"):"Generating cover letter…");
+    render();
     try{
+      if(type!=="resume"){
+        await generateDocumentForJob(job,type,"");
+      }else{
       const masterResume=await masterResumeTaskInput(job.track||"Professional");
       if(!masterResume) throw new Error("Assign a master resume to this job track first.");
       await prepareJobForGeneration(job);
@@ -1631,18 +1640,16 @@
         await saveGeneratedDocument(job,"resume",resume);
         setStatus("Resume ready");
       }
-      setGenerationButton(button,false);
-      openDocumentReview(job,type);
-    }catch(error){
-      setGenerationButton(button,false);
-      if(button){
-        button.classList.add("generation-failed");
-        button.title=String(error.message||"Resume generation failed");
-        const label=button.querySelector("span:last-child");
-        if(label) label.textContent="Retry";
       }
-      setStatus("Resume generation failed: "+error.message);
-      console.error("Resume generation failed",error);
+      const shouldOpen=session.autoOpen&&state.selectedId===job.id;
+      activeGeneration.delete(job);
+      render();
+      if(shouldOpen) openDocumentReview(job,type);
+    }catch(error){
+      activeGeneration.delete(job);
+      render();
+      setStatus((type==="resume"?"Resume":"Cover letter")+" generation failed: "+error.message);
+      console.error(documentLabel(type)+" generation failed",error);
     }
   }
 
@@ -1918,6 +1925,12 @@
   function documentControl(job,key,label) {
     const value=job[key];
     const fileLabel=String(label||"file").toLowerCase();
+    const generating=generationSession(job);
+    if(generating?.type===key){
+      return '<span class="document-control is-empty is-generating">'+
+        '<button class="document-primary is-generating" type="button" disabled aria-busy="true"><span class="generation-spinner" aria-hidden="true"></span><span>Generating…</span></button>'+
+      '</span>';
+    }
     if(!value){
       return '<span class="document-control is-empty">'+
         '<button class="document-primary" type="button" data-generate="'+escapeAttr(key)+'">Generate</button>'+
