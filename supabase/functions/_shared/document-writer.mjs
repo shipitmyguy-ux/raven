@@ -145,18 +145,32 @@ export function validateDraft(kind,draft,profile,{target=null,instructions=""}={
   if(skills.some(s=>!(profile.skills||[]).includes(s)))fail("The writer added an unverified skill.");
   if(new Set(skills).size!==skills.length)fail("The writer repeated a skill.");
   if(!Array.isArray(draft.experience)||!draft.experience.length||draft.experience.length>(profile.experience||[]).length)fail("The writer returned an invalid work history.");
-  if(target?.track!=="Games / 3D"&&draft.experience.length>4)
-    fail("A non-game resume must use a focused work-history selection of no more than four relevant roles.");
   const seen=new Set();
-  const experience=draft.experience.map(row=>{
+  const experienceAll=draft.experience.map(row=>{
     const original=(profile.experience||[]).find(e=>e.id===row.experience_id);
     if(!original||seen.has(original.id))fail("The writer changed the work history.");
     seen.add(original.id);
     return {role:original.role,company:original.company,dates:original.dates,bullets:groundedList(row.bullets,profile,{min:1,max:6,roleId:original.id,limit:850,target,instructions})};
   });
+  let experience=experienceAll;
+  if(target?.track!=="Games / 3D"&&experienceAll.length>4){
+    const targetText=[target?.jobTitle,target?.company,target?.jobDescription,instructions].filter(Boolean).join(" ");
+    const targetRoots=new Set(roots(targetText).filter(root=>!STOP_WORDS.has(root)));
+    const transferable=/\b(?:lead|leader|mentor|train|onboard|project|deliver|workflow|troubleshoot|excel|automat|database|metadata|report|query|cross[- ]functional|coordinate|collaborat|meeting|maintenance|repair|schedule|documentation)\w*\b/i;
+    const ranked=experienceAll.map((item,index)=>{
+      const text=[item.role,item.company,...(item.bullets||[])].join(" ");
+      const overlap=roots(text).filter(root=>targetRoots.has(root)).length;
+      const transferHits=(text.match(new RegExp(transferable.source,"gi"))||[]).length;
+      let score=overlap*4+transferHits*2-Math.min(3,index*.2);
+      if(target?.track==="Labor"&&/soundair|maintenance technician/i.test(text))score+=12;
+      return {item,index,score};
+    }).sort((a,b)=>b.score-a.score||a.index-b.index).slice(0,4);
+    const keep=new Set(ranked.map(x=>x.index));
+    experience=experienceAll.filter((_,index)=>keep.has(index));
+  }
+
   // The canonical game-art chronology is mandatory only for Games / 3D.
-  // Non-game tracks must be free to select the smallest relevant work-history
-  // subset so the resume can actually pivot instead of becoming an art CV.
+  // Non-game tracks use the deterministic relevance selection above.
   const requiredExperienceIds=target?.track==="Games / 3D"&&Array.isArray(profile.resume_required_experience_ids)
     ? profile.resume_required_experience_ids.filter(Boolean)
     : [];
