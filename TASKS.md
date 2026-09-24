@@ -10,6 +10,7 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] requires real-site/user-acc
 - [~] Source-description recovery is implemented for LinkedIn guest pages, Lever's public posting API, schema.org/JobPosting JSON-LD, visible page content, and metadata. Some aggregator pages can still expose only snippets.
 - [x] Shared source -> parser -> Supabase -> Raven UI architecture is enforced; tabs are filters rather than separate ingestion pipelines.
 - [x] Search Jobs uses the shared `raven-backend-v3` path.
+- [x] Remote status uses one shared evidence-backed classifier across all four tracks; LinkedIn remote-query false positives were removed and existing Epic/Blizzard misclassifications were repaired.
 - [x] Quick and deep search are production-verified on every track. Latest deep pass completed with 67 Professional, 78 Labor, 48 Wildcard, and 9 Games / 3D results.
 - [x] Zero-result quick refreshes preserve recent cached discovery rows instead of blanking a tab.
 - [x] Stale background deep-search runs are automatically reconciled and no longer remain indefinitely `running`.
