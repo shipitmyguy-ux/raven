@@ -113,11 +113,14 @@ export function createGeminiCompletion({apiKey,model=DEFAULT_MODEL,fallbackModel
     // Give drafting and factual review independent budgets so a slower draft
     // cannot consume the verifier's entire request window.
     const stageTimeoutMs=name==="raven_factual_review"?50000:80000;
+    const attemptTimeoutMs=name==="raven_factual_review"?30000:40000;
     const stageSignal=AbortSignal.timeout(stageTimeoutMs);
-    const requestSignal=signal&&typeof AbortSignal.any==="function"?AbortSignal.any([signal,stageSignal]):(signal||stageSignal);
     for(const candidateModel of models){
       for(const base of bases){
         let response;
+        const attemptSignal=AbortSignal.timeout(attemptTimeoutMs);
+        const signals=[stageSignal,attemptSignal,...(signal?[signal]:[])];
+        const requestSignal=typeof AbortSignal.any==="function"?AbortSignal.any(signals):(signal||stageSignal);
         try{
           response=await fetchImpl(base+"/v1beta/models/"+encodeURIComponent(candidateModel)+":generateContent",{
             method:"POST",signal:requestSignal,headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},
@@ -127,6 +130,9 @@ export function createGeminiCompletion({apiKey,model=DEFAULT_MODEL,fallbackModel
           });
         }catch{
           if(stageSignal.aborted||signal?.aborted)throw new WriterError("Writing took too long. Please try again.","GEMINI_UNAVAILABLE",503);
+          // A single provider route can stall even while another route/model is healthy.
+          // Fail over within the stage budget instead of consuming the whole request.
+          if(attemptSignal.aborted)continue;
           continue;
         }
         const raw=await response.json().catch(()=>null);
