@@ -2710,3 +2710,35 @@ body.options-open > :not(main):not(.options-dialog) {
     opacity: .26 !important;
   }
 }
+
+
+/* Remote watermark polish: subdued and never covered by generic button hover. */
+.job-card.is-remote .remote-watermark,
+.job-card.is-remote:hover .remote-watermark,
+.job-card.is-remote:focus-within .remote-watermark,
+.job-card.is-remote.active .remote-watermark {
+  color: color-mix(in srgb, var(--accent-strong) 62%, var(--text-muted) 38%);
+  opacity: .14 !important;
+  z-index: 2;
+}
+.job-card.is-remote > .job-card-summary {
+  z-index: 1;
+}
+.job-card.is-remote > .job-card-summary:hover,
+.job-card.is-remote > .job-card-summary:focus,
+.job-card.is-remote > .job-card-summary:focus-visible {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.job-card.is-remote > .bookmark-star,
+.job-card.is-remote > .ignore-job-button {
+  z-index: 4;
+}
+@media (max-width:480px) {
+  .job-card.is-remote .remote-watermark,
+  .job-card.is-remote:hover .remote-watermark,
+  .job-card.is-remote:focus-within .remote-watermark,
+  .job-card.is-remote.active .remote-watermark {
+    opacity: .12 !important;
+  }
+}
