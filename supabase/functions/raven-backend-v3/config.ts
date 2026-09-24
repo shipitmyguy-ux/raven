@@ -13,6 +13,8 @@ export const TRACKS: Record<Track,{
   terms:string[];
   include:string[];
   exclude:string[];
+  titleExclude?:string[];
+  requireEnglish?:boolean;
 }> = {
   Professional: {
     terms:["Project Manager","Project Coordinator","Implementation Manager","Implementation Specialist","Program Manager","Operations Manager","Operations Coordinator","Training Manager","Training Specialist","Enablement Manager","Customer Success Manager","Onboarding Manager"],
@@ -32,6 +34,8 @@ export const TRACKS: Record<Track,{
   "Games / 3D": {
     terms:["Environment Artist","Senior Environment Artist","Lead Environment Artist","World Artist","3D Environment Artist","Level Artist","Prop Artist","3D Artist","Senior 3D Artist","World Builder"],
     include:["environment artist","world artist","3d environment","level artist","prop artist","3d artist","world builder","unreal","unity","game"],
-    exclude:["technical artist","character artist","vfx artist","animator","software engineer","developer"]
+    exclude:["technical artist","character artist","vfx artist","animator","software engineer","developer"],
+    titleExclude:["programmer","programming","engineer","engineering","developer"],
+    requireEnglish:true
   }
 };
