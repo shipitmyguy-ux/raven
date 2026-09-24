@@ -53,7 +53,12 @@ async function openAICompatibleComplete({provider,baseUrl,apiKey,model,fetchImpl
     })
   });
   const raw=await response.json().catch(()=>null);
-  if(!response.ok)throw new WriterError(provider+" is temporarily unavailable.","PROVIDER_UNAVAILABLE",response.status>=500||response.status===429?503:502);
+  if(!response.ok){
+    const error=new WriterError(provider+" is temporarily unavailable.","PROVIDER_UNAVAILABLE",response.status>=500||response.status===429?503:502);
+    error.upstreamStatus=response.status;
+    error.upstreamCode=String(raw?.error?.code||raw?.error?.type||"").slice(0,120);
+    throw error;
+  }
   const choice=raw?.choices?.[0];
   if(choice?.finish_reason&&String(choice.finish_reason).toLowerCase()!=="stop")
     throw new WriterError(provider+" did not finish the document.","INCOMPLETE_DRAFT",502);
@@ -130,7 +135,7 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
         if(provider==="groq")return await groqComplete(common);
         if(provider==="gemini")return await geminiComplete(common);
       }catch(error){
-        console.warn("[raven-llm-router]",provider,error?.code||"ERROR",Number(error?.status||0));
+        console.warn("[raven-llm-router]",provider,error?.code||"ERROR",Number(error?.status||0),Number(error?.upstreamStatus||0),String(error?.upstreamCode||""));
         if(stageSignal?.aborted)break;
         if(error?.code==="INVALID_DRAFT"||error?.code==="INCOMPLETE_DRAFT"||error?.code==="PROVIDER_UNAVAILABLE"||error?.code==="WRITING_REFUSED")continue;
         throw error;
