@@ -123,6 +123,7 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
         if(provider==="groq")return await groqComplete(common);
         if(provider==="gemini")return await geminiComplete(common);
       }catch(error){
+        console.warn("[raven-llm-router]",provider,error?.code||"ERROR",Number(error?.status||0));
         if(stageSignal?.aborted)break;
         if(error?.code==="INVALID_DRAFT"||error?.code==="INCOMPLETE_DRAFT"||error?.code==="PROVIDER_UNAVAILABLE"||error?.code==="WRITING_REFUSED")continue;
         throw error;
