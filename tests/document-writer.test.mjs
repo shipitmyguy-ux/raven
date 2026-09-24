@@ -11,7 +11,8 @@ const resume={headline:"Artist and mentor",summary:"Builds game environments and
  experience:[{experience_id:"art",bullets:["Built game environments and mentored newer artists."]}],additional:[]};
 const cover={greeting:"Dear Hiring Manager,",paragraphs:["My work combines environment art and mentoring newer artists.","I would welcome a conversation about the role."],closing:"Sincerely,"};
 const accepted={supported:true,issues:[]};
-function sequence(values,requests=[]){return async args=>{requests.push(args);assert.ok(values.length,"unexpected model call");return {data:structuredClone(values.shift()),model:"test-model"};};}
+const reviewData=(data,args)=>data?.supported!==undefined&&args.input.passages?{checks:args.input.passages.map((p,index)=>({index,supported:data.supported,reason:data.issues?.[0]||"Supported by the supplied facts."}))}:data;
+function sequence(values,requests=[]){return async args=>{requests.push(args);assert.ok(values.length,"unexpected model call");return {data:reviewData(structuredClone(values.shift()),args),model:"test-model"};};}
 
 test("writer sees the entire verified profile, posting and existing draft",async()=>{
  const requests=[];
@@ -24,7 +25,8 @@ test("writer sees the entire verified profile, posting and existing draft",async
  assert.equal(result.document.summary,resume.summary);
  assert.equal(result.document.experience[0].bullets[0],resume.experience[0].bullets[0]);
  assert.equal(result.provider,"gemini");assert.equal(result.architecture,WRITER_VERSION);
- assert.deepEqual(requests[1].input.draft,result.document);
+ assert.equal(requests[1].input.passages[0].text,result.document.headline);
+ assert.equal(requests[1].input.passages[2].company,"Studio");
 });
 test("identity, employer metadata and education remain immutable",()=>{
  const document=validateDraft("resume",{...resume,name:"Invented",education:[],experience:[{...resume.experience[0],company:"Invented",dates:"Now"}]},profile);
@@ -42,11 +44,11 @@ test("unsupported claims receive one repair and a new factual review",async()=>{
  const requests=[],bad={...resume,summary:"Led a team of 50."};
  const r=await writeDocument({kind:"resume",profile,target,complete:sequence([bad,{supported:false,issues:["Team size is not supported."]},resume,accepted],requests)});
  assert.equal(requests.length,4);assert.equal(r.document.summary,resume.summary);
- assert.deepEqual(requests[2].input.factualCorrection.issues,["Team size is not supported."]);
+ assert.equal(requests[2].input.factualCorrection.issues[0].issue,"Team size is not supported.");
 });
 test("persistent unsupported claims and malformed reviews fail without fallback",async()=>{
  await assert.rejects(writeDocument({kind:"resume",profile,target,complete:sequence([resume,{supported:false,issues:["Wrong employer."]},resume,{supported:false,issues:["Wrong employer."]}])}),e=>e.code==="FACT_CHECK_FAILED");
- await assert.rejects(writeDocument({kind:"resume",profile,target,complete:sequence([resume,{supported:true}])}),e=>e.code==="FACT_CHECK_FAILED");
+ await assert.rejects(writeDocument({kind:"resume",profile,target,complete:sequence([resume,{checks:[{index:0,supported:true,reason:"Supported."}]}])}),e=>e.code==="FACT_CHECK_FAILED");
 });
 test("empty documents, duplicate work history and injected HTML are rejected",()=>{
  assert.throws(()=>validateDraft("resume",{...resume,experience:[]},profile));
@@ -65,7 +67,7 @@ test("Gemini gets system instructions, complete context and structured output",a
  assert.equal(sent.systemInstruction.parts[0].text,"Write.");
  assert.deepEqual(JSON.parse(sent.contents[0].parts[0].text),{example:true});
  assert.equal(sent.generationConfig.responseMimeType,"application/json");
- assert.equal(sent.generationConfig.responseJsonSchema.type,"object");
+ assert.equal(sent.generationConfig.responseSchema.type,"object");
  assert.equal(r.model,"actual-model");assert.deepEqual(r.data,cover);
 });
 test("refusal, incomplete response, bad JSON and provider errors never become documents",async()=>{
@@ -106,7 +108,7 @@ test("handler preserves request budget and records success for a reviewed docume
   if(url.endsWith("raven_request_guard"))return Response.json({allowed:true,event_id:123,short_remaining:11,long_remaining:59});
   if(url.includes("raven_canonical_profiles"))return Response.json([{profile}]);
   if(url.endsWith("raven_request_finish"))return Response.json(null);
-  if(url.endsWith(":generateContent"))return Response.json({modelVersion:"test",candidates:[{finishReason:"STOP",content:{parts:[{text:JSON.stringify(responses.shift())}]}}]});
+  if(url.endsWith(":generateContent"))return Response.json({modelVersion:"test",candidates:[{finishReason:"STOP",content:{parts:[{text:JSON.stringify(reviewData(responses.shift(),{input:JSON.parse(JSON.parse(init.body).contents[0].parts[0].text)}))}]}}]});
   throw Error("unexpected endpoint");
  };
  const handler=createDocumentHandler("coverLetter",{getEnv:n=>env[n],fetchImpl});
@@ -131,10 +133,10 @@ test("rate limit stops all profile/model calls; failed writer records failure",a
  assert.equal((await response.json()).resume,undefined);
 });
 
-test("schema bounds and enum choices include all verified options; malformed draft can be repaired",async()=>{
+test("schema bounds guide document length; malformed draft can be repaired",async()=>{
  const requests=[],bad={...resume,skills:[]};
  const result=await writeDocument({kind:"resume",profile,target,complete:sequence([bad,resume,accepted],requests)});
- assert.deepEqual(requests[0].schema.properties.skills.items.enum,profile.skills);
+ assert.deepEqual(requests[0].input.verifiedBackground.skills,profile.skills);
  assert.equal(requests[0].schema.properties.experience.maxItems,2);
  assert.equal(requests[0].schema.properties.experience.items.properties.bullets.maxItems,6);
  assert.ok(requests[1].input.factualCorrection);assert.equal(result.document.summary,resume.summary);

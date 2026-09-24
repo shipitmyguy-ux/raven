@@ -556,6 +556,56 @@ test("review preserves approved document and revision invalidates approval",asyn
   await expect(page.locator("[data-approved-apply]")).toContainText("Approve docs");
 });
 
+test("failed revision keeps the saved document and its approval",async({page})=>{
+  const resumeV1="data:text/html;charset=utf-8,resume-v1";
+  const letterV1="data:text/html;charset=utf-8,letter-v1";
+  await page.addInitScript(({resumeV1,letterV1})=>{
+    localStorage.setItem("ravenDocumentApprovalsV1",JSON.stringify({
+      "job-1|resume":{value:resumeV1,approvedAt:new Date().toISOString()},
+      "job-1|coverLetter":{value:letterV1,approvedAt:new Date().toISOString()}
+    }));
+    localStorage.setItem("ravenMasterResumesV1",JSON.stringify([{
+      id:"master-test",name:"Test master",sourceType:"local",fileName:"master.txt",tracks:["Professional"]
+    }]));
+  },{resumeV1,letterV1});
+
+  const api=await mockRaven(page,{generatorFails:true,initialJob:{resume:resumeV1,cover_letter:letterV1}});
+  await page.goto("/");
+  await page.evaluate(()=>new Promise((resolve,reject)=>{
+    const request=indexedDB.open("ravenMasterResumeFilesV1",1);
+    request.onupgradeneeded=()=>{
+      if(!request.result.objectStoreNames.contains("files")) request.result.createObjectStore("files");
+    };
+    request.onerror=()=>reject(request.error);
+    request.onsuccess=()=>{
+      const db=request.result;
+      const tx=db.transaction("files","readwrite");
+      tx.objectStore("files").put(new File(["Verified master resume content"],"master.txt",{type:"text/plain"}),"master-test");
+      tx.oncomplete=()=>{db.close();resolve();};
+      tx.onerror=()=>reject(tx.error);
+    };
+  }));
+
+  await page.locator('[data-track="Professional"]').click();
+  await page.locator(".job-card-summary").first().click();
+  await expect(page.locator("[data-approved-apply]")).toContainText("Apply");
+
+  await page.locator('[data-generate="resume"]').click();
+  await expect(page.locator("#documentReviewDialog")).toBeVisible();
+  expect(api.getGenerationCalls()).toBe(0);
+
+  await page.locator("#reviewInstructions").fill("Make the summary shorter.");
+  await page.locator("#reviewSubmit").click();
+  await expect.poll(()=>api.getGenerationCalls()).toBe(1);
+  await expect(page.locator("#reviewFeedback")).toContainText("Mock generator unavailable");
+  await expect(page.locator("#reviewFeedback")).toContainText("previous document is unchanged");
+  await expect(page.locator("#reviewInstructions")).toHaveValue("Make the summary shorter.");
+  expect(api.getJob().resume).toBe(resumeV1);
+  const approvals=await page.evaluate(()=>JSON.parse(localStorage.getItem("ravenDocumentApprovalsV1")||"{}"));
+  expect(approvals["job-1|resume"]?.value).toBe(resumeV1);
+  await expect(page.locator("#reviewSubmit")).toBeEnabled();
+});
+
 test("Answer Memory stores only reusable non-sensitive answers",async({page})=>{
   await mockRaven(page);
   await page.goto("/");
