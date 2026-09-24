@@ -989,7 +989,7 @@ main {
 }
 
 .job-description-text {
-  color: var(--text-soft);
+  color: var(--accent-strong);
   font-size: .76rem;
   line-height: 1.45;
 }
@@ -2626,12 +2626,12 @@ body.options-open > :not(main):not(.options-dialog) {
   top: 50%;
   right: clamp(64px, 16%, 104px);
   transform: translateY(-50%);
-  font-size: clamp(64px, 8vw, 104px);
+  font-size: clamp(96px, 11vw, 148px);
   line-height: 1;
   font-family: Arial, sans-serif;
   font-weight: 700;
   color: var(--text-soft);
-  opacity: .13;
+  opacity: .22;
   pointer-events: none;
   user-select: none;
 }
@@ -2659,7 +2659,7 @@ body.options-open > :not(main):not(.options-dialog) {
 @media (max-width: 480px) {
   .remote-watermark {
     right: 62px;
-    font-size: 68px;
-    opacity: .11;
+    font-size: 92px;
+    opacity: .18;
   }
 }
