@@ -189,6 +189,64 @@ export function employerToolIssues(passages,profile){
   return issues;
 }
 
+export function buildDeterministicDocument(kind,profile,target,instructions=""){
+  if(!["resume","coverLetter"].includes(kind))throw new WriterError("Invalid document type.","INVALID_INPUT",400);
+  if(!profile?.name||!Array.isArray(profile.experience)||!profile.experience.length)throw new WriterError("Verified candidate background is missing.","PROFILE_MISSING",503);
+  const track=String(target?.track||"Professional");
+  const explicitSoundAir=/\bsound\s*air\b/i.test(String(instructions||""));
+  if(kind==="resume"){
+    const required=new Set(Array.isArray(profile.resume_required_experience_ids)?profile.resume_required_experience_ids:[]);
+    const experience=(profile.experience||[]).filter(item=>{
+      if(track==="Games / 3D"&&String(item.company||"").toLowerCase()==="soundair"&&!explicitSoundAir)return false;
+      return required.has(item.id)||track!=="Games / 3D";
+    }).map(item=>({
+      role:item.role||"",
+      company:item.company||"",
+      dates:item.dates||"",
+      bullets:(item.facts||[]).slice(0,track==="Games / 3D"?3:2).map(f=>f.text).filter(Boolean)
+    })).filter(item=>item.bullets.length);
+    const transferable=(profile.transferable_facts||[]).map(f=>String(f.text||"")).filter(Boolean);
+    const summaryFacts=track==="Games / 3D"
+      ? transferable.filter(t=>/environment-art|led teams|mentored|cross-functional/i.test(t)).slice(0,2)
+      : transferable.filter(t=>/project-management|led teams|cross-functional|on-time delivery/i.test(t)).slice(0,2);
+    const summary=summaryFacts.map(t=>t.replace(/^Has\s+/i,"")).join(" ");
+    const skills=(profile.skills||[]).filter(Boolean);
+    const preferred=track==="Games / 3D"
+      ? skills
+      : skills.filter(s=>/leadership|mentoring|onboarding|project management|cross-functional|workflow|troubleshooting|excel|automation|database/i.test(s));
+    return {
+      name:profile.name,
+      contact:profile.contact||"",
+      headline:track==="Games / 3D"?"Environment Artist":"Project Delivery and Operations Professional",
+      summary:summary||"Experienced professional with verified project delivery, collaboration, and team-support experience.",
+      skills:(preferred.length?preferred:skills).slice(0,12),
+      experience,
+      education:structuredClone(profile.education||[]),
+      additional:(profile.shipped_titles||[]).slice(0,7)
+    };
+  }
+  const facts=(profile.transferable_facts||[]).map(f=>String(f.text||"")).filter(Boolean);
+  const chosen=track==="Games / 3D"
+    ? facts.filter(t=>/environment-art|led teams|mentored|cross-functional/i.test(t)).slice(0,3)
+    : facts.filter(t=>/project-management|on-time delivery|led teams|cross-functional|workflow/i.test(t)).slice(0,3);
+  const firstPerson=(text)=>text
+    .replace(/^Has\s+/i,"I have ")
+    .replace(/^Is\s+/i,"I am ")
+    .replace(/^Can\s+/i,"I can ");
+  const company=String(target?.company||"").trim();
+  const title=String(target?.title||"the role").trim();
+  return {
+    greeting:"Dear Hiring Manager,",
+    paragraphs:[
+      "I am applying for the "+title+(company?" role at "+company:" role")+".",
+      (chosen.length?chosen:facts.slice(0,3)).map(firstPerson).join(" "),
+      "I would welcome the opportunity to discuss how this verified background could support your team."
+    ].filter(Boolean),
+    closing:"Sincerely,",
+    signature:profile.name
+  };
+}
+
 export async function writeDocument({kind,profile,target,instructions="",currentDocument="",complete}){
   if(!["resume","coverLetter"].includes(kind))throw new WriterError("Invalid document type.","INVALID_INPUT",400);
   if(!profile?.name||!Array.isArray(profile.experience)||!profile.experience.length)throw new WriterError("Verified candidate background is missing.","PROFILE_MISSING",503);
