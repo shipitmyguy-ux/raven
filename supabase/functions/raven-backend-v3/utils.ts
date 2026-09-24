@@ -96,13 +96,30 @@ export async function within<T>(promise:Promise<T>,ms:number,fallback:T):Promise
 }
 
 const FOREIGN_SCRIPT=/[\u0400-\u04FF\u0600-\u06FF\u3040-\u30FF\u3400-\u9FFF\uAC00-\uD7AF]/;
-const FOREIGN_TITLE_TERMS=/\b(?:artiste|environnement|développeur|developpeur|ingénieur|ingenieur|programmeur|programmateur|artista|entorno|ingeniero|desarrollador|programador|künstler|kuenstler|umgebung|entwickler|programmierer|sviluppatore|programmatore)\b/i;
+const FOREIGN_TITLE_TERMS=/\b(?:artiste|environnement|développeur|developpeur|ingénieur|ingenieur|programmeur|programmateur|artista|entorno|ingeniero|desarrollador|programador|künstler|kuenstler|umgebung|entwickler|programmierer|sviluppatore|programmatore|werkstudent|rezeptmanagement)\b/i;
+const GERMAN_WORDS=/\b(?:deine|dein|der|die|das|den|dem|des|und|oder|mit|für|fuer|bei|als|auf|ist|sind|wird|werden|unser|unsere|unserem|unseren|bereich|unterstützt|unterstuetzt|arbeitest|zusammen|verantwortungsbereich|pflege|aktualisierung|prüfung|pruefung|erstellung|überprüfung|ueberpruefung|regelmäßige|regelmaessige|auswertung|kenntnisse|fähigkeit|faehigkeit|selbstständig|selbststaendig)\b/gi;
+const SPANISH_WORDS=/\b(?:el|la|los|las|una|uno|para|con|como|nuestro|nuestra|responsabilidades|experiencia|requisitos|trabajo|equipo|desarrollar|gestionar|coordinar)\b/gi;
+const FRENCH_WORDS=/\b(?:le|la|les|des|une|pour|avec|notre|votre|responsabilités|responsabilites|expérience|experience|exigences|travail|équipe|equipe|développer|developper|gérer|gerer|coordonner)\b/gi;
+
+function foreignLanguageDensity(text:string,pattern:RegExp){
+  const words=(text.match(/[A-Za-zÀ-ÿ]+/g)||[]).length;
+  if(words<18) return 0;
+  pattern.lastIndex=0;
+  const hits=(text.match(pattern)||[]).length;
+  return hits/words;
+}
 
 export function looksEnglishPosting(c:Candidate){
   const title=String(c?.title||"");
-  const snippet=String(c?.snippet||"").slice(0,1800);
+  const snippet=String(c?.snippet||"").slice(0,2400);
+  const sample=(title+" "+snippet).trim();
   if(FOREIGN_SCRIPT.test(title)||FOREIGN_SCRIPT.test(snippet)) return false;
   if(FOREIGN_TITLE_TERMS.test(title)) return false;
+  // Reject postings whose body is substantially written in a foreign language,
+  // even when the job title itself is English.
+  if(foreignLanguageDensity(sample,GERMAN_WORDS)>=0.055) return false;
+  if(foreignLanguageDensity(sample,SPANISH_WORDS)>=0.075) return false;
+  if(foreignLanguageDensity(sample,FRENCH_WORDS)>=0.075) return false;
   return true;
 }
 
