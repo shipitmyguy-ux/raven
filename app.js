@@ -36,7 +36,6 @@
   const MASTER_RESUMES_KEY="ravenMasterResumesV1";
   const MASTER_RESUME_DB="ravenMasterResumeFilesV1";
   const GENERATION_CACHE_KEY="ravenGenerationCacheV1";
-  const CANDIDATE_PROFILE_CACHE_KEY="ravenCandidateProfileCacheV1";
   const JOB_ANALYSIS_CACHE_KEY="ravenJobAnalysisCacheV1";
   const PENDING_DOCUMENT_SYNC_KEY="ravenPendingDocumentSyncV1";
   const DEVICE_BACKUP_KEYS=[
@@ -72,7 +71,6 @@
   }
   function maintainCaches(){
     pruneObjectCache(GENERATION_CACHE_KEY,40,45);
-    pruneObjectCache(CANDIDATE_PROFILE_CACHE_KEY,12,120);
     pruneObjectCache(JOB_ANALYSIS_CACHE_KEY,120,45);
   }
 
@@ -1366,12 +1364,7 @@
   }
 
 
-  function candidateProfileCache(){ return readCache(CANDIDATE_PROFILE_CACHE_KEY,{})||{}; }
   function jobAnalysisCache(){ return readCache(JOB_ANALYSIS_CACHE_KEY,{})||{}; }
-  function candidateProfileId(masterResume){
-    const identity=[masterResume?.id||"",masterResume?.fileName||"",masterResume?.version||"",masterResume?.dataUrl||""].join("|");
-    return window.RavenCore?.stableHash ? window.RavenCore.stableHash(identity) : identity;
-  }
   function jobAnalysisId(job){
     const identity=(window.RavenCore?.jobFingerprint(job)||(job.id||job.url||""))+"|"+String(job.notes||"");
     return window.RavenCore?.stableHash ? window.RavenCore.stableHash(identity) : identity;
@@ -1390,109 +1383,12 @@
     return analysis;
   }
 
-  async function extractMasterResumeText(masterResume){
-    if(!masterResume) return "";
-    if(masterResume.sourceType==="drive") return "";
-    const file=await getMasterResumeFile(masterResume.id);
-    if(!file) return "";
-    const type=(file.type||"").toLowerCase();
-    if(type.includes("text") || /\.(txt|rtf)$/i.test(file.name||"")){
-      return await file.text();
-    }
-    if(type==="application/pdf" || /\.pdf$/i.test(file.name||"")){
-      if(!window.pdfjsLib){
-        await new Promise((resolve,reject)=>{
-          const script=document.createElement("script");
-          script.src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
-          script.onload=resolve;
-          script.onerror=reject;
-          document.head.appendChild(script);
-        }).catch(()=>{});
-      }
-      if(window.pdfjsLib){
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-        const bytes=new Uint8Array(await file.arrayBuffer());
-        const pdf=await window.pdfjsLib.getDocument({data:bytes}).promise;
-        const pages=[];
-        for(let i=1;i<=pdf.numPages;i++){
-          const page=await pdf.getPage(i);
-          const content=await page.getTextContent();
-          pages.push(content.items.map((item)=>item.str||"").join(" "));
-        }
-        return pages.join("\n");
-      }
-    }
-    return "";
-  }
-
   function resumeKeywords(text){
     const stop=new Set(["the","and","for","with","that","this","from","your","you","our","are","will","have","has","into","about","their","they","who","but","not","all","any","can","job","role","work","team","years","experience","skills","using","use","strong","ability","required","preferred"]);
     const words=String(text||"").toLowerCase().match(/[a-z][a-z0-9+#.\/-]{2,}/g)||[];
     const counts={};
     words.forEach((w)=>{ if(!stop.has(w)) counts[w]=(counts[w]||0)+1; });
     return Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,45).map(([w])=>w);
-  }
-
-  function instantResumeHtml(job,masterText){
-    const keywords=getJobAnalysis(job).keywords;
-    const keywordSet=new Set(keywords);
-    const cleaned=String(masterText||"").replace(/\r/g,"").replace(/[ \t]+/g," ").trim();
-    const lines=cleaned.split(/\n+/).map((s)=>s.trim()).filter(Boolean);
-    const scored=lines.map((line,index)=>{
-      const tokens=(line.toLowerCase().match(/[a-z][a-z0-9+#.\/-]{2,}/g)||[]);
-      const hits=tokens.reduce((n,w)=>n+(keywordSet.has(w)?1:0),0);
-      const bulletish=/^[•●▪◦*\-–—]/.test(line) || line.length>55;
-      return {line,index,score:hits*4+(bulletish?1:0)};
-    });
-    const best=scored.filter(x=>x.score>0).sort((a,b)=>b.score-a.score||a.index-b.index).slice(0,18).sort((a,b)=>a.index-b.index);
-    const fallback=scored.filter(x=>x.line.length>=35&&x.line.length<=260).slice(0,14);
-    const selected=(best.length>=6?best:fallback).map(x=>x.line.replace(/^[•●▪◦*\-–—]\s*/,"")).filter(Boolean);
-    const title=job.title||"Target Role";
-    const company=job.company||"";
-    const topKeywords=keywords.slice(0,16).join(" · ");
-    const bullets=selected.slice(0,16).map(line=>"<li>"+escapeHtml(line)+"</li>").join("");
-    const sourceNote=masterText ? "Prioritized directly from the assigned master resume." : "Master resume text could not be extracted locally; use online generation for AI refinement.";
-    return "<!doctype html><html><head><meta charset=\"utf-8\"><title>"+escapeHtml(title)+" Resume</title><style>"+
-      "@page{size:letter;margin:.55in}body{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:10.5pt;line-height:1.28;max-width:7.4in;margin:0 auto}"+
-      "h1{font-size:19pt;margin:0 0 3px}h2{font-size:11.5pt;text-transform:uppercase;border-bottom:1px solid #333;margin:12px 0 5px;padding-bottom:2px}"+
-      ".target{font-size:10pt;margin-bottom:8px}.keywords{font-size:9.5pt}.note{font-size:8.5pt;color:#555;margin-top:10px}ul{margin:4px 0 0 18px;padding:0}li{margin:0 0 4px}"+
-      "</style></head><body><h1>Resume</h1><div class=\"target\"><strong>Target:</strong> "+escapeHtml(title)+(company?" · "+escapeHtml(company):"")+"</div>"+
-      "<h2>ATS Focus</h2><div class=\"keywords\">"+escapeHtml(topKeywords)+"</div>"+
-      "<h2>Relevant Experience & Qualifications</h2><ul>"+bullets+"</ul>"+
-      "<div class=\"note\">"+escapeHtml(sourceNote)+" This instant draft preserves source wording and does not invent qualifications.</div></body></html>";
-  }
-
-  async function getCandidateProfile(masterResume){
-    const id=candidateProfileId(masterResume);
-    const cache=candidateProfileCache();
-    if(cache[id]) return cache[id];
-    const text=await extractMasterResumeText(masterResume);
-    const profile={id,masterResumeId:masterResume?.id||"",text,createdAt:new Date().toISOString()};
-    cache[id]={...profile,cachedAt:new Date().toISOString()};
-    writeCache(CANDIDATE_PROFILE_CACHE_KEY,cache);
-    return profile;
-  }
-
-  async function createInstantResume(job,masterResume){
-    if(masterResume?.sourceType==="drive") throw new Error("Offline resume generation requires a local master resume file.");
-    const profile=await getCandidateProfile(masterResume);
-    const text=profile.text;
-    if(!String(text||"").trim()) throw new Error("Offline resume generation needs readable master-resume text. Open Raven online once to cache the file text, or use a TXT/RTF master resume.");
-    const html=instantResumeHtml(job,text);
-    const dataUrl="data:text/html;charset=utf-8,"+encodeURIComponent(html);
-    if(!job._discovered){
-      job.resume=dataUrl;
-      const saved=state.jobs.find((item)=>item.id===job.id);
-      if(saved) saved.resume=dataUrl;
-      writeCache(CACHE_JOBS_KEY,state.jobs);
-      if(navigator.onLine===false) rememberPendingDocument(job,"resume",dataUrl);
-      else {
-        try{ await window.RavenAPI.updateJob(job.id,{resume:dataUrl}); }
-        catch{ rememberPendingDocument(job,"resume",dataUrl); }
-      }
-    }
-    setDocumentApproved(job,"resume",false);
-    return {url:dataUrl,extracted:true};
   }
 
   function documentLabel(type) {
