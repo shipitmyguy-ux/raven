@@ -23,7 +23,7 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] requires real-site/user-acc
 - [x] Eight-request live acceptance pass returned HTTP 200 and canonical-fact-only output.
 - [x] Request budgets/rate limits and failure recording are regression-tested.
 - [x] Document status/data persistence through the backend is verified.
-- [!] Verify a freshly generated resume and cover letter from the live Raven UI attach to the intended real job and remain usable after a browser refresh.
+- [x] Fresh resume and cover letter generated in the live Raven UI for Akima Intermediate 3D Artist; both previews reopened after refresh and backend synchronization (2026-09-23).
 - [!] Verify the exact approved files attach to current real employer file inputs. Synthetic Greenhouse, Lever, Ashby, Workday, iCIMS, Taleo, and generic adapters pass.
 - [!] Verify conservative completion detection on real employer confirmation pages.
 
@@ -49,6 +49,8 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] requires real-site/user-acc
 - [!] Verify imported jobs appear in Raven immediately on those real pages without manual recovery.
 
 ### UX
+- [x] Restore visible View listing / Apply on site links independently of the approved-document assistant.
+- [x] Save discovery jobs and recover missing descriptions before document generation; verify both generated documents remain attached after refresh.
 - [x] Live production smoke verifies app load, all four tabs, bounded card layout, global refresh state, filter-only tabs, bookmark persistence, and document-review approval persistence.
 - [x] Targeted browser regression verifies Application Assistant safety behavior.
 - [x] Responsive browser regression now covers representative mobile, tablet, laptop, and desktop widths in addition to the production smoke viewport.
@@ -66,7 +68,7 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] requires real-site/user-acc
 - [x] Generate resumes and cover letters from the live engines.
 - [x] Preserve document data through backend refresh/read.
 - [x] Automated deployed-app smoke passes.
-- [!] One final human-visible Raven UI generation -> review -> refresh pass on a real saved job remains before calling the entire document UX independently observed end-to-end.
+- [x] Live Raven UI generation -> review -> refresh verified for both documents on Akima Intermediate 3D Artist (2026-09-23).
 
 ## Application Assistant / safety
 - [x] Canonical CandidateProfile/fact-ID generation constrains generated claims to verified evidence.

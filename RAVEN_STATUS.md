@@ -98,8 +98,14 @@ Still requires real employer-site verification:
 - Device backup/restore exports/restores the relevant localStorage state plus local master-resume files stored in IndexedDB.
 
 ## Remaining closeout blockers
-1. Human-visible live Raven UI generation -> review -> browser refresh on a real saved job, confirming the freshly generated documents remain attached to the intended job.
-2. Real employer-site Application Assistant/extension verification, including file inputs and completion detection.
-3. Decide whether Google Drive persistence for generated documents is desired; current Raven document persistence does not require Drive.
+1. Real employer-site Application Assistant/extension verification, including file inputs and completion detection.
+2. Decide whether Google Drive persistence for generated documents is desired; current Raven document persistence does not require Drive.
 
 Everything else still listed in `TASKS.md` is either a continuing quality improvement or future product expansion rather than a current runtime/merge blocker.
+
+## Job-card and generator repair (2026-09-23)
+- Deployed 8c2dfe6 / e012c57: expanded cards expose View listing and Apply on site independently of document approvals; the assisted document-transfer action retains exact-file approval gating.
+- Generation saves discovery results before invoking either generator and retrieves missing descriptions through the existing enrichment API. Concurrent preparation is shared; empty/expired descriptions produce actionable errors.
+- Live browser verification: Akima Intermediate 3D Artist initially failed with missing-description errors in both generators. After deployment the job saved, its description populated, both documents generated with visible review previews, and both reopened after a full page refresh and completed backend synchronization.
+- No document approval or employer submission was performed.
+- Local syntax/focused execution checks passed. GitHub core regressions, targeted browser regressions (including the new discovery persistence and direct-link cases), Pages deploy, and both production smoke runs passed for e012c57.

@@ -2,46 +2,26 @@
 
 Last updated: 2026-09-23
 
-## Current handoff
+## Latest completed work
+Fixed missing job listing/application links and broken resume/cover-letter generation on discovery results. User explicitly authorized publishing. Deployed commits: 8c2dfe68bdde6c479c52a68fa5e2922c2a59a599 and e012c571406727b9f1f3ee999c1075a571802d8d.
 
-Raven's core runtime/backend closeout is complete and no longer depends on ChatGPT Work. Normal operation is Raven UI -> Supabase/backend; GitHub is used for source changes. Direct tools should be preferred; do not invoke Jules unless a direct workflow cannot reasonably complete the change.
+- Expanded job cards now show View listing and Apply on site links. The separate approved-document assistant still requires approval of the exact documents.
+- Shared preparation saves a discovery job before generating either document and retrieves its description if missing. Generated documents therefore attach to a durable saved job instead of being discarded.
+- Concurrent preparation shares one save/enrichment operation. Offline discovery generation and missing/expired descriptions return clear errors.
+- The app.js asset version was bumped. New browser regressions are selected by the required workflow.
 
-### Verified in the final closeout
-- PR #41 merged search-resilience changes; `raven-backend-v3` was deployed and later advanced to v39.
-- PR #42 merged complete regression/secret/deployment automation.
-- PR #43 merged final closeout reliability: Lever posting-detail enrichment, stale deep-run recovery, tighter deep-search bounds, and automatic production smoke on every main push.
-- Latest quick refresh returned valid results for every track.
-- Latest deep pass completed: Professional 67, Labor 78, Wildcard 48, Games / 3D 9.
-- Seven previously blank Lever saved-job descriptions were repaired in production.
-- The obsolete `JT-TEST-001` integration-test row was removed; only Twin Atlas remains short because its public careers page has no detailed posting text.
-- Disposable production QA verified add -> status/document update -> fresh jobs read persistence, then the QA row was deleted.
-- Live resume/cover-letter generator acceptance passed 8/8 requests across the four tracks.
-- Backend health is healthy with 0 active failures.
-- Repository secret scan, core tests, targeted browser tests, main-branch tests, and automatic production smoke pass.
-- Device-local backup/restore already covers profile, answer memory, preferences, approvals, viewed state, master-resume metadata, and IndexedDB master-resume files.
+## Actual verification
+- Reproduced the original production failures on Akima Intermediate 3D Artist: both generators rejected the empty description, and there was no original-listing link.
+- Local JavaScript syntax and focused execution checks passed (discovery persistence, concurrent preparation, both document saves, missing/expired descriptions, offline guard).
+- Core regression and targeted browser suites passed on e012c57; Pages deployment and both production smoke runs succeeded.
+- In the live Raven UI, generated a resume and cover letter for the same Akima role, inspected both previews, refreshed the page, waited for backend synchronization, and reopened both previews.
+- Visually confirmed readable View listing and Apply on site buttons and their original LinkedIn posting destination.
+- Left the genuine Akima job saved with both generated documents for user review. Did not approve documents, mark applied, or submit to an employer.
 
-### What still genuinely needs outside interaction
-1. Open Raven in a real browser, generate a fresh resume and cover letter on a real saved job, review them, refresh the browser, and visually confirm the same documents remain attached to that job.
-2. Exercise Application Assistant/extension against live employer pages (Greenhouse/Lever/Ashby first, then Workday/iCIMS/Taleo and aggregator pages) to validate current selectors, approved-file attachment, and conservative completion detection.
-3. Decide whether Raven should additionally write generated documents to Google Drive. Current Raven persistence is independent of Drive.
+## Remaining independent closeout items
+1. Real employer-site Application Assistant/extension checks for approved-file attachment, current adapter selectors, and conservative completion detection.
+2. Real-site extension import checks on aggregator and representative ATS pages.
+3. Decide whether optional Google Drive persistence is wanted; current document persistence does not depend on Drive.
 
-### Post-application platform
-- Shared lifecycle/event architecture is implemented without ChatGPT Work or Jules.
-- Production `raven-backend-v3` v40 owns lifecycle transitions, events, application snapshots, signal matching, and outcome analytics.
-- Raven UI surfaces activity history, editable follow-up dates, snapshot-backed Interview mode, reviewable signal suggestions, and Outcomes.
-- Durable Supabase backup scope includes `raven_job_events` and `raven_job_snapshots`.
-- Personal email/OAuth is not connected; future email integrations should feed the existing `receiveApplicationSignal` contract rather than creating a new status system.
-
-### Future roadmap, not closeout blockers
-- Contacts/interviews/follow-ups.
-- Optional email status matching.
-- Outcome analytics.
-- Supported-requirement coverage instead of opaque scores.
-- Additional direct ATS adapters/employer registry where coverage value justifies maintenance.
-- Optional immutable original-posting snapshots.
-
-## Safety / operating rules
-- Final employer submission remains manual.
-- Never claim a feature is verified only because code deployed; use the production checks above.
-- Keep secrets out of GitHub/frontend JavaScript.
-- Prefer direct GitHub/Supabase tooling over Jules; use Jules only when absolutely necessary.
+## Operating boundaries
+GitHub is canonical code/project state; Supabase is authoritative live runtime data; Google Sheets is retired. Final employer submission remains manual. iOS/Android remain excluded. Prefer direct tooling; no Jules dependency. Prior platform, lifecycle, backup, evidence-coverage, and outcome analytics state is retained in RAVEN_STATUS.md and TASKS.md.
