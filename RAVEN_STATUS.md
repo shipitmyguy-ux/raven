@@ -1,6 +1,6 @@
 # Raven Status
 
-Last normalized: 2026-09-23
+Last normalized: 2026-09-24
 
 ## Scope
 Raven is a web-based job application tracker and application-assistant project. iOS and Android work are excluded. Final employer submission remains manual and requires user review.
@@ -18,9 +18,9 @@ Raven is a web-based job application tracker and application-assistant project. 
 - `raven-backend-v3`: ACTIVE v39
 - `raven-enrich-v1`: ACTIVE v6
 - `raven-commute-v1`: ACTIVE v5
-- `raven-generate-v1`: ACTIVE v18
-- `raven-generate-v2`: ACTIVE v8
-- `raven-cover-v2`: ACTIVE v7
+- `raven-generate-v1`: ACTIVE v20
+- `raven-generate-v2`: ACTIVE v21
+- `raven-cover-v2`: ACTIVE v16
 - `raven-control-v1`: ACTIVE v2
 - `raven-bookmark-v1`: ACTIVE v2
 
@@ -115,5 +115,7 @@ Everything else still listed in `TASKS.md` is either a continuing quality improv
 - Replaced fact-selection/sentence-template generation with Gemini-authored prose from the complete verified candidate profile and posting, followed by a factual check and at most one repair.
 - User chose the existing Gemini connection; no OpenAI API key or billing setup is required.
 - Resume revisions now forward both the instructions and current document. Candidate identity/employment metadata remain canonical; failed drafts do not replace saved documents.
-- Local mocked writer tests pass. Deployment and live prose-quality/persistence acceptance are pending for this change; prior production generator acceptance above describes the old engine.
+- Published code 538742ea9520a6a6be800d2771b38c70d806c5e2 with app.js v43 and modern-v5 document cache. All 16 mocked writer/handler tests, core/browser CI, Pages deployment and both production smoke runs passed.
+- Live Akima and Campminder generation, natural-language revision, preview and saved-document reload checks passed. Final Campminder resume/cover used the source-reference gate; an invalid employer attribution was rejected without replacing the prior draft. Supabase persistence was also read back directly.
+- Prior all-four-track generator acceptance above describes the previous engine. Current live prose checks cover these two real jobs; model factual review is not a guarantee, and drafts still require user review. No documents were approved or submitted.
 - See docs/DOCUMENT_WRITING.md for the reuse evaluation, implementation, boundaries and acceptance procedure.

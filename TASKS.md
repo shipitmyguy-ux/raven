@@ -98,4 +98,4 @@ These are feature expansions, not Raven closeout blockers.
 - [x] Evaluate Resume Matcher and Reactive Resume approaches; retain Raven and use direct full-context writing plus factual review.
 - [x] Implement shared Gemini writer for both document types and context-aware revisions; remove deterministic sentence assembly.
 - [x] Test writer contracts, errors, grounding-review/repair gate and request budgets with mocked provider responses.
-- [~] Deploy and verify natural prose on real jobs, both document previews, revision behavior and persistence after refresh.
+- [x] Deploy and verify authored prose on Akima and Campminder, both document previews, revision behavior, invalid-draft preservation and persistence after refresh (2026-09-24). All 16 mocked writer/handler tests and required CI/production smoke passed.

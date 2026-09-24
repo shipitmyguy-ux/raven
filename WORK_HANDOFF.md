@@ -2,23 +2,27 @@
 
 Last updated: 2026-09-24
 
-## Current work
-User requested natural resume/cover-letter writing and approved implementation. They subsequently chose Gemini using Raven's existing connection rather than creating a paid OpenAI API account.
+## Completed release
+User chose Gemini using Raven's existing connection. No OpenAI key or new provider setup is needed.
 
-Replaced the active generators' ID-selection/fixed-sentence pipeline with a shared Gemini writer: full verified profile + posting -> authored draft -> factual check -> at most one repair/recheck. Canonical identity/employment metadata remain immutable. Revisions forward current document text and user instructions. Existing rendering, persistence, approvals and request budgets are preserved. Cache advances to modern-v4.
+Code release: 538742ea9520a6a6be800d2771b38c70d806c5e2.
+Production deployments: raven-generate-v1 v20, raven-generate-v2 v21, raven-cover-v2 v16. UI app.js v43; document cache modern-v5.
 
-Evaluated Resume Matcher and Reactive Resume, adopted the direct-writing and separate-review patterns, and avoided migrating Raven or copying third-party source. See docs/DOCUMENT_WRITING.md.
+The shared writer receives the full verified profile, posting, revision instructions and current draft. Gemini authors the prose, with hidden supporting fact references, immutable identity/employment metadata, employer-specific evidence ownership, and a separate sentence-level factual review. One bounded repair/recheck is allowed; failures preserve the previous document. Existing rendering, persistence, approval gates and request budgets remain.
 
-## Actual verification
-- 12 local mocked writer/handler tests passed, covering complete context, canonical metadata, authored prose routing, correction/recheck, rejected output, Gemini request contract, retries, access checks, rate limits and request completion recording.
-- Local integration-contract tests and syntax checks passed.
-- CI and live generation acceptance are pending. Do not claim prose quality or persistence verified for the new engine yet.
+Resume Matcher and Reactive Resume informed direct-writing/separate-review patterns; no third-party code or prompts were copied and no application migration was needed. See docs/DOCUMENT_WRITING.md.
 
-## Next steps
-1. Required CI checks.
-2. Deploy both active engines with shared document-writer.mjs/document-handler.mjs, then the router; preserve current auth configuration.
-3. Generate and inspect both documents for Akima Intermediate 3D Artist, revise one with the prior text, refresh and reopen. Check a real career-pivot job without fabricating direct experience.
-4. Record actual live results here and in RAVEN_STATUS.md/TASKS.md.
+## Verified
+- 16 local mocked writer/handler tests passed; these test contracts and failure behavior, not real model quality.
+- Core and targeted browser CI passed: https://github.com/shipitmyguy-ux/raven/actions/runs/35956594725
+- Pages passed: https://github.com/shipitmyguy-ux/raven/actions/runs/35956594767
+- Production smoke passed: https://github.com/shipitmyguy-ux/raven/actions/runs/35956594732 and https://github.com/shipitmyguy-ux/raven/actions/runs/35956615180
+- Live Akima Intermediate 3D Artist resume/cover generation and a requested shorter summary were inspected.
+- Live Campminder Manager of Learning and Implementation resume/cover generation exercised a career pivot while retaining actual employment history. A rejected employer attribution preserved the previous draft; final outputs passed the reference checks and model review.
+- Both jobs' documents were read back from Supabase. Final Campminder resume and cover reopened after a fresh page load and completed backend sync.
+- No document approval or employer submission was performed.
 
-## Existing boundaries
-GitHub is canonical code/project state; Supabase stores live data. Master resume assignments still gate the UI; canonical profile supplies verified facts. No credentials committed, no new schema. Employer submission stays manual and documents remain unapproved until user review. Previous listing/discovery-generation repair remains intact.
+## Boundaries
+GitHub remains canonical code/project state; Supabase stores live data. The canonical candidate profile supplies verified facts; this change does not re-ingest newly uploaded or Drive master resumes. No credentials or personal document fixtures committed, no schema or auth changes. Model review is imperfect and user review remains required. Older documents remain saved until rewritten; natural-language changes are available in the review dialog.
+
+No implementation work remains for this release. Existing real employer-form attachment/completion verification and optional Drive persistence decisions remain listed in TASKS.md.
