@@ -84,22 +84,22 @@ test("LLM router sends structured Gemini requests when Gemini is the configured 
  assert.equal(sent.generationConfig.responseMimeType,"application/json");
  assert.equal(r.provider,"gemini");assert.equal(r.model,"actual-model");assert.deepEqual(r.data,cover);
 });
-test("LLM router reports configured provider order without exposing keys",()=>{
- const status=llmProviderStatus(n=>({OPENROUTER_API_KEY:"or",OPENAI_API_KEY:"oa",GEMINI_API_KEY:"g"}[n]||""));
- assert.deepEqual(status.configured,{openrouter:true,openai:true,gemini:true});
- assert.deepEqual(status.order,["openrouter","openai","gemini"]);
+test("LLM router reports OpenAI then Gemini provider order without exposing keys",()=>{
+ const status=llmProviderStatus(n=>({OPENAI_API_KEY:"oa",GEMINI_API_KEY:"g"}[n]||""));
+ assert.deepEqual(status.configured,{openai:true,gemini:true});
+ assert.deepEqual(status.order,["openai","gemini"]);
 });
-test("LLM router fails over from OpenRouter to Gemini",async()=>{
- const env={OPENROUTER_API_KEY:"or",GEMINI_API_KEY:"g"};
+test("LLM router fails over from OpenAI to Gemini",async()=>{
+ const env={OPENAI_API_KEY:"oa",GEMINI_API_KEY:"g"};
  const urls=[];
  const complete=createLLMCompletion({getEnv:n=>env[n],fetchImpl:async(url,init)=>{
   urls.push(url);
-  if(url.includes("openrouter.ai")) return Response.json({error:"down"},{status:503});
+  if(url.includes("api.openai.com")) return Response.json({error:"down"},{status:503});
   return Response.json({modelVersion:"gemini-fallback",candidates:[{finishReason:"STOP",content:{parts:[{text:JSON.stringify(cover)}]}}]});
  }});
  const r=await complete({instructions:"Write.",input:{},schema:{type:"object"},name:"test"});
  assert.equal(r.provider,"gemini");assert.equal(r.model,"gemini-fallback");
- assert.ok(urls.some(url=>url.includes("openrouter.ai")));assert.ok(urls.some(url=>url.includes("generativelanguage.googleapis.com")));
+ assert.ok(urls.some(url=>url.includes("api.openai.com")));assert.ok(urls.some(url=>url.includes("generativelanguage.googleapis.com")));
 });
 test("LLM router never turns provider error bodies into documents",async()=>{
  const env={RAVEN_GEMINI_API_KEY:"test"};
