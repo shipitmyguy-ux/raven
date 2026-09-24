@@ -2609,3 +2609,38 @@ body.options-open > :not(main):not(.options-dialog) {
   }
   .coverage-issues strong { white-space:normal; }
 }
+
+
+/* Remote job at-a-glance background mark */
+.job-card.is-remote {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.job-card.is-remote::after {
+  content: "⌂";
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  right: clamp(62px, 14%, 92px);
+  transform: translateY(-50%);
+  font-size: clamp(64px, 8vw, 104px);
+  line-height: 1;
+  font-family: Arial, sans-serif;
+  font-weight: 700;
+  color: currentColor;
+  opacity: .045;
+  pointer-events: none;
+  user-select: none;
+}
+.job-card.is-remote > * {
+  position: relative;
+  z-index: 1;
+}
+@media (max-width: 480px) {
+  .job-card.is-remote::after {
+    right: 58px;
+    font-size: 68px;
+    opacity: .04;
+  }
+}
