@@ -13,6 +13,19 @@ on:
       - "playwright.config.mjs"
       - "package.json"
       - ".github/workflows/browser-regression.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "app.js"
+      - "index.html"
+      - "raven-api.js"
+      - "raven-core.js"
+      - "styles.css"
+      - "theme.css"
+      - "e2e/**"
+      - "playwright.config.mjs"
+      - "package.json"
+      - ".github/workflows/browser-regression.yml"
 jobs:
   browser:
     runs-on: ubuntu-latest
