@@ -909,7 +909,7 @@ test("resume generation stays visibly active and does not pop review after leavi
   await page.locator('[data-generate="resume"]').click();
 
   await expect(page.locator(".job-card.is-generating-document")).toBeVisible();
-  await expect(page.locator(".generation-card-status")).toContainText("Generating resume");
+  await expect(page.locator(".generation-card-status")).toContainText("AI is generating resume");
   await expect(page.locator(".document-primary.is-generating")).toBeVisible();
 
   await page.locator(".job-card-summary").first().click();
@@ -934,14 +934,14 @@ test("generation indicator survives job object refresh while generation is activ
   await page.locator('[data-track="Professional"]').click();
   await page.locator(".job-card-summary").first().click();
   await page.locator('[data-generate="resume"]').click();
-  await expect(page.locator(".generation-card-status")).toContainText("Generating resume");
+  await expect(page.locator(".generation-card-status")).toContainText("AI is generating resume");
 
   await page.evaluate(async()=>{
     const response=await window.RavenAPI.getData();
     window.__ravenTestFreshJobs=response.jobs.map(job=>({...job}));
   });
   await page.locator("#searchBox").fill("Acme");
-  await expect(page.locator(".generation-card-status")).toContainText("Generating resume");
+  await expect(page.locator(".generation-card-status")).toContainText("AI is generating resume");
   await expect(page.locator(".job-card.is-generating-document")).toBeVisible();
 });
 
@@ -958,7 +958,7 @@ test("cover letter generation inherits resume progress and nonintrusive completi
   await page.locator('[data-generate="coverLetter"]').click();
 
   await expect(page.locator(".job-card.is-generating-document")).toBeVisible();
-  await expect(page.locator(".generation-card-status")).toContainText("Generating cover letter");
+  await expect(page.locator(".generation-card-status")).toContainText("AI is generating cover letter");
   await expect(page.locator(".document-primary.is-generating")).toBeVisible();
 
   await page.locator(".job-card-summary").first().click();
