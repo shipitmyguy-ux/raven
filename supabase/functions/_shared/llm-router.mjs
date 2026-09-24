@@ -1,10 +1,5 @@
 import {WriterError} from "./document-writer.mjs";
 
-function cleanSchema(schema){
-  if(Array.isArray(schema))return schema.map(cleanSchema);
-  if(!schema||typeof schema!=="object")return schema;
-  return Object.fromEntries(Object.entries(schema).filter(([key])=>key!=="additionalProperties").map(([key,value])=>[key,cleanSchema(value)]));
-}
 function parseJsonText(text){
   const value=String(text||"").trim();
   if(!value)throw new WriterError("The LLM returned an empty document.","INVALID_DRAFT",502);
@@ -18,41 +13,58 @@ function combineSignals(signals){
   const live=signals.filter(Boolean);
   return typeof AbortSignal.any==="function"?AbortSignal.any(live):live[0];
 }
-function timeoutFor(name,input){
-  const revision=Boolean(String(input?.revisionRequest||"").trim());
-  if(revision)return name==="raven_factual_review"?9000:12000;
-  return name==="raven_factual_review"?18000:26000;
+function timeoutFor(input){
+  return String(input?.revisionRequest||"").trim()?14000:26000;
+}
+function geminiSchema(schema){
+  if(Array.isArray(schema))return schema.map(geminiSchema);
+  if(!schema||typeof schema!=="object")return schema;
+  return Object.fromEntries(Object.entries(schema).filter(([key])=>key!=="additionalProperties").map(([key,value])=>[key,geminiSchema(value)]));
 }
 function configured(getEnv){
   return {
-    openai:Boolean(getEnv("RAVEN_OPENAI_API_KEY")||getEnv("OPENAI_API_KEY")),
+    cerebras:Boolean(getEnv("RAVEN_CEREBRAS_API_KEY")||getEnv("CEREBRAS_API_KEY")),
+    groq:Boolean(getEnv("RAVEN_GROQ_API_KEY")||getEnv("GROQ_API_KEY")),
     gemini:Boolean(getEnv("RAVEN_GEMINI_API_KEY")||getEnv("GEMINI_API_KEY"))
   };
 }
 function providerOrder(getEnv){
-  const requested=String(getEnv("RAVEN_LLM_PROVIDER_ORDER")||"openai,gemini")
+  const requested=String(getEnv("RAVEN_LLM_PROVIDER_ORDER")||"cerebras,groq,gemini")
     .split(",").map(v=>v.trim().toLowerCase()).filter(Boolean);
-  return [...new Set(requested.filter(v=>["openai","gemini"].includes(v)))];
+  return [...new Set(requested.filter(v=>["cerebras","groq","gemini"].includes(v)))];
 }
-async function openAIComplete({getEnv,fetchImpl,signal,instructions,input,schema,name,maxOutputTokens}){
-  const apiKey=getEnv("RAVEN_OPENAI_API_KEY")||getEnv("OPENAI_API_KEY");
-  if(!apiKey)throw new WriterError("OpenAI is not configured.","PROVIDER_NOT_CONFIGURED",503);
-  const model=getEnv("RAVEN_OPENAI_MODEL")||"gpt-5.6-luna";
-  const response=await fetchImpl("https://api.openai.com/v1/chat/completions",{
+async function openAICompatibleComplete({provider,baseUrl,apiKey,model,fetchImpl,signal,instructions,input,schema,name,maxOutputTokens}){
+  const response=await fetchImpl(baseUrl+"/chat/completions",{
     method:"POST",signal,
     headers:{"Authorization":"Bearer "+apiKey,"Content-Type":"application/json"},
     body:JSON.stringify({
       model,
       messages:[{role:"system",content:instructions},{role:"user",content:JSON.stringify(input)}],
-      response_format:{type:"json_schema",json_schema:{name:name||"raven_document",strict:true,schema:cleanSchema(schema)}},
-      max_completion_tokens:maxOutputTokens
+      response_format:{type:"json_schema",json_schema:{name:name||"raven_document",strict:true,schema}},
+      max_tokens:maxOutputTokens,
+      reasoning_effort:"low"
     })
   });
   const raw=await response.json().catch(()=>null);
-  if(!response.ok)throw new WriterError("OpenAI is temporarily unavailable.","PROVIDER_UNAVAILABLE",response.status>=500||response.status===429?503:502);
-  const message=raw?.choices?.[0]?.message;
-  if(message?.refusal)throw new WriterError("OpenAI declined this writing request.","WRITING_REFUSED",502);
-  return {data:parseJsonText(message?.content),provider:"openai",model:raw?.model||model};
+  if(!response.ok)throw new WriterError(provider+" is temporarily unavailable.","PROVIDER_UNAVAILABLE",response.status>=500||response.status===429?503:502);
+  const choice=raw?.choices?.[0];
+  if(choice?.finish_reason&&String(choice.finish_reason).toLowerCase()!=="stop")
+    throw new WriterError(provider+" did not finish the document.","INCOMPLETE_DRAFT",502);
+  const content=choice?.message?.content;
+  const text=Array.isArray(content)?content.map(p=>p?.text||"").join(""):content;
+  return {data:parseJsonText(text),provider,model:raw?.model||model};
+}
+async function cerebrasComplete(args){
+  const apiKey=args.getEnv("RAVEN_CEREBRAS_API_KEY")||args.getEnv("CEREBRAS_API_KEY");
+  if(!apiKey)throw new WriterError("Cerebras is not configured.","PROVIDER_NOT_CONFIGURED",503);
+  return openAICompatibleComplete({...args,provider:"cerebras",baseUrl:"https://api.cerebras.ai/v1",apiKey,
+    model:args.getEnv("RAVEN_CEREBRAS_MODEL")||"gpt-oss-120b"});
+}
+async function groqComplete(args){
+  const apiKey=args.getEnv("RAVEN_GROQ_API_KEY")||args.getEnv("GROQ_API_KEY");
+  if(!apiKey)throw new WriterError("Groq is not configured.","PROVIDER_NOT_CONFIGURED",503);
+  return openAICompatibleComplete({...args,provider:"groq",baseUrl:"https://api.groq.com/openai/v1",apiKey,
+    model:args.getEnv("RAVEN_GROQ_MODEL")||"openai/gpt-oss-120b"});
 }
 async function geminiComplete({getEnv,fetchImpl,signal,instructions,input,schema,maxOutputTokens}){
   const apiKey=getEnv("RAVEN_GEMINI_API_KEY")||getEnv("GEMINI_API_KEY");
@@ -66,8 +78,7 @@ async function geminiComplete({getEnv,fetchImpl,signal,instructions,input,schema
   let lastStatus=503;
   for(const model of models){
     for(const base of bases){
-      const routeTimeout=AbortSignal.timeout(7000);
-      const routeSignal=combineSignals([signal,routeTimeout]);
+      const routeSignal=combineSignals([signal,AbortSignal.timeout(7000)]);
       let response;
       try{
         response=await fetchImpl(base+"/v1beta/models/"+encodeURIComponent(model)+":generateContent",{
@@ -75,7 +86,7 @@ async function geminiComplete({getEnv,fetchImpl,signal,instructions,input,schema
           body:JSON.stringify({
             systemInstruction:{parts:[{text:instructions}]},
             contents:[{role:"user",parts:[{text:JSON.stringify(input)}]}],
-            generationConfig:{maxOutputTokens,responseMimeType:"application/json",responseSchema:cleanSchema(schema)}
+            generationConfig:{maxOutputTokens,responseMimeType:"application/json",responseSchema:geminiSchema(schema)}
           })
         });
       }catch{
@@ -103,17 +114,17 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
   const order=providerOrder(getEnv).filter(name=>status[name]);
   if(!order.length)throw new WriterError("No LLM provider is configured for Raven.","LLM_NOT_CONFIGURED",503);
   return async({instructions,input,schema,name,maxOutputTokens=6000})=>{
-    const stageTimeout=AbortSignal.timeout(timeoutFor(name,input));
-    const stageSignal=combineSignals([signal,stageTimeout]);
-    const errors=[];
+    const stageSignal=combineSignals([signal,AbortSignal.timeout(timeoutFor(input))]);
     for(const provider of order){
       try{
-        if(provider==="openai")return await openAIComplete({getEnv,fetchImpl,signal:stageSignal,instructions,input,schema,name,maxOutputTokens});
-        if(provider==="gemini")return await geminiComplete({getEnv,fetchImpl,signal:stageSignal,instructions,input,schema,name,maxOutputTokens});
+        const common={getEnv,fetchImpl,signal:stageSignal,instructions,input,schema,name,maxOutputTokens};
+        if(provider==="cerebras")return await cerebrasComplete(common);
+        if(provider==="groq")return await groqComplete(common);
+        if(provider==="gemini")return await geminiComplete(common);
       }catch(error){
         if(stageSignal?.aborted)break;
-        if(error?.code==="WRITING_REFUSED")errors.push(provider+":refused");
-        else errors.push(provider+":"+(error?.code||"failed"));
+        if(error?.code==="INVALID_DRAFT"||error?.code==="INCOMPLETE_DRAFT"||error?.code==="PROVIDER_UNAVAILABLE"||error?.code==="WRITING_REFUSED")continue;
+        throw error;
       }
     }
     throw new WriterError("All configured LLM providers are temporarily unavailable. Please try again.","LLM_UNAVAILABLE",503);
