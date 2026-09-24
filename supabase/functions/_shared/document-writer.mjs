@@ -124,13 +124,13 @@ export function createGeminiCompletion({apiKey,model=DEFAULT_MODEL,fallbackModel
     "gemini-3.6-flash",
     "gemini-3.5-flash-lite"
   ].filter(Boolean))];
-  const bases=["https://gateway.ai.cloudflare.com/v1/0be401023d08048c03bbfbb0576fa89f/raven/google-ai-studio","https://generativelanguage.googleapis.com"];
+  const bases=["https://generativelanguage.googleapis.com","https://gateway.ai.cloudflare.com/v1/0be401023d08048c03bbfbb0576fa89f/raven/google-ai-studio"];
   return async({instructions,input,schema,name,maxOutputTokens=6000})=>{
     let lastStatus=503;
     // Give drafting and factual review independent budgets so a slower draft
     // cannot consume the verifier's entire request window.
     const stageTimeoutMs=name==="raven_factual_review"?50000:80000;
-    const attemptTimeoutMs=name==="raven_factual_review"?30000:40000;
+    const attemptTimeoutMs=name==="raven_factual_review"?15000:22000;
     const stageSignal=AbortSignal.timeout(stageTimeoutMs);
     for(const candidateModel of models){
       for(const base of bases){
