@@ -2115,6 +2115,38 @@ body.options-open > :not(main):not(.options-dialog) {
 
 
 /* Resume generation progress */
+.job-card.is-generating-document {
+  border-color:var(--accent-border);
+  box-shadow:var(--glow-accent);
+}
+
+.generation-card-status {
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  width:max-content;
+  max-width:100%;
+  margin:1px 0 4px;
+  padding:4px 8px;
+  border:1px solid var(--accent-border);
+  border-radius:999px;
+  background:var(--accent-dim);
+  color:var(--accent-strong);
+  font-size:.68rem;
+  font-weight:var(--font-weight-strong);
+  letter-spacing:.02em;
+}
+
+.document-primary.is-generating {
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  cursor:wait;
+  color:var(--accent-strong);
+  border-color:var(--accent-border);
+  box-shadow:var(--glow-accent);
+}
+
 .workflow-action.is-generating {
   cursor:wait;
   opacity:.9;
