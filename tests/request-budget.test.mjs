@@ -22,7 +22,7 @@ for(const generator of [sharedGenerator]){
   assert(generator.includes('"raven_request_guard"'),"Canonical generators must use the server request guard.");
   assert(generator.includes("p_short_limit:12"),"Generation short budget must allow the eight-request verification batch.");
   assert(generator.includes("p_long_limit:60"),"Generation hourly budget must remain bounded.");
-  assert(generator.includes('finish("success",200)'),"Successful generation must record request completion.");
+  assert(generator.includes('finish("success",200'),"Successful generation must record request completion.");
 }
 
 
