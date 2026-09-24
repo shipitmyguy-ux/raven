@@ -1094,7 +1094,7 @@
             ? '<span class="job-status">'+escapeHtml(statusLabel)+'</span>'
             : '';
           const generationIndicator=generating
-            ? '<span class="generation-card-status" role="status" aria-live="polite"><span class="generation-spinner" aria-hidden="true"></span><span>Generating '+escapeHtml(documentLabel(generating.type))+'…</span></span>'
+            ? '<span class="generation-card-status" role="status" aria-live="polite"><span class="generation-spinner" aria-hidden="true"></span><span>AI is generating '+escapeHtml(documentLabel(generating.type))+'…</span></span>'
             : '';
           const isIgnored=rawStatus.toLowerCase()==="ignored";
           const isBookmarked=rawStatus.toLowerCase()==="interested";
@@ -1619,9 +1619,9 @@
   async function generateForJob(job,type,button=null) {
     if(job[type]) return openDocumentReview(job,type);
     if(generationSession(job)) return;
-    const session={type,autoOpen:state.selectedId===job.id,startedAt:Date.now()};
+    const session={type,autoOpen:state.selectedId===job.id,startedAt:Date.now(),phase:"Writing with AI"};
     activeGeneration.set(generationKey(job),session);
-    setGenerationButton(button,true,type==="resume"?(navigator.onLine?"Generating resume…":"Building offline resume…"):"Generating cover letter…");
+    setGenerationButton(button,true,type==="resume"?"AI generating resume…":"AI generating cover letter…");
     render();
     try{
       if(type!=="resume"){
@@ -1630,17 +1630,11 @@
       const masterResume=await masterResumeTaskInput(job.track||"Professional");
       if(!masterResume) throw new Error("Assign a master resume to this job track first.");
       await prepareJobForGeneration(job);
-      if(navigator.onLine===false){
-        setStatus("Offline · building local resume…");
-        const instant=await createInstantResume(job,masterResume);
-        if(!instant?.url) throw new Error("Offline resume generation failed.");
-        setStatus("Offline resume ready");
-      }else{
-        setStatus("Generating resume online…");
-        const resume=await generateResumeOnline(job,masterResume);
-        await saveGeneratedDocument(job,"resume",resume);
-        setStatus("Resume ready");
-      }
+      if(navigator.onLine===false) throw new Error("An internet connection is required for AI resume generation.");
+      setStatus("AI is writing and verifying your resume…");
+      const resume=await generateResumeOnline(job,masterResume);
+      await saveGeneratedDocument(job,"resume",resume);
+      setStatus("Resume ready");
       }
       const shouldOpen=session.autoOpen&&state.selectedId===job.id;
       activeGeneration.delete(generationKey(job));
@@ -1929,7 +1923,7 @@
     const generating=generationSession(job);
     if(generating?.type===key){
       return '<span class="document-control is-empty is-generating">'+
-        '<button class="document-primary is-generating" type="button" disabled aria-busy="true"><span class="generation-spinner" aria-hidden="true"></span><span>Generating…</span></button>'+
+        '<button class="document-primary is-generating" type="button" disabled aria-busy="true"><span class="generation-spinner" aria-hidden="true"></span><span>AI generating…</span></button>'+
       '</span>';
     }
     if(!value){
