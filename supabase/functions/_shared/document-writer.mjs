@@ -1,6 +1,5 @@
 // Gemini writes all prose from the full verified background; layout stays in Raven.
-export const WRITER_VERSION="gemini-prose-v4";
-export const DEFAULT_MODEL="gemini-3.8-flash";
+export const WRITER_VERSION="grounded-llm-v1";
 const str={type:"string"};
 const arr=(items,minItems=0,maxItems=20)=>({type:"array",items,minItems,maxItems});
 const obj=(properties)=>({type:"object",properties,required:Object.keys(properties),additionalProperties:false});
@@ -109,70 +108,6 @@ const reviewInstructions=[
   "For example, creating assets alone does not support optimized assets, photorealistic assets, strict visual standards, using reference/source materials, or a measurable outcome. General knowledge that these are common duties is not evidence about this candidate. Do not combine separate facts into a new causal claim: scripting automation modules and working with asset databases does not establish optimizing asset pipelines.",
   "The full posting describes the target role, never the candidate. Keep employer-specific claims attached to that employer. Ordinary interest or meeting requests need no historical evidence. Never add qualifications."
 ].join("\n\n");
-
-function providerSchema(schema){
-  if(Array.isArray(schema))return schema.map(providerSchema);
-  if(!schema||typeof schema!=="object")return schema;
-  return Object.fromEntries(Object.entries(schema).filter(([key])=>key!=="additionalProperties").map(([key,value])=>[key,providerSchema(value)]));
-}
-export function createGeminiCompletion({apiKey,model=DEFAULT_MODEL,fallbackModel="gemini-3.5-flash-lite",fetchImpl=fetch,signal}){
-  if(!apiKey)throw new WriterError("Gemini writing is not configured. Check Raven's server secrets.","GEMINI_NOT_CONFIGURED",503);
-  const models=[...new Set([
-    model,
-    fallbackModel,
-    "gemini-3.8-flash",
-    "gemini-3.6-flash",
-    "gemini-3.5-flash-lite"
-  ].filter(Boolean))];
-  const bases=["https://generativelanguage.googleapis.com","https://gateway.ai.cloudflare.com/v1/0be401023d08048c03bbfbb0576fa89f/raven/google-ai-studio"];
-  return async({instructions,input,schema,name,maxOutputTokens=6000})=>{
-    let lastStatus=503;
-    // Give drafting and factual review independent budgets so a slower draft
-    // cannot consume the verifier's entire request window.
-    // Revisions already have a grounded current draft, so keep them interactive:
-    // fail over quickly instead of waiting tens of seconds on a stalled route.
-    const isRevision=Boolean(String(input?.revisionRequest||"").trim());
-    const stageTimeoutMs=isRevision?18000:(name==="raven_factual_review"?50000:80000);
-    const attemptTimeoutMs=isRevision?6000:(name==="raven_factual_review"?15000:22000);
-    const stageSignal=AbortSignal.timeout(stageTimeoutMs);
-    for(const candidateModel of models){
-      for(const base of bases){
-        let response;
-        const attemptSignal=AbortSignal.timeout(attemptTimeoutMs);
-        const signals=[stageSignal,attemptSignal,...(signal?[signal]:[])];
-        const requestSignal=typeof AbortSignal.any==="function"?AbortSignal.any(signals):(signal||stageSignal);
-        try{
-          response=await fetchImpl(base+"/v1beta/models/"+encodeURIComponent(candidateModel)+":generateContent",{
-            method:"POST",signal:requestSignal,headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},
-            body:JSON.stringify({systemInstruction:{parts:[{text:instructions}]},
-              contents:[{role:"user",parts:[{text:JSON.stringify(input)}]}],
-              generationConfig:{maxOutputTokens,responseMimeType:"application/json",responseSchema:providerSchema(schema)}})
-          });
-        }catch{
-          if(stageSignal.aborted||signal?.aborted)throw new WriterError("Writing took too long. Please try again.","GEMINI_UNAVAILABLE",503);
-          // A single provider route can stall even while another route/model is healthy.
-          // Fail over within the stage budget instead of consuming the whole request.
-          if(attemptSignal.aborted)continue;
-          continue;
-        }
-        const raw=await response.json().catch(()=>null);
-        if(!response.ok){
-          lastStatus=response.status;
-          if([401,403,404,429].includes(response.status)||response.status>=500)continue;
-          throw new WriterError("Gemini could not process the writing request. Please try again.","GEMINI_UNAVAILABLE",502);
-        }
-        if(raw?.promptFeedback?.blockReason)throw new WriterError("Gemini could not write this document from the supplied request.","WRITING_REFUSED");
-        const candidate=raw?.candidates?.[0];
-        if(candidate?.finishReason!=="STOP")throw new WriterError("Gemini did not finish the document. Please try again.","INCOMPLETE_DRAFT");
-        const output=(candidate.content?.parts||[]).filter(p=>!p.thought).map(p=>p.text||"").join("");
-        let data;try{data=JSON.parse(output);}catch{throw new WriterError("Gemini returned an unreadable document. Please try again.","INVALID_DRAFT");}
-        return {data,model:raw.modelVersion||candidateModel};
-      }
-    }
-    // Never return provider error bodies, which may echo private inputs.
-    throw new WriterError(lastStatus===429?"Gemini is at its usage limit. Please try again later.":"Gemini writing is temporarily unavailable. Please try again.","GEMINI_UNAVAILABLE",503);
-  };
-}
 
 // A global software skill cannot establish its use at a particular employer.
 export function employerToolIssues(passages,profile){
@@ -296,7 +231,9 @@ export async function writeDocument({kind,profile,target,instructions="",current
       throw new WriterError("The factual review was incomplete. Please try again.","FACT_CHECK_FAILED");
     const issues=[...checks.filter(c=>!c.supported).map(c=>({passage:sentences[c.index],issue:c.reason})),...employerToolIssues(passages,profile)];
     if(!issues.length)
-      return {document,provider:"gemini",model:written.model,verification_model:reviewed.model,architecture:WRITER_VERSION};
+      return {document,provider:written.provider||"llm",model:written.model||"",
+        verification_provider:reviewed.provider||written.provider||"llm",
+        verification_model:reviewed.model||"",architecture:WRITER_VERSION};
     if(attempt===maxAttempts-1)break;
     correction={draft:document,issues};
   }
