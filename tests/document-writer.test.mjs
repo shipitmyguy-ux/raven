@@ -41,11 +41,19 @@ test("cover letter body is model-authored and signature is canonical",async()=>{
  const r=await writeDocument({kind:"coverLetter",profile,target,complete:sequence([cover,accepted])});
  assert.deepEqual(r.document.paragraphs,cover.paragraphs.map(p=>p.text));assert.equal(r.document.signature,profile.name);
 });
-test("unsupported claims receive one repair and a new factual review",async()=>{
+test("unsupported claims receive bounded repairs and a new factual review",async()=>{
  const requests=[],bad={...resume,summary:claim("Led a team of 50.")};
  const r=await writeDocument({kind:"resume",profile,target,complete:sequence([bad,{supported:false,issues:["Team size is not supported."]},resume,accepted],requests)});
  assert.equal(requests.length,4);assert.equal(r.document.summary,resume.summary.text);
  assert.equal(requests[2].input.factualCorrection.issues[0].issue,"Team size is not supported.");
+});
+test("writer gets a second repair pass before surfacing transient invalid draft",async()=>{
+ const requests=[];
+ const bad1={...resume,summary:{text:"",fact_ids:[]}};
+ const bad2={...resume,summary:{text:"Still unsupported",fact_ids:[]}};
+ const result=await writeDocument({kind:"resume",profile,target,complete:sequence([bad1,bad2,resume,accepted],requests)});
+ assert.equal(result.document.summary,resume.summary.text);
+ assert.equal(requests.length,4);
 });
 test("persistent unsupported claims and malformed reviews fail without fallback",async()=>{
  await assert.rejects(writeDocument({kind:"resume",profile,target,complete:sequence([resume,{supported:false,issues:["Wrong employer."]},resume,{supported:false,issues:["Wrong employer."]}])}),e=>e.code==="FACT_CHECK_FAILED");
@@ -166,6 +174,14 @@ test("resume cannot omit profile-designated required career history",()=>{
    {experience_id:"repair",bullets:[claim("Repaired coffee makers.",["f3"])]}
  ]};
  assert.equal(validateDraft("resume",complete,requiredProfile).experience.length,2);
+});
+
+test("cover letter validator tolerates blank optional greeting closing and extra blank paragraph",()=>{
+ const draft={...cover,greeting:"",closing:"",paragraphs:[...cover.paragraphs,{text:"",fact_ids:[]}]};
+ const validated=validateDraft("coverLetter",draft,profile);
+ assert.equal(validated.greeting,"Dear Hiring Manager,");
+ assert.equal(validated.closing,"Sincerely,");
+ assert.equal(validated.paragraphs.length,2);
 });
 
 test("cover letter checks each sentence and prevents a duplicate signature",async()=>{
