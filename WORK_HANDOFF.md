@@ -2,6 +2,9 @@
 
 Last updated: 2026-09-24
 
+## Games / 3D eligibility patch
+Production `raven-backend-v3` v48 now applies shared hard eligibility before ranking. For Games / 3D, programmer/programming/engineer/engineering/developer titles and clearly non-English postings are rejected before persistence. Four stale discovered rows and one unapplied saved Gameplay Programmer row were removed. Fresh production searches returned HTTP 200 for all four tracks, with zero forbidden Games / 3D rows remaining in saved or discovered data.
+
 ## Remote classification parity patch
 Production `raven-backend-v3` v47 now classifies remote status from explicit evidence through one shared normalization path used by Professional, Labor, Wildcard, and Games / 3D. LinkedIn's remote-search filter no longer sets `remote=true` by itself. Enrichment revalidates workplace/jobLocationType evidence instead of preserving stale LinkedIn remote flags, and the frontend prefers fresh discovered classification over stale saved flags.
 
