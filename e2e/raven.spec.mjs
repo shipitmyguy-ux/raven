@@ -5,8 +5,9 @@ const savedJob={id:"job-1",track:"Professional",title:"Implementation Project Ma
 const generatedResume={name:"Test Candidate",headline:"Project & Implementation Leader",contact:"candidate@example.com",summary:"Experienced delivery leader.",skills:["Project delivery","Team leadership"],experience:[{role:"Environment Artist",company:"Example Studio",dates:"2020–2025",bullets:["Led delivery across internal teams."]}],education:[{degree:"Bachelor's Degree",school:"Example University",location:"",dates:""}],additional:[]};
 const generatedLetter={greeting:"Dear Hiring Manager,",paragraphs:["I am applying for the Implementation Project Manager role.","My background includes project delivery and internal team leadership."],closing:"Sincerely,",signature:"Test Candidate"};
 
-async function mockRaven(page,{generatorFails=false,initialJob=null,dataDelayMs=0}={}){
+async function mockRaven(page,{generatorFails=false,initialJob=null,dataDelayMs=0,discoveredJob=null}={}){
   let job={...savedJob,...(initialJob||{})};
+  let persisted=!discoveredJob;
   let generationCalls=0;
   const generationBodies=[];
   const searchTracks=[];
@@ -59,13 +60,14 @@ async function mockRaven(page,{generatorFails=false,initialJob=null,dataDelayMs=
     const track=url.searchParams.get("track")||body.track||"";
     if(action==="jobs"){
       if(dataDelayMs) await new Promise(resolve=>setTimeout(resolve,dataDelayMs));
-      return route.fulfill({json:{ok:true,jobs:[job]}});
+      return route.fulfill({json:{ok:true,jobs:persisted?[job]:[]}});
     }
     if(action==="updateJob"){
       job={...job,...body};delete job.action;
       return route.fulfill({json:{...job,ok:true}});
     }
     if(action==="addJob"){
+      persisted=true;
       job={...job,...body,id:body.id||job.id||"job-added"};delete job.action;
       return route.fulfill({json:{...job,ok:true}});
     }
@@ -105,7 +107,10 @@ async function mockRaven(page,{generatorFails=false,initialJob=null,dataDelayMs=
       ]}}});
     }
     if(action==="search") searchTracks.push(track);
-    if(action==="listResults") listTracks.push(track);
+    if(action==="listResults") {
+      listTracks.push(track);
+      if(discoveredJob && !persisted && track===discoveredJob.track) return route.fulfill({json:{ok:true,results:[discoveredJob]}});
+    }
     return route.fulfill({json:{ok:true,track,count:0,jobs:[],results:[],phase:"quick",deep_search:"started"}});
   });
   await page.route("**/functions/v1/raven-enrich-v1**",route=>route.fulfill({json:{ok:true,description:savedJob.notes}}));
@@ -791,3 +796,50 @@ for(const site of [
     expect(await page.locator("button[type=submit]").count()).toBe(1);
   });
 }
+
+test("listing and direct application remain available without approved documents",async({page})=>{
+  await mockRaven(page);
+  await page.goto("/");
+  await page.locator('[data-track="Professional"]').click();
+  await page.locator(".job-card-summary").first().click();
+  for(const name of ["View listing","Apply on site"]){
+    const link=page.getByRole("link",{name,exact:true});
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute("href",savedJob.url);
+    await expect(link).toHaveAttribute("target","_blank");
+  }
+  await page.locator("[data-approved-apply]").click();
+  await expect(page.locator("#syncStatus")).toContainText("Approve the resume and cover letter");
+});
+
+test("generators save discovery jobs and recover descriptions before generating both documents",async({page})=>{
+  await page.addInitScript(()=>{
+    localStorage.setItem("ravenMasterResumesV1",JSON.stringify([{
+      id:"test-master",name:"Test master",sourceType:"drive",url:"https://drive.google.com/file/d/test/view",tracks:["Professional"]
+    }]));
+  });
+  const api=await mockRaven(page,{discoveredJob:{
+    id:"discovery-1",track:"Professional",title:savedJob.title,company:savedJob.company,
+    location:"Remote",remote:true,url:savedJob.url,source:"Mock",snippet:""
+  }});
+  await page.goto("/");
+  await page.locator('[data-track="Professional"]').click();
+  await page.locator(".job-card-summary").first().click();
+  await page.locator('[data-generate="resume"]').click();
+  await expect(page.locator("#documentReviewDialog")).toBeVisible();
+  await expect(page.frameLocator("#reviewFrame").getByText("Test Candidate",{exact:true})).toBeVisible();
+  await page.getByRole("button",{name:"Close",exact:true}).click();
+  await page.locator('[data-generate="coverLetter"]').click();
+  await expect(page.locator("#documentReviewDialog")).toBeVisible();
+  await expect(page.frameLocator("#reviewFrame").getByText("Dear Hiring Manager,")).toBeVisible();
+  await page.getByRole("button",{name:"Close",exact:true}).click();
+  expect(api.getGenerationCalls()).toBe(2);
+  expect(api.getGenerationBodies().every(body=>body.jobId==="job-1" && body.jobDescription===savedJob.notes)).toBe(true);
+  expect(api.getJob().resume).toContain("data:text/html");
+  expect(api.getJob().coverLetter).toContain("data:text/html");
+  await page.reload();
+  await page.locator('[data-track="Professional"]').click();
+  await page.locator(".job-card-summary").first().click();
+  await expect(page.locator('[data-generate="resume"]')).toHaveText("Review");
+  await expect(page.locator('[data-generate="coverLetter"]')).toHaveText("Review");
+});

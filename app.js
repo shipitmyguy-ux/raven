@@ -1318,24 +1318,13 @@
     const docsReady=documentsReadyForApplication(job);
     const statusLower=currentStatus.toLowerCase();
     const postApplication=["applied","interview","offer","rejected"].includes(statusLower);
-    const applyGate=job.url&&!postApplication?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply aria-label="Open application with approved documents" title="'+(docsReady?'Open application':'Approve resume and cover letter first')+'"><span class="workflow-icon" aria-hidden="true">↗</span><span>'+(docsReady?'Apply':'Approve docs')+'</span></button>':"";
+    const applyGate=job.url&&!postApplication?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply aria-label="Open application with approved documents" title="'+(docsReady?'Open application':'Approve resume and cover letter first')+'"><span class="workflow-icon" aria-hidden="true">↗</span><span>'+(docsReady?'Apply with approved docs':'Approve docs')+'</span></button>':"";
     const appliedAction=!["interview","offer","rejected","ignored"].includes(statusLower)?'<button class="workflow-action'+(isApplied?' is-applied':'')+'" type="button" data-apply-status="'+(isApplied?'saved':'applied')+'" aria-pressed="'+String(isApplied)+'" aria-label="'+(isApplied?'Unmark as applied':'Mark as applied')+'" title="'+(isApplied?'Unmark as applied':'Mark as applied')+'"><span class="workflow-icon" aria-hidden="true">✓</span><span>Applied</span></button>':"";
-    const configuredActions=uiRows("detail-action");
-    const actions=(configuredActions.length?configuredActions:fallbackActions())
-      .filter((item)=>{
-        if (item.key==="apply") return false;
-        if (item.key==="posting") return Boolean(job.url);
-        return false;
-      })
-      .map((item)=>{
-        const label=item.label||item.key;
-        if (item.format==="external-link" || item.key==="posting" || item.key==="apply") {
-          return '<a class="workflow-action" href="'+escapeAttr(job.url)+'" target="_blank" rel="noopener" aria-label="'+escapeAttr(label)+'" title="'+escapeAttr(label)+'"><span class="workflow-icon" aria-hidden="true">↗</span><span>'+escapeHtml(label)+'</span></a>';
-        }
-        const icon=item.key==="resume"?"R":item.key==="coverLetter"?"✉":"＋";
-        const shortLabel=item.key==="resume"?"Resume":item.key==="coverLetter"?"Cover letter":label;
-        return '<button class="workflow-action" type="button" data-generate="'+escapeAttr(item.key)+'" aria-label="'+escapeAttr(label)+'" title="'+escapeAttr(label)+'"><span class="workflow-icon" aria-hidden="true">'+icon+'</span><span>'+escapeHtml(shortLabel)+'</span></button>';
-      }).join("");
+    const postingUrl=/^https?:\/\//i.test(String(job.url||""))?job.url:"";
+    const actions=postingUrl
+      ? '<a class="workflow-action" href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener" aria-label="View listing"><span>View listing</span></a>'+
+        (!postApplication?'<a class="workflow-action" href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener" aria-label="Apply on site"><span>Apply on site</span></a>':'')
+      : '<span class="posting-unavailable">Listing link unavailable</span>';
 
     const fullDescription=cleanJobDescription(job.notes)||"Full job description not yet available.";
     const summary=jobDetailSummary(job);
@@ -1563,6 +1552,50 @@
     return generateDocumentCached(job,masterResume,"resume");
   }
 
+  const generationPreparation=new WeakMap();
+  async function prepareJobForGeneration(job){
+    if(generationPreparation.has(job)) return generationPreparation.get(job);
+    const pending=(async()=>{
+      if(job._discovered){
+        if(navigator.onLine===false) throw new Error("Connect to the internet once to save this job before generating documents.");
+        setStatus("Saving job and retrieving its description...");
+        const previousId=job.id;
+        const saved=await window.RavenAPI.addJob({
+          track:job.track||"Professional",title:job.title||"",company:job.company||"",
+          location:job.location||"",remote:isRemoteJob(job),salaryText:job.salaryText||"",
+          url:job.url||"",source:job.source||"",status:"Saved",viewed:true,notes:job.notes||""
+        });
+        if(!saved?.id) throw new Error("The job could not be saved. Please retry.");
+        const normalized=window.RavenCore?.fromApiJob?window.RavenCore.fromApiJob(saved):saved;
+        Object.assign(job,normalized,{_discovered:false});
+        const index=state.jobs.findIndex((item)=>String(item.id)===String(job.id));
+        if(index>=0) state.jobs[index]=job;
+        else state.jobs.push(job);
+        if(state.selectedId===previousId) state.selectedId=job.id;
+        writeCache(CACHE_JOBS_KEY,state.jobs);
+      }
+      if(navigator.onLine!==false && !String(job.notes||"").trim()){
+        setStatus("Retrieving job description...");
+        const result=await window.RavenAPI.describeJob({
+          url:job.url,title:job.title,company:job.company,track:job.track,
+          location:job.location,source:job.source
+        });
+        if(result.expired) throw new Error("This listing has expired. Open View listing to check it.");
+        const description=String(result.description||"").trim();
+        if(!description) throw new Error("The listing did not provide a job description. Open View listing to check the source.");
+        await window.RavenAPI.updateJob(job.id,{notes:description});
+        job.notes=description;
+        const saved=state.jobs.find((item)=>String(item.id)===String(job.id));
+        if(saved) saved.notes=description;
+        writeCache(CACHE_JOBS_KEY,state.jobs);
+      }
+      return job;
+    })();
+    generationPreparation.set(job,pending);
+    try{ return await pending; }
+    finally{ generationPreparation.delete(job); }
+  }
+
   async function generateForJob(job,type,button=null) {
     if(job[type]) return openDocumentReview(job,type);
     if(type!=="resume"){
@@ -1586,6 +1619,7 @@
     try{
       const masterResume=await masterResumeTaskInput(job.track||"Professional");
       if(!masterResume) throw new Error("Assign a master resume to this job track first.");
+      await prepareJobForGeneration(job);
       if(navigator.onLine===false){
         setStatus("Offline · building local resume…");
         const instant=await createInstantResume(job,masterResume);
@@ -1654,6 +1688,7 @@
     try{
       const masterResume=await masterResumeTaskInput(job.track||"Professional");
       if(!masterResume) throw new Error("Assign a master resume to this job track first.");
+      await prepareJobForGeneration(job);
       const document=instructions
         ? await generateDocumentOnline(job,masterResume,type,instructions)
         : await generateDocumentCached(job,masterResume,type);
