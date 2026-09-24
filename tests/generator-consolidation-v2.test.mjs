@@ -4,6 +4,7 @@ const read=p=>fs.readFileSync(new URL("../"+p,import.meta.url),"utf8");
 const router=read("supabase/functions/raven-generate-v1/index.ts");
 const handler=read("supabase/functions/_shared/document-handler.mjs");
 const writer=read("supabase/functions/_shared/document-writer.mjs");
+const llmRouter=read("supabase/functions/_shared/llm-router.mjs");
 for(const [slug,kind] of [["raven-generate-v2","resume"],["raven-cover-v2","coverLetter"]]){
  assert.ok(router.includes('"'+slug+'"'));
  const entry=read("supabase/functions/"+slug+"/index.ts");
@@ -15,6 +16,12 @@ assert.match(router,/currentDocument:body\.currentDocument/,"Revisions must incl
 assert.match(handler,/raven_canonical_profiles/);
 assert.match(handler,/x-raven-client/);
 assert.doesNotMatch(handler,/\|\|req\.method===["']GET["']/);
-assert.match(handler,/RAVEN_GEMINI_API_KEY/);
-assert.doesNotMatch(writer,/api\.openai\.com|createOpenAI/,"Use the user-selected Gemini connection.");
+assert.match(handler,/createLLMCompletion/);
+assert.match(llmRouter,/RAVEN_OPENROUTER_API_KEY/);
+assert.match(llmRouter,/RAVEN_OPENAI_API_KEY/);
+assert.match(llmRouter,/RAVEN_GEMINI_API_KEY/);
+assert.match(llmRouter,/openrouter\/auto-beta/);
+assert.match(llmRouter,/api\.openai\.com/);
+assert.match(llmRouter,/generativelanguage\.googleapis\.com/);
+assert.doesNotMatch(writer,/api\.openai\.com|openrouter\.ai|generativelanguage\.googleapis\.com/,"Grounded writer must remain provider neutral.");
 console.log("Shared document route contract passed");
