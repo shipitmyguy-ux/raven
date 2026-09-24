@@ -43,7 +43,7 @@
     MASTER_RESUMES_KEY,APPLICATION_PROFILE_KEY,ANSWER_MEMORY_KEY,GENERATOR_PREFS_KEY,
     USER_SETTINGS_KEY,DOCUMENT_APPROVALS_KEY,VIEWED_JOBS_KEY
   ];
-  const RESUME_TEMPLATE_VERSION="modern-v3";
+  const RESUME_TEMPLATE_VERSION="modern-v4";
   const DEFAULT_FOLLOW_UP_DAYS=7;
   let editingMasterResumeId=null;
   let editingAnswerMemoryKey=null;
@@ -1663,6 +1663,16 @@
     setDocumentApproved(job,type,false);
     return dataUrl;
   }
+  function currentDocumentText(job,type){
+    const value=String(job[type]||"");
+    if(!value.startsWith("data:text/html;charset=utf-8,")) return "";
+    try{
+      const html=decodeURIComponent(value.slice(value.indexOf(",")+1));
+      const doc=new DOMParser().parseFromString(html,"text/html");
+      doc.querySelectorAll("style,script").forEach(node=>node.remove());
+      return (doc.body.textContent||"").trim();
+    }catch{ return ""; }
+  }
   async function generateDocumentOnline(job,masterResume,type="resume",instructions=""){
     if(!config?.generateApiUrl) throw new Error("Online document generator is not configured.");
     if(masterResume?.sourceType!=="drive" && !masterResume?.dataUrl){
@@ -1672,7 +1682,7 @@
     if(masterResume?.sourceType==="drive" && !masterResume?.url) throw new Error("The assigned Google Drive master resume has no URL.");
     if(masterResume?.sourceType!=="drive" && !masterResume?.dataUrl) throw new Error("The assigned master resume file is not available on this device.");
     const response=await fetch(config.generateApiUrl,{method:"POST",headers:{"Content-Type":"application/json","X-Raven-Client":"raven-web-v1"},body:JSON.stringify({
-      documentType:type==="coverLetter"?"coverLetter":"resume",instructions,jobId:job.id,jobTitle:job.title||"",company:job.company||"",track:job.track||"Professional",sourceUrl:job.url||"",jobDescription:job.notes||"",jobAnalysis:getJobAnalysis(job),
+      documentType:type==="coverLetter"?"coverLetter":"resume",instructions,currentDocument:instructions?currentDocumentText(job,type):"",jobId:job.id,jobTitle:job.title||"",company:job.company||"",track:job.track||"Professional",sourceUrl:job.url||"",jobDescription:job.notes||"",jobAnalysis:getJobAnalysis(job),
       masterResume:{id:masterResume.id||"",name:masterResume.name||"",sourceType:masterResume.sourceType||"",fileName:masterResume.fileName||"",mimeType:masterResume.mimeType||"",dataUrl:masterResume.dataUrl||"",url:masterResume.url||"",version:masterResume.version||""}
     })});
     const payload=await response.json().catch(()=>({}));

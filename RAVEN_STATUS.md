@@ -109,3 +109,11 @@ Everything else still listed in `TASKS.md` is either a continuing quality improv
 - Live browser verification: Akima Intermediate 3D Artist initially failed with missing-description errors in both generators. After deployment the job saved, its description populated, both documents generated with visible review previews, and both reopened after a full page refresh and completed backend synchronization.
 - No document approval or employer submission was performed.
 - Local syntax/focused execution checks passed. GitHub core regressions, targeted browser regressions (including the new discovery persistence and direct-link cases), Pages deploy, and both production smoke runs passed for e012c57.
+
+
+## Natural document writing (2026-09-24)
+- Replaced fact-selection/sentence-template generation with Gemini-authored prose from the complete verified candidate profile and posting, followed by a factual check and at most one repair.
+- User chose the existing Gemini connection; no OpenAI API key or billing setup is required.
+- Resume revisions now forward both the instructions and current document. Candidate identity/employment metadata remain canonical; failed drafts do not replace saved documents.
+- Local mocked writer tests pass. Deployment and live prose-quality/persistence acceptance are pending for this change; prior production generator acceptance above describes the old engine.
+- See docs/DOCUMENT_WRITING.md for the reuse evaluation, implementation, boundaries and acceptance procedure.

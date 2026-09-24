@@ -471,7 +471,7 @@ test("generation cache prevents a duplicate resume model call",async({page})=>{
     });
     const job={id:"job-1",track:"Professional",title:"Implementation Project Manager",company:"Acme Health",url:"https://example.com/job/1?utm_source=test",source:"Mock",status:"Saved",notes:"Lead implementation projects, coordinate internal teams, manage schedules and stakeholder communication."};
     const master={id:"cache-master",name:"Cache master",sourceType:"local",fileName:"cache.txt",version:"cache-v1",url:"",dataUrl};
-    const key=window.RavenCore.generationFingerprint(job,master,"resume","modern-v3");
+    const key=window.RavenCore.generationFingerprint(job,master,"resume","modern-v4");
     localStorage.setItem("ravenGenerationCacheV1",JSON.stringify({[key]:{resume,createdAt:new Date().toISOString()}}));
   },generatedResume);
 
@@ -544,6 +544,8 @@ test("review preserves approved document and revision invalidates approval",asyn
   await page.locator("#reviewInstructions").fill("Make the summary shorter.");
   await page.locator("#reviewSubmit").click();
   await expect.poll(()=>api.getGenerationCalls()).toBe(1);
+  expect(api.getGenerationBodies()[0].currentDocument).toBe("resume-v1");
+  expect(api.getGenerationBodies()[0].instructions).toBe("Make the summary shorter.");
   await expect(page.locator("#reviewApprove")).toHaveText("Approve document");
 
   const approvals=await page.evaluate(()=>JSON.parse(localStorage.getItem("ravenDocumentApprovalsV1")||"{}"));

@@ -16,11 +16,13 @@ assert(backend.includes('budget_limited:true'),"Cached budget fallback must be e
 
 assert(generatorRouter.includes('"raven-generate-v2"'),"Generation router must use the canonical resume engine.");
 assert(generatorRouter.includes('"raven-cover-v2"'),"Generation router must use the canonical cover engine.");
-for(const generator of [resumeGenerator,coverGenerator]){
+const sharedGenerator=fs.readFileSync(new URL("../supabase/functions/_shared/document-handler.mjs",import.meta.url),"utf8");
+for(const entry of [resumeGenerator,coverGenerator]) assert(entry.includes("createDocumentHandler"),"Both engines must use the guarded shared handler.");
+for(const generator of [sharedGenerator]){
   assert(generator.includes('"raven_request_guard"'),"Canonical generators must use the server request guard.");
   assert(generator.includes("p_short_limit:12"),"Generation short budget must allow the eight-request verification batch.");
   assert(generator.includes("p_long_limit:60"),"Generation hourly budget must remain bounded.");
-  assert(generator.includes('finish(eid,"success",200)'),"Successful generation must record request completion.");
+  assert(generator.includes('finish("success",200)'),"Successful generation must record request completion.");
 }
 
 

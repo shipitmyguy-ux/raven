@@ -92,3 +92,10 @@ These are feature expansions, not Raven closeout blockers.
 - [~] Aggregators are primarily discovery/provenance sources; continue canonical employer/ATS resolution when a reliable target is available.
 - [ ] Add/maintain an employer -> ATS identifier registry if direct employer querying becomes worth the maintenance cost.
 - [x] Source-health diagnostics are persisted and surfaced through the control plane.
+
+
+## Natural writing upgrade
+- [x] Evaluate Resume Matcher and Reactive Resume approaches; retain Raven and use direct full-context writing plus factual review.
+- [x] Implement shared Gemini writer for both document types and context-aware revisions; remove deterministic sentence assembly.
+- [x] Test writer contracts, errors, grounding-review/repair gate and request budgets with mocked provider responses.
+- [~] Deploy and verify natural prose on real jobs, both document previews, revision behavior and persistence after refresh.

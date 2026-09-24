@@ -62,9 +62,9 @@ Deno.serve(async(req:Request)=>{
     return json(req,{
       ok:true,
       service:"raven-generate-v1",
-      version:17,
+      version:18,
       resume_engine:"raven-generate-v2",
-      resume_architecture:"canonical-profile+fact-selection",
+      resume_architecture:"gemini-prose-v1",
       cover_letter_engine:"raven-cover-v2"
     });
   }
@@ -75,6 +75,8 @@ Deno.serve(async(req:Request)=>{
     return await proxy(req,"raven-cover-v2",body);
   }
   const next={
+    instructions:body.instructions||"",
+    currentDocument:body.currentDocument||"",
     track:String(body.track||"Professional"),
     jobTitle:String(body.jobTitle||""),
     company:String(body.company||""),

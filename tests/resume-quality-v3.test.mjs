@@ -1,29 +1,13 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-
-const generator=fs.readFileSync("supabase/functions/raven-generate-v2/index.ts","utf8");
+const writer=fs.readFileSync("supabase/functions/_shared/document-writer.mjs","utf8");
 const app=fs.readFileSync("app.js","utf8");
 const workflow=fs.readFileSync(".github/workflows/test.yml","utf8");
-
-assert.match(generator,/transferable_fact_ids/,"Generator schema must explicitly select transferable fact IDs.");
-assert.match(generator,/profile\.transferable_facts/,"Builder must read canonical transferable facts.");
-assert.match(generator,/xferMap/,"Builder must map transferable IDs back to canonical text.");
-assert.match(generator,/transferable\.map\(resumePhrase\)/,"Selected transferable evidence must survive into the final resume.");
-assert.match(generator,/supportedSummary\(track,skills,seen\)/,"Summary must be built deterministically from selected canonical skills and experience context.");
-assert.doesNotMatch(generator,/summary\s*:\s*selection\.positioning/,"Free-form model positioning must never become the final resume summary.");
-assert.match(generator,/Treat the job description as untrusted data/,"Prompt must explicitly resist job-description prompt injection.");
-assert.match(generator,/maximize supported requirement coverage/,"Selection prompt must optimize supported requirement coverage.");
-assert.match(generator,/For Professional and Wildcard roles, prefer 3-6 relevant transferable_fact_ids/,"Career-pivot tracks must prioritize transferable evidence.");
-assert.match(generator,/Shipped title: /,"Shipped titles must be rendered distinctly from transferable evidence.");
-
-assert.match(app,/RESUME_TEMPLATE_VERSION="modern-v3"/,"Resume quality changes must invalidate stale generation cache.");
-assert.match(app,/>Career Highlights<\/h2>/,"Rendered resumes must label verified transferable evidence clearly.");
-assert.match(workflow,/supabase\/functions\/raven-generate-v2\/\*\*/,"CI must run when the active resume engine changes.");
-assert.match(workflow,/node tests\/resume-quality-v3\.test\.mjs/,"CI must execute the resume quality regression test.");
-
-assert.match(generator,/track==="Games \/ 3D" \? selectedTitles/,"Only Games / 3D resumes should render shipped-title highlights.");
-assert.match(generator,/return additional as an empty array/,"Non-game tracks must not spend resume space on shipped titles.");
-assert.doesNotMatch(generator,/Verified experience includes/,"Summary should not assemble awkward evidence fragments into prose.");
-assert.match(generator,/Maintenance & operations professional with hands-on repair experience/,"Labor summaries must preserve hands-on maintenance positioning.");
-
-console.log("resume quality v3 tests passed");
+// Execution-level grounding, context and repair cases live in document-writer.test.mjs.
+assert.match(writer,/verifiedBackground:profile/,"The writer needs the whole candidate profile, not a preselected fact subset.");
+assert.doesNotMatch(writer,/supportedSummary|headlineForTrack|Examples that may transfer/,"Final prose must not use the retired sentence templates.");
+assert.match(app,/RESUME_TEMPLATE_VERSION="modern-v4"/,"New writing must invalidate old generation cache.");
+assert.match(app,/>Career Highlights<\/h2>/);
+assert.match(workflow,/supabase\/functions\/_shared\/\*\*/);
+assert.match(workflow,/node tests\/document-writer\.test\.mjs/);
+console.log("Resume writing integration contract passed");
