@@ -95,6 +95,25 @@ export async function within<T>(promise:Promise<T>,ms:number,fallback:T):Promise
   ]);
 }
 
+const FOREIGN_SCRIPT=/[\u0400-\u04FF\u0600-\u06FF\u3040-\u30FF\u3400-\u9FFF\uAC00-\uD7AF]/;
+const FOREIGN_TITLE_TERMS=/\b(?:artiste|environnement|développeur|developpeur|ingénieur|ingenieur|programmeur|programmateur|artista|entorno|ingeniero|desarrollador|programador|künstler|kuenstler|umgebung|entwickler|programmierer|sviluppatore|programmatore)\b/i;
+
+export function looksEnglishPosting(c:Candidate){
+  const title=String(c?.title||"");
+  const snippet=String(c?.snippet||"").slice(0,1800);
+  if(FOREIGN_SCRIPT.test(title)||FOREIGN_SCRIPT.test(snippet)) return false;
+  if(FOREIGN_TITLE_TERMS.test(title)) return false;
+  return true;
+}
+
+export function candidateAllowedForTrack(track:Track,c:Candidate){
+  const cfg=TRACKS[track];
+  const title=String(c?.title||"").toLowerCase();
+  if((cfg.titleExclude||[]).some(term=>title.includes(term.toLowerCase()))) return false;
+  if(cfg.requireEnglish && !looksEnglishPosting(c)) return false;
+  return true;
+}
+
 const KNOWN_COMPANY_CASING: Record<string, string> = {
   "cbiz": "CBIZ",
   "cd-projekt-red": "CD Projekt Red",
@@ -479,6 +498,7 @@ export function rankCandidates(track:Track,candidates:Candidate[],limit=40){
     const url=normalizeUrl(c0.url);
     if(!url) continue;
     const c={...c0,url,remote:explicitlyRemote(c0)};
+    if(!candidateAllowedForTrack(track,c)) continue;
     c.score=score(track,c);
     if((c.score||0)<3) continue;
     if(c.posted_at&&daysOld(c.posted_at)>60) continue;
