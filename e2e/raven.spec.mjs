@@ -121,8 +121,16 @@ async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJo
     if(generatorDelayMs) await new Promise(resolve=>setTimeout(resolve,generatorDelayMs));
     const body=JSON.parse(route.request().postData()||"{}");
     generationBodies.push(body);
-    if(body.documentType==="coverLetter") return route.fulfill({json:{ok:true,coverLetter:generatedLetter}});
-    return route.fulfill({json:{ok:true,resume:generatedResume}});
+    if(body.documentType==="coverLetter"){
+      const coverLetter=body.instructions
+        ? {...generatedLetter,paragraphs:[...generatedLetter.paragraphs,"Updated to apply the requested revision."]}
+        : generatedLetter;
+      return route.fulfill({json:{ok:true,coverLetter}});
+    }
+    const resume=body.instructions
+      ? {...generatedResume,summary:generatedResume.summary+" Updated to apply the requested revision."}
+      : generatedResume;
+    return route.fulfill({json:{ok:true,resume}});
   });
   return {
     getJob:()=>job,
@@ -909,6 +917,11 @@ test("resume generation stays visibly active and does not pop review after leavi
 });
 
 test("requested document changes show persistent AI processing feedback",async({page})=>{
+  await page.addInitScript(()=>{
+    localStorage.setItem("ravenMasterResumesV1",JSON.stringify([{
+      id:"test-master",name:"Test master",sourceType:"drive",url:"https://drive.google.com/file/d/test/view",tracks:["Professional"]
+    }]));
+  });
   await mockRaven(page,{generatorDelayMs:700});
   await page.goto("/");
   await page.locator('[data-track="Professional"]').click();
@@ -935,18 +948,15 @@ test("generation indicator survives job object refresh while generation is activ
       id:"test-master",name:"Test master",sourceType:"drive",url:"https://drive.google.com/file/d/test/view",tracks:["Professional"]
     }]));
   });
-  await mockRaven(page,{generatorDelayMs:900,initialJob:{resume:""}});
+  const api=await mockRaven(page,{generatorDelayMs:900,initialJob:{resume:""}});
   await page.goto("/");
   await page.locator('[data-track="Professional"]').click();
   await page.locator(".job-card-summary").first().click();
   await page.locator('[data-generate="resume"]').click();
   await expect(page.locator(".generation-card-status")).toContainText("AI is generating resume");
 
-  await page.evaluate(async()=>{
-    const response=await window.RavenAPI.getData();
-    window.__ravenTestFreshJobs=response.jobs.map(job=>({...job}));
-  });
-  await page.locator("#searchBox").fill("Acme");
+  await page.getByRole("button",{name:"Bookmark job"}).click();
+  await expect.poll(()=>api.getJob().status).toBe("Interested");
   await expect(page.locator(".generation-card-status")).toContainText("AI is generating resume");
   await expect(page.locator(".job-card.is-generating-document")).toBeVisible();
 });
