@@ -1,6 +1,6 @@
 // Gemini writes all prose from the full verified background; layout stays in Raven.
 export const WRITER_VERSION="gemini-prose-v4";
-export const DEFAULT_MODEL="gemini-3.5-flash";
+export const DEFAULT_MODEL="gemini-3.8-flash";
 const str={type:"string"};
 const arr=(items,minItems=0,maxItems=20)=>({type:"array",items,minItems,maxItems});
 const obj=(properties)=>({type:"object",properties,required:Object.keys(properties),additionalProperties:false});
@@ -117,7 +117,13 @@ function providerSchema(schema){
 }
 export function createGeminiCompletion({apiKey,model=DEFAULT_MODEL,fallbackModel="gemini-3.5-flash-lite",fetchImpl=fetch,signal}){
   if(!apiKey)throw new WriterError("Gemini writing is not configured. Check Raven's server secrets.","GEMINI_NOT_CONFIGURED",503);
-  const models=[...new Set([model,fallbackModel].filter(Boolean))];
+  const models=[...new Set([
+    model,
+    fallbackModel,
+    "gemini-3.8-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash-lite"
+  ].filter(Boolean))];
   const bases=["https://gateway.ai.cloudflare.com/v1/0be401023d08048c03bbfbb0576fa89f/raven/google-ai-studio","https://generativelanguage.googleapis.com"];
   return async({instructions,input,schema,name,maxOutputTokens=6000})=>{
     let lastStatus=503;
