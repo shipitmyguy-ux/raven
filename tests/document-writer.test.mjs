@@ -141,3 +141,12 @@ test("schema bounds guide document length; malformed draft can be repaired",asyn
  assert.equal(requests[0].schema.properties.experience.items.properties.bullets.maxItems,6);
  assert.ok(requests[1].input.factualCorrection);assert.equal(result.document.summary,resume.summary);
 });
+
+test("cover letter checks each sentence and prevents a duplicate signature",async()=>{
+ const requests=[];
+ const letter={...cover,paragraphs:["I built game environments. I mentored newer artists.","I would welcome a conversation."],closing:"Sincerely, Test Candidate"};
+ const r=await writeDocument({kind:"coverLetter",profile,target,complete:sequence([letter,accepted],requests)});
+ assert.equal(r.document.closing,"Sincerely,");
+ assert.equal(requests[1].input.passages.length,5);
+ assert.equal(requests[1].input.passages[2].text,"I mentored newer artists.");
+});
