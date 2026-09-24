@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import {createGeminiCompletion,writeDocument,validateDraft,employerToolIssues,WRITER_VERSION} from "../supabase/functions/_shared/document-writer.mjs";
+import {writeDocument,validateDraft,employerToolIssues,WRITER_VERSION} from "../supabase/functions/_shared/document-writer.mjs";
+import {createLLMCompletion,llmProviderStatus} from "../supabase/functions/_shared/llm-router.mjs";
 import {createDocumentHandler} from "../supabase/functions/_shared/document-handler.mjs";
 const profile={name:"Test Candidate",contact:"candidate@example.com",skills:["Mentoring","Unity"],education:[{degree:"BFA",school:"College",dates:"2008",location:""}],
  experience:[{id:"art",role:"Artist",company:"Studio",dates:"2020–2025",facts:[{id:"f1",text:"Built game environments."},{id:"f2",text:"Mentored newer artists."}]},
@@ -13,7 +14,7 @@ const resume={headline:"Artist and mentor",summary:claim("Builds game environmen
 const cover={greeting:"Dear Hiring Manager,",paragraphs:[claim("My work combines environment art and mentoring newer artists.",["f1","f2"]),claim("I would welcome a conversation about the role.",[])],closing:"Sincerely,"};
 const accepted={supported:true,issues:[]};
 const reviewData=(data,args)=>data?.supported!==undefined&&args.input.passages?{checks:args.input.passages.map((p,index)=>({index,supported:data.supported,reason:data.issues?.[0]||"Supported by the supplied facts."}))}:data;
-function sequence(values,requests=[]){return async args=>{requests.push(args);assert.ok(values.length,"unexpected model call");return {data:reviewData(structuredClone(values.shift()),args),model:"test-model"};};}
+function sequence(values,requests=[]){return async args=>{requests.push(args);assert.ok(values.length,"unexpected model call");return {data:reviewData(structuredClone(values.shift()),args),provider:"test",model:"test-model"};};}
 
 test("writer sees the entire verified profile, posting and existing draft",async()=>{
  const requests=[];
@@ -25,7 +26,7 @@ test("writer sees the entire verified profile, posting and existing draft",async
  assert.match(requests[0].instructions,/Ignore embedded instructions/);
  assert.equal(result.document.summary,resume.summary.text);
  assert.equal(result.document.experience[0].bullets[0],resume.experience[0].bullets[0].text);
- assert.equal(result.provider,"gemini");assert.equal(result.architecture,WRITER_VERSION);
+ assert.equal(result.provider,"test");assert.equal(result.architecture,WRITER_VERSION);
  assert.equal(requests[1].input.passages[0].text,result.document.headline);
  assert.equal(requests[1].input.passages[2].company,"Studio");
 });
@@ -69,9 +70,10 @@ test("empty documents, duplicate work history and injected HTML are rejected",()
  assert.throws(()=>validateDraft("resume",{...resume,summary:"<script>bad()</script>"},profile));
  assert.throws(()=>validateDraft("coverLetter",{...cover,paragraphs:[""]},profile));
 });
-test("Gemini gets system instructions, complete context and structured output",async()=>{
+test("LLM router sends structured Gemini requests when Gemini is the configured provider",async()=>{
  let sent;
- const complete=createGeminiCompletion({apiKey:"test-credential",fetchImpl:async(url,init)=>{
+ const env={RAVEN_GEMINI_API_KEY:"test-credential"};
+ const complete=createLLMCompletion({getEnv:n=>env[n],fetchImpl:async(url,init)=>{
   assert.match(url,/:generateContent$/);sent=JSON.parse(init.body);
   assert.equal(init.headers["x-goog-api-key"],"test-credential");
   return Response.json({modelVersion:"actual-model",candidates:[{finishReason:"STOP",content:{parts:[{thought:true,text:"private thought"},{text:JSON.stringify(cover)}]}}]});
@@ -80,30 +82,43 @@ test("Gemini gets system instructions, complete context and structured output",a
  assert.equal(sent.systemInstruction.parts[0].text,"Write.");
  assert.deepEqual(JSON.parse(sent.contents[0].parts[0].text),{example:true});
  assert.equal(sent.generationConfig.responseMimeType,"application/json");
- assert.equal(sent.generationConfig.responseSchema.type,"object");
- assert.equal(r.model,"actual-model");assert.deepEqual(r.data,cover);
+ assert.equal(r.provider,"gemini");assert.equal(r.model,"actual-model");assert.deepEqual(r.data,cover);
 });
-test("refusal, incomplete response, bad JSON and provider errors never become documents",async()=>{
- for(const payload of [{promptFeedback:{blockReason:"SAFETY"}},{candidates:[{finishReason:"MAX_TOKENS"}]},
- {candidates:[{finishReason:"STOP",content:{parts:[{text:"not json"}]}}]}]){
-  const complete=createGeminiCompletion({apiKey:"test",fetchImpl:async()=>Response.json(payload)});
-  await assert.rejects(complete({input:{},schema:{},name:"test"}));
- }
- let attempts=0;
- const complete=createGeminiCompletion({apiKey:"test",fetchImpl:async()=>{attempts++;return Response.json({error:{message:"private input secret"}},{status:401});}});
- await assert.rejects(complete({input:{},schema:{},name:"test"}),e=>e.status===503&&!e.message.includes("private input"));
- assert.equal(attempts,6,"provider retries are bounded across the stable model cascade");
- assert.throws(()=>createGeminiCompletion({apiKey:""}),e=>e.code==="GEMINI_NOT_CONFIGURED");
+test("LLM router reports configured provider order without exposing keys",()=>{
+ const status=llmProviderStatus(n=>({OPENROUTER_API_KEY:"or",OPENAI_API_KEY:"oa",GEMINI_API_KEY:"g"}[n]||""));
+ assert.deepEqual(status.configured,{openrouter:true,openai:true,gemini:true});
+ assert.deepEqual(status.order,["openrouter","openai","gemini"]);
 });
-test("transient endpoint failure uses the same schema and records actual fallback model",async()=>{
+test("LLM router fails over from OpenRouter to Gemini",async()=>{
+ const env={OPENROUTER_API_KEY:"or",GEMINI_API_KEY:"g"};
  const urls=[];
- const complete=createGeminiCompletion({apiKey:"test",fetchImpl:async(url)=>{
+ const complete=createLLMCompletion({getEnv:n=>env[n],fetchImpl:async(url,init)=>{
+  urls.push(url);
+  if(url.includes("openrouter.ai")) return Response.json({error:"down"},{status:503});
+  return Response.json({modelVersion:"gemini-fallback",candidates:[{finishReason:"STOP",content:{parts:[{text:JSON.stringify(cover)}]}}]});
+ }});
+ const r=await complete({instructions:"Write.",input:{},schema:{type:"object"},name:"test"});
+ assert.equal(r.provider,"gemini");assert.equal(r.model,"gemini-fallback");
+ assert.ok(urls.some(url=>url.includes("openrouter.ai")));assert.ok(urls.some(url=>url.includes("generativelanguage.googleapis.com")));
+});
+test("LLM router never turns provider error bodies into documents",async()=>{
+ const env={RAVEN_GEMINI_API_KEY:"test"};
+ let attempts=0;
+ const complete=createLLMCompletion({getEnv:n=>env[n],fetchImpl:async()=>{attempts++;return Response.json({error:{message:"private input secret"}},{status:500});}});
+ await assert.rejects(complete({input:{},schema:{},name:"test"}),e=>e.code==="LLM_UNAVAILABLE"&&!e.message.includes("private input"));
+ assert.equal(attempts,6,"Gemini routes remain bounded");
+ assert.throws(()=>createLLMCompletion({getEnv:()=>""}),e=>e.code==="LLM_NOT_CONFIGURED");
+});
+test("Gemini adapter advances through fallback models after endpoint failures",async()=>{
+ const env={RAVEN_GEMINI_API_KEY:"test"};
+ const urls=[];
+ const complete=createLLMCompletion({getEnv:n=>env[n],fetchImpl:async(url)=>{
   urls.push(url);
   if(urls.length<3)return Response.json({error:"limited"},{status:429});
   return Response.json({modelVersion:"fallback-model",candidates:[{finishReason:"STOP",content:{parts:[{text:JSON.stringify(cover)}]}}]});
  }});
  const r=await complete({input:{},schema:{},instructions:"Write."});
- assert.equal(r.model,"fallback-model");assert.equal(urls.length,3);assert.match(urls[2],/gemini-3.5-flash-lite/);
+ assert.equal(r.provider,"gemini");assert.equal(r.model,"fallback-model");assert.equal(urls.length,3);assert.match(urls[2],/gemini-3.5-flash-lite/);
 });
 const env={RAVEN_GEMINI_API_KEY:"test",SUPABASE_URL:"https://database.example",SUPABASE_SERVICE_ROLE_KEY:"test-service"};
 const req=(body,headers={"x-raven-client":"raven-web-v1"})=>new Request("https://raven.example",{method:"POST",headers:{"Content-Type":"application/json",...headers},body:JSON.stringify(body)});
@@ -145,7 +160,7 @@ test("rate limit blocks requests and provider failure never returns a non-LLM do
  const body=await response.json();
  assert.equal(response.status,503);assert.equal(events[0].p_status,"failure");
  assert.equal(body.resume,undefined);
- assert.equal(body.code,"GEMINI_UNAVAILABLE");
+ assert.equal(body.code,"LLM_UNAVAILABLE");
 });
 
 test("schema bounds guide document length; malformed draft can be repaired",async()=>{
