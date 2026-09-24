@@ -2768,3 +2768,34 @@ body.options-open > :not(main):not(.options-dialog) {
     opacity: .18 !important;
   }
 }
+
+
+/* Remote watermark is source-card-state agnostic.
+   New/viewed/applied/interested/ignored/active/hover all use one treatment. */
+.job-card.is-remote .remote-watermark,
+.job-card.is-remote:hover .remote-watermark,
+.job-card.is-remote:focus-within .remote-watermark,
+.job-card.is-remote.active .remote-watermark,
+.job-card.is-remote.is-new .remote-watermark,
+.job-card.is-remote.is-new:hover .remote-watermark,
+.job-card.is-remote.is-new.active .remote-watermark,
+.job-card.is-remote.is-viewed .remote-watermark,
+.job-card.is-remote.is-applied .remote-watermark,
+.job-card.is-remote.is-interested .remote-watermark,
+.job-card.is-remote.is-ignored .remote-watermark {
+  color: color-mix(in srgb, var(--accent-strong) 62%, var(--text-muted) 38%) !important;
+  opacity: .14 !important;
+}
+@media (max-width:480px) {
+  .job-card.is-remote .remote-watermark,
+  .job-card.is-remote:hover .remote-watermark,
+  .job-card.is-remote:focus-within .remote-watermark,
+  .job-card.is-remote.active .remote-watermark,
+  .job-card.is-remote.is-new .remote-watermark,
+  .job-card.is-remote.is-viewed .remote-watermark,
+  .job-card.is-remote.is-applied .remote-watermark,
+  .job-card.is-remote.is-interested .remote-watermark,
+  .job-card.is-remote.is-ignored .remote-watermark {
+    opacity: .12 !important;
+  }
+}
