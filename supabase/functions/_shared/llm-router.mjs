@@ -41,7 +41,7 @@ async function openAICompatibleComplete({provider,baseUrl,apiKey,model,fetchImpl
       model,
       messages:[{role:"system",content:instructions},{role:"user",content:JSON.stringify(input)}],
       response_format:{type:"json_schema",json_schema:{name:name||"raven_document",strict:true,schema}},
-      max_tokens:maxOutputTokens,
+      max_completion_tokens:maxOutputTokens,
       reasoning_effort:"low"
     })
   });
