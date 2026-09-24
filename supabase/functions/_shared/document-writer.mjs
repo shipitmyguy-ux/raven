@@ -217,7 +217,7 @@ export function buildDeterministicDocument(kind,profile,target,instructions=""){
     return {
       name:profile.name,
       contact:profile.contact||"",
-      headline:track==="Games / 3D"?"Environment Artist":"Project Delivery and Operations Professional",
+      headline:track==="Games / 3D"?"Environment Artist":"Project Delivery and Team Leadership Professional",
       summary:summary||"Experienced professional with verified project delivery, collaboration, and team-support experience.",
       skills:(preferred.length?preferred:skills).slice(0,12),
       experience,
