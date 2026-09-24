@@ -56,7 +56,11 @@ test("writer gets a second repair pass before surfacing transient invalid draft"
  assert.equal(requests.length,4);
 });
 test("persistent unsupported claims and malformed reviews fail without fallback",async()=>{
- await assert.rejects(writeDocument({kind:"resume",profile,target,complete:sequence([resume,{supported:false,issues:["Wrong employer."]},resume,{supported:false,issues:["Wrong employer."]}])}),e=>e.code==="FACT_CHECK_FAILED");
+ await assert.rejects(writeDocument({kind:"resume",profile,target,complete:sequence([
+   resume,{supported:false,issues:["Wrong employer."]},
+   resume,{supported:false,issues:["Wrong employer."]},
+   resume,{supported:false,issues:["Wrong employer."]}
+ ])}),e=>e.code==="FACT_CHECK_FAILED");
  await assert.rejects(writeDocument({kind:"resume",profile,target,complete:sequence([resume,{checks:[{index:0,supported:true,reason:"Supported."}]}])}),e=>e.code==="FACT_CHECK_FAILED");
 });
 test("empty documents, duplicate work history and injected HTML are rejected",()=>{
