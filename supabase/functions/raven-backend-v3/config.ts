@@ -35,7 +35,7 @@ export const TRACKS: Record<Track,{
     terms:["Environment Artist","Senior Environment Artist","Lead Environment Artist","World Artist","3D Environment Artist","Level Artist","Prop Artist","3D Artist","Senior 3D Artist","World Builder"],
     include:["environment artist","world artist","3d environment","level artist","prop artist","3d artist","world builder","unreal","unity","game"],
     exclude:["technical artist","character artist","vfx artist","animator","software engineer","developer"],
-    titleExclude:["programmer","programming","engineer","engineering","developer"],
+    titleExclude:["programmer","programming","engineer","engineering","developer","technical designer","community manager"],
     requireEnglish:true
   }
 };
