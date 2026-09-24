@@ -2633,17 +2633,28 @@ body.options-open > :not(main):not(.options-dialog) {
   pointer-events: none;
   user-select: none;
 }
-.job-card.is-remote > *:not(.bookmark-star) {
+.job-card.is-remote > .job-card-summary,
+.job-card.is-remote > .job-card-expanded {
   position: relative;
   z-index: 1;
 }
 
-/* Keep the bookmark exactly in its original absolute card position. */
+/* Preserve the existing top-right card controls above the remote watermark. */
 .job-card.is-remote > .bookmark-star {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 2;
+  position: absolute !important;
+  top: 8px !important;
+  right: 8px !important;
+  left: auto !important;
+  bottom: auto !important;
+  z-index: 3;
+}
+.job-card.is-remote > .ignore-job-button {
+  position: absolute !important;
+  top: 38px !important;
+  right: 8px !important;
+  left: auto !important;
+  bottom: auto !important;
+  z-index: 3;
 }
 @media (max-width: 480px) {
   .job-card.is-remote::after {
