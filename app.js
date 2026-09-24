@@ -1318,12 +1318,12 @@
     const docsReady=documentsReadyForApplication(job);
     const statusLower=currentStatus.toLowerCase();
     const postApplication=["applied","interview","offer","rejected"].includes(statusLower);
-    const applyGate=job.url&&!postApplication?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply aria-label="Open application with approved documents" title="'+(docsReady?'Open application':'Approve resume and cover letter first')+'"><span class="workflow-icon" aria-hidden="true">↗</span><span>'+(docsReady?'Apply with approved docs':'Approve docs')+'</span></button>':"";
+    const applyGate=job.url&&!postApplication?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply aria-label="Open application with approved documents" title="'+(docsReady?'Open application':'Approve resume and cover letter first')+'"><span class="workflow-icon" aria-hidden="true">↗</span><span>'+(docsReady?'Apply with docs':'Approve docs')+'</span></button>':"";
     const appliedAction=!["interview","offer","rejected","ignored"].includes(statusLower)?'<button class="workflow-action'+(isApplied?' is-applied':'')+'" type="button" data-apply-status="'+(isApplied?'saved':'applied')+'" aria-pressed="'+String(isApplied)+'" aria-label="'+(isApplied?'Unmark as applied':'Mark as applied')+'" title="'+(isApplied?'Unmark as applied':'Mark as applied')+'"><span class="workflow-icon" aria-hidden="true">✓</span><span>Applied</span></button>':"";
     const postingUrl=/^https?:\/\//i.test(String(job.url||""))?job.url:"";
     const actions=postingUrl
-      ? '<a class="workflow-action" href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener" aria-label="View listing"><span>View listing</span></a>'+
-        (!postApplication?'<a class="workflow-action" href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener" aria-label="Apply on site"><span>Apply on site</span></a>':'')
+      ? '<a class="workflow-action" href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener" aria-label="View listing"><span class="workflow-icon" aria-hidden="true">↗</span><span>View listing</span></a>'+
+        (!postApplication?'<a class="workflow-action" href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener" aria-label="Apply on site"><span class="workflow-icon" aria-hidden="true">↗</span><span>Apply on site</span></a>':'')
       : '<span class="posting-unavailable">Listing link unavailable</span>';
 
     const fullDescription=cleanJobDescription(job.notes)||"Full job description not yet available.";
