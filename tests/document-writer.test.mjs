@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import {buildDeterministicDocument,createGeminiCompletion,writeDocument,validateDraft,employerToolIssues,WRITER_VERSION} from "../supabase/functions/_shared/document-writer.mjs";
+import {createGeminiCompletion,writeDocument,validateDraft,employerToolIssues,WRITER_VERSION} from "../supabase/functions/_shared/document-writer.mjs";
 import {createDocumentHandler} from "../supabase/functions/_shared/document-handler.mjs";
 const profile={name:"Test Candidate",contact:"candidate@example.com",skills:["Mentoring","Unity"],education:[{degree:"BFA",school:"College",dates:"2008",location:""}],
  experience:[{id:"art",role:"Artist",company:"Studio",dates:"2020–2025",facts:[{id:"f1",text:"Built game environments."},{id:"f2",text:"Mentored newer artists."}]},
@@ -130,7 +130,7 @@ test("handler preserves request budget and records success for a reviewed docume
  assert.equal(calls[0].body.p_short_limit,12);assert.equal(calls[0].body.p_long_limit,60);
  assert.equal(calls.at(-1).body.p_status,"success");assert.equal(calls.at(-1).body.p_event_id,123);
 });
-test("rate limit still blocks requests; provider failure returns verified deterministic fallback",async()=>{
+test("rate limit blocks requests and provider failure never returns a non-LLM document",async()=>{
  let calls=0;
  const blocked=createDocumentHandler("resume",{getEnv:n=>env[n],fetchImpl:async()=>{calls++;return Response.json({allowed:false,retry_after_seconds:30});}});
  assert.equal((await blocked(req({jobTitle:"Job",jobDescription:"Posting"}))).status,429);assert.equal(calls,1);
@@ -143,10 +143,9 @@ test("rate limit still blocks requests; provider failure returns verified determ
  }});
  const response=await failed(req({jobTitle:"Job",jobDescription:"Posting"}));
  const body=await response.json();
- assert.equal(response.status,200);assert.equal(events[0].p_status,"success");
- assert.equal(body.provider,"raven-fallback");
- assert.equal(body.fallback_reason,"GEMINI_UNAVAILABLE");
- assert.ok(body.resume?.experience?.length);
+ assert.equal(response.status,503);assert.equal(events[0].p_status,"failure");
+ assert.equal(body.resume,undefined);
+ assert.equal(body.code,"GEMINI_UNAVAILABLE");
 });
 
 test("schema bounds guide document length; malformed draft can be repaired",async()=>{
@@ -157,21 +156,6 @@ test("schema bounds guide document length; malformed draft can be repaired",asyn
  assert.equal(requests[0].schema.properties.experience.maxItems,2);
  assert.equal(requests[0].schema.properties.experience.items.properties.bullets.maxItems,6);
  assert.ok(requests[1].input.factualCorrection);assert.equal(result.document.summary,resume.summary.text);
-});
-
-test("deterministic fallback preserves required history and applies the SoundAir game rule",()=>{
- const gameProfile={...profile,experience:[
-   ...profile.experience,
-   {id:"soundair",role:"Maintenance Technician",company:"SoundAir",dates:"2025–2026",facts:[{id:"sa1",text:"Repaired coffee makers."}]}
- ],resume_required_experience_ids:["art","repair"]};
- const game=buildDeterministicDocument("resume",gameProfile,{track:"Games / 3D",title:"Artist",company:"Studio"},"");
- assert.deepEqual(game.experience.map(e=>e.company),["Studio","Repair Shop"]);
- assert.ok(!game.experience.some(e=>e.company==="SoundAir"));
- const requested=buildDeterministicDocument("resume",gameProfile,{track:"Games / 3D",title:"Artist",company:"Studio"},"Include SoundAir");
- assert.ok(requested.experience.some(e=>e.company==="SoundAir"));
- const letter=buildDeterministicDocument("coverLetter",profile,{track:"Professional",title:"Coordinator",company:"Example"},"");
- assert.equal(letter.signature,profile.name);
- assert.ok(letter.paragraphs.length>=3);
 });
 
 test("Games / 3D resumes exclude SoundAir unless revision explicitly names it",()=>{
