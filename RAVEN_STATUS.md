@@ -15,7 +15,7 @@ Raven is a web-based job application tracker and application-assistant project. 
 - Google Sheets: retired
 
 ## Active production services
-- `raven-backend-v3`: ACTIVE v39
+- `raven-backend-v3`: ACTIVE v47
 - `raven-enrich-v1`: ACTIVE v6
 - `raven-commute-v1`: ACTIVE v5
 - `raven-generate-v1`: ACTIVE v20
@@ -29,6 +29,7 @@ Raven is a web-based job application tracker and application-assistant project. 
 - Supabase is the single live Raven data source.
 - Saved-job read/add/update and search use `raven-backend-v3`.
 - Tabs are filters; refresh searches all four tracks through one shared path.
+- Remote classification is evidence-backed and shared across all tracks. A remote-search query is not itself remote evidence; LinkedIn roles are remote only when the posting/location explicitly says remote, while remote-only boards and structured ATS/workplace fields remain valid evidence.
 - Quick refresh is resource-bounded and preserves cached results during transient provider droughts.
 - Deep search is resource-bounded; stale background runs are automatically closed.
 - Latest production deep pass completed on all four tracks: Professional 67, Labor 78, Wildcard 48, Games / 3D 9.
