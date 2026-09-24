@@ -869,28 +869,30 @@ test("remote watermark keeps one visual treatment across card states",async({pag
   await page.goto("/");
   await page.locator('[data-track="Professional"]').click();
 
-  const watermark=page.locator(".job-card.is-remote .remote-watermark").first();
-  await expect(watermark).toBeVisible();
-  const style=()=>watermark.evaluate(el=>{
+  const watermark=()=>page.locator(".job-card.is-remote .remote-watermark").first();
+  await expect(watermark()).toBeVisible();
+  const style=()=>watermark().evaluate(el=>{
     const computed=getComputedStyle(el);
     return {color:computed.color,opacity:computed.opacity};
   });
   const baseline=await style();
 
   await page.locator(".job-card.is-remote").first().hover();
-  expect(await style()).toEqual(baseline);
+  await expect.poll(style).toEqual(baseline);
 
   await page.locator(".job-card-summary").first().click();
-  expect(await style()).toEqual(baseline);
+  await expect.poll(style).toEqual(baseline);
 
   await page.getByRole("button",{name:"Bookmark job"}).click();
   await expect.poll(()=>api.getJob().status).toBe("Interested");
-  expect(await style()).toEqual(baseline);
+  await expect(watermark()).toBeVisible();
+  await expect.poll(style).toEqual(baseline);
 
   await page.locator(".job-card-summary").first().click();
   await page.getByRole("button",{name:"Mark as applied"}).click();
   await expect.poll(()=>api.getJob().status).toBe("Applied");
-  expect(await style()).toEqual(baseline);
+  await expect(watermark()).toBeVisible();
+  await expect.poll(style).toEqual(baseline);
 });
 
 test("generators save discovery jobs and recover descriptions before generating both documents",async({page})=>{
