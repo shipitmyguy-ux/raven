@@ -1289,41 +1289,41 @@ main {
   -webkit-line-clamp: 2;
 }
 
-.degree-gap {
+.job-location-line {
   display: flex;
   align-items: center;
   gap: 6px;
-  width: fit-content;
-  max-width: 100%;
-  margin-top: 3px;
-  padding: 4px 7px;
-  color: var(--warning);
-  background: rgba(255, 216, 74, .10);
-  border: 1px solid rgba(255, 216, 74, .34);
-  border-radius: var(--radius-sm);
-  font-size: .67rem;
-  line-height: 1.2;
+  min-width: 0;
 }
 
-.degree-gap strong {
-  flex: 0 0 auto;
-  font-family: var(--font-display);
-  font-size: .61rem;
-  letter-spacing: .07em;
-}
-
-.degree-gap span {
+.job-location-line .job-location {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.degree-gap.is-required {
-  color: var(--danger);
-  background: rgba(255, 88, 118, .12);
-  border-color: rgba(255, 88, 118, .48);
+.degree-gap-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  color: var(--warning);
+  opacity: .92;
 }
+
+.degree-gap-icon svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+}
+
+.degree-gap-icon.is-required {
+  color: var(--danger);
+  filter: drop-shadow(0 0 4px rgba(255, 88, 118, .28));
+}
+
 
 /* Two primary application actions after moving document generation inline */
 .workflow-actions {
