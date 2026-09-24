@@ -38,7 +38,7 @@ function providerOrder(getEnv){
 async function openRouterComplete({getEnv,fetchImpl,signal,instructions,input,schema,name,maxOutputTokens}){
   const apiKey=getEnv("RAVEN_OPENROUTER_API_KEY")||getEnv("OPENROUTER_API_KEY");
   if(!apiKey)throw new WriterError("OpenRouter is not configured.","PROVIDER_NOT_CONFIGURED",503);
-  const model=getEnv("RAVEN_OPENROUTER_MODEL")||"openrouter/auto-beta";
+  const model=getEnv("RAVEN_OPENROUTER_MODEL")||"openrouter/free";
   const response=await fetchImpl("https://openrouter.ai/api/v1/chat/completions",{
     method:"POST",signal,
     headers:{
@@ -52,7 +52,7 @@ async function openRouterComplete({getEnv,fetchImpl,signal,instructions,input,sc
       messages:[{role:"system",content:instructions},{role:"user",content:JSON.stringify(input)}],
       response_format:{type:"json_schema",json_schema:{name:name||"raven_document",strict:true,schema:cleanSchema(schema)}},
       max_tokens:maxOutputTokens,
-      provider:{require_parameters:true}
+      provider:{require_parameters:true,allow_fallbacks:true,sort:"latency",data_collection:"deny"}
     })
   });
   const raw=await response.json().catch(()=>null);
