@@ -69,11 +69,12 @@ async function groqComplete(args){
 async function geminiComplete({getEnv,fetchImpl,signal,instructions,input,schema,maxOutputTokens}){
   const apiKey=getEnv("RAVEN_GEMINI_API_KEY")||getEnv("GEMINI_API_KEY");
   if(!apiKey)throw new WriterError("Gemini is not configured.","PROVIDER_NOT_CONFIGURED",503);
-  const models=[...new Set([
-    getEnv("RAVEN_GEMINI_MODEL")||"gemini-3.8-flash",
-    getEnv("RAVEN_GEMINI_FALLBACK_MODEL")||"gemini-3.5-flash-lite",
-    "gemini-3.6-flash"
-  ].filter(Boolean))];
+  const revision=Boolean(String(input?.revisionRequest||"").trim());
+  const preferred=getEnv("RAVEN_GEMINI_MODEL")||"gemini-3.8-flash";
+  const fallback=getEnv("RAVEN_GEMINI_FALLBACK_MODEL")||"gemini-3.5-flash-lite";
+  const models=[...new Set((revision
+    ? [fallback,preferred,"gemini-3.6-flash"]
+    : [preferred,fallback,"gemini-3.6-flash"]).filter(Boolean))];
   const bases=["https://generativelanguage.googleapis.com","https://gateway.ai.cloudflare.com/v1/0be401023d08048c03bbfbb0576fa89f/raven/google-ai-studio"];
   let lastStatus=503;
   for(const model of models){
@@ -86,7 +87,7 @@ async function geminiComplete({getEnv,fetchImpl,signal,instructions,input,schema
           body:JSON.stringify({
             systemInstruction:{parts:[{text:instructions}]},
             contents:[{role:"user",parts:[{text:JSON.stringify(input)}]}],
-            generationConfig:{maxOutputTokens,responseMimeType:"application/json",responseSchema:geminiSchema(schema)}
+            generationConfig:{maxOutputTokens,thinkingConfig:{thinkingLevel:"low"},responseMimeType:"application/json",responseSchema:geminiSchema(schema)}
           })
         });
       }catch{
