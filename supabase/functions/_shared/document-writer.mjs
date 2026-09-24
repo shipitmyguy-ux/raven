@@ -129,8 +129,11 @@ export function createGeminiCompletion({apiKey,model=DEFAULT_MODEL,fallbackModel
     let lastStatus=503;
     // Give drafting and factual review independent budgets so a slower draft
     // cannot consume the verifier's entire request window.
-    const stageTimeoutMs=name==="raven_factual_review"?50000:80000;
-    const attemptTimeoutMs=name==="raven_factual_review"?15000:22000;
+    // Revisions already have a grounded current draft, so keep them interactive:
+    // fail over quickly instead of waiting tens of seconds on a stalled route.
+    const isRevision=Boolean(String(input?.revisionRequest||"").trim());
+    const stageTimeoutMs=isRevision?18000:(name==="raven_factual_review"?50000:80000);
+    const attemptTimeoutMs=isRevision?6000:(name==="raven_factual_review"?15000:22000);
     const stageSignal=AbortSignal.timeout(stageTimeoutMs);
     for(const candidateModel of models){
       for(const base of bases){
@@ -262,15 +265,15 @@ export async function writeDocument({kind,profile,target,instructions="",current
   }
   const context={documentType:kind,verifiedBackground:profile,evidenceCatalog:evidenceCatalog(profile),target,revisionRequest:instructions,currentDraft:currentDocument};
   let correction=null;
-  // Allow two bounded repair passes. Provider output is occasionally malformed even
-  // when a repeat request succeeds immediately; repair internally instead of surfacing
-  // that transient model variance to the user.
-  for(let attempt=0;attempt<3;attempt++){
+  // Initial documents get two repair opportunities. Revisions stay interactive:
+  // one repair is enough before returning a clear retryable error.
+  const maxAttempts=instructions?2:3;
+  for(let attempt=0;attempt<maxAttempts;attempt++){
     const written=await complete({instructions:writingInstructions,input:{...context,...(correction?{factualCorrection:correction}: {})},schema,name:"raven_"+kind});
     let document;
     try{document=validateDraft(kind,written.data,profile,{target,instructions});}
     catch(error){
-      if(!(error instanceof WriterError)||attempt===2)throw error;
+      if(!(error instanceof WriterError)||attempt===maxAttempts-1)throw error;
       correction={draft:written.data,issues:[error.message+" Follow the schema limits and preserve verified skill names."]};
       continue;
     }
@@ -294,6 +297,7 @@ export async function writeDocument({kind,profile,target,instructions="",current
     const issues=[...checks.filter(c=>!c.supported).map(c=>({passage:sentences[c.index],issue:c.reason})),...employerToolIssues(passages,profile)];
     if(!issues.length)
       return {document,provider:"gemini",model:written.model,verification_model:reviewed.model,architecture:WRITER_VERSION};
+    if(attempt===maxAttempts-1)break;
     correction={draft:document,issues};
   }
   throw new WriterError("The draft could not be verified against your background. Your previous document is unchanged. Please try again.","FACT_CHECK_FAILED");
