@@ -9,8 +9,10 @@ The old generator used an LLM to select fact IDs, then assembled the final docum
 1. Existing discovery preparation saves the job and recovers its description.
 2. The shared writer receives the complete canonical profile (all roles/facts, transferable facts, skills, shipped titles, education), full available posting, and optional current document plus revision request.
 3. Gemini writes the headline, summary, bullets, highlights or cover-letter paragraphs in a rendering schema. Identity, employment titles/dates/employers and education are copied from the canonical profile; selected skill names must be verified.
-4. A separate Gemini request checks the complete draft for unsupported candidate claims and attribution errors. One factual repair and recheck is allowed. Persistent failures return an error; the saved document is not replaced.
-5. Raven's existing HTML rendering, persistence and exact-document approval flow remain in use. The modern-v4 cache version prevents old generated responses being reused.
+4. Hidden fact IDs link each authored passage to the full source catalog. Resume bullets may cite only their employer’s facts; employer-specific cover paragraphs cannot use unrelated or general facts. A separate Gemini request checks each sentence against its cited evidence for unsupported claims and attribution errors. One factual repair and recheck is allowed. Persistent failures return an error; the saved document is not replaced.
+5. Raven's existing HTML rendering, persistence and exact-document approval flow remain in use. The modern-v5 cache version prevents old generated responses being reused.
+
+The review dialog displays progress and errors; a failed rewrite leaves the old document and approval intact. Cover signatures are normalized to avoid duplicate names.
 
 Default writing model: gemini-3.5-flash. Existing RAVEN_GEMINI_MODEL overrides it. RAVEN_GEMINI_FALLBACK_MODEL defaults to gemini-3.5-flash-lite. The existing Cloudflare gateway and direct Google endpoint remain available; retries and total model time are bounded. Responses report the actual writing and review models. No OpenAI credentials are required.
 

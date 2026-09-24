@@ -471,7 +471,7 @@ test("generation cache prevents a duplicate resume model call",async({page})=>{
     });
     const job={id:"job-1",track:"Professional",title:"Implementation Project Manager",company:"Acme Health",url:"https://example.com/job/1?utm_source=test",source:"Mock",status:"Saved",notes:"Lead implementation projects, coordinate internal teams, manage schedules and stakeholder communication."};
     const master={id:"cache-master",name:"Cache master",sourceType:"local",fileName:"cache.txt",version:"cache-v1",url:"",dataUrl};
-    const key=window.RavenCore.generationFingerprint(job,master,"resume","modern-v4");
+    const key=window.RavenCore.generationFingerprint(job,master,"resume","modern-v5");
     localStorage.setItem("ravenGenerationCacheV1",JSON.stringify({[key]:{resume,createdAt:new Date().toISOString()}}));
   },generatedResume);
 
