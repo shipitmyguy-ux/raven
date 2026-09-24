@@ -42,7 +42,7 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
       if(!target.title||!target.description)throw new WriterError("Job title and description are required.","INVALID_INPUT",400);
       const instructions=field(body.instructions,5000,"Revision request"),currentDocument=field(body.currentDocument,40000,"Current document");
       // A single deadline bounds all model calls, including the optional factual repair.
-      const complete=createGeminiCompletion({apiKey,model,fallbackModel:getEnv("RAVEN_GEMINI_FALLBACK_MODEL")||"gemini-3.5-flash-lite",fetchImpl,signal:AbortSignal.timeout(110000)});
+      const complete=createGeminiCompletion({apiKey,model,fallbackModel:getEnv("RAVEN_GEMINI_FALLBACK_MODEL")||"gemini-3.5-flash-lite",fetchImpl,signal:AbortSignal.timeout(140000)});
       const budget=await rpc("raven_request_guard",{p_kind:"generation_v2",p_scope:kind==="resume"?"resume":"cover",
         p_short_limit:12,p_short_seconds:60,p_long_limit:60,p_long_seconds:3600,
         p_failure_threshold:3,p_failure_window_seconds:300,p_circuit_seconds:600});
