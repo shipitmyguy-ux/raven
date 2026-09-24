@@ -655,10 +655,13 @@
     const pending=pendingDocumentSync();
     return jobs.map((job)=>{
       const docs=pending[job.id]||{};
+      const serverStamp=Date.parse(job.lastUpdated||"")||0;
+      const pendingResumeStamp=Date.parse(docs.resume?.updatedAt||"")||0;
+      const pendingCoverStamp=Date.parse(docs.coverLetter?.updatedAt||"")||0;
       return {
         ...job,
-        resume:docs.resume?.value||job.resume,
-        coverLetter:docs.coverLetter?.value||job.coverLetter
+        resume:docs.resume?.value && pendingResumeStamp>serverStamp ? docs.resume.value : job.resume,
+        coverLetter:docs.coverLetter?.value && pendingCoverStamp>serverStamp ? docs.coverLetter.value : job.coverLetter
       };
     });
   }
@@ -667,12 +670,27 @@
     const pending=pendingDocumentSync();
     let changed=false;
     for(const [jobId,docs] of Object.entries(pending)){
+      const job=state.jobs.find((item)=>String(item.id)===String(jobId));
+      const serverStamp=Date.parse(job?.lastUpdated||"")||0;
       const patch={};
-      if(docs?.resume?.value) patch.resume=docs.resume.value;
-      if(docs?.coverLetter?.value) patch.coverLetter=docs.coverLetter.value;
-      if(!Object.keys(patch).length){ delete pending[jobId]; changed=true; continue; }
+      if(docs?.resume?.value){
+        const pendingStamp=Date.parse(docs.resume.updatedAt||"")||0;
+        if(pendingStamp>serverStamp) patch.resume=docs.resume.value;
+        else { delete docs.resume; changed=true; }
+      }
+      if(docs?.coverLetter?.value){
+        const pendingStamp=Date.parse(docs.coverLetter.updatedAt||"")||0;
+        if(pendingStamp>serverStamp) patch.coverLetter=docs.coverLetter.value;
+        else { delete docs.coverLetter; changed=true; }
+      }
+      if(!Object.keys(patch).length){
+        if(!docs.resume&&!docs.coverLetter) delete pending[jobId];
+        changed=true;
+        continue;
+      }
       try{
-        await window.RavenAPI.updateJob(jobId,patch);
+        const updated=await window.RavenAPI.updateJob(jobId,patch);
+        if(job && updated?.last_updated) job.lastUpdated=updated.last_updated;
         delete pending[jobId];
         changed=true;
       }catch{}
@@ -1656,8 +1674,16 @@
       job[type]=dataUrl;
       const saved=state.jobs.find((item)=>item.id===job.id); if(saved) saved[type]=dataUrl;
       writeCache(CACHE_JOBS_KEY,state.jobs);
-      try{ await window.RavenAPI.updateJob(job.id,{[type]:dataUrl}); }
-      catch{ rememberPendingDocument(job,type,dataUrl); }
+      try{
+        const updated=await window.RavenAPI.updateJob(job.id,{[type]:dataUrl});
+        if(updated?.last_updated) job.lastUpdated=updated.last_updated;
+        const pending=pendingDocumentSync();
+        if(pending[job.id]?.[type]){
+          delete pending[job.id][type];
+          if(!pending[job.id].resume&&!pending[job.id].coverLetter) delete pending[job.id];
+          writeCache(PENDING_DOCUMENT_SYNC_KEY,pending);
+        }
+      }catch{ rememberPendingDocument(job,type,dataUrl); }
     }
     setDocumentApproved(job,type,false);
     return dataUrl;
