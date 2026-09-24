@@ -1,16 +1,16 @@
 import type { Candidate, Track } from "./types.ts";
 import { TRACKS, ATS_SOURCES } from "./config.ts";
-import { decodeHtml, normalizeUrl, within } from "./utils.ts";
+import { decodeHtml, normalizeUrl, within, explicitlyRemote } from "./utils.ts";
 import { csvCells, splitCsvRecords, validAtsRow } from "./csv-records.mjs";
 
-async function linkedin(term:string,track:Track,remote:boolean,timeout=7000):Promise<Candidate[]>{
+async function linkedin(term:string,track:Track,remoteQuery:boolean,timeout=7000):Promise<Candidate[]>{
   const params=new URLSearchParams({
     keywords:term,
-    location:remote?"United States":"Fort Collins, Colorado, United States",
+    location:remoteQuery?"United States":"Fort Collins, Colorado, United States",
     f_TPR:"r2592000",
     start:"0"
   });
-  if(remote) params.set("f_WT","2"); else params.set("distance","25");
+  if(remoteQuery) params.set("f_WT","2"); else params.set("distance","25");
   try{
     const r=await fetch("https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?"+params.toString(),{
       headers:{"User-Agent":"Mozilla/5.0 RavenJobSearch/3.0"},
@@ -29,7 +29,9 @@ async function linkedin(term:string,track:Track,remote:boolean,timeout=7000):Pro
       if(!href||!title) continue;
       const url=normalizeUrl(href);
       if(!/linkedin\.com\/jobs\/view\//i.test(url)) continue;
-      out.push({track,title,company,location,remote,posted_at:posted,url,source:"LinkedIn",snippet:""});
+      const candidate:Candidate={track,title,company,location,remote:false,posted_at:posted,url,source:"LinkedIn",snippet:""};
+      candidate.remote=explicitlyRemote(candidate);
+      out.push(candidate);
     }
     return out;
   }catch{return [];}
