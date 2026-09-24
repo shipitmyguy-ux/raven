@@ -71,8 +71,16 @@ function claimEvidenceIssues(value,facts,profile,{target=null,instructions="",co
     if(!evidenceLower.includes(number.toLowerCase())&&!instructionLower.includes(number.toLowerCase()))
       issues.push("The passage introduced an unsupported number: "+number+".");
   }
+  const evidenceRootSet=new Set(roots(evidenceText));
+  for(const skill of (profile.skills||[]).filter(Boolean)){
+    const lower=String(skill).toLowerCase();
+    if(!value.toLowerCase().includes(lower))continue;
+    const skillRoots=roots(skill);
+    const supported=skillRoots.length&&skillRoots.every(root=>evidenceRootSet.has(root));
+    if(!supported&&!instructionLower.includes(lower)&&!targetLower.includes(lower))
+      issues.push("The passage introduced "+skill+" without citing evidence that supports it.");
+  }
   const entities=[
-    ...(profile.skills||[]),
     ...(profile.experience||[]).map(e=>e.company),
     ...(profile.shipped_titles||[])
   ].filter(Boolean).sort((a,b)=>b.length-a.length);
