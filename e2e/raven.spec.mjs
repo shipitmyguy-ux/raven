@@ -923,6 +923,28 @@ test("resume generation stays visibly active and does not pop review after leavi
   await expect(page.locator('[data-generate="resume"]')).toHaveText("Review");
 });
 
+test("generation indicator survives job object refresh while generation is active",async({page})=>{
+  await page.addInitScript(()=>{
+    localStorage.setItem("ravenMasterResumesV1",JSON.stringify([{
+      id:"test-master",name:"Test master",sourceType:"drive",url:"https://drive.google.com/file/d/test/view",tracks:["Professional"]
+    }]));
+  });
+  await mockRaven(page,{generatorDelayMs:900,initialJob:{resume:""}});
+  await page.goto("/");
+  await page.locator('[data-track="Professional"]').click();
+  await page.locator(".job-card-summary").first().click();
+  await page.locator('[data-generate="resume"]').click();
+  await expect(page.locator(".generation-card-status")).toContainText("Generating resume");
+
+  await page.evaluate(async()=>{
+    const response=await window.RavenAPI.getData();
+    window.__ravenTestFreshJobs=response.jobs.map(job=>({...job}));
+  });
+  await page.locator("#searchBox").fill("Acme");
+  await expect(page.locator(".generation-card-status")).toContainText("Generating resume");
+  await expect(page.locator(".job-card.is-generating-document")).toBeVisible();
+});
+
 test("cover letter generation inherits resume progress and nonintrusive completion behavior",async({page})=>{
   await page.addInitScript(()=>{
     localStorage.setItem("ravenMasterResumesV1",JSON.stringify([{
