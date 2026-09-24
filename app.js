@@ -1784,8 +1784,16 @@
     if(!job||!type||!instructions) return;
     const button=document.getElementById("reviewSubmit");
     button.disabled=true;
+    button.classList.add("is-generating");
+    button.setAttribute("aria-busy","true");
+    button.dataset.originalLabel=button.textContent;
+    button.innerHTML='<span class="generation-spinner" aria-hidden="true"></span><span>AI applying changes…</span>';
     const feedback=document.getElementById("reviewFeedback");
-    if(feedback) feedback.textContent="Writing and checking your document...";
+    if(feedback){
+      feedback.classList.add("is-processing");
+      feedback.innerHTML='<span class="generation-spinner" aria-hidden="true"></span><span>AI is rewriting and fact-checking your '+escapeHtml(documentLabel(type))+'… This may take a moment.</span>';
+    }
+    setStatus("AI is applying requested changes to your "+documentLabel(type)+"…");
     try{
       await generateDocumentForJob(job,type,instructions);
       const value=String(job[type]||"");
@@ -1794,12 +1802,24 @@
       document.getElementById("reviewInstructions").value="";
       const approve=document.getElementById("reviewApprove");
       if(approve){ approve.textContent="Approve document"; approve.classList.remove("is-approved"); }
-      if(feedback) feedback.textContent="Updated draft saved. Please review it before approving.";
+      if(feedback){
+        feedback.classList.remove("is-processing");
+        feedback.textContent="Updated draft saved. Please review it before approving.";
+      }
+      setStatus(documentLabel(type)[0].toUpperCase()+documentLabel(type).slice(1)+" changes applied");
       render();
     }catch(error){
-      if(feedback) feedback.textContent=error.message+" Your previous document is unchanged.";
+      if(feedback){
+        feedback.classList.remove("is-processing");
+        feedback.textContent=error.message+" Your previous document is unchanged.";
+      }
+      setStatus("Could not apply "+documentLabel(type)+" changes: "+error.message);
     }finally{
       button.disabled=false;
+      button.classList.remove("is-generating");
+      button.removeAttribute("aria-busy");
+      button.textContent=button.dataset.originalLabel||"Apply requested changes";
+      delete button.dataset.originalLabel;
     }
   }
 
