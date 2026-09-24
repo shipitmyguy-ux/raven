@@ -42,7 +42,7 @@
     MASTER_RESUMES_KEY,APPLICATION_PROFILE_KEY,ANSWER_MEMORY_KEY,GENERATOR_PREFS_KEY,
     USER_SETTINGS_KEY,DOCUMENT_APPROVALS_KEY,VIEWED_JOBS_KEY
   ];
-  const RESUME_TEMPLATE_VERSION="modern-v8";
+  const RESUME_TEMPLATE_VERSION="modern-v9-tailoring";
   const DEFAULT_FOLLOW_UP_DAYS=7;
   const activeGeneration=new Map();
   let editingMasterResumeId=null;
@@ -1267,6 +1267,13 @@
                 openDocumentReview(job,button.dataset.documentRevise);
               });
             });
+            expanded.querySelectorAll("[data-document-regenerate]").forEach((button)=>{
+              button.addEventListener("click",(event)=>{
+                event.stopPropagation();
+                const type=button.dataset.documentRegenerate;
+                generateForJob(job,type,null,{force:true});
+              });
+            });
             expanded.querySelectorAll("[data-document-delete]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
@@ -1603,8 +1610,9 @@
     finally{ generationPreparation.delete(job); }
   }
 
-  async function generateForJob(job,type,button=null) {
-    if(job[type]) return openDocumentReview(job,type);
+  async function generateForJob(job,type,button=null,options={}) {
+    const force=Boolean(options.force);
+    if(job[type]&&!force) return openDocumentReview(job,type);
     if(generationSession(job)) return;
     const session={type,autoOpen:state.selectedId===job.id,startedAt:Date.now(),phase:"Writing with AI"};
     activeGeneration.set(generationKey(job),session);
@@ -1619,7 +1627,9 @@
       await prepareJobForGeneration(job);
       if(navigator.onLine===false) throw new Error("An internet connection is required for AI resume generation.");
       setStatus("AI is writing and verifying your resume…");
-      const resume=await generateResumeOnline(job,masterResume);
+      const resume=force
+        ? await generateDocumentOnline(job,masterResume,"resume","")
+        : await generateResumeOnline(job,masterResume);
       await saveGeneratedDocument(job,"resume",resume);
       setStatus("Resume ready");
       }
@@ -1968,6 +1978,7 @@
         '<button class="document-menu-button" type="button" data-document-menu aria-haspopup="menu" aria-expanded="false" aria-label="More '+escapeAttr(fileLabel)+' options" title="More options">…</button>'+
         '<span class="document-menu" role="menu" hidden>'+
           '<button type="button" role="menuitem" data-document-revise="'+escapeAttr(key)+'">Request changes</button>'+
+          '<button type="button" role="menuitem" data-document-regenerate="'+escapeAttr(key)+'">Regenerate</button>'+
           '<button class="danger-action" type="button" role="menuitem" data-document-delete="'+escapeAttr(key)+'">Delete</button>'+
         '</span>'+
       '</span>'+
