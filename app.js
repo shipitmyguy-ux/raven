@@ -1014,19 +1014,83 @@
     return [context,...useful].slice(0,4).join(" ");
   }
 
-  function jobSummary(job) {
-    const role=String(job.title||"Role").trim();
-    const company=String(job.company||"").trim();
-    const remote=isRemoteJob(job)?"Remote ":"";
-    let description=cleanJobDescription(job.notes)
-      .replace(/Employer posting re-verified[^.]*\.\s*/i,"")
+  const SUMMARY_JARGON=/\b(?:about us|who we are|why join|what makes us|our mission|our vision|our culture|we are (?:a|an|the)|at the core|prides itself|award[- ]winning|world[- ]class|industry[- ]leading|fast[- ]growing|passionate people|equal opportunity|affirmative action|benefits include|in return,? we offer)\b/i;
+  const SUMMARY_ACTION=/\b(?:manage|lead|coordinate|build|create|develop|deliver|design|maintain|support|train|implement|oversee|produce|model|texture|light|schedule|repair|service|operate|facilitate|analyze|own|drive|plan|execute|collaborate|mentor|supervise|dispatch|install|troubleshoot)\w*\b/i;
+  const SUMMARY_REQUIREMENT=/\b(?:experience|proficien|knowledge|skill|unreal|unity|zbrush|substance|excel|project management|customer|maintenance|training|operations|3d|modeling|texturing|leadership)\b/i;
+
+  function summarySentences(value){
+    const cleaned=cleanJobDescription(value)
+      .replace(/Employer posting re-verified[^.]*\.\s*/gi," ")
+      .replace(/[•●▪◦]/g,". ")
       .replace(/\s+/g," ")
       .trim();
-    const sentence=(description.match(/^.*?[.!?](?:\s|$)/)||[])[0]||description;
-    const context=remote+role+(company?" at "+company:"");
-    const detail=sentence && !context.toLowerCase().includes(sentence.toLowerCase()) ? sentence : "";
-    const combined=[context,detail].filter(Boolean).join(". ");
-    return combined.length>190 ? combined.slice(0,187).replace(/\s+\S*$/,"")+"..." : combined;
+    return (cleaned.match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[])
+      .map(s=>s.trim())
+      .filter(s=>s.length>=28&&s.length<=320)
+      .filter(s=>!SUMMARY_JARGON.test(s));
+  }
+
+  function conciseJobSummary(job){
+    const sentences=summarySentences(job.notes);
+    const scored=sentences.map((sentence,index)=>{
+      let score=0;
+      if(SUMMARY_ACTION.test(sentence)) score+=5;
+      if(SUMMARY_REQUIREMENT.test(sentence)) score+=3;
+      if(/\b(?:responsibilit|you will|role will|job summary|what you'll do|duties)\b/i.test(sentence)) score+=3;
+      if(/\b(?:salary|benefit|401k|pto|insurance|equal opportunity|applicant|accommodation)\b/i.test(sentence)) score-=6;
+      score-=Math.min(3,index*.08);
+      return {sentence,score};
+    }).sort((a,b)=>b.score-a.score);
+    const chosen=[];
+    for(const item of scored){
+      if(item.score<2) continue;
+      const normalized=item.sentence.toLowerCase().replace(/[^a-z0-9 ]/g,"");
+      if(chosen.some(x=>x.normalized===normalized)) continue;
+      chosen.push({text:item.sentence,normalized});
+      if(chosen.length===2) break;
+    }
+    let summary=chosen.map(x=>x.text).join(" ");
+    if(!summary){
+      const role=String(job.title||"Role").trim();
+      summary=(isRemoteJob(job)?"Remote ":"")+role+(job.company?" at "+job.company:"");
+    }
+    summary=summary
+      .replace(/^(?:job summary|summary|responsibilities|what you'll do|duties)\s*[:\-]?\s*/i,"")
+      .replace(/\s+/g," ")
+      .trim();
+    return summary.length>210?summary.slice(0,207).replace(/\s+\S*$/,"")+"…":summary;
+  }
+
+  function degreeAlert(job){
+    const text=cleanJobDescription(job.notes).replace(/\s+/g," ");
+    if(!text) return "";
+    const matches=text.match(/[^.!?\n]{0,90}\b(?:bachelor(?:'s|’s)?|master(?:'s|’s)?|associate(?:'s|’s)?|ph\.?d\.?|doctorate)\b[^.!?\n]{0,150}/gi)||[];
+    for(const raw of matches){
+      const phrase=raw.trim();
+      if(/\b(?:tuition|education benefit|degree program|pursu(?:e|ing)|student|reimbursement)\b/i.test(phrase)) continue;
+      if(/\b(?:or equivalent (?:work )?experience|equivalent experience|experience in lieu|in lieu of (?:a )?degree|degree (?:is )?not required|preferred but not required)\b/i.test(phrase)) continue;
+      const degree=(phrase.match(/\b(?:bachelor(?:'s|’s)?|master(?:'s|’s)?|associate(?:'s|’s)?|ph\.?d\.?|doctorate)\b/i)||[])[0]||"Degree";
+      const fieldMatch=phrase.match(/\b(?:in|of)\s+([A-Za-z][A-Za-z &/\-]{2,70}?)(?=\s*(?:,|\.|;|or a related|or related|preferred|required|and \d|with \d|$))/i);
+      const field=fieldMatch?.[1]?.trim()||"";
+      const required=/\b(?:required|requirement|must|minimum|qualifications?)\b/i.test(phrase)||!/\bpreferred\b/i.test(phrase);
+      // User has a bachelor's in Video Game Art. A generic bachelor's is met;
+      // flag higher degrees or bachelor's requirements in a different named field.
+      const lowerDegree=degree.toLowerCase();
+      const missingLevel=/master|ph\.?d|doctorate/i.test(lowerDegree);
+      const differentBachelor=/bachelor/i.test(lowerDegree)&&field&&!/\b(?:video game art|game art|3d art|art|fine art|digital art|visual art)\b/i.test(field);
+      const differentAssociate=/associate/i.test(lowerDegree);
+      if(!(missingLevel||differentBachelor||differentAssociate)) continue;
+      return {
+        label:"DEGREE GAP",
+        text:(degree+(field?" in "+field:"")+(required?" required":" mentioned")).replace(/\s+/g," ").trim(),
+        required
+      };
+    }
+    return "";
+  }
+
+  function jobSummary(job) {
+    return conciseJobSummary(job);
   }
 
   function relativeAdded(value) {
@@ -1085,6 +1149,7 @@
           const company=job.company||"Company not captured";
           const location=[job.location,job.remote].filter(Boolean).join(" · ")||"Location not captured";
           const salary=job.salaryText||"";
+          const degreeGap=degreeAlert(job);
           const rawStatus=String(job.status||"Saved");
           const meaningfulStatus=!/^(saved|discovered|interested)$/i.test(rawStatus);
           const statusLabel=rawStatus;
@@ -1111,6 +1176,7 @@
                 '<span class="company-name">'+escapeHtml(company)+'</span>'+
                 '<span class="job-location">'+escapeHtml(location)+'</span>'+
                 '<span class="job-summary">'+escapeHtml(jobSummary(job))+'</span>'+
+                (degreeGap?'<span class="degree-gap'+(degreeGap.required?' is-required':'')+'"><strong>'+escapeHtml(degreeGap.label)+'</strong><span>'+escapeHtml(degreeGap.text)+'</span></span>':'')+
                 (salary?'<span class="job-salary">'+escapeHtml(salary)+'</span>':'')+
                 '<span class="job-age">'+escapeHtml(relativeAdded(job.added))+'</span>'+
               '</span>'+
