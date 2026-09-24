@@ -5,7 +5,7 @@ const savedJob={id:"job-1",track:"Professional",title:"Implementation Project Ma
 const generatedResume={name:"Test Candidate",headline:"Project & Implementation Leader",contact:"candidate@example.com",summary:"Experienced delivery leader.",skills:["Project delivery","Team leadership"],experience:[{role:"Environment Artist",company:"Example Studio",dates:"2020–2025",bullets:["Led delivery across internal teams."]}],education:[{degree:"Bachelor's Degree",school:"Example University",location:"",dates:""}],additional:[]};
 const generatedLetter={greeting:"Dear Hiring Manager,",paragraphs:["I am applying for the Implementation Project Manager role.","My background includes project delivery and internal team leadership."],closing:"Sincerely,",signature:"Test Candidate"};
 
-async function mockRaven(page,{generatorFails=false,initialJob=null,dataDelayMs=0,discoveredJob=null}={}){
+async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJob=null,dataDelayMs=0,discoveredJob=null}={}){
   let job={...savedJob,...(initialJob||{})};
   let persisted=!discoveredJob;
   let generationCalls=0;
@@ -118,6 +118,7 @@ async function mockRaven(page,{generatorFails=false,initialJob=null,dataDelayMs=
   await page.route("**/functions/v1/raven-generate-v1**",async route=>{
     generationCalls++;
     if(generatorFails) return route.fulfill({status:503,json:{ok:false,error:"Mock generator unavailable"}});
+    if(generatorDelayMs) await new Promise(resolve=>setTimeout(resolve,generatorDelayMs));
     const body=JSON.parse(route.request().postData()||"{}");
     generationBodies.push(body);
     if(body.documentType==="coverLetter") return route.fulfill({json:{ok:true,coverLetter:generatedLetter}});
@@ -893,6 +894,33 @@ test("remote watermark keeps one visual treatment across card states",async({pag
   await expect.poll(()=>api.getJob().status).toBe("Applied");
   await expect(watermark()).toBeVisible();
   await expect.poll(style).toEqual(baseline);
+});
+
+test("resume generation stays visibly active and does not pop review after leaving the card",async({page})=>{
+  await page.addInitScript(()=>{
+    localStorage.setItem("ravenMasterResumesV1",JSON.stringify([{
+      id:"test-master",name:"Test master",sourceType:"drive",url:"https://drive.google.com/file/d/test/view",tracks:["Professional"]
+    }]));
+  });
+  await mockRaven(page,{generatorDelayMs:500,initialJob:{resume:""}});
+  await page.goto("/");
+  await page.locator('[data-track="Professional"]').click();
+  await page.locator(".job-card-summary").first().click();
+  await page.locator('[data-generate="resume"]').click();
+
+  await expect(page.locator(".job-card.is-generating-document")).toBeVisible();
+  await expect(page.locator(".generation-card-status")).toContainText("Generating resume");
+  await expect(page.locator(".document-primary.is-generating")).toBeVisible();
+
+  await page.locator(".job-card-summary").first().click();
+  await expect(page.locator(".job-card.is-generating-document")).toBeVisible();
+  await expect(page.locator("#documentReviewDialog")).not.toBeVisible();
+
+  await expect.poll(async()=>await page.locator(".job-card.is-generating-document").count(),{timeout:5000}).toBe(0);
+  await expect(page.locator("#documentReviewDialog")).not.toBeVisible();
+
+  await page.locator(".job-card-summary").first().click();
+  await expect(page.locator('[data-generate="resume"]')).toHaveText("Review");
 });
 
 test("generators save discovery jobs and recover descriptions before generating both documents",async({page})=>{
