@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import {createGeminiCompletion,writeDocument,validateDraft,WRITER_VERSION} from "../supabase/functions/_shared/document-writer.mjs";
+import {createGeminiCompletion,writeDocument,validateDraft,employerToolIssues,WRITER_VERSION} from "../supabase/functions/_shared/document-writer.mjs";
 import {createDocumentHandler} from "../supabase/functions/_shared/document-handler.mjs";
 const profile={name:"Test Candidate",contact:"candidate@example.com",skills:["Mentoring","Unity"],education:[{degree:"BFA",school:"College",dates:"2008",location:""}],
  experience:[{id:"art",role:"Artist",company:"Studio",dates:"2020–2025",facts:[{id:"f1",text:"Built game environments."},{id:"f2",text:"Mentored newer artists."}]},
@@ -149,4 +149,12 @@ test("cover letter checks each sentence and prevents a duplicate signature",asyn
  assert.equal(r.document.closing,"Sincerely,");
  assert.equal(requests[1].input.passages.length,5);
  assert.equal(requests[1].input.passages[2].text,"I mentored newer artists.");
+});
+
+test("general software skills cannot be reassigned to an employer",()=>{
+ const bad=[{text:"At Studio I used Unity to build environments."}];
+ assert.equal(employerToolIssues(bad,profile).length,1);
+ assert.equal(employerToolIssues([{text:"My skills include Unity."}],profile).length,0);
+ const grounded=structuredClone(profile);grounded.experience[0].facts.push({id:"unity",text:"Built environments in Unity."});
+ assert.equal(employerToolIssues(bad,grounded).length,0);
 });

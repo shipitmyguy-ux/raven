@@ -114,6 +114,24 @@ export function createGeminiCompletion({apiKey,model=DEFAULT_MODEL,fallbackModel
   };
 }
 
+// A global software skill cannot establish its use at a particular employer.
+export function employerToolIssues(passages,profile){
+  const tools=(profile.skills||[]).filter(s=>/^(?:3DS Max|Maya|ZBrush|3DCoat|Quixel Suite|Substance Painter|Substance Designer|Photoshop|Unreal Engine|Unity)$/i.test(s));
+  const issues=[];
+  for(const passage of passages){
+    const context=(passage.paragraph||passage.text).toLowerCase();
+    const employers=(profile.experience||[]).filter(e=>passage.company===e.company||context.includes(e.company.toLowerCase()));
+    for(const employer of employers){
+      const facts=(employer.facts||[]).map(f=>f.text).join(" ").toLowerCase();
+      for(const tool of tools){
+        if(context.includes(tool.toLowerCase())&&!facts.includes(tool.toLowerCase()))
+          issues.push({passage,issue:"Do not attribute "+tool+" use to "+employer.company+". It is a verified general skill, but this employer's facts do not establish its use there. Keep it general or omit that attribution."});
+      }
+    }
+  }
+  return issues;
+}
+
 export async function writeDocument({kind,profile,target,instructions="",currentDocument="",complete}){
   if(!["resume","coverLetter"].includes(kind))throw new WriterError("Invalid document type.","INVALID_INPUT",400);
   if(!profile?.name||!Array.isArray(profile.experience)||!profile.experience.length)throw new WriterError("Verified candidate background is missing.","PROFILE_MISSING",503);
@@ -148,7 +166,7 @@ export async function writeDocument({kind,profile,target,instructions="",current
       new Set(checks.map(c=>c.index)).size!==sentences.length||
       checks.some(c=>!Number.isInteger(c.index)||c.index<0||c.index>=sentences.length||typeof c.supported!=="boolean"||typeof c.reason!=="string"||!c.reason.trim()))
       throw new WriterError("The factual review was incomplete. Please try again.","FACT_CHECK_FAILED");
-    const issues=checks.filter(c=>!c.supported).map(c=>({passage:sentences[c.index],issue:c.reason}));
+    const issues=[...checks.filter(c=>!c.supported).map(c=>({passage:sentences[c.index],issue:c.reason})),...employerToolIssues(passages,profile)];
     if(!issues.length)
       return {document,provider:"gemini",model:written.model,verification_model:reviewed.model,architecture:WRITER_VERSION};
     correction={draft:document,issues};
