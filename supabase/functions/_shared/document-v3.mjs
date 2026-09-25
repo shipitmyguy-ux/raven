@@ -530,16 +530,6 @@ export async function writeResumeV3({profile,target,complete}){
         contact:profile.contact
       };
       const validated=validateV3Draft(draft,profile,analysis,selection);
-      if(validated.diagnostics.advisories.length && attempt<1){
-        correction={
-          draft:written.data,
-          issues:[
-            "The draft is factually valid but has advisory wording issues: "+validated.diagnostics.advisories.join(" | "),
-            "Repair only those wording issues. Preserve the blueprint, evidence ids, and all otherwise valid content."
-          ]
-        };
-        continue;
-      }
       return {
         ...validated,
         analysis:plan.analysis,
