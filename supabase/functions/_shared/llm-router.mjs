@@ -171,10 +171,17 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
   const configuredOrder=providerOrder(getEnv).filter(name=>status[name]);
   if(!configuredOrder.length)throw new WriterError("No LLM provider is configured for Raven.","LLM_NOT_CONFIGURED",503);
 
+  let remainingProviderCalls=2;
+  let totalProviderCalls=0;
   return async({instructions,input,schema,name,maxOutputTokens=6000})=>{
+    if(remainingProviderCalls<=0){
+      const error=new WriterError("Raven reached its two-call LLM limit for this generation request.","LLM_CALL_BUDGET_EXHAUSTED",502);
+      error.providerAttempts=totalProviderCalls;
+      throw error;
+    }
     const stageSignal=combineSignals([signal,AbortSignal.timeout(timeoutFor(input))]);
     const healthy=configuredOrder.filter(name=>!providerOnCooldown(name));
-    const candidates=[...healthy,...configuredOrder.filter(name=>providerOnCooldown(name))].slice(0,2);
+    const candidates=[...healthy,...configuredOrder.filter(name=>providerOnCooldown(name))].slice(0,remainingProviderCalls);
     const failures=[];
 
     for(const provider of candidates){
@@ -189,6 +196,8 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
       }
 
       try{
+        remainingProviderCalls-=1;
+        totalProviderCalls+=1;
         const common={getEnv,fetchImpl,signal:stageSignal,instructions,input,schema,name,maxOutputTokens};
         let result;
         if(provider==="cerebras")result=await cerebrasComplete(common);
@@ -196,7 +205,7 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
         else if(provider==="gemini")result=await geminiComplete(common);
         else continue;
         clearProviderFailure(provider);
-        return {...result,providerAttempts:failures.length+1};
+        return {...result,providerAttempts:totalProviderCalls};
       }catch(error){
         const code=String(error?.code||"ERROR");
         const failure={
@@ -238,7 +247,7 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
     }
     const error=new WriterError(message,code,503);
     error.providerFailures=failures;
-    error.providerAttempts=active.length;
+    error.providerAttempts=totalProviderCalls;
     throw error;
   };
 }
