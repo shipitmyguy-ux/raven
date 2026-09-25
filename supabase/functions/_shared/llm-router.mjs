@@ -80,7 +80,7 @@ function configured(getEnv){
   };
 }
 function providerOrder(getEnv){
-  const requested=String(getEnv("RAVEN_LLM_PROVIDER_ORDER")||"openrouter,cloudflare,gemini,cerebras,groq")
+  const requested=String(getEnv("RAVEN_LLM_PROVIDER_ORDER")||"openrouter,groq")
     .split(",").map(v=>v.trim().toLowerCase()).filter(Boolean);
   return [...new Set(requested.filter(v=>["openrouter","cloudflare","cerebras","groq","gemini"].includes(v)))];
 }
