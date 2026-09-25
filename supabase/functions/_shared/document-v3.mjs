@@ -520,7 +520,7 @@ export async function writeResumeV3({profile,target,complete}){
       input:{...input,...(correction?{factualCorrection:correction}:{})},
       schema,
       name:"raven_resume_v3",
-      maxOutputTokens:4500
+      maxOutputTokens:7000
     });
     lastProvider=written.provider||"llm";lastModel=written.model||"";
     try{
