@@ -513,7 +513,7 @@ export async function writeResumeV3({profile,target,complete}){
   };
 
   let correction=null,lastProvider="",lastModel="";
-  for(let attempt=0;attempt<3;attempt++){
+  for(let attempt=0;attempt<2;attempt++){
     const written=await complete({
       instructions:V3_INSTRUCTIONS,
       input:{...input,...(correction?{factualCorrection:correction}:{})},
@@ -529,7 +529,7 @@ export async function writeResumeV3({profile,target,complete}){
         contact:profile.contact
       };
       const validated=validateV3Draft(draft,profile,analysis,selection);
-      if(validated.diagnostics.advisories.length && attempt<2){
+      if(validated.diagnostics.advisories.length && attempt<1){
         correction={
           draft:written.data,
           issues:[
@@ -548,7 +548,7 @@ export async function writeResumeV3({profile,target,complete}){
         architecture:DOCUMENT_V3_VERSION
       };
     }catch(error){
-      if(!(error instanceof WriterError)||attempt===2)throw error;
+      if(!(error instanceof WriterError)||attempt===1)throw error;
       correction={
         draft:written.data,
         issues:[error.message,"Repair only the invalid passages. Keep the blueprint unchanged and use only approved evidence ids."]
