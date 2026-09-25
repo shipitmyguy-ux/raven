@@ -91,7 +91,8 @@ async function openAICompatibleComplete({provider,baseUrl,apiKey,model,fetchImpl
       messages:[{role:"system",content:instructions},{role:"user",content:JSON.stringify(input)}],
       response_format:{type:"json_schema",json_schema:{name:name||"raven_document",strict:true,schema:openAICompatibleSchema(schema)}},
       max_completion_tokens:maxOutputTokens,
-      reasoning_effort:"low"
+      reasoning_effort:"low",
+      ...(provider==="cloudflare"?{options:{rejectIfBusy:true}}:{})
     })
   });
   const raw=await response.json().catch(()=>null);
@@ -103,38 +104,18 @@ async function openAICompatibleComplete({provider,baseUrl,apiKey,model,fetchImpl
   const text=Array.isArray(content)?content.map(p=>p?.text||"").join(""):content;
   return {data:parseJsonText(text),provider,model:raw?.model||model};
 }
-async function cloudflareComplete({getEnv,fetchImpl,signal,instructions,input,schema,maxOutputTokens}){
-  const token=getEnv("RAVEN_CLOUDFLARE_API_TOKEN")||getEnv("CLOUDFLARE_API_TOKEN")||getEnv("CLOUDFLARE_AUTH_TOKEN");
-  const accountId=getEnv("RAVEN_CLOUDFLARE_ACCOUNT_ID")||getEnv("CLOUDFLARE_ACCOUNT_ID");
+async function cloudflareComplete(args){
+  const token=args.getEnv("RAVEN_CLOUDFLARE_API_TOKEN")||args.getEnv("CLOUDFLARE_API_TOKEN")||args.getEnv("CLOUDFLARE_AUTH_TOKEN");
+  const accountId=args.getEnv("RAVEN_CLOUDFLARE_ACCOUNT_ID")||args.getEnv("CLOUDFLARE_ACCOUNT_ID");
   if(!token||!accountId)throw new WriterError("Cloudflare Workers AI is not configured.","PROVIDER_NOT_CONFIGURED",503);
-  const model=getEnv("RAVEN_CLOUDFLARE_MODEL")||"@cf/zai-org/glm-4.7-flash";
-  const url="https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(accountId)+"/ai/run/"+model;
-  const routeSignal=combineSignals([signal,AbortSignal.timeout(24000)]);
-  let response;
-  try{
-    response=await fetchImpl(url,{
-      method:"POST",
-      signal:routeSignal,
-      headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
-      body:JSON.stringify({
-        messages:[
-          {role:"system",content:instructions},
-          {role:"user",content:JSON.stringify(input)}
-        ],
-        max_tokens:maxOutputTokens,
-        temperature:0.35,
-        reasoning_effort:"low",
-        response_format:{type:"json_schema",json_schema:openAICompatibleSchema(schema)}
-      })
-    });
-  }catch{
-    throw timeoutError("cloudflare");
-  }
-  const raw=await response.json().catch(()=>null);
-  if(!response.ok||raw?.success===false)throw providerError("cloudflare",response.status,raw);
-  const value=raw?.result?.response ?? raw?.result;
-  const data=(value&&typeof value==="object")?value:parseJsonText(value);
-  return {data,provider:"cloudflare",model};
+  const model=args.getEnv("RAVEN_CLOUDFLARE_MODEL")||"@cf/zai-org/glm-4.7-flash";
+  return openAICompatibleComplete({
+    ...args,
+    provider:"cloudflare",
+    baseUrl:"https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(accountId)+"/ai/v1",
+    apiKey:token,
+    model
+  });
 }
 
 async function cerebrasComplete(args){
