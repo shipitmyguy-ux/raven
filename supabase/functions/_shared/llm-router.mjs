@@ -108,7 +108,7 @@ async function cloudflareComplete(args){
   const token=args.getEnv("RAVEN_CLOUDFLARE_API_TOKEN")||args.getEnv("CLOUDFLARE_API_TOKEN")||args.getEnv("CLOUDFLARE_AUTH_TOKEN");
   const accountId=args.getEnv("RAVEN_CLOUDFLARE_ACCOUNT_ID")||args.getEnv("CLOUDFLARE_ACCOUNT_ID");
   if(!token||!accountId)throw new WriterError("Cloudflare Workers AI is not configured.","PROVIDER_NOT_CONFIGURED",503);
-  const model=args.getEnv("RAVEN_CLOUDFLARE_MODEL")||"@cf/zai-org/glm-4.7-flash";
+  const model=args.getEnv("RAVEN_CLOUDFLARE_MODEL")||"@cf/meta/llama-3.1-8b-instruct-fp8";
   return openAICompatibleComplete({
     ...args,
     provider:"cloudflare",
