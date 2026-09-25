@@ -180,15 +180,29 @@ function experienceScore(exp,factsByExperience,analysis,track,index){
 }
 function selectedSkills(profile,analysis,track){
   const weights=new Map(Object.entries(analysis.weights||{}));
+  const laborPreference=new Map([
+    ["Troubleshooting",32],
+    ["Cross-functional collaboration",18],
+    ["Workflow development",14],
+    ["Project management",12],
+    ["Team leadership",8],
+    ["Onboarding and training",7],
+    ["Mentoring",6],
+    ["Excel (intermediate)",5],
+    ["AI/automation scripting and module building",-8],
+    ["Asset database metadata and reporting",-10],
+    ["Database querying",-10]
+  ]);
   const ranked=(profile.skills||[]).map((skill,index)=>{
     let score=overlapScore(skill,weights)*6;
     const tags=tagSet(skill);
     if(track==="Games / 3D"&&tags.includes("art"))score+=12;
     if(track!=="Games / 3D"&&tags.includes("art")&&!tags.includes("transferable"))score-=5;
     if(track!=="Games / 3D"&&tags.some(t=>["leadership","operations","data","technical","transferable"].includes(t)))score+=7;
+    if(track==="Labor")score+=laborPreference.get(skill)||0;
     return {skill,index,score};
   }).sort((a,b)=>b.score-a.score||a.index-b.index);
-  const desired=track==="Games / 3D"?12:10;
+  const desired=track==="Games / 3D"?12:(track==="Labor"?8:10);
   return ranked.slice(0,desired).map(x=>x.skill);
 }
 
