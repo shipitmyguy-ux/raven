@@ -524,8 +524,15 @@ export async function writeResumeV3({profile,target,complete}){
     });
     lastProvider=written.provider||"llm";lastModel=written.model||"";
     try{
+      const normalizedExperience=Array.isArray(written.data?.experience)
+        ? written.data.experience.map((row,index)=>({
+            ...row,
+            experience_id:selection.experiences[index]?.experience_id||row?.experience_id||""
+          }))
+        : written.data?.experience;
       const draft={
         ...written.data,
+        experience:normalizedExperience,
         name:profile.name,
         contact:profile.contact
       };
