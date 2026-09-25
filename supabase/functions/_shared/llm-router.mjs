@@ -1,5 +1,43 @@
 import {WriterError} from "./document-writer.mjs";
 
+const providerHealth=new Map();
+const HEALTH_COOLDOWN_MS={
+  PROVIDER_BILLING:30*60*1000,
+  PROVIDER_AUTH:30*60*1000,
+  PROVIDER_RATE_LIMIT:60*1000,
+  PROVIDER_TIMEOUT:30*1000,
+  PROVIDER_UPSTREAM:30*1000,
+  PROVIDER_UNAVAILABLE:30*1000
+};
+function providerOnCooldown(name){
+  const until=Number(providerHealth.get(name)?.until||0);
+  return until>Date.now();
+}
+function markProviderFailure(name,error){
+  const code=String(error?.code||"PROVIDER_UNAVAILABLE");
+  const cooldown=HEALTH_COOLDOWN_MS[code]||30000;
+  providerHealth.set(name,{until:Date.now()+cooldown,code,status:Number(error?.upstreamStatus||0)});
+}
+function clearProviderFailure(name){ providerHealth.delete(name); }
+function providerError(provider,status,raw=null,message=""){
+  const upstreamCode=String(raw?.error?.code||raw?.error?.type||"").slice(0,120);
+  let code="PROVIDER_UNAVAILABLE",http=503,text=message||provider+" is temporarily unavailable.";
+  if(status===401||status===403){code="PROVIDER_AUTH";http=502;text=provider+" authentication was rejected.";}
+  else if(status===402){code="PROVIDER_BILLING";http=502;text=provider+" billing or credits are unavailable.";}
+  else if(status===429){code="PROVIDER_RATE_LIMIT";http=503;text=provider+" is rate limited.";}
+  else if(status>=500){code="PROVIDER_UPSTREAM";http=503;text=provider+" returned an upstream service error ("+status+").";}
+  const error=new WriterError(text,code,http);
+  error.upstreamStatus=status;
+  error.upstreamCode=upstreamCode;
+  error.provider=provider;
+  return error;
+}
+function timeoutError(provider){
+  const error=new WriterError(provider+" timed out.","PROVIDER_TIMEOUT",503);
+  error.provider=provider;
+  return error;
+}
+
 function parseJsonText(text){
   const value=String(text||"").trim();
   if(!value)throw new WriterError("The LLM returned an empty document.","INVALID_DRAFT",502);
@@ -36,7 +74,7 @@ function configured(getEnv){
   };
 }
 function providerOrder(getEnv){
-  const requested=String(getEnv("RAVEN_LLM_PROVIDER_ORDER")||"cerebras,groq,gemini")
+  const requested=String(getEnv("RAVEN_LLM_PROVIDER_ORDER")||"gemini,cerebras,groq")
     .split(",").map(v=>v.trim().toLowerCase()).filter(Boolean);
   return [...new Set(requested.filter(v=>["cerebras","groq","gemini"].includes(v)))];
 }
@@ -53,12 +91,7 @@ async function openAICompatibleComplete({provider,baseUrl,apiKey,model,fetchImpl
     })
   });
   const raw=await response.json().catch(()=>null);
-  if(!response.ok){
-    const error=new WriterError(provider+" is temporarily unavailable.","PROVIDER_UNAVAILABLE",response.status>=500||response.status===429?503:502);
-    error.upstreamStatus=response.status;
-    error.upstreamCode=String(raw?.error?.code||raw?.error?.type||"").slice(0,120);
-    throw error;
-  }
+  if(!response.ok) throw providerError(provider,response.status,raw);
   const choice=raw?.choices?.[0];
   if(choice?.finish_reason&&String(choice.finish_reason).toLowerCase()!=="stop")
     throw new WriterError(provider+" did not finish the document.","INCOMPLETE_DRAFT",502);
@@ -81,41 +114,52 @@ async function groqComplete(args){
 async function geminiComplete({getEnv,fetchImpl,signal,instructions,input,schema,maxOutputTokens}){
   const apiKey=getEnv("RAVEN_GEMINI_API_KEY")||getEnv("GEMINI_API_KEY");
   if(!apiKey)throw new WriterError("Gemini is not configured.","PROVIDER_NOT_CONFIGURED",503);
+
   const revision=Boolean(String(input?.revisionRequest||"").trim());
-  const preferred=getEnv("RAVEN_GEMINI_MODEL")||"gemini-3.8-flash";
-  const fallback=getEnv("RAVEN_GEMINI_FALLBACK_MODEL")||"gemini-3.5-flash-lite";
-  const models=[...new Set((revision
-    ? [fallback,preferred,"gemini-3.6-flash"]
-    : [preferred,fallback,"gemini-3.6-flash"]).filter(Boolean))];
-  const bases=["https://generativelanguage.googleapis.com","https://gateway.ai.cloudflare.com/v1/0be401023d08048c03bbfbb0576fa89f/raven/google-ai-studio"];
-  let lastStatus=503;
-  for(const model of models){
-    for(const base of bases){
-      const routeSignal=combineSignals([signal,AbortSignal.timeout(7000)]);
-      let response;
-      try{
-        response=await fetchImpl(base+"/v1beta/models/"+encodeURIComponent(model)+":generateContent",{
-          method:"POST",signal:routeSignal,headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},
-          body:JSON.stringify({
-            systemInstruction:{parts:[{text:instructions}]},
-            contents:[{role:"user",parts:[{text:JSON.stringify(input)}]}],
-            generationConfig:{maxOutputTokens,thinkingConfig:{thinkingLevel:"low"},responseMimeType:"application/json",responseSchema:geminiSchema(schema)}
-          })
-        });
-      }catch{
-        if(signal?.aborted)throw new WriterError("LLM writing took too long. Please try again.","LLM_UNAVAILABLE",503);
-        continue;
-      }
-      const raw=await response.json().catch(()=>null);
-      if(!response.ok){lastStatus=response.status;continue;}
-      if(raw?.promptFeedback?.blockReason)throw new WriterError("Gemini declined this writing request.","WRITING_REFUSED",502);
-      const candidate=raw?.candidates?.[0];
-      if(candidate?.finishReason!=="STOP")continue;
-      const output=(candidate.content?.parts||[]).filter(p=>!p.thought).map(p=>p.text||"").join("");
-      return {data:parseJsonText(output),provider:"gemini",model:raw?.modelVersion||model};
-    }
+  const model=revision
+    ? (getEnv("RAVEN_GEMINI_FALLBACK_MODEL")||"gemini-3.5-flash-lite")
+    : (getEnv("RAVEN_GEMINI_MODEL")||"gemini-3.8-flash");
+  const base=getEnv("RAVEN_GEMINI_BASE_URL")||"https://generativelanguage.googleapis.com";
+  const routeSignal=combineSignals([signal,AbortSignal.timeout(10000)]);
+
+  let response;
+  try{
+    response=await fetchImpl(base+"/v1beta/models/"+encodeURIComponent(model)+":generateContent",{
+      method:"POST",
+      signal:routeSignal,
+      headers:{"Content-Type":"application/json","x-goog-api-key":apiKey},
+      body:JSON.stringify({
+        systemInstruction:{parts:[{text:instructions}]},
+        contents:[{role:"user",parts:[{text:JSON.stringify(input)}]}],
+        generationConfig:{
+          maxOutputTokens,
+          thinkingConfig:{thinkingLevel:"low"},
+          responseMimeType:"application/json",
+          responseSchema:geminiSchema(schema)
+        }
+      })
+    });
+  }catch(error){
+    if(signal?.aborted)throw timeoutError("gemini");
+    throw timeoutError("gemini");
   }
-  throw new WriterError(lastStatus===429?"Gemini is at its usage limit.":"Gemini is temporarily unavailable.","PROVIDER_UNAVAILABLE",503);
+
+  const raw=await response.json().catch(()=>null);
+  if(!response.ok)throw providerError("gemini",response.status,raw);
+  if(raw?.promptFeedback?.blockReason){
+    const error=new WriterError("Gemini declined this writing request.","WRITING_REFUSED",502);
+    error.provider="gemini";
+    throw error;
+  }
+  const candidate=raw?.candidates?.[0];
+  if(candidate?.finishReason!=="STOP"){
+    const error=new WriterError("Gemini did not finish the document.","INCOMPLETE_DRAFT",502);
+    error.provider="gemini";
+    error.upstreamCode=String(candidate?.finishReason||"").slice(0,120);
+    throw error;
+  }
+  const output=(candidate.content?.parts||[]).filter(p=>!p.thought).map(p=>p.text||"").join("");
+  return {data:parseJsonText(output),provider:"gemini",model:raw?.modelVersion||model};
 }
 
 export function llmProviderStatus(getEnv){
@@ -124,23 +168,78 @@ export function llmProviderStatus(getEnv){
 
 export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
   const status=configured(getEnv);
-  const order=providerOrder(getEnv).filter(name=>status[name]);
-  if(!order.length)throw new WriterError("No LLM provider is configured for Raven.","LLM_NOT_CONFIGURED",503);
+  const configuredOrder=providerOrder(getEnv).filter(name=>status[name]);
+  if(!configuredOrder.length)throw new WriterError("No LLM provider is configured for Raven.","LLM_NOT_CONFIGURED",503);
+
   return async({instructions,input,schema,name,maxOutputTokens=6000})=>{
     const stageSignal=combineSignals([signal,AbortSignal.timeout(timeoutFor(input))]);
-    for(const provider of order){
+    const healthy=configuredOrder.filter(name=>!providerOnCooldown(name));
+    const candidates=[...healthy,...configuredOrder.filter(name=>providerOnCooldown(name))].slice(0,2);
+    const failures=[];
+
+    for(const provider of candidates){
+      if(providerOnCooldown(provider)){
+        failures.push({
+          provider,
+          code:String(providerHealth.get(provider)?.code||"PROVIDER_UNAVAILABLE"),
+          status:Number(providerHealth.get(provider)?.status||0),
+          skipped:true
+        });
+        continue;
+      }
+
       try{
         const common={getEnv,fetchImpl,signal:stageSignal,instructions,input,schema,name,maxOutputTokens};
-        if(provider==="cerebras")return await cerebrasComplete(common);
-        if(provider==="groq")return await groqComplete(common);
-        if(provider==="gemini")return await geminiComplete(common);
+        let result;
+        if(provider==="cerebras")result=await cerebrasComplete(common);
+        else if(provider==="groq")result=await groqComplete(common);
+        else if(provider==="gemini")result=await geminiComplete(common);
+        else continue;
+        clearProviderFailure(provider);
+        return {...result,providerAttempts:failures.length+1};
       }catch(error){
-        console.warn("[raven-llm-router]",provider,error?.code||"ERROR",Number(error?.status||0),Number(error?.upstreamStatus||0),String(error?.upstreamCode||""));
+        const code=String(error?.code||"ERROR");
+        const failure={
+          provider,
+          code,
+          status:Number(error?.upstreamStatus||0),
+          upstreamCode:String(error?.upstreamCode||"")
+        };
+        failures.push(failure);
+        console.warn("[raven-llm-router]",provider,code,Number(error?.status||0),failure.status,failure.upstreamCode);
+
         if(stageSignal?.aborted)break;
-        if(error?.code==="INVALID_DRAFT"||error?.code==="INCOMPLETE_DRAFT"||error?.code==="PROVIDER_UNAVAILABLE"||error?.code==="WRITING_REFUSED")continue;
+        if(["PROVIDER_BILLING","PROVIDER_AUTH","PROVIDER_RATE_LIMIT","PROVIDER_TIMEOUT","PROVIDER_UPSTREAM","PROVIDER_UNAVAILABLE"].includes(code)){
+          markProviderFailure(provider,error);
+          continue;
+        }
+        if(["INVALID_DRAFT","INCOMPLETE_DRAFT","WRITING_REFUSED"].includes(code))continue;
         throw error;
       }
     }
-    throw new WriterError("All configured LLM providers are temporarily unavailable. Please try again.","LLM_UNAVAILABLE",503);
+
+    const active=failures.filter(f=>!f.skipped);
+    let message="No configured LLM provider completed the request.";
+    let code="LLM_UNAVAILABLE";
+    if(active.length){
+      const details=active.map(f=>{
+        if(f.code==="PROVIDER_BILLING")return f.provider+" billing/credits unavailable";
+        if(f.code==="PROVIDER_AUTH")return f.provider+" authentication rejected";
+        if(f.code==="PROVIDER_RATE_LIMIT")return f.provider+" rate limited";
+        if(f.code==="PROVIDER_TIMEOUT")return f.provider+" timed out";
+        if(f.code==="PROVIDER_UPSTREAM")return f.provider+" upstream error"+(f.status?" "+f.status:"");
+        if(f.code==="WRITING_REFUSED")return f.provider+" declined the request";
+        if(f.code==="INCOMPLETE_DRAFT")return f.provider+" returned an incomplete draft";
+        return f.provider+" unavailable";
+      });
+      message=details.join("; ")+".";
+      if(active.every(f=>f.code==="PROVIDER_RATE_LIMIT"))code="LLM_RATE_LIMITED";
+      else if(active.every(f=>["PROVIDER_BILLING","PROVIDER_AUTH"].includes(f.code)))code="LLM_PROVIDER_ACCOUNT_ERROR";
+    }
+    const error=new WriterError(message,code,503);
+    error.providerFailures=failures;
+    error.providerAttempts=active.length;
+    throw error;
   };
 }
+
