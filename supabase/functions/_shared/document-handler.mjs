@@ -1,6 +1,6 @@
 import {writeDocument,WriterError,WRITER_VERSION} from "./document-writer.mjs";
 import {createLLMCompletion,llmProviderStatus} from "./llm-router.mjs";
-import {buildDeterministicResumeV3} from "./document-v3.mjs";
+import {buildDeterministicResumeV3,writeResumeV3} from "./document-v3.mjs";
 const ORIGINS=new Set(["https://shipitmyguy-ux.github.io","http://localhost:8000","http://127.0.0.1:8000"]);
 const TRACKS=new Set(["Professional","Labor","Wildcard","Games / 3D"]);
 function field(value,max,label){
@@ -52,9 +52,31 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
       const rows=await r.json(),profile=rows?.[0]?.profile;
       if(!profile||JSON.stringify(profile).length>150000)throw new WriterError("Verified candidate background is missing or too large.","PROFILE_UNAVAILABLE",503);
 
-      // Initial resume generation is deterministic and consumes zero LLM calls.
-      // AI is reserved for explicit revisions/polish requests.
+      // Initial resume generation uses the compact V3 writer whenever Cloudflare
+      // Workers AI is configured. Until then, keep the deterministic V3 draft as
+      // an explicit emergency fallback so Raven never loses basic generation.
       if(kind==="resume"&&!instructions){
+        const providers=llmProviderStatus(getEnv);
+        if(providers.configured.cloudflare){
+          const complete=createLLMCompletion({getEnv,fetchImpl,signal:AbortSignal.timeout(140000)});
+          const written=await writeResumeV3({profile,target,complete});
+          return json({
+            ok:true,
+            provider:written.provider,
+            model:written.model,
+            provider_attempts:Number(written.provider_attempts||1),
+            verification_provider:"raven",
+            verification_model:"evidence-v3",
+            architecture:written.architecture,
+            validation_errors:[],
+            resume:written.document,
+            job_analysis:written.analysis,
+            evidence_selection:written.selection,
+            ai_used:true,
+            fallback_used:false,
+            budget:null
+          });
+        }
         const written=buildDeterministicResumeV3(profile,target);
         return json({
           ok:true,
@@ -69,6 +91,8 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
           job_analysis:written.analysis,
           evidence_selection:written.selection,
           ai_used:false,
+          fallback_used:true,
+          fallback_reason:"cloudflare_not_configured",
           budget:null
         });
       }
