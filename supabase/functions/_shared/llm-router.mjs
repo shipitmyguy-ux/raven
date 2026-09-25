@@ -133,7 +133,7 @@ async function openrouterComplete({getEnv,fetchImpl,signal,instructions,input,sc
           {role:"user",content:JSON.stringify(input)}
         ],
         max_completion_tokens:maxOutputTokens,
-        reasoning:{effort:"low"}
+        reasoning:{enabled:false}
       })
     });
   }catch{
@@ -142,8 +142,11 @@ async function openrouterComplete({getEnv,fetchImpl,signal,instructions,input,sc
   const raw=await response.json().catch(()=>null);
   if(!response.ok)throw providerError("openrouter",response.status,raw);
   const choice=raw?.choices?.[0];
-  if(choice?.finish_reason&&String(choice.finish_reason).toLowerCase()!=="stop")
-    throw new WriterError("OpenRouter did not finish the document.","INCOMPLETE_DRAFT",502);
+  if(choice?.finish_reason&&String(choice.finish_reason).toLowerCase()!=="stop"){
+    const error=new WriterError("OpenRouter did not finish the document.","INCOMPLETE_DRAFT",502);
+    error.upstreamCode=String(choice.finish_reason||"");
+    throw error;
+  }
   const content=choice?.message?.content;
   const text=Array.isArray(content)?content.map(p=>p?.text||"").join(""):content;
   return {data:parseJsonText(text),provider:"openrouter",model:raw?.model||model};
