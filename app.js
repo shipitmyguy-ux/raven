@@ -1705,6 +1705,7 @@
   }
   async function generateDocumentOnline(job,masterResume,type="resume",instructions=""){
     if(!config?.generateApiUrl) throw new Error("Online document generator is not configured.");
+    masterResume=masterResume||{};
     if(masterResume && masterResume.sourceType!=="drive" && !masterResume.dataUrl){
       const file=await getMasterResumeFile(masterResume.id);
       if(file) masterResume={...masterResume,fileName:file.name,mimeType:file.type||"application/octet-stream",dataUrl:await fileToDataUrl(file)};
