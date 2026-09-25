@@ -1,4 +1,4 @@
-import {writeResumeV3,DOCUMENT_V3_VERSION,DOCUMENT_SCHEMA_VERSION} from "./document-v3.mjs";
+import {writeResumeV3,buildResumeV3Plan,DOCUMENT_V3_VERSION,DOCUMENT_SCHEMA_VERSION} from "./document-v3.mjs";
 import {WriterError} from "./document-writer.mjs";
 import {createLLMCompletion,llmProviderStatus} from "./llm-router.mjs";
 
@@ -69,6 +69,28 @@ export function createResumeV3Handler({getEnv,fetchImpl=fetch}){
         description:field(body.jobDescription||body.description,60000,"Job description")
       };
       if(!target.title||!target.description)throw new WriterError("Job title and description are required.","INVALID_INPUT",400);
+      const planOnly=body.planOnly===true||String(body.mode||"").toLowerCase()==="plan";
+
+      const url=getEnv("SUPABASE_URL"),key=getEnv("SUPABASE_SERVICE_ROLE_KEY");
+      const profileResponse=await fetchImpl(
+        url+"/rest/v1/raven_canonical_profiles?profile_key=eq.default&select=profile&limit=1",
+        {signal:AbortSignal.timeout(10000),headers:{apikey:key,Authorization:"Bearer "+key}}
+      );
+      if(!profileResponse.ok)throw new WriterError("Could not load your verified background.","PROFILE_UNAVAILABLE",503);
+      const rows=await profileResponse.json(),profile=rows?.[0]?.profile;
+      if(!profile||JSON.stringify(profile).length>150000)throw new WriterError("Verified candidate background is missing or too large.","PROFILE_UNAVAILABLE",503);
+
+      if(planOnly){
+        const plan=buildResumeV3Plan(profile,target);
+        return json({
+          ok:true,
+          mode:"plan",
+          architecture:DOCUMENT_V3_VERSION,
+          schema_version:DOCUMENT_SCHEMA_VERSION,
+          job_analysis:plan.analysis,
+          evidence_selection:plan.selection
+        });
+      }
 
       // V3 shadow traffic is isolated from production V2 request budgets.
       const budget=await rpc("raven_request_guard",{
@@ -89,15 +111,6 @@ export function createResumeV3Handler({getEnv,fetchImpl=fetch}){
         retryAfterSeconds:Number(budget?.retry_after_seconds||60)
       },429);
       eventId=Number(budget.event_id||0)||null;
-
-      const url=getEnv("SUPABASE_URL"),key=getEnv("SUPABASE_SERVICE_ROLE_KEY");
-      const profileResponse=await fetchImpl(
-        url+"/rest/v1/raven_canonical_profiles?profile_key=eq.default&select=profile&limit=1",
-        {signal:AbortSignal.timeout(10000),headers:{apikey:key,Authorization:"Bearer "+key}}
-      );
-      if(!profileResponse.ok)throw new WriterError("Could not load your verified background.","PROFILE_UNAVAILABLE",503);
-      const rows=await profileResponse.json(),profile=rows?.[0]?.profile;
-      if(!profile||JSON.stringify(profile).length>150000)throw new WriterError("Verified candidate background is missing or too large.","PROFILE_UNAVAILABLE",503);
 
       const complete=createLLMCompletion({getEnv,fetchImpl,signal:AbortSignal.timeout(140000)});
       const written=await writeResumeV3({profile,target,complete});
