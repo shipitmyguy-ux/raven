@@ -29,6 +29,7 @@ function providerError(provider,status,raw=null,message=""){
   const error=new WriterError(text,code,http);
   error.upstreamStatus=status;
   error.upstreamCode=upstreamCode;
+  error.upstreamMessage=String(raw?.error?.message||raw?.message||"").slice(0,300);
   error.provider=provider;
   return error;
 }
@@ -279,10 +280,11 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
           provider,
           code,
           status:Number(error?.upstreamStatus||0),
-          upstreamCode:String(error?.upstreamCode||"")
+          upstreamCode:String(error?.upstreamCode||""),
+          upstreamMessage:String(error?.upstreamMessage||"")
         };
         failures.push(failure);
-        console.warn("[raven-llm-router]",provider,code,Number(error?.status||0),failure.status,failure.upstreamCode);
+        console.warn("[raven-llm-router]",provider,code,Number(error?.status||0),failure.status,failure.upstreamCode,failure.upstreamMessage);
 
         if(stageSignal?.aborted)break;
         if(["PROVIDER_BILLING","PROVIDER_AUTH","PROVIDER_RATE_LIMIT","PROVIDER_TIMEOUT","PROVIDER_UPSTREAM","PROVIDER_UNAVAILABLE"].includes(code)){
