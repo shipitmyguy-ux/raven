@@ -68,15 +68,19 @@ function geminiSchema(schema){
 }
 function configured(getEnv){
   return {
+    cloudflare:Boolean(
+      (getEnv("RAVEN_CLOUDFLARE_API_TOKEN")||getEnv("CLOUDFLARE_API_TOKEN")||getEnv("CLOUDFLARE_AUTH_TOKEN")) &&
+      (getEnv("RAVEN_CLOUDFLARE_ACCOUNT_ID")||getEnv("CLOUDFLARE_ACCOUNT_ID"))
+    ),
     cerebras:Boolean(getEnv("RAVEN_CEREBRAS_API_KEY")||getEnv("CEREBRAS_API_KEY")),
     groq:Boolean(getEnv("RAVEN_GROQ_API_KEY")||getEnv("GROQ_API_KEY")),
     gemini:Boolean(getEnv("RAVEN_GEMINI_API_KEY")||getEnv("GEMINI_API_KEY"))
   };
 }
 function providerOrder(getEnv){
-  const requested=String(getEnv("RAVEN_LLM_PROVIDER_ORDER")||"gemini,cerebras,groq")
+  const requested=String(getEnv("RAVEN_LLM_PROVIDER_ORDER")||"cloudflare,gemini,cerebras,groq")
     .split(",").map(v=>v.trim().toLowerCase()).filter(Boolean);
-  return [...new Set(requested.filter(v=>["cerebras","groq","gemini"].includes(v)))];
+  return [...new Set(requested.filter(v=>["cloudflare","cerebras","groq","gemini"].includes(v)))];
 }
 async function openAICompatibleComplete({provider,baseUrl,apiKey,model,fetchImpl,signal,instructions,input,schema,name,maxOutputTokens}){
   const response=await fetchImpl(baseUrl+"/chat/completions",{
@@ -99,6 +103,39 @@ async function openAICompatibleComplete({provider,baseUrl,apiKey,model,fetchImpl
   const text=Array.isArray(content)?content.map(p=>p?.text||"").join(""):content;
   return {data:parseJsonText(text),provider,model:raw?.model||model};
 }
+async function cloudflareComplete({getEnv,fetchImpl,signal,instructions,input,schema,maxOutputTokens}){
+  const token=getEnv("RAVEN_CLOUDFLARE_API_TOKEN")||getEnv("CLOUDFLARE_API_TOKEN")||getEnv("CLOUDFLARE_AUTH_TOKEN");
+  const accountId=getEnv("RAVEN_CLOUDFLARE_ACCOUNT_ID")||getEnv("CLOUDFLARE_ACCOUNT_ID");
+  if(!token||!accountId)throw new WriterError("Cloudflare Workers AI is not configured.","PROVIDER_NOT_CONFIGURED",503);
+  const model=getEnv("RAVEN_CLOUDFLARE_MODEL")||"@cf/openai/gpt-oss-20b";
+  const url="https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(accountId)+"/ai/run/"+model;
+  const routeSignal=combineSignals([signal,AbortSignal.timeout(12000)]);
+  let response;
+  try{
+    response=await fetchImpl(url,{
+      method:"POST",
+      signal:routeSignal,
+      headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
+      body:JSON.stringify({
+        messages:[
+          {role:"system",content:instructions},
+          {role:"user",content:JSON.stringify(input)}
+        ],
+        max_tokens:maxOutputTokens,
+        temperature:0.35,
+        response_format:{type:"json_schema",json_schema:openAICompatibleSchema(schema)}
+      })
+    });
+  }catch{
+    throw timeoutError("cloudflare");
+  }
+  const raw=await response.json().catch(()=>null);
+  if(!response.ok||raw?.success===false)throw providerError("cloudflare",response.status,raw);
+  const value=raw?.result?.response ?? raw?.result;
+  const data=(value&&typeof value==="object")?value:parseJsonText(value);
+  return {data,provider:"cloudflare",model};
+}
+
 async function cerebrasComplete(args){
   const apiKey=args.getEnv("RAVEN_CEREBRAS_API_KEY")||args.getEnv("CEREBRAS_API_KEY");
   if(!apiKey)throw new WriterError("Cerebras is not configured.","PROVIDER_NOT_CONFIGURED",503);
@@ -200,7 +237,8 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
         totalProviderCalls+=1;
         const common={getEnv,fetchImpl,signal:stageSignal,instructions,input,schema,name,maxOutputTokens};
         let result;
-        if(provider==="cerebras")result=await cerebrasComplete(common);
+        if(provider==="cloudflare")result=await cloudflareComplete(common);
+        else if(provider==="cerebras")result=await cerebrasComplete(common);
         else if(provider==="groq")result=await groqComplete(common);
         else if(provider==="gemini")result=await geminiComplete(common);
         else continue;
