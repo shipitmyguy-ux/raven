@@ -19,14 +19,14 @@ const STOP=new Set(("a an and are as at be been being by for from had has have i
   " opportunity opportunities including include includes using use used").split(/\s+/));
 const MARKETING=/\b(?:about us|who we are|our mission|our vision|our culture|why join|benefits|equal opportunity|award[- ]winning|world[- ]class|industry[- ]leading|fast[- ]growing|we are a|we are an|founded in|our portfolio|our company|join a workplace|together we|we empower|we believe|member of|recognized as|our team members|our undeniable passion)\b/i;
 const COMP_BENEFITS=/\b(?:compensation|salary|pay range|benefits?|health insurance|pto|paid time off|401k|retirement|equal opportunity|affirmative action|accommodation)\b/i;
-const DIRECT_ROLE=/\b(?:you will|you'll|you are responsible|responsible for|your responsibilities|your duties|what you.ll do|what you will do|as (?:an?|the) [^,.]{2,80},? you|this role (?:owns|leads|manages|supports|coordinates|is responsible))\b/i;
+const DIRECT_ROLE=/\b(?:you will|you'll|you are responsible|your responsibilities|your duties|what you.ll do|what you will do|as (?:an?|the) [^,.]{2,80},? you|this role (?:owns|leads|manages|supports|coordinates|is responsible))\b|^responsible for\b/i;
 const STARTS_ACTION=/^(?:manage|lead|coordinate|build|create|develop|deliver|design|maintain|support|train|implement|oversee|produce|model|texture|light|schedule|repair|service|operate|facilitate|analyze|own|plan|execute|mentor|supervise|install|troubleshoot|track|report|document|review|monitor|collaborate|optimize|prototype|sculpt|render|assemble|debug)\w*\b/i;
 const ACTION=/\b(?:manage|lead|coordinate|build|create|develop|deliver|design|maintain|support|train|implement|oversee|produce|model|texture|light|schedule|repair|service|operate|facilitate|analyze|own|plan|execute|mentor|supervise|install|troubleshoot|track|report|document|review|monitor|collaborate|optimize|prototype|sculpt|render|assemble|debug)\w*\b/i;
 const REQUIREMENT=/\b(?:require|required|must|minimum|qualification|preferred|years? of|proficien|knowledge|skill|degree|bachelor|master|experience with|familiarity)\b/i;
 const TRANSFERABLE=/\b(?:lead|mentor|train|onboard|project|deliver|workflow|troubleshoot|excel|automat|database|metadata|report|query|cross[- ]functional|coordinate|collaborat|meeting|maintenance|repair|schedule|document|implement|operation|customer|support)\w*\b/i;
 const ART=/\b(?:environment art(?:ist)?|3d(?: art| artist| model| environment)?|artist|unreal(?: engine)?|unity|zbrush|substance(?: painter| designer)?|maya|texture(?: artist| painting)?|material(?:s| artist)?|shader(?:s)?|lighting(?: artist)?|world building|level art(?:ist)?|asset creation|3d model(?:ing)?|sculpt(?:ing)?|render(?:ing)?)\b/i;
 const OPAQUE=/\b(?:sk-[A-Za-z0-9_-]{16,}|AIza[A-Za-z0-9_-]{20,}|[A-Fa-f0-9]{32,}|[A-Za-z0-9+/]{36,}={0,2})\b/;
-const RISKY=["optimized","photorealistic","exceptional","robust","extensive","proven expertise","strict standards","improved efficiency","measurable impact","expert in","specialist in"];
+const RISKY=["optimized","photorealistic","exceptional","robust","extensive","proven expertise","proven track record","strict standards","rigorous standards","improved efficiency","measurable impact","critical equipment","expert in","specialist in"];
 
 function fail(message,code="INVALID_DRAFT",status=502){throw new WriterError(message,code,status);}
 function rootToken(token){
@@ -228,7 +228,7 @@ export function selectEvidenceV3(profile,analysis){
   const filteredPool=pool.filter(f=>!f.id.startsWith("skill:")||allowedSkillFacts.has(f.id));
 
   return {
-    experience_ids:selectedIds,
+    experience_ids:selectedExperiences.map(exp=>exp.id),
     experiences:selectedExperiences.map((exp,index)=>{
       const factRows=factsByExperience.get(exp.id)||[];
       const ranked=factRows.map(f=>({...f,score:scoreFact(f,analysis,track)})).sort((a,b)=>b.score-a.score);
@@ -376,11 +376,22 @@ const V3_INSTRUCTIONS=[
   "Return JSON only in the requested schema. Do not include markdown or commentary."
 ].join("\n\n");
 
-export async function writeResumeV3({profile,target,complete}){
+export function buildResumeV3Plan(profile,target){
   if(!profile?.name||!Array.isArray(profile.experience)||!profile.experience.length)fail("Verified candidate background is missing.","PROFILE_MISSING",503);
   const analysis=analyzeJobV3(target);
   const selection=selectEvidenceV3(profile,analysis);
   if(!selection.experiences.length)fail("V3 could not select relevant work history.","EVIDENCE_SELECTION_FAILED",502);
+  return {
+    analysis:{identity_focus:analysis.identity_focus,responsibilities:analysis.responsibilities,requirements:analysis.requirements,keywords:analysis.keywords,target_tags:analysis.target_tags},
+    selection:{experience_ids:selection.experience_ids,experiences:selection.experiences,skills:selection.skills,evidence_ids:selection.evidence_pool.map(f=>f.id)},
+    internal:{analysis,selection}
+  };
+}
+
+export async function writeResumeV3({profile,target,complete}){
+  const plan=buildResumeV3Plan(profile,target);
+  const analysis=plan.internal.analysis;
+  const selection=plan.internal.selection;
 
   const schema=structuredClone(draftSchema);
   schema.properties.experience.minItems=selection.experiences.length;
@@ -405,10 +416,20 @@ export async function writeResumeV3({profile,target,complete}){
     lastProvider=written.provider||"llm";lastModel=written.model||"";
     try{
       const validated=validateV3Draft(written.data,profile,analysis,selection);
+      if(validated.diagnostics.advisories.length && attempt<2){
+        correction={
+          draft:written.data,
+          issues:[
+            "The draft is factually valid but has advisory wording issues: "+validated.diagnostics.advisories.join(" | "),
+            "Repair only those wording issues. Preserve the blueprint, evidence ids, and all otherwise valid content."
+          ]
+        };
+        continue;
+      }
       return {
         ...validated,
-        analysis:{identity_focus:analysis.identity_focus,responsibilities:analysis.responsibilities,requirements:analysis.requirements,keywords:analysis.keywords,target_tags:analysis.target_tags},
-        selection:{experience_ids:selection.experience_ids,experiences:selection.experiences,skills:selection.skills,evidence_ids:selection.evidence_pool.map(f=>f.id)},
+        analysis:plan.analysis,
+        selection:plan.selection,
         provider:lastProvider,model:lastModel,
         architecture:DOCUMENT_V3_VERSION
       };
