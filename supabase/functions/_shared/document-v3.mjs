@@ -496,6 +496,126 @@ export async function writeResumeV3({profile,target,complete}){
   const plan=buildResumeV3Plan(profile,target);
   const analysis=plan.internal.analysis;
   const selection=plan.internal.selection;
+  const map=factMap(selection);
+
+  // Raven owns evidence selection and citation bookkeeping. The LLM only
+  // rewrites a compact set of already-approved facts into polished prose.
+  const general=(selection.evidence_pool||[]).filter(f=>!f.experience_id);
+  const summaryEvidence=[
+    ...general.slice(0,8),
+    ...selection.experiences.flatMap(exp=>
+      (exp.ranked_fact_ids||[]).slice(0,1).map(id=>map.get(id)).filter(Boolean)
+    )
+  ].filter((fact,index,rows)=>fact&&rows.findIndex(x=>x.id===fact.id)===index).slice(0,10);
+
+  const writingExperiences=selection.experiences.map(exp=>{
+    const facts=(exp.ranked_fact_ids||[])
+      .slice(0,exp.bullet_budget)
+      .map(id=>map.get(id))
+      .filter(Boolean)
+      .map(f=>({id:f.id,text:f.text}));
+    return {
+      role:exp.role,
+      company:exp.company,
+      bullet_facts:facts
+    };
+  });
+
+  const compactSchema=obj({
+    summary:str,
+    experience:arr(obj({bullets:arr(str,1,4)}),selection.experiences.length,selection.experiences.length)
+  });
+
+  const input={
+    target:{
+      track:target.track,
+      title:target.title,
+      company:target.company
+    },
+    focus:analysis.identity_focus,
+    job_priorities:[
+      ...analysis.responsibilities.slice(0,3),
+      ...analysis.requirements.slice(0,3)
+    ].slice(0,5),
+    selected_skills:selection.skills.slice(0,8),
+    summary_facts:summaryEvidence.map(f=>f.text),
+    experience:writingExperiences.map(row=>({
+      role:row.role,
+      company:row.company,
+      bullet_facts:row.bullet_facts.map(f=>f.text)
+    }))
+  };
+
+  const instructions=[
+    "You are Raven's resume prose writer. Raven has already selected every fact. Your only job is wording.",
+    "Write concise, polished resume prose tailored to the target role. Do not invent facts, numbers, tools, outcomes, credentials, employers, or duties.",
+    "Return JSON only with summary and experience.",
+    "experience must contain exactly one entry for each input experience, in the same order.",
+    "For each experience, return exactly one bullet for each bullet_facts item, in the same order. Rewrite that fact only; do not combine facts or add new information.",
+    "Keep bullets compact: usually 16-30 words. Keep the summary to 2-3 sentences.",
+    "For non-game targets, frame transferable capabilities around the target function rather than leading with game-art identity.",
+    "Do not include names, contact information, evidence IDs, role IDs, markdown, or commentary."
+  ].join("\n");
+
+  let correction=null,lastProvider="",lastModel="";
+  for(let attempt=0;attempt<2;attempt++){
+    const written=await complete({
+      instructions,
+      input:{...input,...(correction?{correction}:{})},
+      schema:compactSchema,
+      name:"raven_resume_prose_v3",
+      maxOutputTokens:2200
+    });
+    lastProvider=written.provider||"llm";
+    lastModel=written.model||"";
+
+    try{
+      const rows=Array.isArray(written.data?.experience)?written.data.experience:[];
+      const headlineIds=summaryEvidence.map(f=>f.id).slice(0,8);
+      const headlineText=deterministicHeadline(analysis);
+      const draft={
+        headline:{text:headlineText,fact_ids:headlineIds.length?headlineIds:[selection.evidence_pool[0]?.id].filter(Boolean)},
+        summary:{
+          text:String(written.data?.summary||"").trim(),
+          fact_ids:summaryEvidence.map(f=>f.id).slice(0,8)
+        },
+        experience:selection.experiences.map((exp,index)=>{
+          const writtenBullets=Array.isArray(rows[index]?.bullets)?rows[index].bullets:[];
+          const sourceIds=writingExperiences[index]?.bullet_facts.map(f=>f.id)||[];
+          return {
+            experience_id:exp.experience_id,
+            bullets:sourceIds.map((id,bulletIndex)=>({
+              text:String(writtenBullets[bulletIndex]||"").trim(),
+              fact_ids:[id]
+            }))
+          };
+        }),
+        additional:[]
+      };
+
+      const validated=validateV3Draft(draft,profile,analysis,selection);
+      return {
+        ...validated,
+        analysis:plan.analysis,
+        selection:plan.selection,
+        provider:lastProvider,
+        model:lastModel,
+        provider_attempts:Number(written.providerAttempts||1),
+        architecture:DOCUMENT_V3_VERSION
+      };
+    }catch(error){
+      if(!(error instanceof WriterError)||attempt===1)throw error;
+      correction={
+        issue:error.message,
+        instruction:"Rewrite only the invalid prose. Preserve the exact number and order of experience entries and bullets."
+      };
+    }
+  }
+  fail("V3 could not produce a verified resume.","FACT_CHECK_FAILED",502);
+}){
+  const plan=buildResumeV3Plan(profile,target);
+  const analysis=plan.internal.analysis;
+  const selection=plan.internal.selection;
 
   const schema=structuredClone(draftSchema);
   schema.properties.experience.minItems=selection.experiences.length;
