@@ -122,14 +122,14 @@ function providerOrder(getEnv){
     .split(",").map(v=>v.trim().toLowerCase()).filter(Boolean);
   return [...new Set(requested.filter(v=>["openrouter","cloudflare","cerebras","groq","gemini"].includes(v)))];
 }
-async function openAICompatibleComplete({provider,baseUrl,apiKey,model,fetchImpl,signal,instructions,input,schema,name,maxOutputTokens}){
+async function openAICompatibleComplete({provider,baseUrl,apiKey,model,fetchImpl,signal,instructions,input,schema,name,maxOutputTokens,responseMode="json"}){
   const response=await fetchImpl(baseUrl+"/chat/completions",{
     method:"POST",signal,
     headers:{"Authorization":"Bearer "+apiKey,"Content-Type":"application/json"},
     body:JSON.stringify({
       model,
       messages:[{role:"system",content:instructions},{role:"user",content:JSON.stringify(input)}],
-      response_format:{type:"json_schema",json_schema:{name:name||"raven_document",strict:true,schema:openAICompatibleSchema(schema)}},
+      ...(responseMode==="json"?{response_format:{type:"json_schema",json_schema:{name:name||"raven_document",strict:true,schema:openAICompatibleSchema(schema)}}}:{}),
       max_completion_tokens:maxOutputTokens,
       reasoning_effort:"low",
       ...(provider==="cloudflare"?{options:{rejectIfBusy:true}}:{})
@@ -142,17 +142,19 @@ async function openAICompatibleComplete({provider,baseUrl,apiKey,model,fetchImpl
     throw new WriterError(provider+" did not finish the document.","INCOMPLETE_DRAFT",502);
   const content=choice?.message?.content;
   const text=Array.isArray(content)?content.map(p=>p?.text||"").join(""):content;
-  return {data:parseJsonText(text),provider,model:raw?.model||model};
+  return {data:responseMode==="text"?String(text||"").trim():parseJsonText(text),provider,model:raw?.model||model};
 }
-async function openrouterComplete({getEnv,fetchImpl,signal,instructions,input,schema,name,maxOutputTokens}){
+async function openrouterComplete({getEnv,fetchImpl,signal,instructions,input,schema,name,maxOutputTokens,responseMode="json"}){
   const apiKey=getEnv("RAVEN_OPENROUTER_API_KEY")||getEnv("OPENROUTER_API_KEY");
   if(!apiKey)throw new WriterError("OpenRouter is not configured.","PROVIDER_NOT_CONFIGURED",503);
   const model=getEnv("RAVEN_OPENROUTER_MODEL")||"poolside/laguna-s-2.1:free";
-  const schemaPrompt=[
-    instructions,
-    "Return one JSON object only. It must match this schema exactly. Raven validates it locally:",
-    JSON.stringify(openAICompatibleSchema(schema))
-  ].join("\n\n");
+  const schemaPrompt=responseMode==="text"
+    ? instructions
+    : [
+        instructions,
+        "Return one JSON object only. It must match this schema exactly. Raven validates it locally:",
+        JSON.stringify(openAICompatibleSchema(schema))
+      ].join("\n\n");
   let response;
   try{
     response=await fetchImpl("https://openrouter.ai/api/v1/chat/completions",{
@@ -188,7 +190,7 @@ async function openrouterComplete({getEnv,fetchImpl,signal,instructions,input,sc
   }
   const content=choice?.message?.content;
   const text=Array.isArray(content)?content.map(p=>p?.text||"").join(""):content;
-  return {data:parseJsonText(text),provider:"openrouter",model:raw?.model||model};
+  return {data:responseMode==="text"?String(text||"").trim():parseJsonText(text),provider:"openrouter",model:raw?.model||model};
 }
 
 async function cloudflareComplete(args){
@@ -217,7 +219,7 @@ async function groqComplete(args){
   return openAICompatibleComplete({...args,provider:"groq",baseUrl:"https://api.groq.com/openai/v1",apiKey,
     model:args.getEnv("RAVEN_GROQ_MODEL")||"openai/gpt-oss-120b"});
 }
-async function geminiComplete({getEnv,fetchImpl,signal,instructions,input,schema,maxOutputTokens}){
+async function geminiComplete({getEnv,fetchImpl,signal,instructions,input,schema,maxOutputTokens,responseMode="json"}){
   const apiKey=getEnv("RAVEN_GEMINI_API_KEY")||getEnv("GEMINI_API_KEY");
   if(!apiKey)throw new WriterError("Gemini is not configured.","PROVIDER_NOT_CONFIGURED",503);
 
@@ -240,8 +242,7 @@ async function geminiComplete({getEnv,fetchImpl,signal,instructions,input,schema
         generationConfig:{
           maxOutputTokens,
           thinkingConfig:{thinkingLevel:"low"},
-          responseMimeType:"application/json",
-          responseSchema:geminiSchema(schema)
+          ...(responseMode==="json"?{responseMimeType:"application/json",responseSchema:geminiSchema(schema)}:{})
         }
       })
     });
@@ -265,7 +266,7 @@ async function geminiComplete({getEnv,fetchImpl,signal,instructions,input,schema
     throw error;
   }
   const output=(candidate.content?.parts||[]).filter(p=>!p.thought).map(p=>p.text||"").join("");
-  return {data:parseJsonText(output),provider:"gemini",model:raw?.modelVersion||model};
+  return {data:responseMode==="text"?String(output||"").trim():parseJsonText(output),provider:"gemini",model:raw?.modelVersion||model};
 }
 
 export function llmProviderStatus(getEnv){
@@ -279,7 +280,7 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
 
   let remainingProviderCalls=2;
   let totalProviderCalls=0;
-  return async({instructions,input,schema,name,maxOutputTokens=6000})=>{
+  return async({instructions,input,schema,name,maxOutputTokens=6000,responseMode="json"})=>{
     if(remainingProviderCalls<=0){
       const error=new WriterError("Raven reached its two-call LLM limit for this generation request.","LLM_CALL_BUDGET_EXHAUSTED",502);
       error.providerAttempts=totalProviderCalls;
@@ -304,7 +305,7 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
       try{
         remainingProviderCalls-=1;
         totalProviderCalls+=1;
-        const common={getEnv,fetchImpl,signal:stageSignal,instructions,input,schema,name,maxOutputTokens};
+        const common={getEnv,fetchImpl,signal:stageSignal,instructions,input,schema,name,maxOutputTokens,responseMode};
         let result;
         if(provider==="openrouter")result=await openrouterComplete(common);
         else if(provider==="cloudflare")result=await cloudflareComplete(common);
