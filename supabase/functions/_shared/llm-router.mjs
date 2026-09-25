@@ -109,7 +109,7 @@ async function openAICompatibleComplete({provider,baseUrl,apiKey,model,fetchImpl
 async function openrouterComplete({getEnv,fetchImpl,signal,instructions,input,schema,name,maxOutputTokens}){
   const apiKey=getEnv("RAVEN_OPENROUTER_API_KEY")||getEnv("OPENROUTER_API_KEY");
   if(!apiKey)throw new WriterError("OpenRouter is not configured.","PROVIDER_NOT_CONFIGURED",503);
-  const model=getEnv("RAVEN_OPENROUTER_MODEL")||"qwen/qwen3.8-27b:free";
+  const model=getEnv("RAVEN_OPENROUTER_MODEL")||"openrouter/free";
   const schemaPrompt=[
     instructions,
     "Return one JSON object only. It must match this schema exactly. Raven validates it locally:",
