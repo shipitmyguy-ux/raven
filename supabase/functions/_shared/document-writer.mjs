@@ -72,15 +72,24 @@ function claimEvidenceIssues(value,facts,profile,{target=null,instructions="",co
       issues.push("The passage introduced an unsupported number: "+number+".");
   }
   const evidenceRootSet=new Set(roots(evidenceText));
+  const roleEvidenceText=roleId
+    ? ((profile.experience||[]).find(e=>e.id===roleId)?.facts||[]).map(f=>f.text).join(" ")
+    : "";
+  // For employer-specific tool attribution, any verified fact from that same
+  // employer is sufficient evidence. The bullet's own fact_ids still govern
+  // the rest of the factual claim, but revisions do not have to cite the exact
+  // tool fact again merely to mention a tool already verified for that role.
+  const skillEvidenceRootSet=new Set(roots(roleEvidenceText||evidenceText));
   const namesEmployer=(profile.experience||[]).some(e=>value.toLowerCase().includes(String(e.company||"").toLowerCase()));
   for(const skill of (profile.skills||[]).filter(Boolean)){
     const lower=String(skill).toLowerCase();
     if(!value.toLowerCase().includes(lower))continue;
     // A canonical skill is safe in general prose. Employer-specific attribution still
-    // requires that employer's evidence to establish use there.
+    // requires evidence from that employer, but not necessarily from the exact cited
+    // bullet fact.
     if(!roleId&&!namesEmployer)continue;
     const skillRoots=roots(skill);
-    const supported=skillRoots.length&&skillRoots.every(root=>evidenceRootSet.has(root));
+    const supported=skillRoots.length&&skillRoots.every(root=>skillEvidenceRootSet.has(root));
     if(!supported&&!instructionLower.includes(lower)&&!targetLower.includes(lower)){
       const employerName=roleId
         ? String((profile.experience||[]).find(e=>e.id===roleId)?.company||"this employer")
