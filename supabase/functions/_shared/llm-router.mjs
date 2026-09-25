@@ -109,7 +109,7 @@ async function cloudflareComplete({getEnv,fetchImpl,signal,instructions,input,sc
   if(!token||!accountId)throw new WriterError("Cloudflare Workers AI is not configured.","PROVIDER_NOT_CONFIGURED",503);
   const model=getEnv("RAVEN_CLOUDFLARE_MODEL")||"@cf/openai/gpt-oss-20b";
   const url="https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(accountId)+"/ai/run/"+model;
-  const routeSignal=combineSignals([signal,AbortSignal.timeout(12000)]);
+  const routeSignal=combineSignals([signal,AbortSignal.timeout(24000)]);
   let response;
   try{
     response=await fetchImpl(url,{
@@ -123,6 +123,7 @@ async function cloudflareComplete({getEnv,fetchImpl,signal,instructions,input,sc
         ],
         max_tokens:maxOutputTokens,
         temperature:0.35,
+        reasoning_effort:"low",
         response_format:{type:"json_schema",json_schema:openAICompatibleSchema(schema)}
       })
     });
