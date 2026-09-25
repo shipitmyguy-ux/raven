@@ -168,7 +168,7 @@ async function openrouterComplete({getEnv,fetchImpl,signal,instructions,input,sc
       },
       body:JSON.stringify({
         model,
-        models:model.endsWith(":free")?["google/gemma-3-12b-it:free","openrouter/free"]:undefined,
+        models:model.endsWith(":free")?["google/gemma-3-12b-it:free"]:undefined,
         messages:[
           {role:"system",content:schemaPrompt},
           {role:"user",content:JSON.stringify(input)}
@@ -186,6 +186,7 @@ async function openrouterComplete({getEnv,fetchImpl,signal,instructions,input,sc
   if(choice?.finish_reason&&String(choice.finish_reason).toLowerCase()!=="stop"){
     const error=new WriterError("OpenRouter did not finish the document.","INCOMPLETE_DRAFT",502);
     error.upstreamCode=String(choice.finish_reason||"");
+    error.upstreamMessage=String(raw?.model||model).slice(0,200);
     throw error;
   }
   const content=choice?.message?.content;
