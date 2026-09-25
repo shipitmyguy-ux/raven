@@ -52,7 +52,7 @@ function combineSignals(signals){
   return typeof AbortSignal.any==="function"?AbortSignal.any(live):live[0];
 }
 function timeoutFor(input){
-  return String(input?.revisionRequest||"").trim()?14000:26000;
+  return String(input?.revisionRequest||"").trim()?30000:45000;
 }
 function openAICompatibleSchema(schema){
   if(Array.isArray(schema))return schema.map(openAICompatibleSchema);
@@ -226,7 +226,8 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
         else continue;
         clearProviderFailure(provider);
         return {...result,providerAttempts:totalProviderCalls};
-      }catch(error){
+      }catch(caught){
+        const error=stageSignal?.aborted?timeoutError(provider):caught;
         const code=String(error?.code||"ERROR");
         const failure={
           provider,
