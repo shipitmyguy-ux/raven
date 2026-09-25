@@ -387,6 +387,7 @@ const V3_INSTRUCTIONS=[
   "A work-history bullet may cite only evidence whose experience_id matches that role. General skills and transferable evidence belong in headline, summary, skills, or additional—not in an employer bullet unless that employer's evidence establishes them.",
   "Preserve factual restraint. Do not invent numbers, credentials, tools, duties, outcomes, motivations, or company knowledge. A job requirement is not candidate evidence.",
   "Use natural, specific writing. The evidence defines what is true; you control how to communicate it clearly.",
+  "Set additional to an empty array. Raven renders selected skills separately; do not create extra uncited sections.",
   "Return JSON only in the requested schema. Do not include markdown or commentary."
 ].join("\n\n");
 
