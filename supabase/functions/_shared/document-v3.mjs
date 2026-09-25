@@ -1,0 +1,376 @@
+import {WriterError,evidenceCatalog} from "./document-writer.mjs";
+
+export const DOCUMENT_V3_VERSION="resume-v3-alpha1";
+export const DOCUMENT_SCHEMA_VERSION=3;
+
+const str={type:"string"};
+const arr=(items,minItems=0,maxItems=20)=>({type:"array",items,minItems,maxItems});
+const obj=(properties)=>({type:"object",properties,required:Object.keys(properties),additionalProperties:false});
+const claimSchema=obj({text:str,fact_ids:arr(str,1,8)});
+const draftSchema=obj({
+  headline:claimSchema,
+  summary:claimSchema,
+  experience:arr(obj({experience_id:str,bullets:arr(claimSchema,1,4)}),1,12),
+  additional:arr(claimSchema,0,4)
+});
+
+const STOP=new Set(("a an and are as at be been being by for from had has have i in into is it its my of on or our that the their this to was were will with you your"+
+  " job role team company work working position candidate candidates experience years year responsibilities requirements preferred required about who what why how"+
+  " opportunity opportunities including include includes using use used").split(/\s+/));
+const MARKETING=/\b(?:about us|who we are|our mission|our vision|our culture|why join|benefits|equal opportunity|award[- ]winning|world[- ]class|industry[- ]leading|fast[- ]growing|we are a|we are an)\b/i;
+const ACTION=/\b(?:manage|lead|coordinate|build|create|develop|deliver|design|maintain|support|train|implement|oversee|produce|model|texture|light|schedule|repair|service|operate|facilitate|analyze|own|plan|execute|mentor|supervise|install|troubleshoot|track|report|document|review|monitor|collaborate|optimize|prototype|sculpt|render|assemble|debug)\w*\b/i;
+const REQUIREMENT=/\b(?:require|required|must|minimum|qualification|preferred|years? of|proficien|knowledge|skill|degree|bachelor|master|experience with|familiarity)\b/i;
+const TRANSFERABLE=/\b(?:lead|mentor|train|onboard|project|deliver|workflow|troubleshoot|excel|automat|database|metadata|report|query|cross[- ]functional|coordinate|collaborat|meeting|maintenance|repair|schedule|document|implement|operation|customer|support)\w*\b/i;
+const ART=/\b(?:environment|3d|artist|art|unreal|unity|zbrush|substance|maya|texture|material|shader|lighting|world|level|asset|model|sculpt|render)\w*\b/i;
+const OPAQUE=/\b(?:sk-[A-Za-z0-9_-]{16,}|AIza[A-Za-z0-9_-]{20,}|[A-Fa-f0-9]{32,}|[A-Za-z0-9+/]{36,}={0,2})\b/;
+const RISKY=["optimized","photorealistic","exceptional","robust","extensive","proven expertise","strict standards","improved efficiency","measurable impact","expert in","specialist in"];
+
+function fail(message,code="INVALID_DRAFT",status=502){throw new WriterError(message,code,status);}
+function rootToken(token){
+  let t=String(token||"").toLowerCase().replace(/^[^a-z0-9]+|[^a-z0-9+#./-]+$/g,"");
+  const groups=[
+    [/^(?:lead|leads|leading|led|leadership)$/,"lead"],
+    [/^(?:mentor|mentors|mentored|mentoring)$/,"mentor"],
+    [/^(?:build|builds|built|building)$/,"build"],
+    [/^(?:create|creates|created|creating|creation)$/,"create"],
+    [/^(?:manage|manages|managed|managing|management)$/,"manage"],
+    [/^(?:coordinate|coordinates|coordinated|coordinating|coordination)$/,"coordinate"],
+    [/^(?:deliver|delivers|delivered|delivering|delivery)$/,"deliver"],
+    [/^(?:develop|develops|developed|developing|development)$/,"develop"],
+    [/^(?:repair|repairs|repaired|repairing)$/,"repair"],
+    [/^(?:produce|produces|produced|producing|production)$/,"produce"],
+    [/^(?:train|trains|trained|training)$/,"train"],
+    [/^(?:implement|implements|implemented|implementing|implementation)$/,"implement"],
+    [/^(?:operate|operates|operated|operating|operations)$/,"operate"]
+  ];
+  for(const [pattern,root] of groups)if(pattern.test(t))return root;
+  return t.replace(/(?:ing|ed|es|s)$/,"");
+}
+function roots(value){
+  return (String(value||"").toLowerCase().match(/[a-z][a-z0-9+#./-]{2,}/g)||[])
+    .map(rootToken).filter(t=>t&&!STOP.has(t));
+}
+function sentences(value){
+  return String(value||"").replace(/\r/g,"\n").split(/(?:\n+|(?<=[.!?])\s+)/)
+    .map(s=>s.replace(/^[-•*]+\s*/,"").replace(/\s+/g," ").trim())
+    .filter(s=>s.length>=18&&s.length<=700);
+}
+function keywordWeights(text){
+  const weights=new Map();
+  for(const r of roots(text))weights.set(r,(weights.get(r)||0)+1);
+  return weights;
+}
+function overlapScore(text,weights){
+  const seen=new Set(roots(text));let score=0;
+  for(const r of seen)score+=Math.min(4,weights.get(r)||0);
+  return score;
+}
+function tagSet(text){
+  const s=String(text||"");
+  const tags=[];
+  if(TRANSFERABLE.test(s))tags.push("transferable");
+  if(ART.test(s))tags.push("art");
+  if(/\b(?:lead|mentor|train|onboard|supervis|manager|director)\w*\b/i.test(s))tags.push("leadership");
+  if(/\b(?:excel|database|metadata|report|query|data|analytics?)\w*\b/i.test(s))tags.push("data");
+  if(/\b(?:automat|script|ai|workflow|tool|technical|debug|troubleshoot)\w*\b/i.test(s))tags.push("technical");
+  if(/\b(?:maintenance|repair|service|install|hands[- ]on|equipment)\w*\b/i.test(s))tags.push("maintenance");
+  if(/\b(?:project|schedule|deliver|coordinate|implementation|operation|process|documentation)\w*\b/i.test(s))tags.push("operations");
+  return [...new Set(tags)];
+}
+function topKeywords(weights,limit=20){
+  return [...weights.entries()].filter(([k])=>k.length>2).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,limit).map(([k])=>k);
+}
+
+export function analyzeJobV3(target){
+  const description=String(target?.description||"");
+  const rows=sentences(description).filter(s=>!MARKETING.test(s));
+  const responsibilities=rows.filter(s=>ACTION.test(s)&&!REQUIREMENT.test(s)).slice(0,12);
+  const requirements=rows.filter(s=>REQUIREMENT.test(s)).slice(0,12);
+  const useful=[target?.title,...responsibilities,...requirements].filter(Boolean).join(" ");
+  const weights=keywordWeights(useful);
+  return {
+    title:String(target?.title||""),
+    company:String(target?.company||""),
+    track:String(target?.track||"Professional"),
+    responsibilities,
+    requirements,
+    keywords:topKeywords(weights,24),
+    target_tags:tagSet(useful),
+    weights:Object.fromEntries(weights)
+  };
+}
+
+function normalizedFactRows(profile){
+  return evidenceCatalog(profile).map((fact,index)=>({
+    id:String(fact.id||"fact:"+index),
+    text:String(fact.text||""),
+    experience_id:fact.experience_id||null,
+    company:fact.company||null,
+    tags:tagSet(fact.text)
+  }));
+}
+function scoreFact(fact,analysis,track){
+  const weights=new Map(Object.entries(analysis.weights||{}));
+  let score=overlapScore(fact.text,weights)*4;
+  const tags=new Set(fact.tags||[]);
+  for(const tag of analysis.target_tags||[])if(tags.has(tag))score+=4;
+  if(track==="Games / 3D"){
+    if(tags.has("art"))score+=12;
+    if(fact.experience_id)score+=4;
+  }else{
+    if(tags.has("transferable"))score+=10;
+    if(tags.has("leadership")||tags.has("operations")||tags.has("data")||tags.has("technical"))score+=6;
+    if(tags.has("art")&&!tags.has("transferable"))score-=5;
+  }
+  if(track==="Labor"){
+    if(tags.has("maintenance"))score+=18;
+    if(/soundair/i.test(String(fact.company||"")))score+=18;
+  }
+  return score;
+}
+function experienceScore(exp,factsByExperience,analysis,track,index){
+  const facts=factsByExperience.get(exp.id)||[];
+  const scores=facts.map(f=>scoreFact(f,analysis,track)).sort((a,b)=>b-a);
+  let score=(scores[0]||0)+(scores[1]||0)*.55+(scores[2]||0)*.25-Math.min(index*0.35,3);
+  if(track==="Labor"&&/soundair|maintenance technician/i.test([exp.company,exp.role].join(" ")))score+=30;
+  return score;
+}
+function selectedSkills(profile,analysis,track){
+  const weights=new Map(Object.entries(analysis.weights||{}));
+  const ranked=(profile.skills||[]).map((skill,index)=>{
+    let score=overlapScore(skill,weights)*6;
+    const tags=tagSet(skill);
+    if(track==="Games / 3D"&&tags.includes("art"))score+=12;
+    if(track!=="Games / 3D"&&tags.includes("art")&&!tags.includes("transferable"))score-=5;
+    if(track!=="Games / 3D"&&tags.some(t=>["leadership","operations","data","technical","transferable"].includes(t)))score+=7;
+    return {skill,index,score};
+  }).sort((a,b)=>b.score-a.score||a.index-b.index);
+  const desired=track==="Games / 3D"?12:10;
+  return ranked.slice(0,desired).map(x=>x.skill);
+}
+
+export function selectEvidenceV3(profile,analysis){
+  const track=analysis.track;
+  const allFacts=normalizedFactRows(profile);
+  const factsByExperience=new Map();
+  for(const f of allFacts){
+    if(!f.experience_id)continue;
+    if(!factsByExperience.has(f.experience_id))factsByExperience.set(f.experience_id,[]);
+    factsByExperience.get(f.experience_id).push(f);
+  }
+
+  const experience=(profile.experience||[]);
+  let selectedIds=[];
+  if(track==="Games / 3D"){
+    const required=new Set((profile.resume_required_experience_ids||[]).filter(Boolean));
+    selectedIds=experience.filter(e=>required.has(e.id)).map(e=>e.id);
+  }else{
+    const ranked=experience.map((exp,index)=>({id:exp.id,index,score:experienceScore(exp,factsByExperience,analysis,track,index)}))
+      .sort((a,b)=>b.score-a.score||a.index-b.index);
+    const count=Math.min(4,Math.max(2,ranked.filter(x=>x.score>4).length||2));
+    selectedIds=ranked.slice(0,count).map(x=>x.id);
+  }
+
+  const selectedExperiences=experience.filter(e=>selectedIds.includes(e.id));
+  const roleFacts=selectedExperiences.flatMap(e=>(factsByExperience.get(e.id)||[]));
+  const generalFacts=allFacts.filter(f=>!f.experience_id)
+    .map(f=>({...f,score:scoreFact(f,analysis,track)}))
+    .sort((a,b)=>b.score-a.score)
+    .filter(f=>f.score>0 || /^education:|^skill:/.test(f.id))
+    .slice(0,track==="Games / 3D"?24:18);
+
+  const pool=[...roleFacts,...generalFacts];
+  const skills=selectedSkills(profile,analysis,track);
+  const allowedSkillFacts=new Set(skills.map(s=>"skill:"+(profile.skills||[]).indexOf(s)));
+  const filteredPool=pool.filter(f=>!f.id.startsWith("skill:")||allowedSkillFacts.has(f.id));
+
+  return {
+    experience_ids:selectedIds,
+    experiences:selectedExperiences.map((exp,index)=>{
+      const factRows=factsByExperience.get(exp.id)||[];
+      const ranked=factRows.map(f=>({...f,score:scoreFact(f,analysis,track)})).sort((a,b)=>b.score-a.score);
+      const bullet_budget=track==="Games / 3D" ? (index<2?3:index<5?2:1) : (ranked[0]?.score>=20?3:2);
+      return {experience_id:exp.id,role:exp.role,company:exp.company,dates:exp.dates,bullet_budget,ranked_fact_ids:ranked.map(f=>f.id)};
+    }),
+    skills,
+    evidence_pool:filteredPool.map(({score,...f})=>f)
+  };
+}
+
+function factMap(selection){return new Map((selection.evidence_pool||[]).map(f=>[f.id,f]));}
+function claimText(claim,max=1800){
+  if(!claim||typeof claim.text!=="string"||!claim.text.trim()||claim.text.length>max)fail("The writer returned an incomplete passage.");
+  const text=claim.text.trim();
+  if(/<[^>]+>|\[insert\b|\[your name\]|FACT-(?:REQ|RES|EXP|EDU)-/i.test(text))fail("The writer returned markup or placeholder text.");
+  if(OPAQUE.test(text))fail("The writer returned unrelated token-like text.");
+  return text;
+}
+function exactNumbers(text){return String(text||"").match(/\b\d+(?:[.,]\d+)?%?\b/g)||[];}
+function issueForClaim(claim,allowedIds,map,{roleId=null,profile}={}){
+  const issues=[];
+  const text=claimText(claim);
+  const ids=Array.isArray(claim.fact_ids)?claim.fact_ids:[];
+  if(!ids.length)issues.push("Every written passage must cite at least one approved evidence id.");
+  if(ids.some(id=>!allowedIds.has(id)))issues.push("The passage cited evidence outside the approved V3 evidence pool.");
+  const facts=ids.map(id=>map.get(id)).filter(Boolean);
+  if(roleId&&facts.some(f=>f.experience_id!==roleId))issues.push("A work-history bullet cited evidence from a different employer.");
+  const evidence=facts.map(f=>f.text).join(" ");
+  for(const n of exactNumbers(text))if(!evidence.includes(n))issues.push("The passage introduced an unsupported number: "+n+".");
+  if(roleId){
+    const employer=(profile.experience||[]).find(e=>e.id===roleId);
+    const employerFacts=(employer?.facts||[]).map(f=>f.text).join(" ").toLowerCase();
+    for(const skill of (profile.skills||[])){
+      if(!text.toLowerCase().includes(String(skill).toLowerCase()))continue;
+      if(!employerFacts.includes(String(skill).toLowerCase()) &&
+         /^(?:3DS Max|Maya|ZBrush|3DCoat|Quixel Suite|Substance Painter|Substance Designer|Photoshop|Unreal Engine|Unity)$/i.test(skill))
+        issues.push(skill+" is verified generally but not for "+(employer?.company||"this employer")+". Move it to Core Skills/Summary or remove it from this bullet.");
+    }
+  }
+  const evidenceRoots=new Set(roots(evidence));
+  const claimRoots=roots(text);
+  if(claimRoots.length&&evidenceRoots.size&&!claimRoots.some(r=>evidenceRoots.has(r)))
+    issues.push("The passage drifted too far from its cited evidence.");
+  return {text,ids,issues};
+}
+function advisoryIssues(text,evidence){
+  const lower=String(text||"").toLowerCase(),e=String(evidence||"").toLowerCase(),issues=[];
+  for(const term of RISKY)if(lower.includes(term)&&!e.includes(term))issues.push("Consider removing unsupported embellishment: "+term+".");
+  return issues;
+}
+
+export function validateV3Draft(draft,profile,analysis,selection){
+  if(!draft||typeof draft!=="object")fail("The writer returned no V3 document.");
+  const allowedIds=new Set((selection.evidence_pool||[]).map(f=>f.id));
+  const map=factMap(selection);
+  const hard=[];
+  const advisory=[];
+
+  const headlineCheck=issueForClaim(draft.headline,allowedIds,map,{profile});
+  hard.push(...headlineCheck.issues.map(x=>"Headline: "+x));
+  advisory.push(...advisoryIssues(headlineCheck.text,headlineCheck.ids.map(id=>map.get(id)?.text||"").join(" ")));
+
+  const summaryCheck=issueForClaim(draft.summary,allowedIds,map,{profile});
+  hard.push(...summaryCheck.issues.map(x=>"Summary: "+x));
+  advisory.push(...advisoryIssues(summaryCheck.text,summaryCheck.ids.map(id=>map.get(id)?.text||"").join(" ")));
+
+  if(!Array.isArray(draft.experience))hard.push("Work history is missing.");
+  const rows=Array.isArray(draft.experience)?draft.experience:[];
+  const expected=selection.experiences.map(x=>x.experience_id);
+  const actual=rows.map(x=>x?.experience_id);
+  if(expected.length!==actual.length||expected.some(id=>!actual.includes(id)))hard.push("The writer changed the V3 work-history blueprint.");
+
+  const experience=[];
+  for(const plan of selection.experiences){
+    const row=rows.find(x=>x?.experience_id===plan.experience_id);
+    const original=(profile.experience||[]).find(e=>e.id===plan.experience_id);
+    if(!row||!original)continue;
+    const bullets=Array.isArray(row.bullets)?row.bullets:[];
+    if(bullets.length<1||bullets.length>plan.bullet_budget)hard.push(original.company+": bullet count exceeded the blueprint.");
+    const rendered=[];
+    for(const claim of bullets){
+      const check=issueForClaim(claim,allowedIds,map,{roleId:plan.experience_id,profile});
+      hard.push(...check.issues.map(x=>original.company+": "+x));
+      advisory.push(...advisoryIssues(check.text,check.ids.map(id=>map.get(id)?.text||"").join(" ")));
+      rendered.push(check.text);
+    }
+    experience.push({role:original.role,company:original.company,dates:original.dates,bullets:rendered});
+  }
+
+  const additional=[];
+  for(const claim of Array.isArray(draft.additional)?draft.additional:[]){
+    const check=issueForClaim(claim,allowedIds,map,{profile});
+    hard.push(...check.issues.map(x=>"Additional: "+x));
+    advisory.push(...advisoryIssues(check.text,check.ids.map(id=>map.get(id)?.text||"").join(" ")));
+    additional.push(check.text);
+  }
+
+  if(hard.length)fail(hard.slice(0,6).join(" | "));
+  return {
+    document:{
+      schema_version:DOCUMENT_SCHEMA_VERSION,
+      name:profile.name,
+      contact:profile.contact,
+      headline:headlineCheck.text,
+      summary:summaryCheck.text,
+      skills:[...selection.skills],
+      experience,
+      education:structuredClone(profile.education||[]),
+      additional
+    },
+    diagnostics:{hard_errors:[],advisories:[...new Set(advisory)].slice(0,12)}
+  };
+}
+
+function compactProfile(profile,selection){
+  const selectedIds=new Set(selection.experience_ids||[]);
+  const poolIds=new Set((selection.evidence_pool||[]).map(f=>f.id));
+  const general=evidenceCatalog(profile).filter(f=>!f.experience_id&&poolIds.has(f.id));
+  return {
+    name:profile.name,
+    contact:profile.contact,
+    education:profile.education||[],
+    skills:selection.skills,
+    experience:(profile.experience||[]).filter(e=>selectedIds.has(e.id)).map(e=>({
+      id:e.id,role:e.role,company:e.company,dates:e.dates,
+      facts:(e.facts||[]).filter(f=>poolIds.has(f.id))
+    })),
+    approved_general_evidence:general
+  };
+}
+
+const V3_INSTRUCTIONS=[
+  "You are the wording stage of Raven Resume V3. Raven has already decided which evidence and work-history entries are allowed. Do not select new history or invent new facts.",
+  "Write polished resume prose tailored to the target. Use only evidence ids from evidencePool. Each factual passage must cite the ids that support it.",
+  "Follow blueprint.experiences exactly. Return every listed experience_id once and only once. Do not add or remove employers. Do not exceed each role's bullet_budget.",
+  "A work-history bullet may cite only evidence whose experience_id matches that role. General skills and transferable evidence belong in headline, summary, skills, or additional—not in an employer bullet unless that employer's evidence establishes them.",
+  "Preserve factual restraint. Do not invent numbers, credentials, tools, duties, outcomes, motivations, or company knowledge. A job requirement is not candidate evidence.",
+  "Use natural, specific writing. The evidence defines what is true; you control how to communicate it clearly.",
+  "Return JSON only in the requested schema. Do not include markdown or commentary."
+].join("\n\n");
+
+export async function writeResumeV3({profile,target,complete}){
+  if(!profile?.name||!Array.isArray(profile.experience)||!profile.experience.length)fail("Verified candidate background is missing.","PROFILE_MISSING",503);
+  const analysis=analyzeJobV3(target);
+  const selection=selectEvidenceV3(profile,analysis);
+  if(!selection.experiences.length)fail("V3 could not select relevant work history.","EVIDENCE_SELECTION_FAILED",502);
+
+  const schema=structuredClone(draftSchema);
+  schema.properties.experience.minItems=selection.experiences.length;
+  schema.properties.experience.maxItems=selection.experiences.length;
+
+  const input={
+    target:{track:target.track,title:target.title,company:target.company},
+    jobAnalysis:{responsibilities:analysis.responsibilities,requirements:analysis.requirements,keywords:analysis.keywords,target_tags:analysis.target_tags},
+    blueprint:{experiences:selection.experiences,skills:selection.skills},
+    evidencePool:selection.evidence_pool,
+    candidateContext:compactProfile(profile,selection)
+  };
+
+  let correction=null,lastProvider="",lastModel="";
+  for(let attempt=0;attempt<3;attempt++){
+    const written=await complete({
+      instructions:V3_INSTRUCTIONS,
+      input:{...input,...(correction?{factualCorrection:correction}:{})},
+      schema,
+      name:"raven_resume_v3"
+    });
+    lastProvider=written.provider||"llm";lastModel=written.model||"";
+    try{
+      const validated=validateV3Draft(written.data,profile,analysis,selection);
+      return {
+        ...validated,
+        analysis:{responsibilities:analysis.responsibilities,requirements:analysis.requirements,keywords:analysis.keywords,target_tags:analysis.target_tags},
+        selection:{experience_ids:selection.experience_ids,experiences:selection.experiences,skills:selection.skills,evidence_ids:selection.evidence_pool.map(f=>f.id)},
+        provider:lastProvider,model:lastModel,
+        architecture:DOCUMENT_V3_VERSION
+      };
+    }catch(error){
+      if(!(error instanceof WriterError)||attempt===2)throw error;
+      correction={
+        draft:written.data,
+        issues:[error.message,"Repair only the invalid passages. Keep the blueprint unchanged and use only approved evidence ids."]
+      };
+    }
+  }
+  fail("V3 could not produce a verified resume.","FACT_CHECK_FAILED",502);
+}
