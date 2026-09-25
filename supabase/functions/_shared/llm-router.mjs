@@ -147,7 +147,7 @@ async function openAICompatibleComplete({provider,baseUrl,apiKey,model,fetchImpl
 async function openrouterComplete({getEnv,fetchImpl,signal,instructions,input,schema,name,maxOutputTokens,responseMode="json"}){
   const apiKey=getEnv("RAVEN_OPENROUTER_API_KEY")||getEnv("OPENROUTER_API_KEY");
   if(!apiKey)throw new WriterError("OpenRouter is not configured.","PROVIDER_NOT_CONFIGURED",503);
-  const model=getEnv("RAVEN_OPENROUTER_MODEL")||"mistralai/mistral-7b-instruct:free";
+  const model=getEnv("RAVEN_OPENROUTER_MODEL")||"google/gemma-4-26b-a4b-it:free";
   const schemaPrompt=responseMode==="text"
     ? instructions
     : [
@@ -168,12 +168,13 @@ async function openrouterComplete({getEnv,fetchImpl,signal,instructions,input,sc
       },
       body:JSON.stringify({
         model,
-        models:model.endsWith(":free")?["google/gemma-3-12b-it:free"]:undefined,
+        models:model.endsWith(":free")?["google/gemma-4-31b-it:free"]:undefined,
         messages:[
           {role:"system",content:schemaPrompt},
           {role:"user",content:JSON.stringify(input)}
         ],
         max_completion_tokens:maxOutputTokens,
+        reasoning:{enabled:false},
         provider:{sort:"throughput",allow_fallbacks:true}
       })
     });
