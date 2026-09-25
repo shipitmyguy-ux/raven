@@ -578,7 +578,7 @@ export async function writeResumeV3({profile,target,complete}){
       input:{...input,...(correction?{correction}:{})},
       schema:null,
       name:"raven_resume_prose_v3",
-      maxOutputTokens:1200,
+      maxOutputTokens:1800,
       responseMode:"text"
     });
     lastProvider=written.provider||"llm";
