@@ -506,34 +506,22 @@ export async function writeResumeV3({profile,target,complete}){
     )
   ].filter((fact,index,rows)=>fact&&rows.findIndex(x=>x.id===fact.id)===index).slice(0,10);
 
-  const writingExperiences=selection.experiences.map(exp=>{
+  const writingExperiences=selection.experiences.map((exp,index)=>{
     const facts=(exp.ranked_fact_ids||[])
       .slice(0,exp.bullet_budget)
       .map(id=>map.get(id))
       .filter(Boolean)
       .map(f=>({id:f.id,text:f.text}));
     return {
+      slot:"EXP"+index,
       role:exp.role,
       company:exp.company,
       bullet_facts:facts
     };
   });
 
-  const compactSchema=obj({
-    summary:str,
-    experience:arr(
-      obj({bullets:arr(str,1,4)}),
-      selection.experiences.length,
-      selection.experiences.length
-    )
-  });
-
   const input={
-    target:{
-      track:target.track,
-      title:target.title,
-      company:target.company
-    },
+    target:{track:target.track,title:target.title,company:target.company},
     focus:analysis.identity_focus,
     job_priorities:[
       ...analysis.responsibilities.slice(0,3),
@@ -542,6 +530,7 @@ export async function writeResumeV3({profile,target,complete}){
     selected_skills:selection.skills.slice(0,8),
     summary_facts:summaryEvidence.map(f=>f.text),
     experience:writingExperiences.map(row=>({
+      slot:row.slot,
       role:row.role,
       company:row.company,
       bullet_facts:row.bullet_facts.map(f=>f.text)
@@ -551,46 +540,68 @@ export async function writeResumeV3({profile,target,complete}){
   const instructions=[
     "You are Raven's resume prose writer. Raven has already selected every fact. Your only job is wording.",
     "Write concise, polished resume prose tailored to the target role. Do not invent facts, numbers, tools, outcomes, credentials, employers, or duties.",
-    "Return JSON only with summary and experience.",
-    "experience must contain exactly one entry for each input experience, in the same order.",
-    "For each experience, return exactly one bullet for each bullet_facts item, in the same order. Rewrite that fact only; do not combine facts or add new information.",
-    "Keep bullets compact: usually 16-30 words. Keep the summary to 2-3 sentences.",
+    "Return plain text only. No JSON, markdown, numbering, commentary, or extra lines.",
+    "Use exactly this format:",
+    "SUMMARY|||<2-3 sentence summary on one line>",
+    "Then one line per bullet using the matching experience slot, for example: EXP0|||<bullet text>",
+    "Return exactly one bullet line for each bullet_facts item, preserving the input experience order and fact order.",
+    "Keep bullets compact: usually 16-30 words.",
     "For non-game targets, frame transferable capabilities around the target function rather than leading with game-art identity.",
-    "Do not include names, contact information, evidence IDs, role IDs, markdown, or commentary."
+    "Do not include names, contact information, evidence IDs, or role IDs."
   ].join("\n");
+
+  function parseProse(value){
+    const lines=String(value||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+    const summaryLine=lines.find(line=>line.toUpperCase().startsWith("SUMMARY|||"));
+    const summary=summaryLine?summaryLine.slice("SUMMARY|||".length).trim():"";
+    const experience=writingExperiences.map(row=>{
+      const prefix=row.slot+"|||";
+      return {
+        bullets:lines
+          .filter(line=>line.toUpperCase().startsWith(prefix))
+          .map(line=>line.slice(prefix.length).trim())
+          .filter(Boolean)
+      };
+    });
+    if(!summary)fail("The writer returned no summary.");
+    for(let i=0;i<writingExperiences.length;i++){
+      if(experience[i].bullets.length!==writingExperiences[i].bullet_facts.length)
+        fail("The writer returned the wrong number of bullets for "+writingExperiences[i].company+".");
+    }
+    return {summary,experience};
+  }
 
   let correction=null,lastProvider="",lastModel="";
   for(let attempt=0;attempt<2;attempt++){
     const written=await complete({
       instructions,
       input:{...input,...(correction?{correction}:{})},
-      schema:compactSchema,
+      schema:null,
       name:"raven_resume_prose_v3",
-      maxOutputTokens:2200
+      maxOutputTokens:1200,
+      responseMode:"text"
     });
     lastProvider=written.provider||"llm";
     lastModel=written.model||"";
 
     try{
-      const rows=Array.isArray(written.data?.experience)?written.data.experience:[];
+      const prose=parseProse(written.data);
       const headlineIds=summaryEvidence.map(f=>f.id).slice(0,8);
-      const headlineText=deterministicHeadline(analysis);
       const draft={
         headline:{
-          text:headlineText,
+          text:deterministicHeadline(analysis),
           fact_ids:headlineIds.length?headlineIds:[selection.evidence_pool[0]?.id].filter(Boolean)
         },
         summary:{
-          text:String(written.data?.summary||"").trim(),
+          text:prose.summary,
           fact_ids:summaryEvidence.map(f=>f.id).slice(0,8)
         },
         experience:selection.experiences.map((exp,index)=>{
-          const writtenBullets=Array.isArray(rows[index]?.bullets)?rows[index].bullets:[];
           const sourceIds=writingExperiences[index]?.bullet_facts.map(f=>f.id)||[];
           return {
             experience_id:exp.experience_id,
             bullets:sourceIds.map((id,bulletIndex)=>({
-              text:String(writtenBullets[bulletIndex]||"").trim(),
+              text:prose.experience[index].bullets[bulletIndex],
               fact_ids:[id]
             }))
           };
@@ -612,7 +623,7 @@ export async function writeResumeV3({profile,target,complete}){
       if(!(error instanceof WriterError)||attempt===1)throw error;
       correction={
         issue:error.message,
-        instruction:"Rewrite only the invalid prose. Preserve the exact number and order of experience entries and bullets."
+        instruction:"Return the required SUMMARY||| and EXPn||| lines only. Preserve the exact number and order of bullet lines."
       };
     }
   }
