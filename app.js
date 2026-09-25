@@ -1551,17 +1551,24 @@
       .filter(Boolean)
       .filter(part=>!(/^linkedin$/i.test(part)&&linkedin))
       .filter(part=>!(/^portfolio$/i.test(part)&&portfolio));
-    const rendered=base.map(part=>escapeHtml(part));
+    const renderPart=(part)=>{
+      const raw=String(part||"").trim();
+      const looksLikeWeb=!raw.includes("@") && /^(?:https?:\/\/|www\.|linkedin\.com\/|[a-z0-9.-]+\.[a-z]{2,}\/)/i.test(raw);
+      const href=looksLikeWeb?safeResumeLink(raw):"";
+      if(!href) return escapeHtml(raw);
+      const display=href.replace(/^https?:\/\//i,"").replace(/\/$/,"");
+      return '<a href="'+escapeAttr(href)+'" target="_blank" rel="noopener">'+escapeHtml(display)+'</a>';
+    };
+    const rendered=base.map(renderPart);
     if(linkedin){
       const display=linkedin.replace(/^https?:\/\//i,"").replace(/\/$/,"");
-      rendered.push('<a href="'+escapeAttr(linkedin)+'" target="_blank" rel="noopener">'+escapeHtml(display)+'</a>');
+      const already=base.some(part=>part.toLowerCase().replace(/^https?:\/\//,"").replace(/\/$/,"")===display.toLowerCase());
+      if(!already) rendered.push('<a href="'+escapeAttr(linkedin)+'" target="_blank" rel="noopener">'+escapeHtml(display)+'</a>');
     }
     if(portfolio){
-      const already=base.some(part=>part.toLowerCase().includes(portfolio.replace(/^https?:\/\//i,"").replace(/\/$/,"").toLowerCase()));
-      if(!already){
-        const display=portfolio.replace(/^https?:\/\//i,"").replace(/\/$/,"");
-        rendered.push('<a href="'+escapeAttr(portfolio)+'" target="_blank" rel="noopener">'+escapeHtml(display)+'</a>');
-      }
+      const display=portfolio.replace(/^https?:\/\//i,"").replace(/\/$/,"");
+      const already=base.some(part=>part.toLowerCase().replace(/^https?:\/\//,"").replace(/\/$/,"")===display.toLowerCase());
+      if(!already) rendered.push('<a href="'+escapeAttr(portfolio)+'" target="_blank" rel="noopener">'+escapeHtml(display)+'</a>');
     }
     return rendered.join(" &nbsp;·&nbsp; ");
   }
