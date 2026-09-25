@@ -122,6 +122,7 @@ export function createResumeV3Handler({getEnv,fetchImpl=fetch}){
         schema_version:DOCUMENT_SCHEMA_VERSION,
         provider:written.provider,
         model:written.model,
+        provider_attempts:Number(written.provider_attempts||1),
         resume:written.document,
         job_analysis:written.analysis,
         evidence_selection:written.selection,
@@ -132,11 +133,14 @@ export function createResumeV3Handler({getEnv,fetchImpl=fetch}){
       const known=error instanceof WriterError;
       const status=known?error.status:503,code=known?error.code:"GENERATION_UNAVAILABLE";
       await finish("failure",status,code+(known?": "+error.message:""));
+      const nonRetryable=new Set(["LLM_NOT_CONFIGURED","LLM_PROVIDER_ACCOUNT_ERROR","PROVIDER_BILLING","PROVIDER_AUTH","INVALID_INPUT"]);
       return json({
         error:known?error.message:"V3 generation is temporarily unavailable.",
         code,
         provider:"raven-llm-router-v1",
-        retryable:status>=500&&code!=="LLM_NOT_CONFIGURED"
+        provider_attempts:Number(error?.providerAttempts||0),
+        provider_failures:Array.isArray(error?.providerFailures)?error.providerFailures:[],
+        retryable:status>=500&&!nonRetryable.has(code)
       },status);
     }
   };
