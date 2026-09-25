@@ -1,5 +1,5 @@
 import {writeDocument,WriterError,WRITER_VERSION} from "./document-writer.mjs";
-import {createLLMCompletion,llmProviderStatus} from "./llm-router.mjs";
+import {createLLMCompletion,llmProviderStatus,llmUsageStatus} from "./llm-router.mjs";
 import {buildDeterministicResumeV3,writeResumeV3} from "./document-v3.mjs";
 const ORIGINS=new Set(["https://shipitmyguy-ux.github.io","http://localhost:8000","http://127.0.0.1:8000"]);
 const TRACKS=new Set(["Professional","Labor","Wildcard","Games / 3D"]);
@@ -20,9 +20,13 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
     if((origin&&!ORIGINS.has(origin))||req.headers.get("x-raven-client")!=="raven-web-v1")return json({error:"Forbidden"},403);
     const providerStatus=llmProviderStatus(getEnv);
     const primaryProvider=providerStatus.order.find(name=>providerStatus.configured[name])||"";
-    if(req.method==="GET")return json({ok:true,service,architecture:WRITER_VERSION,
-      provider_router:"raven-llm-router-v1",primary_provider:primaryProvider,
-      configured:Boolean(primaryProvider),providers:providerStatus.configured,provider_order:providerStatus.order});
+    if(req.method==="GET"){
+      const usage=await llmUsageStatus(getEnv,fetchImpl);
+      return json({ok:true,service,architecture:WRITER_VERSION,
+        provider_router:"raven-llm-router-v1",primary_provider:primaryProvider,
+        configured:Boolean(primaryProvider),providers:providerStatus.configured,
+        provider_order:providerStatus.order,usage});
+    }
     if(req.method!=="POST")return json({error:"GET or POST required"},405);
     let eid=null;
     const rpc=async(name,payload,timeout=10000)=>{
