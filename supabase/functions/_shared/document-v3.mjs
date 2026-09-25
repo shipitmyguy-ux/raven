@@ -402,6 +402,95 @@ export function buildResumeV3Plan(profile,target){
   };
 }
 
+
+function cleanFactBullet(value){
+  let text=String(value||"").replace(/^Verified skill:\s*/i,"").replace(/\s+/g," ").trim();
+  if(!text)return "";
+  text=text.replace(/^[•*-]+\s*/,"");
+  if(!/[.!?]$/.test(text))text+=".";
+  return text.charAt(0).toUpperCase()+text.slice(1);
+}
+function deterministicHeadline(analysis){
+  if(analysis.track==="Games / 3D")return "Environment Artist | 3D Production | World Building";
+  if(analysis.track==="Labor")return "Maintenance Technician | Repair | Troubleshooting | Technical Operations";
+  const title=String(analysis.title||"").toLowerCase();
+  if(/implementation|onboarding/.test(title))return "Implementation & Operations | Onboarding | Training";
+  if(/project/.test(title))return "Project Coordination | Cross-Functional Delivery | Operations";
+  if(/learning|training|enablement/.test(title))return "Learning & Implementation | Training | Team Development";
+  if(/customer success|client success/.test(title))return "Customer Success | Onboarding | Operational Coordination";
+  return "Operations | Project Delivery | Cross-Functional Collaboration";
+}
+function deterministicSummary(analysis,selection){
+  const skills=(selection.skills||[]).slice(0,5);
+  if(analysis.track==="Games / 3D"){
+    return "Environment artist with experience in world building, asset creation, production workflows, cross-functional collaboration, and mentoring across shipped game projects.";
+  }
+  if(analysis.track==="Labor"){
+    return "Hands-on maintenance professional with experience in equipment teardown and repair, troubleshooting, workflow execution, and cross-functional technical collaboration.";
+  }
+  const lead=analysis.identity_focus
+    ? "Professional focused on "+analysis.identity_focus+"."
+    : "Professional focused on project delivery and operations.";
+  const support=skills.length
+    ? " Brings verified strengths in "+skills.join(", ")+"."
+    : "";
+  return lead+support;
+}
+export function buildDeterministicResumeV3(profile,target){
+  const plan=buildResumeV3Plan(profile,target);
+  const analysis=plan.internal.analysis;
+  const selection=plan.internal.selection;
+  const catalog=new Map(evidenceCatalog(profile).map(f=>[f.id,f]));
+  const experience=selection.experiences.map(item=>{
+    const original=(profile.experience||[]).find(e=>e.id===item.experience_id);
+    const bullets=[];
+    for(const id of item.ranked_fact_ids||[]){
+      const fact=catalog.get(id);
+      if(!fact||fact.experience_id!==item.experience_id)continue;
+      const text=cleanFactBullet(fact.text);
+      if(!text||bullets.includes(text))continue;
+      bullets.push(text);
+      if(bullets.length>=item.bullet_budget)break;
+    }
+    return {
+      role:original?.role||item.role||"",
+      company:original?.company||item.company||"",
+      dates:original?.dates||item.dates||"",
+      bullets:bullets.length?bullets:["Contributed verified experience relevant to this role."]
+    };
+  });
+  const used=new Set(experience.flatMap(row=>row.bullets.map(x=>x.toLowerCase())));
+  const additional=[];
+  for(const id of selection.evidence_pool.map(f=>f.id)){
+    if(!/^xfer_/i.test(id))continue;
+    const fact=catalog.get(id);
+    const text=cleanFactBullet(fact?.text);
+    if(!text||used.has(text.toLowerCase())||additional.includes(text))continue;
+    additional.push(text);
+    if(additional.length>=4)break;
+  }
+  return {
+    document:{
+      schema_version:DOCUMENT_SCHEMA_VERSION,
+      name:profile.name,
+      contact:profile.contact,
+      headline:deterministicHeadline(analysis),
+      summary:deterministicSummary(analysis,selection),
+      skills:[...selection.skills],
+      experience,
+      education:structuredClone(profile.education||[]),
+      additional
+    },
+    analysis:plan.analysis,
+    selection:plan.selection,
+    diagnostics:{hard_errors:[],advisories:[]},
+    provider:"deterministic",
+    model:"none",
+    provider_attempts:0,
+    architecture:"resume-v3-deterministic"
+  };
+}
+
 export async function writeResumeV3({profile,target,complete}){
   const plan=buildResumeV3Plan(profile,target);
   const analysis=plan.internal.analysis;
