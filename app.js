@@ -2072,12 +2072,59 @@
     const label=documentLabel(key);
     if(!window.confirm("Delete this "+label+" from the job?")) return;
     setStatus("Deleting "+label+"...");
+
+    const previousValue=job[key]||"";
+    const pending=pendingDocumentSync();
+    const previousPending=pending[job.id]?.[key]||null;
+
+    // A failed document save can leave a newer pending copy in local storage.
+    // Clear it before deleting or loadJobs/flushPendingDocuments can resurrect
+    // the document immediately after the server has removed it.
+    if(pending[job.id]?.[key]){
+      delete pending[job.id][key];
+      if(!pending[job.id].resume&&!pending[job.id].coverLetter) delete pending[job.id];
+      writeCache(PENDING_DOCUMENT_SYNC_KEY,pending);
+    }
+
+    // Deleting a document also invalidates its generated-content cache so a
+    // later Generate action creates a fresh document instead of restoring the
+    // deleted version.
+    const cache=generationCache();
+    const cacheId=generationCacheId(job,null,key);
+    if(cache[cacheId]){
+      delete cache[cacheId];
+      writeCache(GENERATION_CACHE_KEY,cache);
+    }
+
+    job[key]="";
+    const saved=state.jobs.find((item)=>String(item.id)===String(job.id));
+    if(saved) saved[key]="";
+    writeCache(CACHE_JOBS_KEY,state.jobs);
+    setDocumentApproved(job,key,false);
+    generationErrors.delete(documentApprovalKey(job,key));
+    render();
+
     try{
-      await window.RavenAPI.updateJob(job.id,{[key]:""});
-      setDocumentApproved(job,key,false);
-      await loadJobs();
+      if(!job._discovered){
+        const updated=await window.RavenAPI.updateJob(job.id,{[key]:""});
+        if(updated?.last_updated){
+          job.lastUpdated=updated.last_updated;
+          if(saved) saved.lastUpdated=updated.last_updated;
+        }
+      }
+      writeCache(CACHE_JOBS_KEY,state.jobs);
       setStatus(label[0].toUpperCase()+label.slice(1)+" deleted");
     }catch(error){
+      // Restore only when the server explicitly rejected the deletion.
+      job[key]=previousValue;
+      if(saved) saved[key]=previousValue;
+      writeCache(CACHE_JOBS_KEY,state.jobs);
+      if(previousPending){
+        const restored=pendingDocumentSync();
+        restored[job.id]={...(restored[job.id]||{}),[key]:previousPending};
+        writeCache(PENDING_DOCUMENT_SYNC_KEY,restored);
+      }
+      render();
       setStatus("Could not delete "+label+": "+error.message);
     }
   }
