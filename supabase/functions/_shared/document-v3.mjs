@@ -1,6 +1,6 @@
 import {WriterError,evidenceCatalog} from "./document-writer.mjs";
 
-export const DOCUMENT_V3_VERSION="resume-v3-alpha2";
+export const DOCUMENT_V3_VERSION="resume-v3-shadow-alpha3";
 export const DOCUMENT_SCHEMA_VERSION=3;
 
 const str={type:"string"};
