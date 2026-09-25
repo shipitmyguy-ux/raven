@@ -506,8 +506,8 @@ export async function writeResumeV3({profile,target,complete}){
     blueprint:{identity_focus:analysis.identity_focus,experiences:selection.experiences,skills:selection.skills},
     evidencePool:selection.evidence_pool,
     candidateContext:{
-      name:profile.name,
-      contact:profile.contact,
+      name:"Candidate",
+      contact:"",
       education:profile.education||[]
     }
   };
@@ -523,7 +523,12 @@ export async function writeResumeV3({profile,target,complete}){
     });
     lastProvider=written.provider||"llm";lastModel=written.model||"";
     try{
-      const validated=validateV3Draft(written.data,profile,analysis,selection);
+      const draft={
+        ...written.data,
+        name:profile.name,
+        contact:profile.contact
+      };
+      const validated=validateV3Draft(draft,profile,analysis,selection);
       if(validated.diagnostics.advisories.length && attempt<2){
         correction={
           draft:written.data,
