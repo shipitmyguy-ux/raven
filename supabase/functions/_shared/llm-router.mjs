@@ -271,6 +271,26 @@ async function geminiComplete({getEnv,fetchImpl,signal,instructions,input,schema
   return {data:responseMode==="text"?String(output||"").trim():parseJsonText(output),provider:"gemini",model:raw?.modelVersion||model};
 }
 
+export async function llmUsageStatus(getEnv,fetchImpl=fetch){
+  const apiKey=getEnv("RAVEN_OPENROUTER_API_KEY")||getEnv("OPENROUTER_API_KEY");
+  if(!apiKey)return {openrouter:null};
+  try{
+    const response=await fetchImpl("https://openrouter.ai/api/v1/key",{
+      headers:{"Authorization":"Bearer "+apiKey},
+      signal:AbortSignal.timeout(8000)
+    });
+    const raw=await response.json().catch(()=>null);
+    const free=raw?.data?.free_model_daily_requests||null;
+    return {openrouter:free?{
+      used:Number(free.used||0),
+      limit:Number(free.limit||0),
+      remaining:Number(free.remaining||0)
+    }:null};
+  }catch{
+    return {openrouter:null};
+  }
+}
+
 export function llmProviderStatus(getEnv){
   return {configured:configured(getEnv),order:providerOrder(getEnv)};
 }
