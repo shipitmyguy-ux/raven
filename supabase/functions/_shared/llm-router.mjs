@@ -68,6 +68,7 @@ function geminiSchema(schema){
 }
 function configured(getEnv){
   return {
+    openrouter:Boolean(getEnv("RAVEN_OPENROUTER_API_KEY")||getEnv("OPENROUTER_API_KEY")),
     cloudflare:Boolean(
       (getEnv("RAVEN_CLOUDFLARE_API_TOKEN")||getEnv("CLOUDFLARE_API_TOKEN")||getEnv("CLOUDFLARE_AUTH_TOKEN")) &&
       (getEnv("RAVEN_CLOUDFLARE_ACCOUNT_ID")||getEnv("CLOUDFLARE_ACCOUNT_ID"))
@@ -78,9 +79,9 @@ function configured(getEnv){
   };
 }
 function providerOrder(getEnv){
-  const requested=String(getEnv("RAVEN_LLM_PROVIDER_ORDER")||"cloudflare,gemini,cerebras,groq")
+  const requested=String(getEnv("RAVEN_LLM_PROVIDER_ORDER")||"openrouter,cloudflare,gemini,cerebras,groq")
     .split(",").map(v=>v.trim().toLowerCase()).filter(Boolean);
-  return [...new Set(requested.filter(v=>["cloudflare","cerebras","groq","gemini"].includes(v)))];
+  return [...new Set(requested.filter(v=>["openrouter","cloudflare","cerebras","groq","gemini"].includes(v)))];
 }
 async function openAICompatibleComplete({provider,baseUrl,apiKey,model,fetchImpl,signal,instructions,input,schema,name,maxOutputTokens}){
   const response=await fetchImpl(baseUrl+"/chat/completions",{
@@ -104,6 +105,19 @@ async function openAICompatibleComplete({provider,baseUrl,apiKey,model,fetchImpl
   const text=Array.isArray(content)?content.map(p=>p?.text||"").join(""):content;
   return {data:parseJsonText(text),provider,model:raw?.model||model};
 }
+async function openrouterComplete(args){
+  const apiKey=args.getEnv("RAVEN_OPENROUTER_API_KEY")||args.getEnv("OPENROUTER_API_KEY");
+  if(!apiKey)throw new WriterError("OpenRouter is not configured.","PROVIDER_NOT_CONFIGURED",503);
+  const model=args.getEnv("RAVEN_OPENROUTER_MODEL")||"openrouter/free";
+  return openAICompatibleComplete({
+    ...args,
+    provider:"openrouter",
+    baseUrl:"https://openrouter.ai/api/v1",
+    apiKey,
+    model
+  });
+}
+
 async function cloudflareComplete(args){
   const token=args.getEnv("RAVEN_CLOUDFLARE_API_TOKEN")||args.getEnv("CLOUDFLARE_API_TOKEN")||args.getEnv("CLOUDFLARE_AUTH_TOKEN");
   const accountId=args.getEnv("RAVEN_CLOUDFLARE_ACCOUNT_ID")||args.getEnv("CLOUDFLARE_ACCOUNT_ID");
@@ -219,7 +233,8 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
         totalProviderCalls+=1;
         const common={getEnv,fetchImpl,signal:stageSignal,instructions,input,schema,name,maxOutputTokens};
         let result;
-        if(provider==="cloudflare")result=await cloudflareComplete(common);
+        if(provider==="openrouter")result=await openrouterComplete(common);
+        else if(provider==="cloudflare")result=await cloudflareComplete(common);
         else if(provider==="cerebras")result=await cerebrasComplete(common);
         else if(provider==="groq")result=await groqComplete(common);
         else if(provider==="gemini")result=await geminiComplete(common);
