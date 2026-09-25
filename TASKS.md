@@ -101,3 +101,10 @@ These are feature expansions, not Raven closeout blockers.
 - [x] Implement shared Gemini writer for both document types and context-aware revisions; remove deterministic sentence assembly.
 - [x] Test writer contracts, errors, grounding-review/repair gate and request budgets with mocked provider responses.
 - [x] Deploy and verify authored prose on Akima and Campminder, both document previews, revision behavior, invalid-draft preservation and persistence after refresh (2026-09-24). All 16 mocked writer/handler tests and required CI/production smoke passed.
+
+
+## Generate button regression (2026-09-25)
+- [x] Remove obsolete device-local master requirement from canonical-profile generation; cover both document types, revisions, and forced regeneration.
+- [x] Surface failures beside the Generate button, catch initial render failures, and retain progress after discovery jobs receive saved IDs.
+- [x] Add browser regressions for no device masters across all four tracks, missing legacy files, failed generation/retry, and forced regeneration.
+- [~] Deploy with existing Pages workflow and verify a real generated resume survives refresh.

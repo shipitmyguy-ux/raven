@@ -425,55 +425,22 @@ test("offline resume generation refuses to create a non-LLM document",async({pag
 });
 
 test("generation cache prevents a duplicate resume model call",async({page})=>{
-  await page.addInitScript(()=>{
-    localStorage.setItem("ravenMasterResumesV1",JSON.stringify([{
-      id:"cache-master",name:"Cache master",sourceType:"local",fileName:"cache.txt",version:"cache-v1",tracks:["Professional"]
-    }]));
-  });
   const api=await mockRaven(page);
   await page.goto("/");
-  await page.evaluate(()=>new Promise((resolve,reject)=>{
-    const request=indexedDB.open("ravenMasterResumeFilesV1",1);
-    request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains("files")) request.result.createObjectStore("files");};
-    request.onerror=()=>reject(request.error);
-    request.onsuccess=()=>{
-      const db=request.result;
-      const tx=db.transaction("files","readwrite");
-      tx.objectStore("files").put(new File(["Cached master resume text"],"cache.txt",{type:"text/plain"}),"cache-master");
-      tx.oncomplete=()=>{db.close();resolve();};
-      tx.onerror=()=>reject(tx.error);
-    };
-  }));
-  await page.evaluate(async(resume)=>{
-    const db=await new Promise((resolve,reject)=>{
-      const request=indexedDB.open("ravenMasterResumeFilesV1",1);
-      request.onsuccess=()=>resolve(request.result);
-      request.onerror=()=>reject(request.error);
-    });
-    const file=await new Promise((resolve,reject)=>{
-      const tx=db.transaction("files","readonly");
-      const get=tx.objectStore("files").get("cache-master");
-      get.onsuccess=()=>resolve(get.result);
-      get.onerror=()=>reject(get.error);
-    });
-    db.close();
-    const dataUrl=await new Promise((resolve,reject)=>{
-      const reader=new FileReader();
-      reader.onload=()=>resolve(String(reader.result||""));
-      reader.onerror=()=>reject(reader.error);
-      reader.readAsDataURL(file);
-    });
-    const job={id:"job-1",track:"Professional",title:"Implementation Project Manager",company:"Acme Health",url:"https://example.com/job/1?utm_source=test",source:"Mock",status:"Saved",notes:"Lead implementation projects, coordinate internal teams, manage schedules and stakeholder communication."};
-    const master={id:"cache-master",name:"Cache master",sourceType:"local",fileName:"cache.txt",version:"cache-v1",url:"",dataUrl};
-    const key=window.RavenCore.generationFingerprint(job,master,"resume","modern-v8");
-    localStorage.setItem("ravenGenerationCacheV1",JSON.stringify({[key]:{resume,createdAt:new Date().toISOString()}}));
-  },generatedResume);
-
-  await page.locator('[data-track="Professional"]').click();
+  await page.getByRole("tab",{name:"Professional",exact:true}).click();
   await page.locator(".job-card-summary").first().click();
   await page.locator('[data-generate="resume"]').click();
   await expect(page.locator("#documentReviewDialog")).toBeVisible();
-  expect(api.getGenerationCalls()).toBe(0);
+  expect(api.getGenerationCalls()).toBe(1);
+  await page.getByRole("button",{name:"Close",exact:true}).click();
+  // A fresh server read has no document; identical inputs should reuse the cache.
+  api.getJob().resume="";
+  await page.reload();
+  await page.getByRole("tab",{name:"Professional",exact:true}).click();
+  await page.locator(".job-card-summary").first().click();
+  await page.locator('[data-generate="resume"]').click();
+  await expect(page.locator("#documentReviewDialog")).toBeVisible();
+  expect(api.getGenerationCalls()).toBe(1);
 });
 
 test("application requires approval of both exact documents",async({page})=>{
@@ -1019,3 +986,74 @@ test("generators save discovery jobs and recover descriptions before generating 
   await expect(page.locator('[data-generate="resume"]')).toHaveText("Review");
   await expect(page.locator('[data-generate="coverLetter"]')).toHaveText("Review");
 });
+
+for (const track of ["Games / 3D", "Professional", "Labor", "Wildcard"]) {
+  test(`canonical profile generates both documents without device masters: ${track}`, async ({page}) => {
+    const errors=[]; page.on("pageerror",error=>errors.push(error.message));
+    const api=await mockRaven(page,{generatorDelayMs:700,initialJob:{track}});
+    await page.goto("/");
+    await page.getByRole("tab",{name:track,exact:true}).click();
+    await page.locator(".job-card-summary").first().click();
+    for(const type of ["resume","coverLetter"]){
+      await page.locator(`[data-generate="${type}"]`).click();
+      await expect(page.locator(".generation-card-status")).toBeVisible();
+      await expect(page.locator(".document-primary.is-generating")).toBeDisabled();
+      await expect(page.locator("#documentReviewDialog")).toBeVisible();
+      await expect(page.frameLocator("#reviewFrame").locator("body")).toContainText("Test Candidate");
+      await page.getByRole("button",{name:"Close",exact:true}).click();
+    }
+    expect(api.getGenerationCalls()).toBe(2);
+    expect(api.getGenerationBodies().every(body=>!("masterResume" in body))).toBe(true);
+    await page.reload();
+    await page.getByRole("tab",{name:track,exact:true}).click();
+    await page.locator(".job-card-summary").first().click();
+    await expect(page.locator('[data-generate="resume"]')).toHaveText("Review");
+    await expect(page.locator('[data-generate="coverLetter"]')).toHaveText("Review");
+    expect(errors).toEqual([]);
+  });
+}
+
+test("missing legacy local file does not block the canonical profile generator",async({page})=>{
+  await page.addInitScript(()=>localStorage.setItem("ravenMasterResumesV1",JSON.stringify([
+    {id:"missing-file",sourceType:"local",fileName:"old.txt",tracks:["Professional"]}
+  ])));
+  const api=await mockRaven(page);
+  await page.goto("/");
+  await page.getByRole("tab",{name:"Professional",exact:true}).click();
+  await page.locator(".job-card-summary").first().click();
+  await page.locator('[data-generate="resume"]').click();
+  await expect(page.locator("#documentReviewDialog")).toBeVisible();
+  expect(api.getGenerationCalls()).toBe(1);
+});
+
+test("generation errors stay beside the button and allow a successful retry",async({page})=>{
+  await mockRaven(page,{generatorFails:true});
+  await page.goto("/");
+  await page.getByRole("tab",{name:"Professional",exact:true}).click();
+  await page.locator(".job-card-summary").first().click();
+  await page.locator('[data-generate="resume"]').click();
+  await expect(page.locator(".document-generation-error")).toContainText("Mock generator unavailable");
+  await expect(page.locator('[data-generate="resume"]')).toBeEnabled();
+  await expect(page.locator(".generation-card-status")).toHaveCount(0);
+  await page.route("**/functions/v1/raven-generate-v1**",route=>route.fulfill({json:{ok:true,resume:generatedResume}}));
+  await page.locator('[data-generate="resume"]').click();
+  await expect(page.locator("#documentReviewDialog")).toBeVisible();
+  await expect(page.locator(".document-generation-error")).toHaveCount(0);
+});
+
+for(const type of ["resume","coverLetter"]){
+  test(`Regenerate bypasses cached ${type} with no device master`,async({page})=>{
+    const api=await mockRaven(page);
+    await page.goto("/");
+    await page.getByRole("tab",{name:"Professional",exact:true}).click();
+    await page.locator(".job-card-summary").first().click();
+    await page.locator(`[data-generate="${type}"]`).click();
+    await expect(page.locator("#documentReviewDialog")).toBeVisible();
+    await page.getByRole("button",{name:"Close",exact:true}).click();
+    const label=type==="resume"?"resume":"cover letter";
+    await page.getByRole("button",{name:`More ${label} options`}).click();
+    await page.getByRole("menuitem",{name:"Regenerate",exact:true}).click();
+    await expect(page.locator("#documentReviewDialog")).toBeVisible();
+    expect(api.getGenerationCalls()).toBe(2);
+  });
+}

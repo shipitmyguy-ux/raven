@@ -121,3 +121,13 @@ Everything else still listed in `TASKS.md` is either a continuing quality improv
 - Live Akima and Campminder generation, natural-language revision, preview and saved-document reload checks passed. Final Campminder resume/cover used the source-reference gate; an invalid employer attribution was rejected without replacing the prior draft. Supabase persistence was also read back directly.
 - Prior all-four-track generator acceptance above describes the previous engine. Current live prose checks cover these two real jobs; model factual review is not a guarantee, and drafts still require user review. No documents were approved or submitted.
 - See docs/DOCUMENT_WRITING.md for the reuse evaluation, implementation, boundaries and acceptance procedure.
+
+
+## Generate button repair (2026-09-25)
+- Reproduced on live app.js v51: a fresh browser fails immediately with "Assign a master resume to this job track first." The handler is bound, but its obsolete device-local prerequisite prevents the request to the canonical-profile service. The brief spinner disappears and the only failure message was in the page header.
+- Frontend generation now uses the existing server-side verified profile for both documents, including revisions and forced regeneration. No Work dependency, new service, backend deployment, or user-data migration.
+- Errors remain next to the document button; the initial render is now inside the error boundary. Discovery-to-saved ID changes retain the active generation session.
+- Local validation: core regression files and secret scan passed after correcting stale assertions from earlier tailoring releases. All 46 browser cases passed across the suite and focused reruns (mocked services, not live model quality).
+- Deployment/live acceptance pending at this commit; see latest WORK_HANDOFF.md for completion evidence.
+
+Concurrent main updates a93af28/d89b38f/ff23f8a were reviewed before publication. Live v52 reproduces `DataError: Failed to execute get on IDBObjectStore: No key or key range specified` at getMasterResumeFile -> generateDocumentOnline -> generateForJob. The partial fix defaulted the master to an empty object and then read IndexedDB with an undefined ID. This patch removes that obsolete generation-file read entirely and preserves the concurrent stale-session recovery and preparing status.

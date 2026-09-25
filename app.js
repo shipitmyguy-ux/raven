@@ -45,6 +45,7 @@
   const RESUME_TEMPLATE_VERSION="modern-v9-tailoring";
   const DEFAULT_FOLLOW_UP_DAYS=7;
   const activeGeneration=new Map();
+  const generationErrors=new Map();
   let editingMasterResumeId=null;
   let editingAnswerMemoryKey=null;
 
@@ -1600,6 +1601,11 @@
         if(!saved?.id) throw new Error("The job could not be saved. Please retry.");
         const normalized=window.RavenCore?.fromApiJob?window.RavenCore.fromApiJob(saved):saved;
         Object.assign(job,normalized,{_discovered:false});
+        const session=activeGeneration.get(String(previousId));
+        if(session){
+          activeGeneration.delete(String(previousId));
+          activeGeneration.set(generationKey(job),session);
+        }
         const index=state.jobs.findIndex((item)=>String(item.id)===String(job.id));
         if(index>=0) state.jobs[index]=job;
         else state.jobs.push(job);
@@ -1629,43 +1635,33 @@
   }
 
   async function generateForJob(job,type,button=null,options={}) {
-    const force=Boolean(options.force);
-    if(job[type]&&!force) return openDocumentReview(job,type);
     const existing=generationSession(job);
     if(existing){
       if(Date.now()-Number(existing.startedAt||0)<180000) return;
       activeGeneration.delete(generationKey(job));
     }
-    const session={type,autoOpen:state.selectedId===job.id,startedAt:Date.now(),phase:"Writing with AI"};
-    let shouldOpen=false;
     try{
+      generationErrors.delete(documentApprovalKey(job,type));
+      if(job[type]&&!options.force) return openDocumentReview(job,type);
+      const session={type,autoOpen:state.selectedId===job.id,startedAt:Date.now(),phase:"Writing with AI"};
       activeGeneration.set(generationKey(job),session);
       setGenerationButton(button,true,type==="resume"?"AI generating resume…":"AI generating cover letter…");
       setStatus(type==="resume"?"AI is preparing your resume…":"AI is preparing your cover letter…");
       render();
-
-      if(type!=="resume"){
-        await generateDocumentForJob(job,type,"");
-      }else{
-        const masterResume=await masterResumeTaskInput(job.track||"Professional");
-        await prepareJobForGeneration(job);
-        if(navigator.onLine===false) throw new Error("An internet connection is required for AI resume generation.");
-        setStatus("AI is writing and verifying your resume…");
-        const resume=force
-          ? await generateDocumentOnline(job,masterResume,"resume","")
-          : await generateResumeOnline(job,masterResume);
-        await saveGeneratedDocument(job,"resume",resume);
-        setStatus("Resume ready");
-      }
-      shouldOpen=session.autoOpen&&state.selectedId===job.id;
-    }catch(error){
-      setStatus((type==="resume"?"Resume":"Cover letter")+" generation failed: "+error.message);
-      console.error(documentLabel(type)+" generation failed",error);
-    }finally{
+      await generateDocumentForJob(job,type,"",options);
+      const shouldOpen=session.autoOpen&&state.selectedId===job.id;
       activeGeneration.delete(generationKey(job));
-      try{ render(); }catch(error){ console.error("Raven render failed after generation",error); }
+      render();
+      if(shouldOpen) openDocumentReview(job,type);
+    }catch(error){
+      activeGeneration.delete(generationKey(job));
+      const message=(type==="resume"?"Resume":"Cover letter")+" generation failed: "+error.message;
+      generationErrors.set(documentApprovalKey(job,type),message);
+      setStatus(message);
+      console.error(documentLabel(type)+" generation failed",error);
+      setGenerationButton(button,false);
+      try{ render(); }catch(renderError){ console.error("Could not render generation feedback",renderError); }
     }
-    if(shouldOpen) openDocumentReview(job,type);
   }
 
   function generatedCoverLetterHtml(job,letter){
@@ -1705,17 +1701,10 @@
   }
   async function generateDocumentOnline(job,masterResume,type="resume",instructions=""){
     if(!config?.generateApiUrl) throw new Error("Online document generator is not configured.");
-    masterResume=masterResume||{};
-    if(masterResume && masterResume.sourceType!=="drive" && !masterResume.dataUrl){
-      const file=await getMasterResumeFile(masterResume.id);
-      if(file) masterResume={...masterResume,fileName:file.name,mimeType:file.type||"application/octet-stream",dataUrl:await fileToDataUrl(file)};
-    }
-    // Master resumes remain useful as track/source metadata, but generation is
-    // server-backed from Raven's verified canonical profile and must not be
-    // blocked just because a local master file is missing on this device.
+    // The existing service loads the verified canonical profile server-side.
+    // Device-local master files are not inputs to this generation engine.
     const response=await fetch(config.generateApiUrl,{method:"POST",headers:{"Content-Type":"application/json","X-Raven-Client":"raven-web-v1"},body:JSON.stringify({
-      documentType:type==="coverLetter"?"coverLetter":"resume",instructions,currentDocument:instructions?currentDocumentText(job,type):"",jobId:job.id,jobTitle:job.title||"",company:job.company||"",track:job.track||"Professional",sourceUrl:job.url||"",jobDescription:job.notes||"",jobAnalysis:getJobAnalysis(job),
-      masterResume:{id:masterResume.id||"",name:masterResume.name||"",sourceType:masterResume.sourceType||"",fileName:masterResume.fileName||"",mimeType:masterResume.mimeType||"",dataUrl:masterResume.dataUrl||"",url:masterResume.url||"",version:masterResume.version||""}
+      documentType:type==="coverLetter"?"coverLetter":"resume",instructions,currentDocument:instructions?currentDocumentText(job,type):"",jobId:job.id,jobTitle:job.title||"",company:job.company||"",track:job.track||"Professional",sourceUrl:job.url||"",jobDescription:job.notes||"",jobAnalysis:getJobAnalysis(job)
     })});
     const payload=await response.json().catch(()=>({}));
     if(!response.ok){ const error=new Error(payload.error||("Online generation failed ("+response.status+")")); error.code=payload.code||""; error.provider=payload.provider||""; error.retryable=Boolean(payload.retryable); error.upstreamStatus=payload.upstreamStatus||0; throw error; }
@@ -1724,13 +1713,14 @@
     return document;
   }
 
-  async function generateDocumentForJob(job,type,instructions) {
+  async function generateDocumentForJob(job,type,instructions,options={}) {
     const label=documentLabel(type);
     setStatus((instructions?"Revising ":"Generating ")+label+"...");
     try{
-      const masterResume=await masterResumeTaskInput(job.track||"Professional");
+      if(navigator.onLine===false) throw new Error("An internet connection is required for AI "+label+" generation.");
+      const masterResume=null;
       await prepareJobForGeneration(job);
-      const document=instructions
+      const document=instructions||options.force
         ? await generateDocumentOnline(job,masterResume,type,instructions)
         : await generateDocumentCached(job,masterResume,type);
       await saveGeneratedDocument(job,type,document);
@@ -1992,6 +1982,8 @@
   }
   function documentControl(job,key,label) {
     const value=job[key];
+    const error=generationErrors.get(documentApprovalKey(job,key));
+    const feedback=error?'<span class="document-generation-error" role="alert">'+escapeHtml(error)+'</span>':"";
     const fileLabel=String(label||"file").toLowerCase();
     const generating=generationSession(job);
     if(generating?.type===key){
@@ -2001,11 +1993,11 @@
     }
     if(!value){
       return '<span class="document-control is-empty">'+
-        '<button class="document-primary" type="button" data-generate="'+escapeAttr(key)+'">Generate</button>'+
+        '<button class="document-primary" type="button" data-generate="'+escapeAttr(key)+'">Generate</button>'+feedback+
       '</span>';
     }
     return '<span class="document-control has-file">'+
-      '<button class="document-primary" type="button" data-generate="'+escapeAttr(key)+'">Review</button>'+
+      '<button class="document-primary" type="button" data-generate="'+escapeAttr(key)+'">Review</button>'+feedback+
       '<span class="document-overflow">'+
         '<button class="document-menu-button" type="button" data-document-menu aria-haspopup="menu" aria-expanded="false" aria-label="More '+escapeAttr(fileLabel)+' options" title="More options">…</button>'+
         '<span class="document-menu" role="menu" hidden>'+

@@ -1,37 +1,20 @@
-# Raven Work Handoff
+# Raven execution handoff
 
-Last updated: 2026-09-24
+Updated: 2026-09-25
 
-## Games / 3D eligibility patch
-Production `raven-backend-v3` v48 now applies shared hard eligibility before ranking. For Games / 3D, programmer/programming/engineer/engineering/developer titles and clearly non-English postings are rejected before persistence. Four stale discovered rows and one unapplied saved Gameplay Programmer row were removed. Fresh production searches returned HTTP 200 for all four tracks, with zero forbidden Games / 3D rows remaining in saved or discovered data.
+## Current repair
+Live v51 Generate on Accurx Implementation Analyst immediately failed with "Assign a master resume to this job track first." There was no unbound-click or ReferenceError in this browser: the obsolete local-master gate blocked the existing canonical-profile backend before any request. Header-only feedback disappeared from the user's immediate context.
 
-## Remote classification parity patch
-Production `raven-backend-v3` v47 now classifies remote status from explicit evidence through one shared normalization path used by Professional, Labor, Wildcard, and Games / 3D. LinkedIn's remote-search filter no longer sets `remote=true` by itself. Enrichment revalidates workplace/jobLocationType evidence instead of preserving stale LinkedIn remote flags, and the frontend prefers fresh discovered classification over stale saved flags.
+The frontend now calls the existing generation service without reading/uploading a device master, catches startup rendering errors, keeps errors beside the action, retains generation state when a discovery ID changes, and applies forced regeneration consistently to both document types. app.js cache version is 53. No architecture migration, Work integration, backend/schema changes, document approvals, or employer submissions.
 
-Existing LinkedIn rows were reclassified. Blizzard Irvine and Epic Cary environment-art postings are now non-remote in both discovered and saved data. Fresh production searches returned HTTP 200 for all four tracks, and a live Steel browser check showed the Epic/Blizzard Games / 3D cards without Remote and with commute times. Basic production smoke also passed.
+## Verified locally
+- Core regression files and repository secret scan passed.
+- 46 mocked browser cases passed across the full run and focused reruns. Fresh-browser generation, persisted review for both document types across all four tracks, missing local file, visible provider error/retry, and forced regeneration are covered.
+- Earlier releases left stale test expectations for modern-v8, fixed section markup, and required history on non-game tracks. Those were aligned with the existing tailoring contract without changing writer behavior.
 
+## Remaining this session
+Deploy through the existing GitHub Pages workflow, inspect required CI/production smoke, and verify real live generation -> preview -> refresh. Replace this pending section with observed results.
 
-## Completed release
-User chose Gemini using Raven's existing connection. No OpenAI key or new provider setup is needed.
+GitHub remains canonical code/project state; the existing Supabase canonical profile supplies generation facts. Existing real employer attachment/completion and optional Drive persistence decisions remain in TASKS.md.
 
-Code release: 538742ea9520a6a6be800d2771b38c70d806c5e2.
-Production deployments: raven-generate-v1 v20, raven-generate-v2 v21, raven-cover-v2 v16. UI app.js v43; document cache modern-v5.
-
-The shared writer receives the full verified profile, posting, revision instructions and current draft. Gemini authors the prose, with hidden supporting fact references, immutable identity/employment metadata, employer-specific evidence ownership, and a separate sentence-level factual review. One bounded repair/recheck is allowed; failures preserve the previous document. Existing rendering, persistence, approval gates and request budgets remain.
-
-Resume Matcher and Reactive Resume informed direct-writing/separate-review patterns; no third-party code or prompts were copied and no application migration was needed. See docs/DOCUMENT_WRITING.md.
-
-## Verified
-- 16 local mocked writer/handler tests passed; these test contracts and failure behavior, not real model quality.
-- Core and targeted browser CI passed: https://github.com/shipitmyguy-ux/raven/actions/runs/35956594725
-- Pages passed: https://github.com/shipitmyguy-ux/raven/actions/runs/35956594767
-- Production smoke passed: https://github.com/shipitmyguy-ux/raven/actions/runs/35956594732 and https://github.com/shipitmyguy-ux/raven/actions/runs/35956615180
-- Live Akima Intermediate 3D Artist resume/cover generation and a requested shorter summary were inspected.
-- Live Campminder Manager of Learning and Implementation resume/cover generation exercised a career pivot while retaining actual employment history. A rejected employer attribution preserved the previous draft; final outputs passed the reference checks and model review.
-- Both jobs' documents were read back from Supabase. Final Campminder resume and cover reopened after a fresh page load and completed backend sync.
-- No document approval or employer submission was performed.
-
-## Boundaries
-GitHub remains canonical code/project state; Supabase stores live data. The canonical candidate profile supplies verified facts; this change does not re-ingest newly uploaded or Drive master resumes. No credentials or personal document fixtures committed, no schema or auth changes. Model review is imperfect and user review remains required. Older documents remain saved until rewritten; natural-language changes are available in the review dialog.
-
-No implementation work remains for this release. Existing real employer-form attachment/completion verification and optional Drive persistence decisions remain listed in TASKS.md.
+Concurrent main updates a93af28/d89b38f/ff23f8a were reviewed before publication. Live v52 reproduces `DataError: Failed to execute get on IDBObjectStore: No key or key range specified` at getMasterResumeFile -> generateDocumentOnline -> generateForJob. The partial fix defaulted the master to an empty object and then read IndexedDB with an undefined ID. This patch removes that obsolete generation-file read entirely and preserves the concurrent stale-session recovery and preparing status.

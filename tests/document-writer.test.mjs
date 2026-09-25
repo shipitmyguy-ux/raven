@@ -206,14 +206,15 @@ test("Games / 3D resumes exclude SoundAir unless revision explicitly names it",(
  assert.equal(validateDraft("resume",withSoundAir,gameProfile,{target:{track:"Professional"},instructions:""}).experience.length,2);
 });
 
-test("resume cannot omit profile-designated required career history",()=>{
+test("Games / 3D requires full designated history while non-game tracks can select relevant roles",()=>{
  const requiredProfile={...profile,resume_required_experience_ids:["art","repair"]};
- assert.throws(()=>validateDraft("resume",resume,requiredProfile),/omitted required work history/);
+ assert.throws(()=>validateDraft("resume",resume,requiredProfile,{target:{track:"Games / 3D"}}),/omitted required work history/);
  const complete={...resume,experience:[
    ...resume.experience,
    {experience_id:"repair",bullets:[claim("Repaired coffee makers.",["f3"])]}
  ]};
- assert.equal(validateDraft("resume",complete,requiredProfile).experience.length,2);
+ assert.equal(validateDraft("resume",complete,requiredProfile,{target:{track:"Games / 3D"}}).experience.length,2);
+ for(const track of ["Professional","Labor","Wildcard"]) assert.equal(validateDraft("resume",resume,requiredProfile,{target:{track}}).experience.length,1);
 });
 
 test("cover letter validator tolerates blank optional greeting closing and extra blank paragraph",()=>{

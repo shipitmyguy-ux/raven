@@ -1467,6 +1467,8 @@ main {
 
 
 /* Generated-document primary action and overflow menu */
+.document-control:has(.document-generation-error) { flex-wrap: wrap; }
+.document-generation-error { flex-basis: 100%; color: #b42318; font-size: .75rem; white-space: normal; }
 .document-control {
   position: relative;
   display: inline-flex;
