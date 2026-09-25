@@ -42,7 +42,7 @@
     MASTER_RESUMES_KEY,APPLICATION_PROFILE_KEY,ANSWER_MEMORY_KEY,GENERATOR_PREFS_KEY,
     USER_SETTINGS_KEY,DOCUMENT_APPROVALS_KEY,VIEWED_JOBS_KEY
   ];
-  const RESUME_TEMPLATE_VERSION="modern-v9-tailoring";
+  const RESUME_TEMPLATE_VERSION="modern-v10-contact";
   const DEFAULT_FOLLOW_UP_DAYS=7;
   const activeGeneration=new Map();
   const generationErrors=new Map();
