@@ -1778,7 +1778,31 @@
       documentType:type==="coverLetter"?"coverLetter":"resume",instructions,currentDocument:instructions?currentDocumentText(job,type):"",jobId:job.id,jobTitle:job.title||"",company:job.company||"",track:job.track||"Professional",sourceUrl:job.url||"",jobDescription:job.notes||"",jobAnalysis:getJobAnalysis(job)
     })});
     const payload=await response.json().catch(()=>({}));
-    if(!response.ok){ const error=new Error(payload.error||("Online generation failed ("+response.status+")")); error.code=payload.code||""; error.provider=payload.provider||""; error.retryable=Boolean(payload.retryable); error.upstreamStatus=payload.upstreamStatus||0; throw error; }
+    if(!response.ok){
+      const details=Array.isArray(payload.provider_failures)&&payload.provider_failures.length
+        ? payload.provider_failures.map((item)=>{
+            const provider=String(item?.provider||"provider");
+            const code=String(item?.code||"");
+            const status=Number(item?.status||0);
+            if(code==="PROVIDER_BILLING") return provider+" billing/credits unavailable";
+            if(code==="PROVIDER_AUTH") return provider+" authentication rejected";
+            if(code==="PROVIDER_RATE_LIMIT") return provider+" rate limited";
+            if(code==="PROVIDER_TIMEOUT") return provider+" timed out";
+            if(code==="PROVIDER_UPSTREAM") return provider+" upstream error"+(status?" "+status:"");
+            return provider+(status?" error "+status:" unavailable");
+          }).join("; ")
+        : "";
+      const message=payload.error||details||("Online generation failed ("+response.status+")");
+      const error=new Error(message);
+      error.code=payload.code||"";
+      error.provider=payload.provider||"";
+      error.retryable=Boolean(payload.retryable);
+      error.upstreamStatus=payload.upstreamStatus||0;
+      error.httpStatus=response.status;
+      error.providerAttempts=Number(payload.provider_attempts||0);
+      error.providerFailures=Array.isArray(payload.provider_failures)?payload.provider_failures:[];
+      throw error;
+    }
     const document=type==="coverLetter"?payload.coverLetter:payload.resume;
     if(!document) throw new Error("Online generator returned no "+documentLabel(type)+".");
     return document;
@@ -1799,7 +1823,12 @@
       setStatus(label[0].toUpperCase()+label.slice(1)+" ready · approval required");
       return document;
     }catch(error){
-      setStatus("Could not generate "+label+": "+error.message);
+      let message=String(error?.message||"Generation failed.");
+      if(error?.code==="LLM_PROVIDER_ACCOUNT_ERROR") message="AI provider account problem: "+message;
+      else if(error?.code==="LLM_RATE_LIMITED") message="AI providers are rate limited: "+message;
+      else if(error?.code==="LLM_CALL_BUDGET_EXHAUSTED") message="Raven stopped after its two-call AI safety limit.";
+      else if(error?.code==="PROVIDER_AUTH") message="AI provider authentication failed: "+message;
+      setStatus("Could not generate "+label+": "+message);
       throw error;
     }
   }
