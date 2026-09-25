@@ -60,6 +60,7 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
       const written=await writeDocument({kind,profile,target,instructions,currentDocument,complete});
       await finish("success",200);
       return json({ok:true,provider:written.provider,model:written.model,
+        provider_attempts:Number(written.provider_attempts||1),
         verification_provider:written.verification_provider,verification_model:written.verification_model,
         architecture:written.architecture,validation_errors:[],[kind]:written.document,
         budget:{short_remaining:budget.short_remaining,long_remaining:budget.long_remaining}});
@@ -67,8 +68,12 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
       const known=error instanceof WriterError;
       const status=known?error.status:503,code=known?error.code:"GENERATION_UNAVAILABLE";
       await finish("failure",status,code+(known?": "+error.message:""));
+      const nonRetryable=new Set(["LLM_NOT_CONFIGURED","LLM_PROVIDER_ACCOUNT_ERROR","PROVIDER_BILLING","PROVIDER_AUTH","INVALID_INPUT"]);
       return json({error:known?error.message:"Document generation is temporarily unavailable. Please try again.",code,
-        provider:"raven-llm-router-v1",retryable:status>=500&&code!=="LLM_NOT_CONFIGURED"},status);
+        provider:"raven-llm-router-v1",
+        provider_attempts:Number(error?.providerAttempts||0),
+        provider_failures:Array.isArray(error?.providerFailures)?error.providerFailures:[],
+        retryable:status>=500&&!nonRetryable.has(code)},status);
     }
   };
 }
