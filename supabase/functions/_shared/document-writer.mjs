@@ -257,6 +257,7 @@ export async function writeDocument({kind,profile,target,instructions="",current
     try{
       const document=validateDraft(kind,written.data,profile,{target,instructions});
       return {document,provider:written.provider||"llm",model:written.model||"",
+        provider_attempts:Number(written.providerAttempts||1),
         verification_provider:"raven",verification_model:"evidence-v1",architecture:WRITER_VERSION};
     }catch(error){
       if(!(error instanceof WriterError)||attempt===maxAttempts-1)throw error;
