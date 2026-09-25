@@ -42,7 +42,7 @@
     MASTER_RESUMES_KEY,APPLICATION_PROFILE_KEY,ANSWER_MEMORY_KEY,GENERATOR_PREFS_KEY,
     USER_SETTINGS_KEY,DOCUMENT_APPROVALS_KEY,VIEWED_JOBS_KEY
   ];
-  const RESUME_TEMPLATE_VERSION="modern-v10-contact";
+  const RESUME_TEMPLATE_VERSION="modern-v11-zero-llm";
   const DEFAULT_FOLLOW_UP_DAYS=7;
   const activeGeneration=new Map();
   const generationErrors=new Map();
@@ -1688,8 +1688,8 @@
       if(job[type]&&!options.force) return openDocumentReview(job,type);
       const session={type,autoOpen:state.selectedId===job.id,startedAt:Date.now(),phase:"Writing with AI"};
       activeGeneration.set(generationKey(job),session);
-      setGenerationButton(button,true,type==="resume"?"AI generating resume…":"AI generating cover letter…");
-      setStatus(type==="resume"?"AI is preparing your resume…":"AI is preparing your cover letter…");
+      setGenerationButton(button,true,type==="resume"?"Generating resume…":"AI generating cover letter…");
+      setStatus(type==="resume"?"Building your tailored resume…":"AI is preparing your cover letter…");
       render();
       await generateDocumentForJob(job,type,"",options);
       const shouldOpen=session.autoOpen&&state.selectedId===job.id;
