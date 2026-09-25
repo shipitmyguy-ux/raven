@@ -132,6 +132,7 @@ async function openrouterComplete({getEnv,fetchImpl,signal,instructions,input,sc
           {role:"system",content:schemaPrompt},
           {role:"user",content:JSON.stringify(input)}
         ],
+        response_format:{type:"json_object"},
         max_completion_tokens:maxOutputTokens,
         reasoning:{enabled:false}
       })
