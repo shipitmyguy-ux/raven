@@ -445,6 +445,7 @@ export async function writeResumeV3({profile,target,complete}){
         analysis:plan.analysis,
         selection:plan.selection,
         provider:lastProvider,model:lastModel,
+        provider_attempts:Number(written.providerAttempts||1),
         architecture:DOCUMENT_V3_VERSION
       };
     }catch(error){
