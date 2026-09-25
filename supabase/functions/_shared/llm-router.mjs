@@ -105,17 +105,48 @@ async function openAICompatibleComplete({provider,baseUrl,apiKey,model,fetchImpl
   const text=Array.isArray(content)?content.map(p=>p?.text||"").join(""):content;
   return {data:parseJsonText(text),provider,model:raw?.model||model};
 }
-async function openrouterComplete(args){
-  const apiKey=args.getEnv("RAVEN_OPENROUTER_API_KEY")||args.getEnv("OPENROUTER_API_KEY");
+async function openrouterComplete({getEnv,fetchImpl,signal,instructions,input,schema,name,maxOutputTokens}){
+  const apiKey=getEnv("RAVEN_OPENROUTER_API_KEY")||getEnv("OPENROUTER_API_KEY");
   if(!apiKey)throw new WriterError("OpenRouter is not configured.","PROVIDER_NOT_CONFIGURED",503);
-  const model=args.getEnv("RAVEN_OPENROUTER_MODEL")||"openrouter/free";
-  return openAICompatibleComplete({
-    ...args,
-    provider:"openrouter",
-    baseUrl:"https://openrouter.ai/api/v1",
-    apiKey,
-    model
-  });
+  const model=getEnv("RAVEN_OPENROUTER_MODEL")||"google/gemma-4-26b-a4b-it:free";
+  const schemaPrompt=[
+    instructions,
+    "Return one JSON object only. It must match this schema exactly. Raven validates it locally:",
+    JSON.stringify(openAICompatibleSchema(schema))
+  ].join("\n\n");
+  let response;
+  try{
+    response=await fetchImpl("https://openrouter.ai/api/v1/chat/completions",{
+      method:"POST",
+      signal,
+      headers:{
+        "Authorization":"Bearer "+apiKey,
+        "Content-Type":"application/json",
+        "HTTP-Referer":"https://shipitmyguy-ux.github.io/raven/",
+        "X-Title":"Raven"
+      },
+      body:JSON.stringify({
+        model,
+        messages:[
+          {role:"system",content:schemaPrompt},
+          {role:"user",content:JSON.stringify(input)}
+        ],
+        response_format:{type:"json_object"},
+        max_completion_tokens:maxOutputTokens,
+        reasoning:{effort:"low"}
+      })
+    });
+  }catch{
+    throw timeoutError("openrouter");
+  }
+  const raw=await response.json().catch(()=>null);
+  if(!response.ok)throw providerError("openrouter",response.status,raw);
+  const choice=raw?.choices?.[0];
+  if(choice?.finish_reason&&String(choice.finish_reason).toLowerCase()!=="stop")
+    throw new WriterError("OpenRouter did not finish the document.","INCOMPLETE_DRAFT",502);
+  const content=choice?.message?.content;
+  const text=Array.isArray(content)?content.map(p=>p?.text||"").join(""):content;
+  return {data:parseJsonText(text),provider:"openrouter",model:raw?.model||model};
 }
 
 async function cloudflareComplete(args){
