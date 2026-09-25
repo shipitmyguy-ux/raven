@@ -2,19 +2,25 @@
 
 Updated: 2026-09-25
 
-## Current repair
-Live v51 Generate on Accurx Implementation Analyst immediately failed with "Assign a master resume to this job track first." There was no unbound-click or ReferenceError in this browser: the obsolete local-master gate blocked the existing canonical-profile backend before any request. Header-only feedback disappeared from the user's immediate context.
+## Completed Generate repair
+Code release: faac83fdce9230b3e33ff7df638d71870694217f, app.js v53.
 
-The frontend now calls the existing generation service without reading/uploading a device master, catches startup rendering errors, keeps errors beside the action, retains generation state when a discovery ID changes, and applies forced regeneration consistently to both document types. app.js cache version is 53. No architecture migration, Work integration, backend/schema changes, document approvals, or employer submissions.
+Reproduced two startup failures:
+- v51 refused generation without a device-local master resume, despite the backend using the verified canonical profile.
+- Concurrent updates a93af28/d89b38f/ff23f8a partially removed the gate. Live v52 then threw `DataError: Failed to execute 'get' on 'IDBObjectStore': No key or key range specified.` Stack: getMasterResumeFile -> generateDocumentOnline -> generateForJob. An empty master object led to an undefined IndexedDB key.
 
-## Verified locally
-- Core regression files and repository secret scan passed.
-- 46 mocked browser cases passed across the full run and focused reruns. Fresh-browser generation, persisted review for both document types across all four tracks, missing local file, visible provider error/retry, and forced regeneration are covered.
-- Earlier releases left stale test expectations for modern-v8, fixed section markup, and required history on non-game tracks. Those were aligned with the existing tailoring contract without changing writer behavior.
+Generation now uses the existing canonical-profile service without reading or uploading local master files. Both document types, revisions, and forced regeneration use this path. Initial rendering is inside the error boundary; failures remain beside the document action; discovery-to-saved ID changes retain progress. The concurrent stale-session recovery/preparing status is preserved.
 
-## Remaining this session
-Deploy through the existing GitHub Pages workflow, inspect required CI/production smoke, and verify real live generation -> preview -> refresh. Replace this pending section with observed results.
+## Verified
+- All core regression files and secret scan passed. Older release assertions were updated for the existing tailoring cache/sections and Games-only required history; writer implementation was unchanged.
+- 46 mocked browser cases passed, including eight new cases for no-master generation across all four tracks, missing legacy files, visible error/retry, and forced regeneration of both document types.
+- [Pages deployment](https://github.com/shipitmyguy-ux/raven/actions/runs/36090447165): success.
+- [Core and targeted browser CI](https://github.com/shipitmyguy-ux/raven/actions/runs/36090447168): success.
+- [Full browser regression](https://github.com/shipitmyguy-ux/raven/actions/runs/36090447429): success.
+- [Push production smoke](https://github.com/shipitmyguy-ux/raven/actions/runs/36090447195) and [post-deploy production smoke](https://github.com/shipitmyguy-ux/raven/actions/runs/36090468416): success.
+- Live browser loaded app.js v53. Accurx Implementation Analyst Regenerate and Omega Junior Digital Assets Operations Analyst Generate showed active progress and produced real resume previews. Each preview reopened with identical text after full reload and completed backend synchronization. No v53 console errors observed.
 
-GitHub remains canonical code/project state; the existing Supabase canonical profile supplies generation facts. Existing real employer attachment/completion and optional Drive persistence decisions remain in TASKS.md.
+## Boundaries
+Existing normal-chat architecture, GitHub Pages, and Supabase services retained. No Work dependency, backend/schema deployment, document approval, or employer submission. Legacy master upload/backup controls remain available, but the existing server canonical profile supplies generation facts. Real live verification covered two resumes; cover letters and all-four-track behavior were exercised with mocked services.
 
-Concurrent main updates a93af28/d89b38f/ff23f8a were reviewed before publication. Live v52 reproduces `DataError: Failed to execute get on IDBObjectStore: No key or key range specified` at getMasterResumeFile -> generateDocumentOnline -> generateForJob. The partial fix defaulted the master to an empty object and then read IndexedDB with an undefined ID. This patch removes that obsolete generation-file read entirely and preserves the concurrent stale-session recovery and preparing status.
+No remaining work for this repair. Existing employer attachment/completion verification and optional Drive persistence decisions remain in TASKS.md.

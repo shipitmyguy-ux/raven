@@ -107,4 +107,4 @@ These are feature expansions, not Raven closeout blockers.
 - [x] Remove obsolete device-local master requirement from canonical-profile generation; cover both document types, revisions, and forced regeneration.
 - [x] Surface failures beside the Generate button, catch initial render failures, and retain progress after discovery jobs receive saved IDs.
 - [x] Add browser regressions for no device masters across all four tracks, missing legacy files, failed generation/retry, and forced regeneration.
-- [~] Deploy with existing Pages workflow and verify a real generated resume survives refresh.
+- [x] Deploy with existing Pages workflow; verify real Accurx regeneration and Omega Generate -> preview -> full refresh/backend sync, with identical saved preview text. Core/browser CI and both production smoke runs passed.
