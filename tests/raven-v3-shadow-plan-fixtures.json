@@ -1,0 +1,51 @@
+{
+  "suite": "raven-v3-shadow-plan-regression",
+  "version": 1,
+  "architecture": "resume-v3-shadow-alpha3",
+  "invariants": {
+    "Games / 3D": {
+      "experience_count": 8,
+      "required_experience_ids": [
+        "exp_highwire",
+        "exp_harebrained",
+        "exp_343",
+        "exp_wildcard",
+        "exp_wildcard_senior",
+        "exp_zenimax",
+        "exp_visceral",
+        "exp_vigil"
+      ]
+    },
+    "Labor": {
+      "experience_count": 3,
+      "first_experience_id": "exp_soundair",
+      "must_include": ["exp_soundair"]
+    },
+    "Professional": {
+      "experience_count": 4,
+      "must_exclude": ["exp_soundair"]
+    },
+    "Wildcard": {
+      "experience_count": 4,
+      "must_exclude": ["exp_soundair"]
+    }
+  },
+  "jobs": [
+    {"track":"Games / 3D","id":"JT-AUTO-07518278e8f06faa","title":"Environment Artist","company":"Twin Atlas"},
+    {"track":"Games / 3D","id":"JT-1789717200522","title":"Principal Environment Artist","company":"Epic Games"},
+    {"track":"Games / 3D","id":"JT-1789708688405","title":"Senior Environment Artist","company":"Eleventh Hour Games"},
+    {"track":"Games / 3D","id":"JT-1789708688384","title":"Senior Environment Artist","company":"PUBG Studios Seattle"},
+    {"track":"Labor","id":"JT-1789751675064","title":"Facilities Technician","company":"Anduril Industries"},
+    {"track":"Labor","id":"JT-1789751675233","title":"Maintenance Technician","company":"Asset Living"},
+    {"track":"Labor","id":"JT-1789751679429","title":"Trailer Technician","company":"Amerit Fleet Solutions"},
+    {"track":"Labor","id":"JT-1789751679268","title":"(USA) Service Shop Repair Technician - LOVELAND, CO (2ND SHIFT)","company":"Walmart"},
+    {"track":"Professional","id":"BM-fe860814-ec82-420e-a1a3-ac56c9f97db4","title":"Manager of Learning and Implementation","company":"Campminder"},
+    {"track":"Professional","id":"JT-1789707629376","title":"Project Manager","company":"Trautman & Shreve, Inc"},
+    {"track":"Professional","id":"JT-1789707686750","title":"Project Coordinator II","company":"Nikkiso Clean Energy & Industrial Gases"},
+    {"track":"Professional","id":"JT-1789707686765","title":"Project Coordinator I","company":"Wood"},
+    {"track":"Wildcard","id":"JT-1790281617867","title":"Implementation Analyst","company":"accurx"},
+    {"track":"Wildcard","id":"JT-1789748914326","title":"Senior Implementation Project Specialist","company":"Fiserv"},
+    {"track":"Wildcard","id":"JT-1789717273167","title":"Implementation Specialist, Nursing Health Education","company":"Elsevier"},
+    {"track":"Wildcard","id":"JT-1789889189953","title":"Senior Manager Implementation and Onboarding","company":"1Password"}
+  ]
+}
