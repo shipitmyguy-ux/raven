@@ -174,7 +174,7 @@ async function openrouterComplete({getEnv,fetchImpl,signal,instructions,input,sc
           {role:"user",content:JSON.stringify(input)}
         ],
         max_completion_tokens:maxOutputTokens,
-        reasoning:{enabled:false},
+        reasoning:{effort:"low"},
         provider:{sort:"throughput",allow_fallbacks:true,max_price:{prompt:0,completion:0}}
       })
     });
