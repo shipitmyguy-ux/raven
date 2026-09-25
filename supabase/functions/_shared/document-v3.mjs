@@ -265,7 +265,7 @@ function claimText(claim,max=1800){
   return text;
 }
 function exactNumbers(text){return String(text||"").match(/\b\d+(?:[.,]\d+)?%?\b/g)||[];}
-function issueForClaim(claim,allowedIds,map,{roleId=null,profile}={}){
+function issueForClaim(claim,allowedIds,map,{roleId=null,profile,allowParaphrase=false}={}){
   const issues=[];
   const text=claimText(claim);
   const ids=Array.isArray(claim.fact_ids)?claim.fact_ids:[];
@@ -287,7 +287,7 @@ function issueForClaim(claim,allowedIds,map,{roleId=null,profile}={}){
   }
   const evidenceRoots=new Set(roots(evidence));
   const claimRoots=roots(text);
-  if(claimRoots.length&&evidenceRoots.size&&!claimRoots.some(r=>evidenceRoots.has(r)))
+  if(!allowParaphrase&&claimRoots.length&&evidenceRoots.size&&!claimRoots.some(r=>evidenceRoots.has(r)))
     issues.push("The passage drifted too far from its cited evidence.");
   return {text,ids,issues};
 }
@@ -297,7 +297,7 @@ function advisoryIssues(text,evidence){
   return issues;
 }
 
-export function validateV3Draft(draft,profile,analysis,selection){
+export function validateV3Draft(draft,profile,analysis,selection,{assignedEvidence=false}={}){
   if(!draft||typeof draft!=="object")fail("The writer returned no V3 document.");
   const allowedIds=new Set((selection.evidence_pool||[]).map(f=>f.id));
   const map=factMap(selection);
@@ -329,7 +329,7 @@ export function validateV3Draft(draft,profile,analysis,selection){
     if(bullets.length<1||bullets.length>plan.bullet_budget)hard.push(original.company+": bullet count exceeded the blueprint.");
     const rendered=[];
     for(const claim of bullets){
-      const check=issueForClaim(claim,allowedIds,map,{roleId:plan.experience_id,profile});
+      const check=issueForClaim(claim,allowedIds,map,{roleId:plan.experience_id,profile,allowParaphrase:assignedEvidence});
       hard.push(...check.issues.map(x=>original.company+": "+x));
       advisory.push(...advisoryIssues(check.text,check.ids.map(id=>map.get(id)?.text||"").join(" ")));
       rendered.push(check.text);
@@ -609,7 +609,7 @@ export async function writeResumeV3({profile,target,complete}){
         additional:[]
       };
 
-      const validated=validateV3Draft(draft,profile,analysis,selection);
+      const validated=validateV3Draft(draft,profile,analysis,selection,{assignedEvidence:true});
       return {
         ...validated,
         analysis:plan.analysis,
