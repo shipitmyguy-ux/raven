@@ -505,7 +505,11 @@ export async function writeResumeV3({profile,target,complete}){
     jobAnalysis:{responsibilities:analysis.responsibilities,requirements:analysis.requirements,keywords:analysis.keywords,target_tags:analysis.target_tags},
     blueprint:{identity_focus:analysis.identity_focus,experiences:selection.experiences,skills:selection.skills},
     evidencePool:selection.evidence_pool,
-    candidateContext:compactProfile(profile,selection)
+    candidateContext:{
+      name:profile.name,
+      contact:profile.contact,
+      education:profile.education||[]
+    }
   };
 
   let correction=null,lastProvider="",lastModel="";
@@ -514,7 +518,8 @@ export async function writeResumeV3({profile,target,complete}){
       instructions:V3_INSTRUCTIONS,
       input:{...input,...(correction?{factualCorrection:correction}:{})},
       schema,
-      name:"raven_resume_v3"
+      name:"raven_resume_v3",
+      maxOutputTokens:3000
     });
     lastProvider=written.provider||"llm";lastModel=written.model||"";
     try{
