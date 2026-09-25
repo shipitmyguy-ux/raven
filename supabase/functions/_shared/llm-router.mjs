@@ -40,13 +40,51 @@ function timeoutError(provider){
 }
 
 function parseJsonText(text){
+  if(text&&typeof text==="object"&&!Array.isArray(text))return text;
   const value=String(text||"").trim();
   if(!value)throw new WriterError("The LLM returned an empty document.","INVALID_DRAFT",502);
-  try{return JSON.parse(value);}catch{
-    const fenced=value.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-    if(fenced){try{return JSON.parse(fenced[1]);}catch{}}
-    throw new WriterError("The LLM returned an unreadable document. Please try again.","INVALID_DRAFT",502);
+
+  const attempts=[value];
+  const fenced=value.match(/\`\`\`(?:json)?\s*([\s\S]*?)\s*\`\`\`/i);
+  if(fenced?.[1]) attempts.push(fenced[1].trim());
+
+  // Extract the first balanced JSON object even when the model adds prose
+  // before/after it. This is more reliable than first/last brace slicing.
+  const first=value.indexOf("{");
+  if(first>=0){
+    let depth=0,inString=false,escaped=false;
+    for(let i=first;i<value.length;i++){
+      const ch=value[i];
+      if(inString){
+        if(escaped){escaped=false;continue;}
+        if(ch==="\\"){escaped=true;continue;}
+        if(ch==='"')inString=false;
+        continue;
+      }
+      if(ch==='"'){inString=true;continue;}
+      if(ch==="{")depth++;
+      else if(ch==="}"){
+        depth--;
+        if(depth===0){
+          attempts.push(value.slice(first,i+1));
+          break;
+        }
+      }
+    }
   }
+
+  for(const raw of attempts){
+    try{return JSON.parse(raw);}catch{}
+    // Common free-model JSON blemishes that are safe to repair locally.
+    const cleaned=raw
+      .replace(/[\u201c\u201d]/g,'"')
+      .replace(/[\u2018\u2019]/g,"'")
+      .replace(/,\s*([}\]])/g,"$1")
+      .trim();
+    try{return JSON.parse(cleaned);}catch{}
+  }
+
+  throw new WriterError("The LLM returned an unreadable document. Please try again.","INVALID_DRAFT",502);
 }
 function combineSignals(signals){
   const live=signals.filter(Boolean);
