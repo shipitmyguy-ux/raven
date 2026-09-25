@@ -147,7 +147,7 @@ async function openAICompatibleComplete({provider,baseUrl,apiKey,model,fetchImpl
 async function openrouterComplete({getEnv,fetchImpl,signal,instructions,input,schema,name,maxOutputTokens}){
   const apiKey=getEnv("RAVEN_OPENROUTER_API_KEY")||getEnv("OPENROUTER_API_KEY");
   if(!apiKey)throw new WriterError("OpenRouter is not configured.","PROVIDER_NOT_CONFIGURED",503);
-  const model=getEnv("RAVEN_OPENROUTER_MODEL")||"openrouter/free";
+  const model=getEnv("RAVEN_OPENROUTER_MODEL")||"poolside/laguna-s-2.1:free";
   const schemaPrompt=[
     instructions,
     "Return one JSON object only. It must match this schema exactly. Raven validates it locally:",
@@ -166,12 +166,13 @@ async function openrouterComplete({getEnv,fetchImpl,signal,instructions,input,sc
       },
       body:JSON.stringify({
         model,
+        models:model.endsWith(":free")?["openrouter/free"]:undefined,
         messages:[
           {role:"system",content:schemaPrompt},
           {role:"user",content:JSON.stringify(input)}
         ],
-        response_format:{type:"json_object"},
-        max_completion_tokens:maxOutputTokens
+        max_completion_tokens:maxOutputTokens,
+        provider:{sort:"throughput",allow_fallbacks:true}
       })
     });
   }catch{
