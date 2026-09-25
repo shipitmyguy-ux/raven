@@ -57,7 +57,7 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
       // an explicit emergency fallback so Raven never loses basic generation.
       if(kind==="resume"&&!instructions){
         const providers=llmProviderStatus(getEnv);
-        if(providers.configured.cloudflare){
+        if(providers.configured.openrouter||providers.configured.cloudflare||providers.configured.groq||providers.configured.gemini||providers.configured.cerebras){
           const complete=createLLMCompletion({getEnv,fetchImpl,signal:AbortSignal.timeout(140000)});
           const written=await writeResumeV3({profile,target,complete});
           return json({
