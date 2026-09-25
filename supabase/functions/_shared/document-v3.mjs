@@ -1,6 +1,6 @@
 import {WriterError,evidenceCatalog} from "./document-writer.mjs";
 
-export const DOCUMENT_V3_VERSION="resume-v3-alpha1";
+export const DOCUMENT_V3_VERSION="resume-v3-alpha2";
 export const DOCUMENT_SCHEMA_VERSION=3;
 
 const str={type:"string"};
@@ -17,11 +17,14 @@ const draftSchema=obj({
 const STOP=new Set(("a an and are as at be been being by for from had has have i in into is it its my of on or our that the their this to was were will with you your"+
   " job role team company work working position candidate candidates experience years year responsibilities requirements preferred required about who what why how"+
   " opportunity opportunities including include includes using use used").split(/\s+/));
-const MARKETING=/\b(?:about us|who we are|our mission|our vision|our culture|why join|benefits|equal opportunity|award[- ]winning|world[- ]class|industry[- ]leading|fast[- ]growing|we are a|we are an)\b/i;
+const MARKETING=/\b(?:about us|who we are|our mission|our vision|our culture|why join|benefits|equal opportunity|award[- ]winning|world[- ]class|industry[- ]leading|fast[- ]growing|we are a|we are an|founded in|our portfolio|our company|join a workplace|together we|we empower|we believe|member of|recognized as|our team members|our undeniable passion)\b/i;
+const COMP_BENEFITS=/\b(?:compensation|salary|pay range|benefits?|health insurance|pto|paid time off|401k|retirement|equal opportunity|affirmative action|accommodation)\b/i;
+const DIRECT_ROLE=/\b(?:you will|you'll|you are responsible|responsible for|your responsibilities|your duties|what you.ll do|what you will do|as (?:an?|the) [^,.]{2,80},? you|this role (?:owns|leads|manages|supports|coordinates|is responsible))\b/i;
+const STARTS_ACTION=/^(?:manage|lead|coordinate|build|create|develop|deliver|design|maintain|support|train|implement|oversee|produce|model|texture|light|schedule|repair|service|operate|facilitate|analyze|own|plan|execute|mentor|supervise|install|troubleshoot|track|report|document|review|monitor|collaborate|optimize|prototype|sculpt|render|assemble|debug)\w*\b/i;
 const ACTION=/\b(?:manage|lead|coordinate|build|create|develop|deliver|design|maintain|support|train|implement|oversee|produce|model|texture|light|schedule|repair|service|operate|facilitate|analyze|own|plan|execute|mentor|supervise|install|troubleshoot|track|report|document|review|monitor|collaborate|optimize|prototype|sculpt|render|assemble|debug)\w*\b/i;
 const REQUIREMENT=/\b(?:require|required|must|minimum|qualification|preferred|years? of|proficien|knowledge|skill|degree|bachelor|master|experience with|familiarity)\b/i;
 const TRANSFERABLE=/\b(?:lead|mentor|train|onboard|project|deliver|workflow|troubleshoot|excel|automat|database|metadata|report|query|cross[- ]functional|coordinate|collaborat|meeting|maintenance|repair|schedule|document|implement|operation|customer|support)\w*\b/i;
-const ART=/\b(?:environment|3d|artist|art|unreal|unity|zbrush|substance|maya|texture|material|shader|lighting|world|level|asset|model|sculpt|render)\w*\b/i;
+const ART=/\b(?:environment art(?:ist)?|3d(?: art| artist| model| environment)?|artist|unreal(?: engine)?|unity|zbrush|substance(?: painter| designer)?|maya|texture(?: artist| painting)?|material(?:s| artist)?|shader(?:s)?|lighting(?: artist)?|world building|level art(?:ist)?|asset creation|3d model(?:ing)?|sculpt(?:ing)?|render(?:ing)?)\b/i;
 const OPAQUE=/\b(?:sk-[A-Za-z0-9_-]{16,}|AIza[A-Za-z0-9_-]{20,}|[A-Fa-f0-9]{32,}|[A-Za-z0-9+/]{36,}={0,2})\b/;
 const RISKY=["optimized","photorealistic","exceptional","robust","extensive","proven expertise","strict standards","improved efficiency","measurable impact","expert in","specialist in"];
 
@@ -81,17 +84,48 @@ function topKeywords(weights,limit=20){
   return [...weights.entries()].filter(([k])=>k.length>2).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,limit).map(([k])=>k);
 }
 
+function responsibilityScore(s){
+  let score=0;
+  if(STARTS_ACTION.test(s))score+=7;
+  if(DIRECT_ROLE.test(s))score+=6;
+  if(ACTION.test(s))score+=3;
+  if(REQUIREMENT.test(s))score-=2;
+  if(MARKETING.test(s))score-=12;
+  if(/^\s*(?:we|our|at [A-Z])/i.test(s)&&!DIRECT_ROLE.test(s)&&!STARTS_ACTION.test(s))score-=5;
+  return score;
+}
+function requirementScore(s){
+  let score=REQUIREMENT.test(s)?6:0;
+  if(/\b(?:you have|you bring|we.re looking for|qualifications?|minimum|preferred|must have|experience with|proficien)\b/i.test(s))score+=5;
+  if(COMP_BENEFITS.test(s))score-=10;
+  if(MARKETING.test(s))score-=8;
+  return score;
+}
+function targetIdentity(target){
+  const title=String(target?.title||"").toLowerCase();
+  if(/implementation|onboarding/.test(title))return "implementation, onboarding, training, and operational delivery";
+  if(/project manager|project coordinator|program manager|program coordinator/.test(title))return "project coordination, planning, cross-functional delivery, and execution";
+  if(/learning|training|enablement/.test(title))return "learning, training, implementation, and team development";
+  if(/customer success|client success|customer service/.test(title))return "customer success, onboarding, support, and operational coordination";
+  if(/maintenance|technician|repair|facilities|service shop/.test(title))return "hands-on maintenance, repair, troubleshooting, and technical operations";
+  if(/operations|analyst/.test(title))return "operations, analysis, documentation, reporting, and cross-functional execution";
+  if(String(target?.track||"")==="Games / 3D")return "environment art, 3D production, world building, and cross-functional game development";
+  return "capabilities relevant to "+String(target?.title||"the target role");
+}
 export function analyzeJobV3(target){
   const description=String(target?.description||"");
-  const rows=sentences(description).filter(s=>!MARKETING.test(s));
-  const responsibilities=rows.filter(s=>ACTION.test(s)&&!REQUIREMENT.test(s)).slice(0,12);
-  const requirements=rows.filter(s=>REQUIREMENT.test(s)).slice(0,12);
+  const rows=sentences(description);
+  const responsibilities=rows.map(s=>({text:s,score:responsibilityScore(s)}))
+    .filter(x=>x.score>=4).sort((a,b)=>b.score-a.score).slice(0,12).map(x=>x.text);
+  const requirements=rows.map(s=>({text:s,score:requirementScore(s)}))
+    .filter(x=>x.score>=5).sort((a,b)=>b.score-a.score).slice(0,10).map(x=>x.text);
   const useful=[target?.title,...responsibilities,...requirements].filter(Boolean).join(" ");
   const weights=keywordWeights(useful);
   return {
     title:String(target?.title||""),
     company:String(target?.company||""),
     track:String(target?.track||"Professional"),
+    identity_focus:targetIdentity(target),
     responsibilities,
     requirements,
     keywords:topKeywords(weights,24),
@@ -131,8 +165,17 @@ function scoreFact(fact,analysis,track){
 function experienceScore(exp,factsByExperience,analysis,track,index){
   const facts=factsByExperience.get(exp.id)||[];
   const scores=facts.map(f=>scoreFact(f,analysis,track)).sort((a,b)=>b-a);
+  const text=[exp.role,exp.company,...facts.map(f=>f.text)].join(" ");
   let score=(scores[0]||0)+(scores[1]||0)*.55+(scores[2]||0)*.25-Math.min(index*0.35,3);
-  if(track==="Labor"&&/soundair|maintenance technician/i.test([exp.company,exp.role].join(" ")))score+=30;
+  if(track==="Labor"){
+    if(/soundair|maintenance technician/i.test([exp.company,exp.role].join(" ")))score+=35;
+    if(/\b(?:maintenance|repair|service|troubleshoot|equipment)\w*\b/i.test(text))score+=10;
+  }else if(track!=="Games / 3D"){
+    if(/\b(?:lead|mentor|train|workflow|programmer|technology|cross[- ]functional|project)\w*\b/i.test(text))score+=8;
+    if(/\blead\b/i.test(exp.role)&&analysis.target_tags.includes("leadership"))score+=10;
+    const targetNeedsMaintenance=analysis.target_tags.includes("maintenance");
+    if(/soundair|maintenance technician/i.test([exp.company,exp.role].join(" "))&&!targetNeedsMaintenance)score-=28;
+  }
   return score;
 }
 function selectedSkills(profile,analysis,track){
@@ -167,7 +210,7 @@ export function selectEvidenceV3(profile,analysis){
   }else{
     const ranked=experience.map((exp,index)=>({id:exp.id,index,score:experienceScore(exp,factsByExperience,analysis,track,index)}))
       .sort((a,b)=>b.score-a.score||a.index-b.index);
-    const count=Math.min(4,Math.max(2,ranked.filter(x=>x.score>4).length||2));
+    const count=track==="Labor" ? 3 : Math.min(4,Math.max(3,ranked.filter(x=>x.score>8).length||3));
     selectedIds=ranked.slice(0,count).map(x=>x.id);
   }
 
@@ -189,7 +232,9 @@ export function selectEvidenceV3(profile,analysis){
     experiences:selectedExperiences.map((exp,index)=>{
       const factRows=factsByExperience.get(exp.id)||[];
       const ranked=factRows.map(f=>({...f,score:scoreFact(f,analysis,track)})).sort((a,b)=>b.score-a.score);
-      const bullet_budget=track==="Games / 3D" ? (index<2?3:index<5?2:1) : (ranked[0]?.score>=20?3:2);
+      const bullet_budget=track==="Games / 3D"
+        ? (index<2?3:index<5?2:1)
+        : (track==="Labor" ? (exp.id==="exp_soundair"?2:1) : (ranked[0]?.score>=24?2:1));
       return {experience_id:exp.id,role:exp.role,company:exp.company,dates:exp.dates,bullet_budget,ranked_fact_ids:ranked.map(f=>f.id)};
     }),
     skills,
@@ -247,6 +292,8 @@ export function validateV3Draft(draft,profile,analysis,selection){
 
   const headlineCheck=issueForClaim(draft.headline,allowedIds,map,{profile});
   hard.push(...headlineCheck.issues.map(x=>"Headline: "+x));
+  if(analysis.track!=="Games / 3D"&&/\b(?:environment artist|3d artist|game artist|game development|video game)\b/i.test(headlineCheck.text))
+    hard.push("Headline: non-game resumes must lead with the target function, not prior game-art identity.");
   advisory.push(...advisoryIssues(headlineCheck.text,headlineCheck.ids.map(id=>map.get(id)?.text||"").join(" ")));
 
   const summaryCheck=issueForClaim(draft.summary,allowedIds,map,{profile});
@@ -321,6 +368,7 @@ function compactProfile(profile,selection){
 const V3_INSTRUCTIONS=[
   "You are the wording stage of Raven Resume V3. Raven has already decided which evidence and work-history entries are allowed. Do not select new history or invent new facts.",
   "Write polished resume prose tailored to the target. Use only evidence ids from evidencePool. Each factual passage must cite the ids that support it.",
+  "Follow blueprint.identity_focus for the headline and summary framing. For Professional, Labor, and Wildcard resumes, never lead with a prior Environment Artist, 3D Artist, game-art, or game-development identity; frame the candidate around transferable capabilities relevant to the target function.",
   "Follow blueprint.experiences exactly. Return every listed experience_id once and only once. Do not add or remove employers. Do not exceed each role's bullet_budget.",
   "A work-history bullet may cite only evidence whose experience_id matches that role. General skills and transferable evidence belong in headline, summary, skills, or additional—not in an employer bullet unless that employer's evidence establishes them.",
   "Preserve factual restraint. Do not invent numbers, credentials, tools, duties, outcomes, motivations, or company knowledge. A job requirement is not candidate evidence.",
@@ -341,7 +389,7 @@ export async function writeResumeV3({profile,target,complete}){
   const input={
     target:{track:target.track,title:target.title,company:target.company},
     jobAnalysis:{responsibilities:analysis.responsibilities,requirements:analysis.requirements,keywords:analysis.keywords,target_tags:analysis.target_tags},
-    blueprint:{experiences:selection.experiences,skills:selection.skills},
+    blueprint:{identity_focus:analysis.identity_focus,experiences:selection.experiences,skills:selection.skills},
     evidencePool:selection.evidence_pool,
     candidateContext:compactProfile(profile,selection)
   };
@@ -359,7 +407,7 @@ export async function writeResumeV3({profile,target,complete}){
       const validated=validateV3Draft(written.data,profile,analysis,selection);
       return {
         ...validated,
-        analysis:{responsibilities:analysis.responsibilities,requirements:analysis.requirements,keywords:analysis.keywords,target_tags:analysis.target_tags},
+        analysis:{identity_focus:analysis.identity_focus,responsibilities:analysis.responsibilities,requirements:analysis.requirements,keywords:analysis.keywords,target_tags:analysis.target_tags},
         selection:{experience_ids:selection.experience_ids,experiences:selection.experiences,skills:selection.skills,evidence_ids:selection.evidence_pool.map(f=>f.id)},
         provider:lastProvider,model:lastModel,
         architecture:DOCUMENT_V3_VERSION
