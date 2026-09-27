@@ -3,13 +3,12 @@
 Updated: 2026-09-27
 
 
-## Reliable free generation (2026-09-27)
-- Deployed resume v93 and cover v69: initial generation falls back to source facts on provider, validation, rate-limit or budget-service failures. Free AI has a 12-second generation deadline; revisions have 25 seconds and never silently return a fallback. Database/network overhead is additional.
-- Production calls use only OpenRouter with its existing zero-price cap; no paid provider fallback.
-- Fixed punctuation-sensitive grounding and revision prompt words removing factual anchors; revision instructions no longer exempt invented numbers, tools or entities. Shared checks reject selected unsupported tools, credentials and responsibility/outcome claims; this is not comprehensive semantic verification.
-- Four live resumes and four covers returned 8/8 HTTP 200. Five used AI; three used source-fact fallback. Observed total times 3.8–23.3 seconds including cold/network overhead.
-- 49 local core tests and secret scan pass. Browser tests could not launch locally: both installed Playwright versions received invalid browser-download archives. Browser persistence/PDF checks are not newly verified.
-- Frontend labels fallback output and invalidates older generation cache. Existing failed-revision preservation remains in place.
-- User now wants to discuss a low-click manual ChatGPT copy/paste workflow for both documents; not implemented yet.
+## Cloudflare preparation and one-button generation (2026-09-27)
+- Shared route now prefers Cloudflare, then the existing zero-price OpenRouter route. Cloudflare is gated on a successful account-subscriptions read proving a Workers Free plan; unknown/paid plans send no inference request.
+- Actual account check returned HTTP 403, so Cloudflare inference is NOT active or live-quality verified. Existing token needs Billing Read permission (not Write) for the documented subscriptions API. No Cloudflare paid usage or billing change was made.
+- Corrected Cloudflare native API request fields: max_tokens and direct JSON schema; configured a fixed supported Llama 3.3 70B model. Resume v95 and cover v70 deployed.
+- Added Generate both / Finish documents using the existing generation, persistence, cache and review paths; existing documents are preserved.
+- 53 local core tests and secret scan passed. Added two browser regressions; CI results need verification after this commit.
+- Previous release e9fbb9a passed core/browser/Pages and both production smoke workflows. Previous live tonal QA: cat, formal, punchy succeeded; goofy failed LLM_CALL_BUDGET_EXHAUSTED; no saved documents overwritten by the API-only checks.
 
-Live QA outputs remain transient; no existing job documents were overwritten by API-only tests. Four live revision checks were started; results must be checked before claiming successful tonal changes.
+Next: obtain Billing Read on the existing Cloudflare API token, verify cloudflare_free.verified=true in GET health, then run four real resume/cover pairs and tonal revision checks. Keep all providers on free plans, never upgrade billing. User also requested other free provider options; Groq, Mistral and Gemini have documented free API access.

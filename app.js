@@ -1264,6 +1264,9 @@
                 transitionJob(job,button.dataset.applySuggestedStatus,{source:"signal-review",statusMessage:"Signal suggestion applied"});
               });
             });
+            expanded.querySelectorAll("[data-generate-both]").forEach(button=>{
+              button.addEventListener("click",event=>{event.stopPropagation();generateBothForJob(job);});
+            });
             expanded.querySelectorAll("[data-generate]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
@@ -1451,6 +1454,8 @@
     const lifecycleControl='<div class="job-lifecycle-row"><label class="lifecycle-control"><span>Status</span><select data-lifecycle-status aria-label="Job status">'+lifecycleOptions+'</select></label>'+
       followUpControl+(nextAction?'<span class="next-action">'+escapeHtml(nextAction)+'</span>':'')+'</div>';
     const docsReady=documentsReadyForApplication(job);
+    const generateBoth=(!job.resume||!job.coverLetter)&&featureEnabled("resume-generation")&&featureEnabled("cover-letter-generation")
+      ? '<button class="workflow-action" type="button" data-generate-both'+(generationSession(job)?' disabled aria-busy="true"':'')+'><span>'+(generationSession(job)?'Creating documents…':job.resume||job.coverLetter?'Finish documents':'Generate both')+'</span></button>':"";
     const statusLower=currentStatus.toLowerCase();
     const postApplication=["applied","interview","offer","rejected"].includes(statusLower);
     const applyGate=job.url&&!postApplication?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply aria-label="Open application with approved documents" title="'+(docsReady?'Open application':'Approve resume and cover letter first')+'"><span class="workflow-icon" aria-hidden="true">↗</span><span>'+(docsReady?'Apply with docs':'Approve docs')+'</span></button>':"";
@@ -1473,7 +1478,7 @@
       '</section>'+
       '<dl>'+detailHtml+'</dl>'+
       '<div class="detail-actions">'+
-        '<div class="workflow-actions" aria-label="Application actions">'+actions+applyGate+appliedAction+'</div>'+
+        '<div class="workflow-actions" aria-label="Application actions">'+generateBoth+actions+applyGate+appliedAction+'</div>'+
       '</div>'+
       renderCoverage(job)+
       renderJobActivity(job)+
@@ -1675,6 +1680,36 @@
     generationPreparation.set(job,pending);
     try{ return await pending; }
     finally{ generationPreparation.delete(job); }
+  }
+
+  async function generateBothForJob(job){
+    if(generationSession(job))return;
+    const missing=["resume","coverLetter"].filter(type=>!job[type]);
+    if(!missing.length)return openDocumentReview(job,"resume");
+    const session={type:missing[0],autoOpen:state.selectedId===job.id,startedAt:Date.now(),phase:"Preparing documents"};
+    activeGeneration.set(generationKey(job),session);
+    const completed=[],failed=[];
+    try{
+      for(const type of missing){
+        session.type=type;
+        generationErrors.delete(documentApprovalKey(job,type));
+        render();
+        try{
+          const document=await generateDocumentForJob(job,type,"");
+          completed.push({type,mode:document.generationMode});
+        }catch(error){
+          failed.push(type);
+          generationErrors.set(documentApprovalKey(job,type),documentLabel(type)+" generation failed: "+error.message);
+        }
+      }
+    }finally{
+      activeGeneration.delete(generationKey(job));
+      render();
+    }
+    const fallback=completed.some(item=>item.mode==="source-facts");
+    setStatus(failed.length?"Saved "+completed.length+" document(s). Retry the remaining document below.":
+      "Both documents ready"+(fallback?" · source-fact fallback used":"")+" · review required");
+    if(completed.length&&session.autoOpen&&state.selectedId===job.id)openDocumentReview(job,completed[0].type);
   }
 
   async function generateForJob(job,type,button=null,options={}) {

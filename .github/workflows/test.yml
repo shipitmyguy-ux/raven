@@ -79,6 +79,7 @@ jobs:
           node tests/resume-quality-v3.test.mjs
           node tests/document-writer.test.mjs
           node tests/document-reliability.test.mjs
+          node tests/cloudflare-free.test.mjs
           node tests/control-panel.test.mjs
           node tests/canonical-identity.test.mjs
           node tests/backup-contract.test.mjs

@@ -1,3 +1,4 @@
+import {cloudflareFreeStatus} from "./cloudflare-free.mjs";
 import {writeDocument,WriterError,WRITER_VERSION} from "./document-writer.mjs";
 import {createLLMCompletion,llmProviderStatus,llmUsageStatus} from "./llm-router.mjs";
 import {buildDeterministicResumeV3,writeResumeV3} from "./document-v3.mjs";
@@ -40,14 +41,16 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
     const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers});
     if(req.method==="OPTIONS")return new Response("ok",{headers});
     if((origin&&!ORIGINS.has(origin))||req.headers.get("x-raven-client")!=="raven-web-v1")return json({error:"Forbidden"},403);
-    const providerStatus=llmProviderStatus(getEnv);
+    const freeEnv=name=>name==="RAVEN_LLM_PROVIDER_ORDER"?"cloudflare,openrouter":
+      name==="RAVEN_CLOUDFLARE_MODEL"?"@cf/meta/llama-3.3-70b-instruct-fp8-fast":getEnv(name);
+    const providerStatus=llmProviderStatus(freeEnv);
     const primaryProvider=providerStatus.order.find(name=>providerStatus.configured[name])||"";
     if(req.method==="GET"){
       const usage=await llmUsageStatus(getEnv,fetchImpl);
       return json({ok:true,service,architecture:WRITER_VERSION,
         provider_router:"raven-llm-router-v1",primary_provider:primaryProvider,
         configured:Boolean(primaryProvider),providers:providerStatus.configured,
-        provider_order:providerStatus.order,usage});
+        provider_order:providerStatus.order,usage,cloudflare_free:await cloudflareFreeStatus(getEnv,fetchImpl)});
     }
     if(req.method!=="POST")return json({error:"GET or POST required"},405);
     let eid=null;
@@ -91,10 +94,8 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
           job_analysis:written.analysis,evidence_selection:written.selection,
           ai_used:false,fallback_used:true,fallback_reason:reason,budget:null});
       };
-      // OpenRouter enforces max_price=0 on every request. Other configured
-      // accounts are not automatic fallbacks because their billing is unknown.
-      const freeEnv=name=>name==="RAVEN_LLM_PROVIDER_ORDER"?"openrouter":getEnv(name);
-      if(!llmProviderStatus(freeEnv).configured.openrouter&&initial)return fallback("LLM_NOT_CONFIGURED");
+      // Cloudflare requires a verified Free plan; OpenRouter caps price at zero.
+      if(!primaryProvider&&initial)return fallback("LLM_NOT_CONFIGURED");
       let budget;
       try{
         budget=await rpc("raven_request_guard",{p_kind:"generation_v2",p_scope:kind==="resume"?"resume":"cover",

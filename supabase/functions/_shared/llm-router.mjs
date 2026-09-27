@@ -1,3 +1,4 @@
+import {cloudflareFreeStatus} from "./cloudflare-free.mjs";
 import {WriterError} from "./document-writer.mjs";
 
 const providerHealth=new Map();
@@ -199,14 +200,29 @@ async function cloudflareComplete(args){
   const token=args.getEnv("RAVEN_CLOUDFLARE_API_TOKEN")||args.getEnv("CLOUDFLARE_API_TOKEN")||args.getEnv("CLOUDFLARE_AUTH_TOKEN");
   const accountId=args.getEnv("RAVEN_CLOUDFLARE_ACCOUNT_ID")||args.getEnv("CLOUDFLARE_ACCOUNT_ID");
   if(!token||!accountId)throw new WriterError("Cloudflare Workers AI is not configured.","PROVIDER_NOT_CONFIGURED",503);
-  const model=args.getEnv("RAVEN_CLOUDFLARE_MODEL")||"@cf/meta/llama-3.1-8b-instruct-fp8";
-  return openAICompatibleComplete({
-    ...args,
-    provider:"cloudflare",
-    baseUrl:"https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(accountId)+"/ai/v1",
-    apiKey:token,
-    model
+  const free=await cloudflareFreeStatus(args.getEnv,args.fetchImpl);
+  if(!free.verified)throw new WriterError("Cloudflare's Workers Free plan could not be verified ("+free.reason+"). No Cloudflare inference was sent.","PROVIDER_FREE_PLAN_UNVERIFIED",503);
+  const model=args.getEnv("RAVEN_CLOUDFLARE_MODEL")||"@cf/meta/llama-3.3-70b-instruct-fp8-fast";
+  const freeModels=new Set(["@cf/meta/llama-3.3-70b-instruct-fp8-fast","@cf/meta/llama-3.1-8b-instruct"]);
+  if(!freeModels.has(model))throw new WriterError("Cloudflare model is outside Raven's verified free-model list.","PROVIDER_FREE_PLAN_UNVERIFIED",503);
+  // Native Workers AI uses max_tokens and an unwrapped JSON schema. The
+  // OpenAI wrapper previously sent incompatible token/schema parameters.
+  const response=await args.fetchImpl("https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(accountId)+"/ai/run/"+model,{
+    method:"POST",signal:args.signal,
+    headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},
+    body:JSON.stringify({
+      messages:[{role:"system",content:args.instructions},{role:"user",content:JSON.stringify(args.input)}],
+      max_tokens:args.maxOutputTokens,temperature:0.2,
+      ...(args.responseMode==="text"?{}:{response_format:{type:"json_schema",json_schema:args.schema}})
+    })
   });
+  const raw=await response.json().catch(()=>null);
+  if(!response.ok||raw?.success===false)throw providerError("cloudflare",response.ok?502:response.status,raw);
+  const result=raw?.result;
+  if(result?.finish_reason&&result.finish_reason!=="stop")throw new WriterError("Cloudflare did not finish the document.","INCOMPLETE_DRAFT",502);
+  const value=result?.response;
+  if(value==null)throw new WriterError("Cloudflare returned no document.","INVALID_DRAFT",502);
+  return {data:args.responseMode==="text"?String(value):typeof value==="object"?value:parseJsonText(value),provider:"cloudflare",model};
 }
 
 async function cerebrasComplete(args){
@@ -351,7 +367,7 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
         console.warn("[raven-llm-router]",provider,code,Number(error?.status||0),failure.status,failure.upstreamCode,failure.upstreamMessage);
 
         if(stageSignal?.aborted)break;
-        if(["PROVIDER_BILLING","PROVIDER_AUTH","PROVIDER_RATE_LIMIT","PROVIDER_TIMEOUT","PROVIDER_UPSTREAM","PROVIDER_UNAVAILABLE"].includes(code)){
+        if(["PROVIDER_BILLING","PROVIDER_AUTH","PROVIDER_RATE_LIMIT","PROVIDER_TIMEOUT","PROVIDER_UPSTREAM","PROVIDER_UNAVAILABLE","PROVIDER_FREE_PLAN_UNVERIFIED"].includes(code)){
           markProviderFailure(provider,error);
           continue;
         }

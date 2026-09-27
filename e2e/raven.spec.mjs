@@ -1057,3 +1057,32 @@ for(const type of ["resume","coverLetter"]){
     expect(api.getGenerationCalls()).toBe(2);
   });
 }
+
+test("Generate both creates and persists both documents from one button",async({page})=>{
+  const api=await mockRaven(page);
+  await page.goto('/');
+  await page.getByRole('tab',{name:'Professional',exact:true}).click();
+  await page.locator('.job-card-summary').first().click();
+  await page.getByRole('button',{name:'Generate both',exact:true}).click();
+  await expect(page.locator('#documentReviewDialog')).toBeVisible();
+  expect(api.getGenerationBodies().map(body=>body.documentType)).toEqual(['resume','coverLetter']);
+  expect(api.getJob().resume).toContain('data:text/html');
+  expect(api.getJob().coverLetter||api.getJob().cover_letter).toContain('data:text/html');
+  await page.reload();
+  await page.getByRole('tab',{name:'Professional',exact:true}).click();
+  await page.locator('.job-card-summary').first().click();
+  await expect(page.locator('[data-generate="resume"]')).toHaveText('Review');
+  await expect(page.locator('[data-generate="coverLetter"]')).toHaveText('Review');
+});
+
+test("Finish documents preserves an existing resume",async({page})=>{
+  const prior='data:text/html;charset=utf-8,'+encodeURIComponent('<h1>Prior approved resume</h1>');
+  const api=await mockRaven(page,{initialJob:{resume:prior}});
+  await page.goto('/');
+  await page.getByRole('tab',{name:'Professional',exact:true}).click();
+  await page.locator('.job-card-summary').first().click();
+  await page.getByRole('button',{name:'Finish documents',exact:true}).click();
+  await expect(page.locator('#documentReviewDialog')).toBeVisible();
+  expect(api.getGenerationBodies().map(body=>body.documentType)).toEqual(['coverLetter']);
+  expect(api.getJob().resume).toBe(prior);
+});

@@ -25,7 +25,7 @@ assert.match(llmRouter,/RAVEN_GEMINI_API_KEY/);
 assert.match(llmRouter,/api\.cerebras\.ai\/v1/);
 assert.match(llmRouter,/api\.groq\.com\/openai\/v1/);
 assert.match(llmRouter,/generativelanguage\.googleapis\.com/);
-assert.match(handler,/name==="RAVEN_LLM_PROVIDER_ORDER"\?"openrouter"/);
+assert.match(handler,/name==="RAVEN_LLM_PROVIDER_ORDER"\?"cloudflare,openrouter"/);
 assert.match(llmRouter,/max_price:\{prompt:0,completion:0\}/,"Every OpenRouter request must cap cost at zero.");
 assert.doesNotMatch(writer,/api\.cerebras\.ai|api\.groq\.com|generativelanguage\.googleapis\.com/,"Grounded writer must remain provider neutral.");
 console.log("Shared document route contract passed");
