@@ -1,6 +1,28 @@
 import {writeDocument,WriterError,WRITER_VERSION} from "./document-writer.mjs";
 import {createLLMCompletion,llmProviderStatus,llmUsageStatus} from "./llm-router.mjs";
 import {buildDeterministicResumeV3,writeResumeV3} from "./document-v3.mjs";
+// Race as well as abort: an unresponsive provider cannot hold the fallback open.
+export async function boundedGeneration(run,ms){
+  const controller=new AbortController();
+  let timer;
+  const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{
+    controller.abort();
+    reject(new WriterError("Free AI timed out. Your previous document is unchanged.","PROVIDER_TIMEOUT",503));
+  },ms);});
+  try{return await Promise.race([Promise.resolve().then(()=>run(controller.signal)),timeout]);}
+  finally{clearTimeout(timer);controller.abort();}
+}
+export function buildDeterministicCover(profile,target){
+  const resume=buildDeterministicResumeV3(profile,target);
+  const paragraphs=["I am applying for the "+target.title+(target.company?" position at "+target.company:" position")+"."];
+  if(resume.document.skills.length)paragraphs.push("My skills include "+resume.document.skills.slice(0,5).join(", ")+".");
+  // Copy source facts intact so employer attribution cannot drift.
+  for(const role of resume.document.experience.slice(0,2)){
+    if(role.bullets.length)paragraphs.push(role.company+" — "+role.role+". "+role.bullets.slice(0,2).join(" "));
+  }
+  paragraphs.push("Thank you for considering my application. I would welcome the opportunity to discuss my experience and the role.");
+  return {...resume,architecture:"cover-source-facts-v1",document:{greeting:"Dear Hiring Manager,",paragraphs,closing:"Sincerely,",signature:profile.name}};
+}
 const ORIGINS=new Set(["https://shipitmyguy-ux.github.io","http://localhost:8000","http://127.0.0.1:8000"]);
 const TRACKS=new Set(["Professional","Labor","Wildcard","Games / 3D"]);
 function field(value,max,label){
@@ -56,66 +78,55 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
       const rows=await r.json(),profile=rows?.[0]?.profile;
       if(!profile||JSON.stringify(profile).length>150000)throw new WriterError("Verified candidate background is missing or too large.","PROFILE_UNAVAILABLE",503);
 
-      // Initial resume generation uses the compact V3 writer whenever Cloudflare
-      // Workers AI is configured. Until then, keep the deterministic V3 draft as
-      // an explicit emergency fallback so Raven never loses basic generation.
-      if(kind==="resume"&&!instructions){
-        const providers=llmProviderStatus(getEnv);
-        if(providers.configured.openrouter||providers.configured.groq){
-          const complete=createLLMCompletion({getEnv,fetchImpl,signal:AbortSignal.timeout(140000)});
-          const written=await writeResumeV3({profile,target,complete});
-          return json({
-            ok:true,
-            provider:written.provider,
-            model:written.model,
-            provider_attempts:Number(written.provider_attempts||1),
-            verification_provider:"raven",
-            verification_model:"evidence-v3",
-            architecture:written.architecture,
-            validation_errors:[],
-            resume:written.document,
-            job_analysis:written.analysis,
-            evidence_selection:written.selection,
-            ai_used:true,
-            fallback_used:false,
-            budget:null
-          });
+      // Initial drafts remain usable when the free service is down. Revisions
+      // must succeed explicitly; a fallback must never masquerade as a rewrite.
+      const initial=!instructions;
+      const fallback=(reason)=>{
+        const written=kind==="resume"
+          ? buildDeterministicResumeV3(profile,target)
+          : buildDeterministicCover(profile,target);
+        return json({ok:true,provider:"deterministic",model:"none",provider_attempts:0,
+          verification_provider:"raven",verification_model:"source-facts",
+          architecture:written.architecture,validation_errors:[],[kind]:written.document,
+          job_analysis:written.analysis,evidence_selection:written.selection,
+          ai_used:false,fallback_used:true,fallback_reason:reason,budget:null});
+      };
+      // OpenRouter enforces max_price=0 on every request. Other configured
+      // accounts are not automatic fallbacks because their billing is unknown.
+      const freeEnv=name=>name==="RAVEN_LLM_PROVIDER_ORDER"?"openrouter":getEnv(name);
+      if(!llmProviderStatus(freeEnv).configured.openrouter&&initial)return fallback("LLM_NOT_CONFIGURED");
+      let budget;
+      try{
+        budget=await rpc("raven_request_guard",{p_kind:"generation_v2",p_scope:kind==="resume"?"resume":"cover",
+          p_short_limit:12,p_short_seconds:60,p_long_limit:60,p_long_seconds:3600,
+          p_failure_threshold:3,p_failure_window_seconds:300,p_circuit_seconds:600});
+        if(!budget?.allowed){
+          if(initial)return fallback("REQUEST_BUDGET_EXCEEDED");
+          return json({error:"Generation request budget reached. Your previous document is unchanged.",code:"REQUEST_BUDGET_EXCEEDED",retryable:true,retryAfterSeconds:Number(budget?.retry_after_seconds||60)},429);
         }
-        const written=buildDeterministicResumeV3(profile,target);
-        return json({
-          ok:true,
-          provider:written.provider,
-          model:written.model,
-          provider_attempts:0,
-          verification_provider:"raven",
-          verification_model:"evidence-v3",
-          architecture:written.architecture,
-          validation_errors:[],
-          resume:written.document,
-          job_analysis:written.analysis,
-          evidence_selection:written.selection,
-          ai_used:false,
-          fallback_used:true,
-          fallback_reason:"cloudflare_not_configured",
-          budget:null
-        });
+        eid=Number(budget.event_id||0)||null;
+        const written=await boundedGeneration(async signal=>{
+          const complete=createLLMCompletion({getEnv:freeEnv,fetchImpl,signal});
+          return kind==="resume"&&initial
+            ? writeResumeV3({profile,target,complete})
+            : writeDocument({kind,profile,target,instructions,currentDocument,complete});
+        },initial?12000:25000);
+        await finish("success",200);
+        return json({ok:true,provider:written.provider,model:written.model,
+          provider_attempts:Number(written.provider_attempts||1),
+          verification_provider:written.verification_provider||"raven",verification_model:written.verification_model||"evidence-v3",
+          architecture:written.architecture,validation_errors:[],[kind]:written.document,
+          job_analysis:written.analysis,evidence_selection:written.selection,
+          ai_used:true,fallback_used:false,
+          budget:{short_remaining:budget.short_remaining,long_remaining:budget.long_remaining}});
+      }catch(error){
+        if(!initial)throw error;
+        // Input/profile errors remain errors; only generation/service failures
+        // may be replaced with a document built from the verified profile.
+        if(["INVALID_INPUT","PROFILE_MISSING"].includes(error?.code))throw error;
+        await finish("failure",Number(error?.status||503),String(error?.code||"GENERATION_UNAVAILABLE"));
+        return fallback(String(error?.code||"GENERATION_UNAVAILABLE"));
       }
-
-      // Explicit revisions and cover letters may use AI, hard-capped by the router.
-      const complete=createLLMCompletion({getEnv,fetchImpl,signal:AbortSignal.timeout(140000)});
-      const budget=await rpc("raven_request_guard",{p_kind:"generation_v2",p_scope:kind==="resume"?"resume":"cover",
-        p_short_limit:12,p_short_seconds:60,p_long_limit:60,p_long_seconds:3600,
-        p_failure_threshold:3,p_failure_window_seconds:300,p_circuit_seconds:600});
-      if(!budget?.allowed)return json({error:"Generation request budget reached.",code:"REQUEST_BUDGET_EXCEEDED",retryable:true,retryAfterSeconds:Number(budget?.retry_after_seconds||60)},429);
-      eid=Number(budget.event_id||0)||null;
-      const written=await writeDocument({kind,profile,target,instructions,currentDocument,complete});
-      await finish("success",200);
-      return json({ok:true,provider:written.provider,model:written.model,
-        provider_attempts:Number(written.provider_attempts||1),
-        verification_provider:written.verification_provider,verification_model:written.verification_model,
-        architecture:written.architecture,validation_errors:[],[kind]:written.document,
-        ai_used:true,
-        budget:{short_remaining:budget.short_remaining,long_remaining:budget.long_remaining}});
     }catch(error){
       const known=error instanceof WriterError;
       const status=known?error.status:503,code=known?error.code:"GENERATION_UNAVAILABLE";

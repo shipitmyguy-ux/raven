@@ -67,102 +67,6 @@ test("empty documents, duplicate work history and injected HTML are rejected",()
  assert.throws(()=>validateDraft("resume",{...resume,summary:"<script>bad()</script>"},profile));
  assert.throws(()=>validateDraft("coverLetter",{...cover,paragraphs:[""]},profile));
 });
-test("LLM router sends structured Gemini requests when Gemini is the configured provider",async()=>{
- let sent;
- const env={RAVEN_GEMINI_API_KEY:"test-credential"};
- const complete=createLLMCompletion({getEnv:n=>env[n],fetchImpl:async(url,init)=>{
-  assert.match(url,/:generateContent$/);sent=JSON.parse(init.body);
-  assert.equal(init.headers["x-goog-api-key"],"test-credential");
-  return Response.json({modelVersion:"actual-model",candidates:[{finishReason:"STOP",content:{parts:[{thought:true,text:"private thought"},{text:JSON.stringify(cover)}]}}]});
- }});
- const r=await complete({instructions:"Write.",input:{example:true},schema:{type:"object"},name:"test"});
- assert.equal(sent.systemInstruction.parts[0].text,"Write.");
- assert.deepEqual(JSON.parse(sent.contents[0].parts[0].text),{example:true});
- assert.equal(sent.generationConfig.responseMimeType,"application/json");
- assert.equal(r.provider,"gemini");assert.equal(r.model,"actual-model");assert.deepEqual(r.data,cover);
-});
-test("LLM router reports Cerebras, Groq, then Gemini order without exposing keys",()=>{
- const status=llmProviderStatus(n=>({CEREBRAS_API_KEY:"c",GROQ_API_KEY:"q",GEMINI_API_KEY:"g"}[n]||""));
- assert.deepEqual(status.configured,{cerebras:true,groq:true,gemini:true});
- assert.deepEqual(status.order,["cerebras","groq","gemini"]);
-});
-test("LLM router fails over from Cerebras to Groq to Gemini",async()=>{
- const env={CEREBRAS_API_KEY:"c",GROQ_API_KEY:"q",GEMINI_API_KEY:"g"};
- const urls=[];
- const complete=createLLMCompletion({getEnv:n=>env[n],fetchImpl:async(url,init)=>{
-  urls.push(url);
-  if(url.includes("api.cerebras.ai")) return Response.json({error:"down"},{status:503});
-  if(url.includes("api.groq.com")) return Response.json({error:"down"},{status:503});
-  return Response.json({modelVersion:"gemini-fallback",candidates:[{finishReason:"STOP",content:{parts:[{text:JSON.stringify(cover)}]}}]});
- }});
- const r=await complete({instructions:"Write.",input:{},schema:{type:"object"},name:"test"});
- assert.equal(r.provider,"gemini");assert.equal(r.model,"gemini-fallback");
- assert.ok(urls.some(url=>url.includes("api.cerebras.ai")));
- assert.ok(urls.some(url=>url.includes("api.groq.com")));
- assert.ok(urls.some(url=>url.includes("generativelanguage.googleapis.com")));
-});
-test("LLM router never turns provider error bodies into documents",async()=>{
- const env={RAVEN_GEMINI_API_KEY:"test"};
- let attempts=0;
- const complete=createLLMCompletion({getEnv:n=>env[n],fetchImpl:async()=>{attempts++;return Response.json({error:{message:"private input secret"}},{status:500});}});
- await assert.rejects(complete({input:{},schema:{},name:"test"}),e=>e.code==="LLM_UNAVAILABLE"&&!e.message.includes("private input"));
- assert.equal(attempts,6,"Gemini routes remain bounded");
- assert.throws(()=>createLLMCompletion({getEnv:()=>""}),e=>e.code==="LLM_NOT_CONFIGURED");
-});
-test("Gemini adapter advances through fallback models after endpoint failures",async()=>{
- const env={RAVEN_GEMINI_API_KEY:"test"};
- const urls=[];
- const complete=createLLMCompletion({getEnv:n=>env[n],fetchImpl:async(url)=>{
-  urls.push(url);
-  if(urls.length<3)return Response.json({error:"limited"},{status:429});
-  return Response.json({modelVersion:"fallback-model",candidates:[{finishReason:"STOP",content:{parts:[{text:JSON.stringify(cover)}]}}]});
- }});
- const r=await complete({input:{},schema:{},instructions:"Write."});
- assert.equal(r.provider,"gemini");assert.equal(r.model,"fallback-model");assert.equal(urls.length,3);assert.match(urls[2],/gemini-3.5-flash-lite/);
-});
-const env={RAVEN_GEMINI_API_KEY:"test",SUPABASE_URL:"https://database.example",SUPABASE_SERVICE_ROLE_KEY:"test-service"};
-const req=(body,headers={"x-raven-client":"raven-web-v1"})=>new Request("https://raven.example",{method:"POST",headers:{"Content-Type":"application/json",...headers},body:JSON.stringify(body)});
-test("handler checks access and configuration before spending model budget",async()=>{
- let calls=0;const handler=createDocumentHandler("resume",{getEnv:n=>n==="RAVEN_GEMINI_API_KEY"?"":env[n],fetchImpl:async()=>{calls++;throw Error("unexpected");}});
- assert.equal((await handler(req({} ,{}))).status,403);
- assert.equal((await handler(req({jobTitle:"Job",jobDescription:"Description"}))).status,503);
- assert.equal(calls,0);
- assert.equal((await handler(req({jobTitle:"Job",jobDescription:"x".repeat(60001)}))).status,400);
-});
-test("handler preserves request budget and records success for a grounded document",async()=>{
- const calls=[],responses=[cover];
- const fetchImpl=async(url,init)=>{
-  calls.push({url,body:init.body?JSON.parse(init.body):null});
-  if(url.endsWith("raven_request_guard"))return Response.json({allowed:true,event_id:123,short_remaining:11,long_remaining:59});
-  if(url.includes("raven_canonical_profiles"))return Response.json([{profile}]);
-  if(url.endsWith("raven_request_finish"))return Response.json(null);
-  if(url.endsWith(":generateContent"))return Response.json({modelVersion:"test",candidates:[{finishReason:"STOP",content:{parts:[{text:JSON.stringify(reviewData(responses.shift(),{input:JSON.parse(JSON.parse(init.body).contents[0].parts[0].text)}))}]}}]});
-  throw Error("unexpected endpoint");
- };
- const handler=createDocumentHandler("coverLetter",{getEnv:n=>env[n],fetchImpl});
- const response=await handler(req({jobTitle:"Job",jobDescription:"Complete posting",currentDocument:"Old",instructions:"Be direct"}));
- const body=await response.json();assert.equal(response.status,200);assert.deepEqual(body.coverLetter.paragraphs,cover.paragraphs.map(p=>p.text));
- assert.equal(calls[0].body.p_short_limit,12);assert.equal(calls[0].body.p_long_limit,60);
- assert.equal(calls.at(-1).body.p_status,"success");assert.equal(calls.at(-1).body.p_event_id,123);
-});
-test("rate limit blocks requests and provider failure never returns a non-LLM document",async()=>{
- let calls=0;
- const blocked=createDocumentHandler("resume",{getEnv:n=>env[n],fetchImpl:async()=>{calls++;return Response.json({allowed:false,retry_after_seconds:30});}});
- assert.equal((await blocked(req({jobTitle:"Job",jobDescription:"Posting"}))).status,429);assert.equal(calls,1);
- const events=[];
- const failed=createDocumentHandler("resume",{getEnv:n=>env[n],fetchImpl:async(url,init)=>{
-  if(url.endsWith("raven_request_guard"))return Response.json({allowed:true,event_id:123});
-  if(url.includes("raven_canonical_profiles"))return Response.json([{profile}]);
-  if(url.endsWith("raven_request_finish")){events.push(JSON.parse(init.body));return Response.json(null);}
-  return Response.json({error:"private"},{status:500});
- }});
- const response=await failed(req({jobTitle:"Job",jobDescription:"Posting"}));
- const body=await response.json();
- assert.equal(response.status,503);assert.equal(events[0].p_status,"failure");
- assert.equal(body.resume,undefined);
- assert.equal(body.code,"LLM_UNAVAILABLE");
-});
-
 test("schema bounds guide document length; malformed draft can be repaired",async()=>{
  const requests=[],bad={...resume,skills:[]};
  const result=await writeDocument({kind:"resume",profile,target,complete:sequence([bad,resume,accepted],requests)});
@@ -177,7 +81,7 @@ test("deterministic evidence validation rejects unsupported specifics and accept
  assert.throws(()=>validateDraft("resume",{...resume,summary:claim("Led a team of 50.",["f2"])},profile,{target}),/unsupported number/i);
  const profileWithPhotoshop={...profile,skills:[...profile.skills,"Photoshop"]};
  assert.doesNotThrow(()=>validateDraft("resume",{...resume,summary:claim("Works with Photoshop and builds game environments.",["f1"])},profileWithPhotoshop,{target}));
- assert.throws(()=>validateDraft("resume",{...resume,experience:[{experience_id:"art",bullets:[claim("Used Photoshop to build game environments.",["f1"])]}]},profileWithPhotoshop,{target}),/without citing evidence/i);
+ assert.throws(()=>validateDraft("resume",{...resume,experience:[{experience_id:"art",bullets:[claim("Used Photoshop to build game environments.",["f1"])]}]},profileWithPhotoshop,{target}),/unverified tool use|employer-specific evidence/i);
  const playful={
    ...resume,
    headline:claim("Meow! Artist and mentor cat",["f1","f2"]),

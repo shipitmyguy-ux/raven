@@ -42,7 +42,7 @@
     MASTER_RESUMES_KEY,APPLICATION_PROFILE_KEY,ANSWER_MEMORY_KEY,GENERATOR_PREFS_KEY,
     USER_SETTINGS_KEY,DOCUMENT_APPROVALS_KEY,VIEWED_JOBS_KEY
   ];
-  const RESUME_TEMPLATE_VERSION="modern-v11-zero-llm";
+  const RESUME_TEMPLATE_VERSION="modern-v12-reliable-free";
   const DEFAULT_FOLLOW_UP_DAYS=7;
   const activeGeneration=new Map();
   const generationErrors=new Map();
@@ -1805,6 +1805,7 @@
     }
     const document=type==="coverLetter"?payload.coverLetter:payload.resume;
     if(!document) throw new Error("Online generator returned no "+documentLabel(type)+".");
+    document.generationMode=payload.fallback_used?"source-facts":"ai";
     return document;
   }
 
@@ -1820,7 +1821,7 @@
         : await generateDocumentCached(job,masterResume,type);
       await saveGeneratedDocument(job,type,document);
       setDocumentApproved(job,type,false);
-      setStatus(label[0].toUpperCase()+label.slice(1)+" ready · approval required");
+      setStatus(label[0].toUpperCase()+label.slice(1)+" ready"+(document.generationMode==="source-facts"?" · built from verified facts; AI unavailable":"")+" · approval required");
       return document;
     }catch(error){
       let message=String(error?.message||"Generation failed.");

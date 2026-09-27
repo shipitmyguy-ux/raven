@@ -1,4 +1,4 @@
-import {WriterError,evidenceCatalog} from "./document-writer.mjs";
+import {WriterError,evidenceCatalog,unsupportedSpecifics} from "./document-writer.mjs";
 
 export const DOCUMENT_V3_VERSION="resume-v3-shadow-alpha3";
 export const DOCUMENT_SCHEMA_VERSION=3;
@@ -50,7 +50,7 @@ function rootToken(token){
   return t.replace(/(?:ing|ed|es|s)$/,"");
 }
 function roots(value){
-  return (String(value||"").toLowerCase().match(/[a-z][a-z0-9+#./-]{2,}/g)||[])
+  return (String(value||"").toLowerCase().match(/[a-z][a-z0-9+#/-]{2,}/g)||[])
     .map(rootToken).filter(t=>t&&!STOP.has(t));
 }
 function sentences(value){
@@ -274,6 +274,7 @@ function issueForClaim(claim,allowedIds,map,{roleId=null,profile,allowParaphrase
   const facts=ids.map(id=>map.get(id)).filter(Boolean);
   if(roleId&&facts.some(f=>f.experience_id!==roleId))issues.push("A work-history bullet cited evidence from a different employer.");
   const evidence=facts.map(f=>f.text).join(" ");
+  issues.push(...unsupportedSpecifics(text,evidence,profile,{roleId}));
   for(const n of exactNumbers(text))if(!evidence.includes(n))issues.push("The passage introduced an unsupported number: "+n+".");
   if(roleId){
     const employer=(profile.experience||[]).find(e=>e.id===roleId);
@@ -457,7 +458,7 @@ export function buildDeterministicResumeV3(profile,target){
       role:original?.role||item.role||"",
       company:original?.company||item.company||"",
       dates:original?.dates||item.dates||"",
-      bullets:bullets.length?bullets:["Contributed verified experience relevant to this role."]
+      bullets
     };
   });
   const used=new Set(experience.flatMap(row=>row.bullets.map(x=>x.toLowerCase())));
@@ -475,8 +476,8 @@ export function buildDeterministicResumeV3(profile,target){
       schema_version:DOCUMENT_SCHEMA_VERSION,
       name:profile.name,
       contact:profile.contact,
-      headline:deterministicHeadline(analysis),
-      summary:deterministicSummary(analysis,selection),
+      headline:selection.skills.slice(0,3).join(" | ")||"Professional Experience",
+      summary:selection.skills.length ? "Skills include "+selection.skills.slice(0,6).join(", ")+"." : "Experience includes "+experience.map(row=>row.role+" at "+row.company).join("; ")+".",
       skills:[...selection.skills],
       experience,
       education:structuredClone(profile.education||[]),

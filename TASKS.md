@@ -108,3 +108,10 @@ These are feature expansions, not Raven closeout blockers.
 - [x] Surface failures beside the Generate button, catch initial render failures, and retain progress after discovery jobs receive saved IDs.
 - [x] Add browser regressions for no device masters across all four tracks, missing legacy files, failed generation/retry, and forced regeneration.
 - [x] Deploy with existing Pages workflow; verify real Accurx regeneration and Omega Generate -> preview -> full refresh/backend sync, with identical saved preview text. Core/browser CI and both production smoke runs passed.
+
+
+## 2026-09-27 reliability / ChatGPT handoff
+- [x] Deploy bounded zero-cost generation and source-fact fallback for both initial documents; 8/8 live output checks passed.
+- [x] Grounding punctuation/prompt matching fixes and focused unsupported-specifics checks; 49 local core tests passed.
+- [ ] Complete browser persistence and PDF verification for this release; local browser download unavailable.
+- [ ] Discuss minimum-click ChatGPT handoff/import for both documents before implementation.

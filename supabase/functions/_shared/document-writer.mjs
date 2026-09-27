@@ -37,7 +37,7 @@ export function evidenceCatalog(profile){
 const STOP_WORDS=new Set("a an and are as at be been being by for from had has have i in into is it its my of on or our that the their this to was were will with you your".split(" "));
 const RISKY_TERMS=["optimized","photorealistic","exceptional","robust","extensive","proven expertise","strict standards","improved efficiency","measurable impact","expert in","specialist in"];
 function roots(text){
-  return String(text||"").toLowerCase().match(/[a-z][a-z0-9+#./-]{2,}/g)?.map(token=>{
+  return String(text||"").toLowerCase().match(/[a-z][a-z0-9+#/-]{2,}/g)?.map(token=>{
     let t=token.replace(/^[^a-z0-9]+|[^a-z0-9+#./-]+$/g,"");
     const groups=[
       [/^(?:lead|leads|leading|led|leadership)$/,"lead"],
@@ -56,9 +56,28 @@ function roots(text){
   }).filter(Boolean)||[];
 }
 function exactNumbers(text){return String(text||"").match(/\b\d+(?:[.,]\d+)?%?\b/g)||[];}
+// Narrow factual checks shared by both prose paths. Tone words do not grant
+// permission to invent credentials, tools, responsibilities or achievements.
+export function unsupportedSpecifics(value,evidence,profile,{roleId=null}={}){
+  const issues=[],text=String(value||"");
+  const source=String(evidence||"");
+  const role=(profile.experience||[]).find(row=>row.id===roleId);
+  const toolSource=roleId?(role?.facts||[]).map(f=>f.text).join(" "):
+    source+" "+(profile.skills||[]).join(" ");
+  const tools=["Substance Designer","Substance Painter","Photoshop","ZBrush","Maya","Unity","Unreal Engine","Salesforce","Jira","Python","SQL","Power BI","Tableau","Excel"];
+  const has=(haystack,needle)=>new RegExp("\\b"+needle.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b","i").test(haystack);
+  for(const tool of tools)if(has(text,tool)&&!has(toolSource,tool))
+    issues.push("The passage added unverified tool use: "+tool+".");
+  const assertions=[/\bhead designer\b/gi,/\b(?:chief|director|vice president)\b/gi,/\b(?:certified|certification|PhD|MBA|PMP)\b/gi,/\bAI bots?\b/gi,/\bbumping into walls\b/gi,/\b(?:increased|reduced|boosted|improved) (?:revenue|sales|efficiency|productivity|retention)\b/gi];
+  for(const pattern of assertions)for(const match of text.matchAll(pattern)){
+    if(!has(source+(role?" "+role.role:""),match[0]))issues.push("The passage added unsupported responsibility, credential or outcome: "+match[0]+".");
+  }
+  return issues;
+}
 function claimEvidenceIssues(value,facts,profile,{target=null,instructions="",cover=false,roleId=null}={}){
   const issues=[];
   const evidenceText=facts.map(f=>[f.text,f.company].filter(Boolean).join(" ")).join(" ");
+  issues.push(...unsupportedSpecifics(value,evidenceText,profile,{roleId}));
   const evidenceLower=evidenceText.toLowerCase();
   const instructionLower=String(instructions||"").toLowerCase();
   const targetLower=[target?.title,target?.company].filter(Boolean).join(" ").toLowerCase();
@@ -68,7 +87,7 @@ function claimEvidenceIssues(value,facts,profile,{target=null,instructions="",co
     return issues;
   }
   for(const number of exactNumbers(value)){
-    if(!evidenceLower.includes(number.toLowerCase())&&!instructionLower.includes(number.toLowerCase()))
+    if(!evidenceLower.includes(number.toLowerCase()))
       issues.push("The passage introduced an unsupported number: "+number+".");
   }
   const evidenceRootSet=new Set(roots(evidenceText));
@@ -90,7 +109,7 @@ function claimEvidenceIssues(value,facts,profile,{target=null,instructions="",co
     if(!roleId&&!namesEmployer)continue;
     const skillRoots=roots(skill);
     const supported=skillRoots.length&&skillRoots.every(root=>skillEvidenceRootSet.has(root));
-    if(!supported&&!instructionLower.includes(lower)&&!targetLower.includes(lower)){
+    if(!supported){
       const employerName=roleId
         ? String((profile.experience||[]).find(e=>e.id===roleId)?.company||"this employer")
         : "this passage";
@@ -103,16 +122,15 @@ function claimEvidenceIssues(value,facts,profile,{target=null,instructions="",co
   ].filter(Boolean).sort((a,b)=>b.length-a.length);
   for(const entity of entities){
     const lower=String(entity).toLowerCase();
-    if(value.toLowerCase().includes(lower)&&!evidenceLower.includes(lower)&&!instructionLower.includes(lower)&&!targetLower.includes(lower))
+    if(value.toLowerCase().includes(lower)&&!evidenceLower.includes(lower))
       issues.push("The passage introduced "+entity+" without citing evidence that supports it.");
   }
   for(const term of RISKY_TERMS){
-    if(value.toLowerCase().includes(term)&&!evidenceLower.includes(term)&&!instructionLower.includes(term))
+    if(value.toLowerCase().includes(term)&&!evidenceLower.includes(term))
       issues.push("The passage added unsupported embellishment: "+term+".");
   }
-  const styleRoots=new Set(roots(instructions));
   const evidenceRoots=new Set(roots(evidenceText));
-  const claimRoots=roots(value).filter(t=>!STOP_WORDS.has(t)&&!styleRoots.has(t));
+  const claimRoots=roots(value).filter(t=>!STOP_WORDS.has(t));
   if(claimRoots.length&&!claimRoots.some(t=>evidenceRoots.has(t)))
     issues.push("The passage does not contain a recognizable factual anchor from its cited evidence.");
   return issues;
@@ -243,7 +261,7 @@ export async function writeDocument({kind,profile,target,instructions="",current
   if(!profile?.name||!Array.isArray(profile.experience)||!profile.experience.length)throw new WriterError("Verified candidate background is missing.","PROFILE_MISSING",503);
   const schema=structuredClone(kind==="resume"?resumeSchema:coverSchema);
   if(kind==="resume"){
-    const requiredCount=Array.isArray(profile.resume_required_experience_ids)?profile.resume_required_experience_ids.filter(Boolean).length:0;
+    const requiredCount=target?.track==="Games / 3D"&&Array.isArray(profile.resume_required_experience_ids)?profile.resume_required_experience_ids.filter(Boolean).length:0;
     schema.properties.experience.minItems=Math.max(1,requiredCount);
     schema.properties.experience.maxItems=profile.experience.length;
   }
