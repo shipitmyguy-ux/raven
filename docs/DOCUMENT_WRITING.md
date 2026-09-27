@@ -49,5 +49,5 @@ Acceptance requires real resume and cover-letter output, factual/editorial inspe
 - Actual account check returned HTTP 403, so Cloudflare inference is NOT active or live-quality verified. Existing token needs Billing Read permission (not Write) for the documented subscriptions API. No Cloudflare paid usage or billing change was made.
 - Corrected Cloudflare native API request fields: max_tokens and direct JSON schema; configured a fixed supported Llama 3.3 70B model. Resume v95 and cover v70 deployed.
 - Added Generate both / Finish documents using the existing generation, persistence, cache and review paths; existing documents are preserved.
-- 53 local core tests and secret scan passed. Added two browser regressions; CI results need verification after this commit.
+- 53 local core tests and secret scan passed. Release a3a4b95 passed core CI, browser regression (including Generate both / Finish documents), Pages deployment and push production smoke. Live index serves app.js v60.
 - Previous release e9fbb9a passed core/browser/Pages and both production smoke workflows. Previous live tonal QA: cat, formal, punchy succeeded; goofy failed LLM_CALL_BUDGET_EXHAUSTED; no saved documents overwritten by the API-only checks.

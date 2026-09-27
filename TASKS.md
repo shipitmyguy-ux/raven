@@ -121,4 +121,4 @@ These are feature expansions, not Raven closeout blockers.
 - [x] Wire native Cloudflare inference with a fail-closed Workers Free-plan check; unit and contract coverage passes.
 - [x] Implement one-click generation of missing resume/cover letter using existing review/persistence.
 - [!] Cloudflare activation and live quality tests await Billing Read permission on the existing token; account-plan API returned 403.
-- [ ] Verify new Generate both browser tests and Pages deployment in CI.
+- [x] Verify new Generate both browser tests and Pages deployment in CI (a3a4b95); live app.js v60 confirmed.
