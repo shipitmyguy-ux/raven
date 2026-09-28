@@ -48,16 +48,20 @@ function oneEditApart(a,b){
   return edits+(a.length-i)+(b.length-j)===1;
 }
 export function shippedTitleTypos(value,profile){
-  const words=String(value||"").toLowerCase().match(/[a-z][a-z0-9]+/g)||[];
+  const words=String(value||"").toLowerCase().match(/[a-z0-9]+/g)||[];
   const issues=[];
   for(const title of profile.shipped_titles||[]){
-    // Compare distinctive single-word names only. Multiword names can contain
-    // ordinary vocabulary, where fuzzy matching would reject valid prose.
-    if(!/^[a-z][a-z0-9]{6,}$/i.test(title))continue;
-    const canonical=title.toLowerCase();
-    if(words.includes(canonical))continue;
-    for(const word of words)if(oneEditApart(word,canonical)){
-      issues.push(`The passage misspelled verified shipped title ${title} as ${word}. Use the exact title.`);
+    const canonical=String(title).toLowerCase().match(/[a-z0-9]+/g)||[];
+    if(!canonical.length||(canonical.length===1&&canonical[0].length<7))continue;
+    for(let i=0;i<=words.length-canonical.length;i++){
+      const candidate=words.slice(i,i+canonical.length);
+      const changed=canonical.filter((part,j)=>part!==candidate[j]);
+      // Multiword names need their surrounding title words to match exactly;
+      // otherwise ordinary prose would be mistaken for a game title.
+      if(changed.length!==1)continue;
+      const changedIndex=canonical.findIndex((part,j)=>part!==candidate[j]);
+      if(!oneEditApart(canonical[changedIndex],candidate[changedIndex]))continue;
+      issues.push(`The passage misspelled verified shipped title ${title} as ${candidate.join(" ")}. Use the exact title.`);
       break;
     }
   }
