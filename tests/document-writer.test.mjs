@@ -2,11 +2,14 @@ import assert from "node:assert/strict";
 import {test} from "node:test";
 import {writeDocument,validateDraft,employerToolIssues,shippedTitleTypos,WRITER_VERSION} from "../supabase/functions/_shared/document-writer.mjs";
 
-test("verified shipped title spelling rejects a near miss without changing exact titles",()=>{
- const verified={shipped_titles:["Darksiders","Halo Infinite"]};
- assert.match(shippedTitleTypos("Shipped Darksiers and Halo Infinite.",verified).join(" "),/Darksiders.*Darksiers/i);
- assert.deepEqual(shippedTitleTypos("Shipped Darksiders and Halo Infinite.",verified),[]);
- assert.deepEqual(shippedTitleTypos("Worked on dark environments.",verified),[]);
+test("verified shipped title spelling covers every known title without changing exact titles",()=>{
+ const verified={shipped_titles:["Darksiders","Dead Space 2","Elder Scrolls Online","Ark: Survival Evolved","Halo Infinite","Six Days in Fallujah"]};
+ const nearMisses=["Darksiers","Dead Spce 2","Elder Scrols Online","Ark: Survial Evolved","Halo Infinit","Six Days in Falujah"];
+ for(let i=0;i<verified.shipped_titles.length;i++){
+  assert.match(shippedTitleTypos(`Shipped ${nearMisses[i]}.`,verified).join(" "),new RegExp(verified.shipped_titles[i].replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"i"));
+  assert.deepEqual(shippedTitleTypos(`Shipped ${verified.shipped_titles[i]}.`,verified),[]);
+ }
+ assert.deepEqual(shippedTitleTypos("Worked on dark environments and online collaboration.",verified),[]);
 });
 import {createLLMCompletion,llmProviderStatus} from "../supabase/functions/_shared/llm-router.mjs";
 import {createDocumentHandler} from "../supabase/functions/_shared/document-handler.mjs";
