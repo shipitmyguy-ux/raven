@@ -121,6 +121,7 @@ async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJo
     if(generatorDelayMs) await new Promise(resolve=>setTimeout(resolve,generatorDelayMs));
     const body=JSON.parse(route.request().postData()||"{}");
     generationBodies.push(body);
+    if(body.revisionSection==="summary")return route.fulfill({json:{ok:true,document_patch:{section:"summary",text:"Experienced delivery leader. Updated to apply the requested revision."},resume:{...generatedResume,headline:"Unexpected unrelated rewrite"}}});
     if(body.documentType==="coverLetter"){
       const coverLetter=body.instructions
         ? {...generatedLetter,paragraphs:[...generatedLetter.paragraphs,"Updated to apply the requested revision."]}
@@ -465,7 +466,7 @@ test("application profile controls are available",async({page})=>{
 
 
 test("review preserves approved document and revision invalidates approval",async({page})=>{
-  const resumeV1="data:text/html;charset=utf-8,resume-v1";
+  const resumeV1="data:text/html;charset=utf-8,"+encodeURIComponent('<p class="summary">resume-v1</p>');
   const letterV1="data:text/html;charset=utf-8,letter-v1";
   await page.addInitScript(({resumeV1,letterV1})=>{
     localStorage.setItem("ravenDocumentApprovalsV1",JSON.stringify({
@@ -518,7 +519,7 @@ test("review preserves approved document and revision invalidates approval",asyn
 });
 
 test("failed revision keeps the saved document and its approval",async({page})=>{
-  const resumeV1="data:text/html;charset=utf-8,resume-v1";
+  const resumeV1="data:text/html;charset=utf-8,"+encodeURIComponent('<p class="summary">resume-v1</p>');
   const letterV1="data:text/html;charset=utf-8,letter-v1";
   await page.addInitScript(({resumeV1,letterV1})=>{
     localStorage.setItem("ravenDocumentApprovalsV1",JSON.stringify({
@@ -1085,4 +1086,31 @@ test("Finish documents preserves an existing resume",async({page})=>{
   await expect(page.locator('#documentReviewDialog')).toBeVisible();
   expect(api.getGenerationBodies().map(body=>body.documentType)).toEqual(['coverLetter']);
   expect(api.getJob().resume).toBe(prior);
+});
+
+test("summary-only revision preserves exact saved HTML through reload and rejects widening",async({page})=>{
+  const original='<!doctype html><html><head><style>.summary{color:#123}</style></head><body><h1>Original Name</h1><p class="headline">Original headline</p><p class="summary">Original summary.</p><ul><li>Original bullet with exact punctuation!</li></ul></body></html>';
+  const resume="data:text/html;charset=utf-8,"+encodeURIComponent(original);
+  const api=await mockRaven(page,{initialJob:{resume}});
+  await page.goto("/");
+  await page.locator('[data-track="Professional"]').click();
+  await page.locator(".job-card-summary").first().click();
+  await page.locator('[data-generate="resume"]').click();
+  await page.locator("#reviewInstructions").fill("Rewrite only the summary in a punchy tone.");
+  await page.locator("#reviewSubmit").click();
+  await expect(page.locator("#reviewFeedback")).toContainText("Updated draft saved");
+  const expected="data:text/html;charset=utf-8,"+encodeURIComponent(original.replace('Original summary.','Experienced delivery leader. Updated to apply the requested revision.'));
+  expect(api.getJob().resume).toBe(expected);
+  expect(api.getGenerationBodies()[0].revisionSection).toBe("summary");
+  await page.evaluate(()=>localStorage.removeItem("ravenJobsCacheV1"));
+  await page.reload();
+  await page.locator('[data-track="Professional"]').click();
+  await page.locator(".job-card-summary").first().click();
+  await page.locator('[data-generate="resume"]').click();
+  await expect(page.locator("#reviewFrame")).toHaveAttribute("src",expected);
+  await page.route("**/functions/v1/raven-generate-v1**",route=>route.fulfill({json:{ok:true,resume:generatedResume}}));
+  await page.locator("#reviewInstructions").fill("Rewrite only the summary.");
+  await page.locator("#reviewSubmit").click();
+  await expect(page.locator("#reviewFeedback")).toContainText("previous document is unchanged");
+  expect(api.getJob().resume).toBe(expected);
 });

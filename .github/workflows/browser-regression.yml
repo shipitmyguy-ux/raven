@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "app.js"
+      - "document-revision.mjs"
       - "index.html"
       - "raven-api.js"
       - "raven-core.js"
@@ -17,6 +18,7 @@ on:
     branches: ["main"]
     paths:
       - "app.js"
+      - "document-revision.mjs"
       - "index.html"
       - "raven-api.js"
       - "raven-core.js"

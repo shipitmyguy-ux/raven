@@ -188,3 +188,10 @@ Concurrent main updates a93af28/d89b38f/ff23f8a were reviewed before publication
 - Revision limitation: the tests requested summary-only edits, but wording elsewhere also changed. Tone behavior passes; exact section-only edit scope does NOT yet pass and must not be described as verified. Saved user documents were never overwritten; no approvals or employer submissions were performed.
 - 45 focused execution tests and repository secret scan pass. Final source commit 3f70af4 passed Reusable core tests (including targeted browser checks) and Production Smoke Tests; earlier frontend commit 1b64a8d also passed the full Browser regression and Pages deployment. Production browser loaded/synced and v61 was served. Existing mocked browser persistence/failed-revision regressions passed; no new real-model PDF rendering or persistence write was performed.
 - Rate quota, provider outage circuit, Workers Free validation, zero-price routing, and two-call ceiling remain in place. No circuit records were reset.
+
+
+## Summary-only repair (2026-09-28 UTC)
+- Resume v104, cover v77, and gateway v24 deployed with the grounded-llm-v4 writer. Frontend app.js v62 recognizes summary edits and applies only a validated summary patch to saved HTML.
+- Every byte outside the summary content is preserved. Existing saved resume formatting and text need no migration; malformed legacy documents fail clearly without a full rewrite. Whole-document revisions remain supported.
+- Local core regression files (19) and secret scan pass. New tests cover narrow output schemas, grounded repair, unsupported claims, exact HTML preservation, mismatched responses, approval invalidation and save/reload.
+- First live formal summary revision returned a grounded patch via the free OpenRouter route in 16.0 seconds. Saved user documents remain unchanged. Browser CI, further live output checks, isolated persistence and PDF layout verification are still underway.

@@ -13,6 +13,25 @@ const resume={headline:claim("Artist and mentor",["f1","f2"]),summary:claim("Bui
  experience:[{experience_id:"art",bullets:[claim("Built game environments and mentored newer artists.",["f1","f2"])]}],additional:[]};
 const cover={greeting:"Dear Hiring Manager,",paragraphs:[claim("My work combines environment art and mentoring newer artists.",["f1","f2"]),claim("I would welcome a conversation about the role.",[])],closing:"Sincerely,"};
 const accepted={supported:true,issues:[]};
+test("summary-only writer validates only the new summary and never returns other generated sections",async()=>{
+ const requests=[];
+ const result=await writeDocument({kind:"resume",profile,target,instructions:"Rewrite only the summary",currentDocument:"Saved old wording",revisionSection:"summary",complete:async args=>{
+   requests.push(args);return {data:{...resume,headline:claim("Invented PhD"),summary:claim("Built game environments and mentored newer artists.",["f1","f2"])},provider:"test"};
+ }});
+ assert.deepEqual(Object.keys(requests[0].schema.properties),["summary"]);
+ assert.deepEqual(Object.keys(result.document),["summary"]);
+ assert.equal(result.revision_section,"summary");
+ assert.equal(requests.length,1);
+});
+test("summary-only factual repair remains bounded and cannot return unsupported qualifications",async()=>{
+ let calls=0;
+ const options={kind:"resume",profile,target,instructions:"Rewrite only the summary",currentDocument:"Old summary",revisionSection:"summary"};
+ const result=await writeDocument({...options,complete:async()=>({data:{summary:++calls===1?claim("Led a team of 50.",["f2"]):claim("Mentored newer artists.",["f2"])}})});
+ assert.equal(calls,2);assert.equal(result.document.summary,"Mentored newer artists.");
+ calls=0;
+ await assert.rejects(writeDocument({...options,complete:async()=>{calls++;return {data:{summary:claim("Led a team of 50.",["f2"])}};}}),/unsupported number/);
+ assert.equal(calls,2);
+});
 const reviewData=(data,args)=>data?.supported!==undefined&&args.input.passages?{checks:args.input.passages.map((p,index)=>({index,supported:data.supported,reason:data.issues?.[0]||"Supported by the supplied facts."}))}:data;
 function sequence(values,requests=[]){return async args=>{requests.push(args);assert.ok(values.length,"unexpected model call");const value=reviewData(structuredClone(values.shift()),args); const data=args.name==="raven_passage_repair"?{repairs:args.input.factualCorrection.invalid_paths.map(path=>({path,claim:path.split(".").reduce((v,k)=>v?.[k],value)}))}:value; return {data,provider:"test",model:"test-model"};};}
 

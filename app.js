@@ -1747,7 +1747,12 @@
     return '<!doctype html><html><head><meta charset="utf-8"><title>'+escapeHtml("Cover Letter — "+(job.title||"Role"))+'</title><style>@page{size:letter;margin:.75in}body{font-family:Arial,Helvetica,sans-serif;color:#20242a;font-size:11pt;line-height:1.5;max-width:7in;margin:0 auto}p{margin:0 0 14px}.closing{margin-top:24px}</style></head><body><p>'+escapeHtml(letter.greeting||"Dear Hiring Manager,")+'</p>'+paragraphs+'<p class="closing">'+escapeHtml(letter.closing||"Sincerely,")+'<br>'+escapeHtml(letter.signature||"")+'</p></body></html>';
   }
   async function saveGeneratedDocument(job,type,document){
-    const html=type==="resume"?generatedResumeHtml(job,document):generatedCoverLetterHtml(job,document);
+    let html;
+    if(document.revisionSection){
+      if(type!=="resume"||document.revisionSection!=="summary"||job[type]!==document.revisionBase)throw new Error("The saved document changed during this revision. Reopen it and try again.");
+      const {applySummaryRevision}=await import("./document-revision.mjs?v=1");
+      html=applySummaryRevision(decodeURIComponent(document.revisionBase.slice(document.revisionBase.indexOf(",")+1)),document.summary);
+    }else html=type==="resume"?generatedResumeHtml(job,document):generatedCoverLetterHtml(job,document);
     const dataUrl="data:text/html;charset=utf-8,"+encodeURIComponent(html);
     if(!job._discovered){
       job[type]=dataUrl;
@@ -1807,10 +1812,20 @@
   }
   async function generateDocumentOnline(job,masterResume,type="resume",instructions=""){
     if(!config?.generateApiUrl) throw new Error("Online document generator is not configured.");
+    let section="",revisionBase="";
+    if(instructions){
+      const {revisionSection,summaryRange}=await import("./document-revision.mjs?v=1");
+      section=revisionSection(type,instructions);
+      if(section){
+        revisionBase=String(job[type]||"");
+        if(!revisionBase.startsWith("data:text/html;charset=utf-8,"))throw new Error("This saved resume cannot be edited by section. Your previous document is unchanged. Generate a new draft first.");
+        summaryRange(decodeURIComponent(revisionBase.slice(revisionBase.indexOf(",")+1)));
+      }
+    }
     // The existing service loads the verified canonical profile server-side.
     // Device-local master files are not inputs to this generation engine.
     const response=await fetch(config.generateApiUrl,{method:"POST",headers:{"Content-Type":"application/json","X-Raven-Client":"raven-web-v1"},body:JSON.stringify({
-      documentType:type==="coverLetter"?"coverLetter":"resume",instructions,currentDocument:instructions?currentDocumentText(job,type):"",jobId:job.id,jobTitle:job.title||"",company:job.company||"",track:job.track||"Professional",sourceUrl:job.url||"",jobDescription:job.notes||"",jobAnalysis:getJobAnalysis(job)
+      documentType:type==="coverLetter"?"coverLetter":"resume",instructions,revisionSection:section,currentDocument:instructions?currentDocumentText(job,type):"",jobId:job.id,jobTitle:job.title||"",company:job.company||"",track:job.track||"Professional",sourceUrl:job.url||"",jobDescription:job.notes||"",jobAnalysis:getJobAnalysis(job)
     })});
     const payload=await response.json().catch(()=>({}));
     if(!response.ok){
@@ -1837,6 +1852,10 @@
       error.providerAttempts=Number(payload.provider_attempts||0);
       error.providerFailures=Array.isArray(payload.provider_failures)?payload.provider_failures:[];
       throw error;
+    }
+    if(section){
+      if(payload.document_patch?.section!==section)throw new Error("The generator did not return the requested summary edit. Your previous document is unchanged.");
+      return {summary:payload.document_patch.text,revisionSection:section,revisionBase,generationMode:"ai"};
     }
     const document=type==="coverLetter"?payload.coverLetter:payload.resume;
     if(!document) throw new Error("Online generator returned no "+documentLabel(type)+".");

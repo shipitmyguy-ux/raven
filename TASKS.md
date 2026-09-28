@@ -164,3 +164,10 @@ These are feature expansions, not Raven closeout blockers.
 - [x] Validate four initial document pairs and four tonal revisions with authorized real data.
 - [ ] Preserve exact untouched wording for explicitly section-only revisions.
 - [ ] Fresh real-model PDF/persistence acceptance for the repaired writer.
+
+
+## Summary-only repair (2026-09-28 UTC)
+- Resume v104, cover v77, and gateway v24 deployed with the grounded-llm-v4 writer. Frontend app.js v62 recognizes summary edits and applies only a validated summary patch to saved HTML.
+- Every byte outside the summary content is preserved. Existing saved resume formatting and text need no migration; malformed legacy documents fail clearly without a full rewrite. Whole-document revisions remain supported.
+- Local core regression files (19) and secret scan pass. New tests cover narrow output schemas, grounded repair, unsupported claims, exact HTML preservation, mismatched responses, approval invalidation and save/reload.
+- First live formal summary revision returned a grounded patch via the free OpenRouter route in 16.0 seconds. Saved user documents remain unchanged. Browser CI, further live output checks, isolated persistence and PDF layout verification are still underway.

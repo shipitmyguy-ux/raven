@@ -1,5 +1,5 @@
 // One structured writer for initial drafts and revisions; layout stays in Raven.
-export const WRITER_VERSION="grounded-llm-v3";
+export const WRITER_VERSION="grounded-llm-v4";
 const str={type:"string"};
 const arr=(items,minItems=0,maxItems=20)=>({type:"array",items,minItems,maxItems});
 const obj=(properties)=>({type:"object",properties,required:Object.keys(properties),additionalProperties:false});
@@ -285,9 +285,35 @@ function replacePath(object,path,value){
   const parent=atPath(object,path.slice(0,-1));
   if(parent&&value!==undefined)parent[path.at(-1)]=structuredClone(value);
 }
-export async function writeDocument({kind,profile,target,instructions="",currentDocument="",complete,onDiagnostic=()=>{}}){
+async function writeSummary({profile,target,instructions,currentDocument,complete,onDiagnostic}){
+  let correction=null;
+  for(let attempt=0;attempt<2;attempt++){
+    const written=await complete({
+      instructions:writingInstructions+"\nRevise ONLY the resume summary. Return only its claim; all other saved sections are immutable and will be preserved by Raven.",
+      input:{documentType:"resume",revisionSection:"summary",verifiedBackground:profile,evidenceCatalog:evidenceCatalog(profile),target,revisionRequest:instructions,currentDraft:currentDocument,...(correction?{factualCorrection:correction}:{})},
+      schema:obj({summary:claimSchema}),name:"raven_summary_revision",maxOutputTokens:900
+    });
+    try{
+      const check=passageChecks("resume",{summary:written.data?.summary},profile,{target,instructions}).find(slot=>slot.path[0]==="summary");
+      if(check.issue)fail(check.issue);
+      return {document:{summary:groundedText(written.data.summary,profile,{max:1600,target,instructions})},revision_section:"summary",
+        provider:written.provider||"llm",model:written.model||"",provider_attempts:Number(written.providerAttempts||attempt+1),
+        verification_provider:"raven",verification_model:"evidence-v1",architecture:WRITER_VERSION,source_fact_passages:0};
+    }catch(error){
+      if(!(error instanceof WriterError))throw error;
+      onDiagnostic(["summary: "+error.message]);
+      if(attempt===1)throw error;
+      correction={summary:written.data?.summary,issues:[error.message]};
+    }
+  }
+}
+export async function writeDocument({kind,profile,target,instructions="",currentDocument="",revisionSection="",complete,onDiagnostic=()=>{}}){
   if(!["resume","coverLetter"].includes(kind))throw new WriterError("Invalid document type.","INVALID_INPUT",400);
   if(!profile?.name||!Array.isArray(profile.experience)||!profile.experience.length)throw new WriterError("Verified candidate background is missing.","PROFILE_MISSING",503);
+  if(revisionSection){
+    if(revisionSection!=="summary"||kind!=="resume"||!instructions.trim()||!currentDocument.trim())throw new WriterError("Invalid summary revision request.","INVALID_INPUT",400);
+    return writeSummary({profile,target,instructions,currentDocument,complete,onDiagnostic});
+  }
   const schema=structuredClone(kind==="resume"?resumeSchema:coverSchema);
   if(kind==="resume"){
     const requiredCount=target?.track==="Games / 3D"&&Array.isArray(profile.resume_required_experience_ids)?profile.resume_required_experience_ids.filter(Boolean).length:0;

@@ -28,6 +28,19 @@ test('successful free rewrite returns prose and completes the budget event',asyn
  const result=await handler(request());const data=await result.json();assert.equal(result.status,200);
  assert.equal(data.ai_used,true);assert.equal(data.coverLetter.signature,'Candidate');assert.equal(calls.at(-1).body.p_status,'success');
 });
+test('scoped resume handler returns a patch, validates its input, and never falls back',async()=>{
+ const {handler}=service('resume',{modelData:{summary:claim('Built environments.')}});
+ const response=await handler(request({instructions:'Rewrite only the summary',currentDocument:'Old summary',revisionSection:'summary'}));
+ const data=await response.json();
+ assert.equal(response.status,200);assert.deepEqual(data.document_patch,{section:'summary',text:'Built environments.'});
+ assert.equal(data.resume,undefined);assert.equal(data.fallback_used,false);
+ for(const extra of [{revisionSection:'summary'},{revisionSection:'experience',instructions:'Edit',currentDocument:'Old'}]){
+   const r=await handler(request(extra));assert.equal(r.status,400);
+ }
+ const failed=service('resume',{modelData:{summary:claim('Led 50 artists.')}}).handler;
+ const r=await failed(request({instructions:'Rewrite only summary',currentDocument:'Old',revisionSection:'summary'}));
+ assert.equal(r.status,502);assert.equal((await r.json()).document_patch,undefined);
+});
 test('initial resume and revision use the same structured writer without exact source bullet counts',async()=>{
  for(const instructions of ['', 'Make it formal']){
   const {handler,calls}=service('resume',{modelData:draft});

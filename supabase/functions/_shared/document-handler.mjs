@@ -81,6 +81,8 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
         description:field(body.jobDescription||body.description,60000,"Job description")};
       if(!target.title||!target.description)throw new WriterError("Job title and description are required.","INVALID_INPUT",400);
       const instructions=field(body.instructions,5000,"Revision request"),currentDocument=field(body.currentDocument,40000,"Current document");
+      const revisionSection=field(body.revisionSection,20,"Revision section");
+      if(revisionSection&&(revisionSection!=="summary"||kind!=="resume"||!instructions||!currentDocument))throw new WriterError("Invalid summary revision request.","INVALID_INPUT",400);
       const url=getEnv("SUPABASE_URL"),key=getEnv("SUPABASE_SERVICE_ROLE_KEY");
       const r=await fetchImpl(url+"/rest/v1/raven_canonical_profiles?profile_key=eq.default&select=profile&limit=1",
         {signal:AbortSignal.timeout(10000),headers:{apikey:key,Authorization:"Bearer "+key}});
@@ -116,13 +118,14 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
         eid=Number(budget.event_id||0)||null;
         const written=await boundedGeneration(async signal=>{
           const complete=createLLMCompletion({getEnv:freeEnv,fetchImpl,signal});
-          return writeDocument({kind,profile,target,instructions,currentDocument,complete,onDiagnostic:details=>{validationDiagnostics=details;}});
+          return writeDocument({kind,profile,target,instructions,currentDocument,revisionSection,complete,onDiagnostic:details=>{validationDiagnostics=details;}});
         },initial?40000:45000);
         await finish("success",200);
         return json({ok:true,provider:written.provider,model:written.model,
           provider_attempts:Number(written.provider_attempts||1),
           verification_provider:written.verification_provider||"raven",verification_model:written.verification_model||"evidence-v3",
-          architecture:written.architecture,validation_errors:[],[kind]:written.document,
+          architecture:written.architecture,validation_errors:[],
+          ...(written.revision_section?{document_patch:{section:written.revision_section,text:written.document.summary}}:{[kind]:written.document}),
           job_analysis:written.analysis,evidence_selection:written.selection,
           ai_used:true,fallback_used:false,
           source_fact_passages:Number(written.source_fact_passages||0),
