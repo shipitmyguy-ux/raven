@@ -80,6 +80,30 @@ test("passage repair requests only failed paths and cannot edit valid work histo
  assert.equal(result.document.experience[0].bullets[0],resume.experience[0].bullets[0].text);
  assert.equal(result.source_fact_passages,0);
 });
+test("initial resume restores omitted mandatory history using only canonical facts",async()=>{
+ const requiredProfile={...profile,resume_required_experience_ids:['art','repair']};
+ const result=await writeDocument({kind:'resume',profile:requiredProfile,target:{...target,track:'Games / 3D'},complete:sequence([resume])});
+ assert.deepEqual(result.document.experience.map(row=>row.company),['Studio','Repair Shop']);
+ assert.equal(result.document.experience[1].bullets[0],'Repaired coffee makers.');
+ assert.equal(result.source_fact_passages,1);
+});
+test("unrepaired employer attribution replaces the entire initial bullet with that employer source",async()=>{
+ const bad={...resume,experience:[{experience_id:'art',bullets:[claim('Repaired coffee makers.',['f3'])]}]};
+ const result=await writeDocument({kind:'resume',profile,target,complete:sequence([bad,bad])});
+ assert.equal(result.document.summary,resume.summary.text);
+ assert.equal(result.document.experience[0].bullets[0],'Built game environments.');
+ assert.equal(result.source_fact_passages,1);
+ assert.match(result.validation_details.join(' '),/another employer/);
+});
+test("one repair includes non-game framing and attribution errors together",async()=>{
+ const bad={...resume,summary:claim('Video game artist who mentored newer artists.',['f1','f2']),experience:[{experience_id:'art',bullets:[claim('Repaired coffee makers.',['f3'])]}]};
+ const fixed={...resume,summary:claim('Mentored newer artists.',['f2'])};
+ const requests=[];
+ const result=await writeDocument({kind:'resume',profile,target,complete:sequence([bad,fixed],requests)});
+ assert.deepEqual(requests[1].input.factualCorrection.invalid_paths,['summary','experience.0.bullets.0']);
+ assert.equal(result.document.summary,'Mentored newer artists.');
+ assert.equal(result.source_fact_passages,0);
+});
 test("empty documents, duplicate work history and injected HTML are rejected",()=>{
  assert.throws(()=>validateDraft("resume",{...resume,experience:[]},profile));
  assert.throws(()=>validateDraft("resume",{...resume,experience:[resume.experience[0],resume.experience[0]]},profile));
@@ -92,6 +116,7 @@ test("schema bounds guide document length; malformed draft can be repaired",asyn
  assert.deepEqual(requests[0].input.verifiedBackground.skills,profile.skills);
  assert.equal(requests[0].schema.properties.experience.minItems,1);
  assert.equal(requests[0].schema.properties.experience.maxItems,2);
+ assert.deepEqual(requests[0].schema.properties.experience.items.properties.experience_id.enum,['art','repair']);
  assert.equal(requests[0].schema.properties.experience.items.properties.bullets.maxItems,6);
  assert.ok(requests[1].input.factualCorrection);assert.equal(result.document.summary,resume.summary.text);
 });

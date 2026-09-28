@@ -271,7 +271,12 @@ function passageChecks(kind,draft,profile,options){
     for(const [i,claim] of (Array.isArray(draft?.additional)?draft.additional:[]).entries())add(["additional",i],claim,{max:850});
   }else for(const [i,claim] of (Array.isArray(draft?.paragraphs)?draft.paragraphs:[]).entries())add(["paragraphs",i],claim,{cover:true,max:2200});
   return slots.map(slot=>{
-    try{groundedText(slot.claim,profile,slot.options);return {...slot,issue:null};}
+    try{
+      const text=groundedText(slot.claim,profile,slot.options);
+      if(kind==="resume"&&options.target?.track!=="Games / 3D"&&["headline","summary"].includes(slot.path[0])&&/\b(?:environment artist|game development|video game|game art)\b/i.test(text))
+        return {...slot,issue:"Lead with verified transferable capabilities for this non-game role; omit game-art identity from this passage."};
+      return {...slot,issue:null};
+    }
     catch(error){if(!(error instanceof WriterError))throw error;return {...slot,issue:error.message};}
   });
 }
@@ -288,6 +293,7 @@ export async function writeDocument({kind,profile,target,instructions="",current
     const requiredCount=target?.track==="Games / 3D"&&Array.isArray(profile.resume_required_experience_ids)?profile.resume_required_experience_ids.filter(Boolean).length:0;
     schema.properties.experience.minItems=Math.max(1,requiredCount);
     schema.properties.experience.maxItems=profile.experience.length;
+    schema.properties.experience.items.properties.experience_id={type:"string",enum:profile.experience.map(row=>row.id)};
   }
   const context={documentType:kind,verifiedBackground:profile,evidenceCatalog:evidenceCatalog(profile),target,revisionRequest:instructions,currentDraft:currentDocument};
   let correction=null;
@@ -295,6 +301,7 @@ export async function writeDocument({kind,profile,target,instructions="",current
   // Match the router's two-provider-call ceiling: one draft and one repair.
   const maxAttempts=2;
   let priorDraft=null,repairPaths=null;
+  const sourcePaths=new Set();
   const diagnostics=[];
   for(let attempt=0;attempt<maxAttempts;attempt++){
     const patch=priorDraft&&repairPaths?.length;
@@ -315,10 +322,24 @@ export async function writeDocument({kind,profile,target,instructions="",current
         if(matches.length===1)replacePath(draft,path,matches[0].claim);
       }
     }
+    // Required chronology is owned by Raven. Restore an omitted role from its
+    // canonical source facts instead of making the model regenerate good prose.
+    if(!revisionRequested&&kind==="resume"&&target?.track==="Games / 3D"&&Array.isArray(draft?.experience)){
+      draft=structuredClone(draft);
+      for(const id of profile.resume_required_experience_ids||[]){
+        if(draft.experience.some(row=>row.experience_id===id))continue;
+        const role=profile.experience.find(row=>row.id===id),fact=role?.facts?.[0];
+        if(!fact)continue;
+        draft.experience.push({experience_id:id,bullets:[{text:fact.text,fact_ids:[fact.id]}]});
+        sourcePaths.add("restored-role:"+id);
+      }
+      const order=new Map(profile.experience.map((row,i)=>[row.id,i]));
+      draft.experience.sort((a,b)=>(order.get(a.experience_id)??999)-(order.get(b.experience_id)??999));
+    }
     const result=(document,sourceFactPassages=0)=>({document,provider:written.provider||"llm",model:written.model||"",
       provider_attempts:Number(written.providerAttempts||attempt+1),
       verification_provider:"raven",verification_model:"evidence-v1",architecture:WRITER_VERSION,
-      source_fact_passages:sourceFactPassages,validation_details:diagnostics});
+      source_fact_passages:sourcePaths.size+sourceFactPassages,validation_details:diagnostics});
     try{
       return result(validateDraft(kind,draft,profile,{target,instructions}));
     }catch(error){
@@ -334,13 +355,24 @@ export async function writeDocument({kind,profile,target,instructions="",current
           const repaired=structuredClone(draft),catalog=evidenceCatalog(profile);
           let replaced=0;
           for(const check of failed){
-            const ids=check.claim?.fact_ids;
-            if(!Array.isArray(ids)||!ids.length)continue;
-            const facts=ids.map(id=>catalog.find(f=>f.id===id));
-            if(facts.some(f=>!f||(check.options.roleId&&f.experience_id!==check.options.roleId)))continue;
+            let ids=check.claim?.fact_ids;
+            let facts=Array.isArray(ids)?ids.map(id=>catalog.find(f=>f.id===id)):[];
+            if(check.options.roleId&&(!facts.length||facts.some(f=>!f||f.experience_id!==check.options.roleId))){
+              // Incorrect attribution cannot be salvaged by attaching new IDs to
+              // generated text. Replace that entire bullet with this role's source.
+              const role=profile.experience.find(row=>row.id===check.options.roleId);
+              const fact=role?.facts?.[Number(check.path.at(-1))%Math.max(1,role?.facts?.length||0)];
+              if(!fact)continue;
+              facts=[fact];ids=[fact.id];
+            }
+            if(!facts.length||facts.some(f=>!f))continue;
             replacePath(repaired,check.path,{text:facts.map(f=>f.text).join(" "),fact_ids:ids});replaced++;
           }
-          try{if(replaced===failed.length)return result(validateDraft(kind,repaired,profile,{target,instructions}),replaced);}catch{}
+          try{if(replaced===failed.length)return result(validateDraft(kind,repaired,profile,{target,instructions}),replaced);}
+          catch(repairError){
+            diagnostics.push("Source replacement: "+repairError.message);onDiagnostic(diagnostics.slice(-12));
+            throw repairError;
+          }
         }
         throw error;
       }

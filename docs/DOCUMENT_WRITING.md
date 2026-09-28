@@ -21,3 +21,9 @@ Raven retains its modern HTML/PDF layout, two-page resume guidance, existing job
 Run core regression files, especially document-writer, document-reliability, cloudflare-free, and browser generation/revision persistence checks. Model mocks verify contracts and failure handling, not live writing quality. Use the same four real jobs for live comparisons; verify provider, fallback/mixed status, timing, output content, and obvious tonal revisions. Keep test output separate from saved user documents.
 
 Deploy existing resume and cover functions with document-handler, document-writer, document-v3 (source fallback), llm-router, and cloudflare-free shared modules. Preserve existing verify_jwt=false and client/origin gates. No schema migration or credential change is required.
+
+## Mandatory history and attribution recovery
+Resume work-history IDs are restricted to canonical IDs in the output schema. Initial game resumes recover omitted required roles using the canonical employer facts, with mixed-output metadata. An initial bullet still attributed to the wrong employer after repair is replaced in full with a fact from its actual employer; citations are never simply relabeled on unsupported model prose. Non-game framing checks are included in passage diagnostics so one repair can address framing and factual problems together.
+
+## Known verification limits
+Four tonal revisions changed the requested tone and preserved canonical job metadata, but requests to edit only the summary also changed other wording. Exact section-only scope remains open. Current live success counts in WORK_HANDOFF combine a full test batch with focused corrective retests; they are not a reliability guarantee. PDF layout and persistence use the existing renderer and were covered by prior/mocked tests, not a new real-model persistence write in this session.
