@@ -36,6 +36,33 @@ export function evidenceCatalog(profile){
 }
 const STOP_WORDS=new Set("a an and are as at be been being by for from had has have i in into is it its my of on or our that the their this to was were will with you your".split(" "));
 const RISKY_TERMS=["optimized","photorealistic","exceptional","robust","extensive","proven expertise","strict standards","improved efficiency","measurable impact","expert in","specialist in"];
+function oneEditApart(a,b){
+  if(Math.abs(a.length-b.length)>1)return false;
+  let i=0,j=0,edits=0;
+  while(i<a.length&&j<b.length){
+    if(a[i]===b[j]){i++;j++;continue;}
+    if(++edits>1)return false;
+    if(a.length>=b.length)i++;
+    if(b.length>=a.length)j++;
+  }
+  return edits+(a.length-i)+(b.length-j)===1;
+}
+export function shippedTitleTypos(value,profile){
+  const words=String(value||"").toLowerCase().match(/[a-z][a-z0-9]+/g)||[];
+  const issues=[];
+  for(const title of profile.shipped_titles||[]){
+    // Compare distinctive single-word names only. Multiword names can contain
+    // ordinary vocabulary, where fuzzy matching would reject valid prose.
+    if(!/^[a-z][a-z0-9]{6,}$/i.test(title))continue;
+    const canonical=title.toLowerCase();
+    if(words.includes(canonical))continue;
+    for(const word of words)if(oneEditApart(word,canonical)){
+      issues.push(`The passage misspelled verified shipped title ${title} as ${word}. Use the exact title.`);
+      break;
+    }
+  }
+  return issues;
+}
 function roots(text){
   return String(text||"").toLowerCase().match(/[a-z][a-z0-9+#/-]{2,}/g)?.map(token=>{
     let t=token.replace(/^[^a-z0-9]+|[^a-z0-9+#./-]+$/g,"");
@@ -60,6 +87,7 @@ function exactNumbers(text){return String(text||"").match(/\b\d+(?:[.,]\d+)?%?\b
 // permission to invent credentials, tools, responsibilities or achievements.
 export function unsupportedSpecifics(value,evidence,profile,{roleId=null}={}){
   const issues=[],text=String(value||"");
+  issues.push(...shippedTitleTypos(text,profile));
   const source=String(evidence||"");
   const role=(profile.experience||[]).find(row=>row.id===roleId);
   const toolSource=roleId?(role?.facts||[]).map(f=>f.text).join(" "):
