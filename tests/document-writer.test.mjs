@@ -14,7 +14,7 @@ const resume={headline:claim("Artist and mentor",["f1","f2"]),summary:claim("Bui
 const cover={greeting:"Dear Hiring Manager,",paragraphs:[claim("My work combines environment art and mentoring newer artists.",["f1","f2"]),claim("I would welcome a conversation about the role.",[])],closing:"Sincerely,"};
 const accepted={supported:true,issues:[]};
 const reviewData=(data,args)=>data?.supported!==undefined&&args.input.passages?{checks:args.input.passages.map((p,index)=>({index,supported:data.supported,reason:data.issues?.[0]||"Supported by the supplied facts."}))}:data;
-function sequence(values,requests=[]){return async args=>{requests.push(args);assert.ok(values.length,"unexpected model call");return {data:reviewData(structuredClone(values.shift()),args),provider:"test",model:"test-model"};};}
+function sequence(values,requests=[]){return async args=>{requests.push(args);assert.ok(values.length,"unexpected model call");const value=reviewData(structuredClone(values.shift()),args); const data=args.name==="raven_passage_repair"?{repairs:args.input.factualCorrection.invalid_paths.map(path=>({path,claim:path.split(".").reduce((v,k)=>v?.[k],value)}))}:value; return {data,provider:"test",model:"test-model"};};}
 
 test("writer sees the entire verified profile, posting and existing draft",async()=>{
  const requests=[];
@@ -49,17 +49,36 @@ test("unsupported claims receive a bounded deterministic repair",async()=>{
  assert.equal(requests.length,2);assert.equal(r.document.summary,resume.summary.text);
  assert.match(requests[1].input.factualCorrection.issues[0],/unsupported number/i);
 });
-test("writer gets a second repair pass before surfacing transient invalid draft",async()=>{
- const requests=[];
- const bad1={...resume,summary:{text:"",fact_ids:[]}};
- const bad2={...resume,summary:{text:"Still unsupported",fact_ids:[]}};
- const result=await writeDocument({kind:"resume",profile,target,complete:sequence([bad1,bad2,resume],requests)});
- assert.equal(result.document.summary,resume.summary.text);
- assert.equal(requests.length,3);
+test("one repair preserves valid passages and uses source facts only for an invalid initial passage",async()=>{
+ const requests=[],bad={...resume,summary:claim("Led a team of 50.",["f2"])};
+ const changed={...bad,headline:claim("Changed headline",["f1"])};
+ const result=await writeDocument({kind:"resume",profile,target,complete:sequence([bad,changed],requests)});
+ assert.equal(requests.length,2);
+ assert.equal(result.document.headline,resume.headline.text);
+ assert.equal(result.document.summary,"Mentored newer artists.");
+ assert.equal(result.source_fact_passages,1);
+ assert.match(result.validation_details.join(" "),/unsupported number/);
 });
-test("persistent unsupported claims fail without non-LLM fallback",async()=>{
+test("persistent unsupported revision fails after one repair without replacing the saved document",async()=>{
  const bad={...resume,summary:claim("Led a team of 50.",["f2"])};
- await assert.rejects(writeDocument({kind:"resume",profile,target,complete:sequence([bad,bad,bad])}),e=>e.code==="INVALID_DRAFT");
+ const requests=[];
+ await assert.rejects(writeDocument({kind:"resume",profile,target,instructions:"Make it formal",currentDocument:"Saved resume",complete:sequence([bad,bad],requests)}),e=>e.code==="INVALID_DRAFT");
+ assert.equal(requests.length,2);
+});
+test("passage repair requests only failed paths and cannot edit valid work history",async()=>{
+ const bad={...resume,summary:claim("Led 50 artists.",["f2"])};
+ const requests=[];
+ const result=await writeDocument({kind:"resume",profile,target,complete:async args=>{
+  requests.push(args);
+  return {provider:'test',data:requests.length===1?bad:{repairs:[
+   {path:'summary',claim:resume.summary},
+   {path:'experience.0.bullets.0',claim:claim('Invented work.', ['f1'])}
+  ]}};
+ }});
+ assert.deepEqual(requests[1].schema.properties.repairs.items.properties.path.enum,['summary']);
+ assert.equal(result.document.summary,resume.summary.text);
+ assert.equal(result.document.experience[0].bullets[0],resume.experience[0].bullets[0].text);
+ assert.equal(result.source_fact_passages,0);
 });
 test("empty documents, duplicate work history and injected HTML are rejected",()=>{
  assert.throws(()=>validateDraft("resume",{...resume,experience:[]},profile));

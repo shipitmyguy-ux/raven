@@ -1,7 +1,13 @@
 import {cloudflareFreeStatus} from "./cloudflare-free.mjs";
 import {writeDocument,WriterError,WRITER_VERSION} from "./document-writer.mjs";
 import {createLLMCompletion,llmProviderStatus,llmUsageStatus} from "./llm-router.mjs";
-import {buildDeterministicResumeV3,writeResumeV3} from "./document-v3.mjs";
+import {buildDeterministicResumeV3} from "./document-v3.mjs";
+// Content failures consume rate quota, but do not imply a provider outage.
+export function requestFailureStatus(error){
+  const contentCodes=["INVALID_DRAFT","INCOMPLETE_DRAFT","FACT_CHECK_FAILED","LLM_CALL_BUDGET_EXHAUSTED"];
+  const failures=(error?.providerFailures||[]).filter(item=>!item.skipped);
+  return contentCodes.includes(error?.code)||(failures.length&&failures.every(item=>contentCodes.includes(item.code)))?"rejected":"failure";
+}
 // Race as well as abort: an unresponsive provider cannot hold the fallback open.
 export async function boundedGeneration(run,ms){
   const controller=new AbortController();
@@ -54,6 +60,7 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
     }
     if(req.method!=="POST")return json({error:"GET or POST required"},405);
     let eid=null;
+    let validationDiagnostics=[];
     const rpc=async(name,payload,timeout=10000)=>{
       const url=getEnv("SUPABASE_URL"),key=getEnv("SUPABASE_SERVICE_ROLE_KEY");
       if(!url||!key)throw new WriterError("Raven's document service is not configured.","SERVER_NOT_CONFIGURED",503);
@@ -84,7 +91,7 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
       // Initial drafts remain usable when the free service is down. Revisions
       // must succeed explicitly; a fallback must never masquerade as a rewrite.
       const initial=!instructions;
-      const fallback=(reason)=>{
+      const fallback=(reason,detail="")=>{
         const written=kind==="resume"
           ? buildDeterministicResumeV3(profile,target)
           : buildDeterministicCover(profile,target);
@@ -92,7 +99,8 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
           verification_provider:"raven",verification_model:"source-facts",
           architecture:written.architecture,validation_errors:[],[kind]:written.document,
           job_analysis:written.analysis,evidence_selection:written.selection,
-          ai_used:false,fallback_used:true,fallback_reason:reason,budget:null});
+          ai_used:false,fallback_used:true,fallback_reason:reason,
+          validation_details:validationDiagnostics.length?validationDiagnostics:reason==="INVALID_DRAFT"?[String(detail).slice(0,1000)]:[],budget:null});
       };
       // Cloudflare requires a verified Free plan; OpenRouter caps price at zero.
       if(!primaryProvider&&initial)return fallback("LLM_NOT_CONFIGURED");
@@ -108,10 +116,8 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
         eid=Number(budget.event_id||0)||null;
         const written=await boundedGeneration(async signal=>{
           const complete=createLLMCompletion({getEnv:freeEnv,fetchImpl,signal});
-          return kind==="resume"&&initial
-            ? writeResumeV3({profile,target,complete})
-            : writeDocument({kind,profile,target,instructions,currentDocument,complete});
-        },initial?12000:25000);
+          return writeDocument({kind,profile,target,instructions,currentDocument,complete,onDiagnostic:details=>{validationDiagnostics=details;}});
+        },initial?40000:45000);
         await finish("success",200);
         return json({ok:true,provider:written.provider,model:written.model,
           provider_attempts:Number(written.provider_attempts||1),
@@ -119,23 +125,26 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
           architecture:written.architecture,validation_errors:[],[kind]:written.document,
           job_analysis:written.analysis,evidence_selection:written.selection,
           ai_used:true,fallback_used:false,
+          source_fact_passages:Number(written.source_fact_passages||0),
+          validation_details:written.validation_details||[],
           budget:{short_remaining:budget.short_remaining,long_remaining:budget.long_remaining}});
       }catch(error){
         if(!initial)throw error;
         // Input/profile errors remain errors; only generation/service failures
         // may be replaced with a document built from the verified profile.
         if(["INVALID_INPUT","PROFILE_MISSING"].includes(error?.code))throw error;
-        await finish("failure",Number(error?.status||503),String(error?.code||"GENERATION_UNAVAILABLE"));
-        return fallback(String(error?.code||"GENERATION_UNAVAILABLE"));
+        await finish(requestFailureStatus(error),Number(error?.status||503),String(error?.code||"GENERATION_UNAVAILABLE")+": "+String(error?.message||"").slice(0,400)+" | "+validationDiagnostics.join(" | ").slice(0,500));
+        return fallback(String(error?.code||"GENERATION_UNAVAILABLE"),error?.message);
       }
     }catch(error){
       const known=error instanceof WriterError;
       const status=known?error.status:503,code=known?error.code:"GENERATION_UNAVAILABLE";
-      await finish("failure",status,code+(known?": "+error.message:""));
+      await finish(requestFailureStatus(error),status,code+(known?": "+error.message:"")+" | "+validationDiagnostics.join(" | ").slice(0,600));
       const nonRetryable=new Set(["LLM_NOT_CONFIGURED","LLM_PROVIDER_ACCOUNT_ERROR","PROVIDER_BILLING","PROVIDER_AUTH","INVALID_INPUT"]);
       return json({error:known?error.message:"Document generation is temporarily unavailable. Please try again.",code,
         provider:"raven-llm-router-v1",
         provider_attempts:Number(error?.providerAttempts||0),
+        validation_details:validationDiagnostics,
         provider_failures:Array.isArray(error?.providerFailures)?error.providerFailures:[],
         retryable:status>=500&&!nonRetryable.has(code)},status);
     }

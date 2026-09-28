@@ -42,7 +42,7 @@
     MASTER_RESUMES_KEY,APPLICATION_PROFILE_KEY,ANSWER_MEMORY_KEY,GENERATOR_PREFS_KEY,
     USER_SETTINGS_KEY,DOCUMENT_APPROVALS_KEY,VIEWED_JOBS_KEY
   ];
-  const RESUME_TEMPLATE_VERSION="modern-v12-reliable-free";
+  const RESUME_TEMPLATE_VERSION="modern-v13-structured-writer";
   const DEFAULT_FOLLOW_UP_DAYS=7;
   const activeGeneration=new Map();
   const generationErrors=new Map();
@@ -1706,9 +1706,9 @@
       activeGeneration.delete(generationKey(job));
       render();
     }
-    const fallback=completed.some(item=>item.mode==="source-facts");
+    const fallback=completed.some(item=>item.mode==="source-facts"||item.mode==="mixed");
     setStatus(failed.length?"Saved "+completed.length+" document(s). Retry the remaining document below.":
-      "Both documents ready"+(fallback?" · source-fact fallback used":"")+" · review required");
+      "Both documents ready"+(fallback?" · includes verified source wording":"")+" · review required");
     if(completed.length&&session.autoOpen&&state.selectedId===job.id)openDocumentReview(job,completed[0].type);
   }
 
@@ -1840,7 +1840,7 @@
     }
     const document=type==="coverLetter"?payload.coverLetter:payload.resume;
     if(!document) throw new Error("Online generator returned no "+documentLabel(type)+".");
-    document.generationMode=payload.fallback_used?"source-facts":"ai";
+    document.generationMode=payload.fallback_used?"source-facts":payload.source_fact_passages>0?"mixed":"ai";
     return document;
   }
 
@@ -1856,7 +1856,7 @@
         : await generateDocumentCached(job,masterResume,type);
       await saveGeneratedDocument(job,type,document);
       setDocumentApproved(job,type,false);
-      setStatus(label[0].toUpperCase()+label.slice(1)+" ready"+(document.generationMode==="source-facts"?" · built from verified facts; AI unavailable":"")+" · approval required");
+      setStatus(label[0].toUpperCase()+label.slice(1)+" ready"+(document.generationMode==="source-facts"?" · built from verified facts; AI unavailable":document.generationMode==="mixed"?" · includes verified source wording":"")+" · approval required");
       return document;
     }catch(error){
       let message=String(error?.message||"Generation failed.");

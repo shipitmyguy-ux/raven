@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createDocumentHandler,boundedGeneration} from '../supabase/functions/_shared/document-handler.mjs';
+import {createDocumentHandler,boundedGeneration,requestFailureStatus} from '../supabase/functions/_shared/document-handler.mjs';
 import {validateDraft} from '../supabase/functions/_shared/document-writer.mjs';
 import {createLLMCompletion} from '../supabase/functions/_shared/llm-router.mjs';
 const profile={name:'Candidate',contact:'candidate@example.com',skills:['Mentoring','Substance Designer'],education:[],experience:[{id:'art',role:'Artist',company:'Studio',dates:'2020–2025',facts:[{id:'f1',text:'Built environments.'},{id:'f2',text:'Mentored artists.'}]}],transferable_facts:[],shipped_titles:[],resume_required_experience_ids:['art']};
@@ -27,6 +27,32 @@ test('successful free rewrite returns prose and completes the budget event',asyn
  const {handler,calls}=service('coverLetter',{modelData:cover});
  const result=await handler(request());const data=await result.json();assert.equal(result.status,200);
  assert.equal(data.ai_used,true);assert.equal(data.coverLetter.signature,'Candidate');assert.equal(calls.at(-1).body.p_status,'success');
+});
+test('initial resume and revision use the same structured writer without exact source bullet counts',async()=>{
+ for(const instructions of ['', 'Make it formal']){
+  const {handler,calls}=service('resume',{modelData:draft});
+  const response=await handler(request({instructions,currentDocument:instructions?'Saved document':''}));
+  const data=await response.json();
+  assert.equal(data.ai_used,true);assert.equal(data.resume.experience[0].bullets.length,1);
+  const providerCall=calls.find(c=>c.url.includes('openrouter'));
+  const context=JSON.parse(providerCall.body.messages[1].content);
+  assert.deepEqual(context.verifiedBackground,profile);
+  assert.equal(context.revisionRequest,instructions);
+ }
+});
+test('invalid drafts consume quota as rejected, while provider outages still count as failures',async()=>{
+ for(const [modelData,status] of [[{bad:true},'rejected'],[undefined,'failure']]){
+  const {handler,calls}=service('resume',{modelData});
+  await handler(request());
+  assert.equal(calls.at(-1).body.p_status,status);
+  const guard=calls.find(c=>c.url.endsWith('raven_request_guard'));
+  assert.equal(guard.body.p_short_limit,12);assert.equal(guard.body.p_long_limit,60);
+  assert.equal(guard.body.p_failure_threshold,3);
+ }
+});
+test('exhausted provider routing distinguishes malformed output from outages',()=>{
+ assert.equal(requestFailureStatus({code:'LLM_UNAVAILABLE',providerFailures:[{code:'INVALID_DRAFT'},{code:'INCOMPLETE_DRAFT'}]}),'rejected');
+ assert.equal(requestFailureStatus({code:'LLM_UNAVAILABLE',providerFailures:[{code:'INVALID_DRAFT'},{code:'PROVIDER_TIMEOUT'}]}),'failure');
 });
 for(const kind of ['resume','coverLetter']){
  for(const reason of ['invalid-draft','unconfigured','outage','rate-limit','budget-unavailable'])test(`${kind}: ${reason} produces source-fact fallback`,async()=>{
