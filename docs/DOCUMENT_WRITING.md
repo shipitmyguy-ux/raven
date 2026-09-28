@@ -26,7 +26,7 @@ Deploy existing resume and cover functions with document-handler, document-write
 Resume work-history IDs are restricted to canonical IDs in the output schema. Initial game resumes recover omitted required roles using the canonical employer facts, with mixed-output metadata. An initial bullet still attributed to the wrong employer after repair is replaced in full with a fact from its actual employer; citations are never simply relabeled on unsupported model prose. Non-game framing checks are included in passage diagnostics so one repair can address framing and factual problems together.
 
 ## Known verification limits
-The original full-document revision path changed unrelated wording on summary-only requests. The scoped path below now avoids that behavior. Current live success counts in WORK_HANDOFF combine a full test batch with focused corrective retests; they are not a reliability guarantee. PDF layout and persistence use the existing renderer and were covered by prior/mocked tests, not a new real-model persistence write in this session.
+The original full-document revision path changed unrelated wording on summary-only requests. The scoped path below now avoids that behavior. Current live success counts in WORK_HANDOFF combine a full test batch with focused corrective retests; they are not a reliability guarantee. Fresh isolated live persistence, production reload of the saved document URL, and WeasyPrint PDF layout checks now pass; see WORK_HANDOFF for exact evidence and browser export limitations.
 
 
 ## Summary-only revisions (2026-09-28)

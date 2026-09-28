@@ -113,7 +113,7 @@ These are feature expansions, not Raven closeout blockers.
 ## 2026-09-27 reliability / ChatGPT handoff
 - [x] Deploy bounded zero-cost generation and source-fact fallback for both initial documents; 8/8 live output checks passed.
 - [x] Grounding punctuation/prompt matching fixes and focused unsupported-specifics checks; 49 local core tests passed.
-- [ ] Complete browser persistence and PDF verification for this release; local browser download unavailable.
+- [x] Complete CI browser persistence, isolated live save/reload, and PDF layout verification; exact browser-print limitations recorded below.
 - [ ] Discuss minimum-click ChatGPT handoff/import for both documents before implementation.
 
 
@@ -162,12 +162,17 @@ These are feature expansions, not Raven closeout blockers.
 
 - [x] Unify initial/resume revision writer and use bounded passage repairs.
 - [x] Validate four initial document pairs and four tonal revisions with authorized real data.
-- [ ] Preserve exact untouched wording for explicitly section-only revisions.
-- [ ] Fresh real-model PDF/persistence acceptance for the repaired writer.
+- [x] Preserve exact untouched wording for summary-only revisions; other narrow section types remain outside this patch path.
+- [x] Fresh real-model PDF/persistence acceptance using isolated production data and WeasyPrint layout review; browser export limits recorded below.
 
 
-## Summary-only repair (2026-09-28 UTC)
-- Resume v104, cover v77, and gateway v24 deployed with the grounded-llm-v4 writer. Frontend app.js v62 recognizes summary edits and applies only a validated summary patch to saved HTML.
-- Every byte outside the summary content is preserved. Existing saved resume formatting and text need no migration; malformed legacy documents fail clearly without a full rewrite. Whole-document revisions remain supported.
-- Local core regression files (19) and secret scan pass. New tests cover narrow output schemas, grounded repair, unsupported claims, exact HTML preservation, mismatched responses, approval invalidation and save/reload.
-- First live formal summary revision returned a grounded patch via the free OpenRouter route in 16.0 seconds. Saved user documents remain unchanged. Browser CI, further live output checks, isolated persistence and PDF layout verification are still underway.
+## Summary-only repair verified (2026-09-28 UTC)
+- Live code: commit 172c7bd3796415fff34b45f900a8da8723b1629c, app.js v62, resume v104, cover v77, gateway v24, grounded-llm-v4. Summary edits now return a grounded patch; frontend replaces only the saved summary content. Every byte outside it remains unchanged. No document migration is required.
+- Two real summary-only revisions succeeded: formal 16.0s and playful/cat 16.4s, both through the existing free OpenRouter fallback with two provider attempts and no source-fact fallback. These two checks do not establish Cloudflare-specific summary reliability. Earlier Cloudflare initial/cover results remain historical evidence.
+- 50 focused execution tests, all 19 core regression files, syntax and secret scan pass. Commit 172c7bd passed Reusable core tests (36423786232), full Browser regression (36423786231), Pages deployment (36423786064), and both Production Smoke runs (36423786307 / 36423827738).
+- Real persistence: created one disposable Raven QA job, saved prior live-model resume/cover HTML, changed only its summary using the new live patch, and read both documents back through fresh backend requests. Exact revised resume and unchanged cover matched. Existing user document values were compared before/after and all were unchanged. Direct database read confirmed the patch. The exact QA row was then deleted.
+- Production UI loaded the QA job and restored the revised document URL after full reload and completed backend sync. This cloud browser blocks data-URL iframe previews under its organization policy; visual browser-preview acceptance is therefore limited. CI browser preview/save/reload checks passed.
+- Fresh PDF check used the production HTML renderer with the prior live-model resume/cover and new formal summary. WeasyPrint output was two resume pages and one cover page; rendered pages were visually inspected with no clipping or overlap. This checks the HTML/PDF layout, not a fresh Chrome print-dialog export. Local Chrome execution was blocked by environment socket permissions; no protection was bypassed.
+- No saved user document was overwritten or approved, and no application was submitted. Free-plan validation, zero-price routing, request quotas, provider circuits and the two-call ceiling remain intact.
+
+Current scope: narrow edits are enforced for resume summaries. Multi-section and whole-document requests continue through the full writer; other individual sections do not yet have a surgical patch path. Employer-site extension acceptance and optional future ChatGPT handoff work are separate backlog items.
