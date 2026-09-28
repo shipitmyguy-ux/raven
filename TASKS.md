@@ -176,3 +176,8 @@ These are feature expansions, not Raven closeout blockers.
 - No saved user document was overwritten or approved, and no application was submitted. Free-plan validation, zero-price routing, request quotas, provider circuits and the two-call ceiling remain intact.
 
 Current scope: narrow edits are enforced for resume summaries. Multi-section and whole-document requests continue through the full writer; other individual sections do not yet have a surgical patch path. Employer-site extension acceptance and optional future ChatGPT handoff work are separate backlog items.
+
+## Shipped-title spelling (2026-09-28)
+- [x] Reject one-edit misspellings of distinctive verified single-word shipped titles in generated passages; test Darksiders/Darksiers.
+- [x] Deploy shared validator to resume v105 and cover v78; verify active bundle and resume health.
+- [ ] Correct any existing saved resume containing “Darksiers” after locating and reviewing that document; the generation guard does not mutate saved documents.
