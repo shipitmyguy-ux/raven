@@ -42,7 +42,7 @@
     MASTER_RESUMES_KEY,APPLICATION_PROFILE_KEY,ANSWER_MEMORY_KEY,GENERATOR_PREFS_KEY,
     USER_SETTINGS_KEY,DOCUMENT_APPROVALS_KEY,VIEWED_JOBS_KEY
   ];
-  const RESUME_TEMPLATE_VERSION="modern-v13-structured-writer";
+  const RESUME_TEMPLATE_VERSION="modern-v14-evidence-rich";
   const DEFAULT_FOLLOW_UP_DAYS=7;
   const activeGeneration=new Map();
   const generationErrors=new Map();
@@ -1596,7 +1596,7 @@
       '.resume-header{padding:0 0 10px;border-bottom:3px solid #294f7a;margin-bottom:10px}h1{font-size:24pt;line-height:1;margin:0;color:#17212b;letter-spacing:-.02em}'+
       '.headline{font-size:10.5pt;font-weight:700;color:#294f7a;margin:4px 0 0}.contact{font-size:9pt;color:#555f69;margin:4px 0 0}.contact a{color:#294f7a;text-decoration:none}'+
       'h2{font-size:10.3pt;text-transform:uppercase;letter-spacing:.11em;color:#294f7a;margin:11px 0 5px;padding:0 0 3px;border-bottom:1px solid #cfd6dd}'+
-      '.summary{margin:0;color:#30363d}.skills{display:grid;grid-template-columns:1fr 1fr;gap:1px 26px;margin:0;padding:0;list-style:none}.skills li{position:relative;padding-left:10px;margin:0 0 2px}.skills li:before{content:"•";position:absolute;left:0;color:#294f7a}'+
+      '.summary{margin:0;color:#30363d}.skills{margin:0;padding:0;line-height:1.45}.skills span{white-space:normal}'+
       'ul{margin:4px 0 0 17px;padding:0}li{margin:0 0 3px;break-inside:avoid}.resume-job{margin:0 0 9px;break-inside:avoid}.resume-job-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:2px}.resume-role{display:block;font-size:10.4pt;color:#17212b}.resume-company{display:block;font-size:9.3pt;font-weight:700;color:#4c5966;margin-top:1px}.resume-dates{font-size:8.9pt;color:#606b76;white-space:nowrap;padding-top:1px}.resume-education{display:flex;justify-content:space-between;gap:12px;margin:0 0 5px}.resume-education strong{color:#17212b}.resume-education span{font-size:8.8pt;color:#606b76;white-space:nowrap}.additional{margin:0;padding-left:17px}'+
       '@media print{body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}}'+
       '</style></head><body>'+
@@ -1605,7 +1605,7 @@
       (resume.contact||readCache(APPLICATION_PROFILE_KEY,{})?.linkedin||readCache(APPLICATION_PROFILE_KEY,{})?.portfolio?'<p class="contact">'+resumeContactHtml(resume)+'</p>':'')+
       '</header>'+
       '<h2>Professional Summary</h2><p class="summary">'+escapeHtml(resume.summary||"")+'</p>'+
-      '<h2>Core Skills</h2><ul class="skills">'+list(resume.skills)+'</ul>'+
+      '<h2>Core Skills</h2><p class="skills">'+(resume.skills||[]).map(s=>'<span>'+escapeHtml(s)+'</span>').join(' · ')+'</p>'+
       '<h2>'+(job.track==="Games / 3D"?"Professional Experience":"Relevant Experience")+'</h2>'+experiences+
       (education?'<h2>Education</h2>'+education:'')+
       ((resume.additional||[]).length?'<h2>'+(job.track==="Games / 3D"?"Career Highlights":"Transferable Qualifications")+'</h2><ul class="additional">'+list(resume.additional)+'</ul>':'')+

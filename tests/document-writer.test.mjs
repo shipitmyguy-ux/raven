@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import {writeDocument,validateDraft,employerToolIssues,shippedTitleTypos,WRITER_VERSION} from "../supabase/functions/_shared/document-writer.mjs";
+import {writeDocument,validateDraft,employerToolIssues,shippedTitleTypos,resumeKeywordGuidance,WRITER_VERSION} from "../supabase/functions/_shared/document-writer.mjs";
 
 test("verified shipped title spelling covers every known title without changing exact titles",()=>{
  const verified={shipped_titles:["Darksiders","Dead Space 2","Elder Scrolls Online","Ark: Survival Evolved","Halo Infinite","Six Days in Fallujah"]};
@@ -23,6 +23,19 @@ const resume={headline:claim("Artist and mentor",["f1","f2"]),summary:claim("Bui
  experience:[{experience_id:"art",bullets:[claim("Built game environments and mentored newer artists.",["f1","f2"])]}],additional:[]};
 const cover={greeting:"Dear Hiring Manager,",paragraphs:[claim("My work combines environment art and mentoring newer artists.",["f1","f2"]),claim("I would welcome a conversation about the role.",[])],closing:"Sincerely,"};
 const accepted={supported:true,issues:[]};
+test("posting keywords require verified evidence and do not infer SQL or Python",()=>{
+ const p={...profile,experience:[{...profile.experience[0],facts:[{id:"pbr",text:"Used a PBR workflow to create game assets."}]}],transferable_facts:[{id:"db",text:"Used asset database queries and metadata."}]};
+ const guide=resumeKeywordGuidance(p,{description:"Need physically based rendering, Unity, database querying, SQL, Python and Houdini."});
+ const terms=guide.recommended.map(x=>x.keyword);
+ assert.ok(terms.includes("physically based rendering"));assert.ok(terms.includes("Unity"));assert.ok(terms.includes("database querying"));
+ for(const term of ["SQL","Python","Houdini"])assert.ok(!terms.includes(term));
+ assert.deepEqual(guide.recommended.find(x=>x.keyword==="physically based rendering").experience_ids,["art"]);
+ assert.match(guide.policy,/missing terms never block/i);
+});
+test("stronger style can pass while invented measurable results still fail",()=>{
+ assert.doesNotThrow(()=>validateDraft("resume",{...resume,summary:claim("Built extensive game environments and mentored newer artists.",["f1","f2"])},profile));
+ assert.throws(()=>validateDraft("resume",{...resume,summary:claim("Built game environments and improved efficiency by 50%.")},profile),/unsupported|embellishment/);
+});
 test("summary-only writer validates only the new summary and never returns other generated sections",async()=>{
  const requests=[];
  const result=await writeDocument({kind:"resume",profile,target,instructions:"Rewrite only the summary",currentDocument:"Saved old wording",revisionSection:"summary",complete:async args=>{
