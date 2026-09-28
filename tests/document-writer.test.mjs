@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import {writeDocument,validateDraft,employerToolIssues,WRITER_VERSION} from "../supabase/functions/_shared/document-writer.mjs";
+import {writeDocument,validateDraft,employerToolIssues,shippedTitleTypos,WRITER_VERSION} from "../supabase/functions/_shared/document-writer.mjs";
+
+test("verified shipped title spelling rejects a near miss without changing exact titles",()=>{
+ const verified={shipped_titles:["Darksiders","Halo Infinite"]};
+ assert.match(shippedTitleTypos("Shipped Darksiers and Halo Infinite.",verified).join(" "),/Darksiders.*Darksiers/i);
+ assert.deepEqual(shippedTitleTypos("Shipped Darksiders and Halo Infinite.",verified),[]);
+ assert.deepEqual(shippedTitleTypos("Worked on dark environments.",verified),[]);
+});
 import {createLLMCompletion,llmProviderStatus} from "../supabase/functions/_shared/llm-router.mjs";
 import {createDocumentHandler} from "../supabase/functions/_shared/document-handler.mjs";
 const profile={name:"Test Candidate",contact:"candidate@example.com",skills:["Mentoring","Unity"],education:[{degree:"BFA",school:"College",dates:"2008",location:""}],
