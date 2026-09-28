@@ -200,3 +200,8 @@ Concurrent main updates a93af28/d89b38f/ff23f8a were reviewed before publication
 - No saved user document was overwritten or approved, and no application was submitted. Free-plan validation, zero-price routing, request quotas, provider circuits and the two-call ceiling remain intact.
 
 Current scope: narrow edits are enforced for resume summaries. Multi-section and whole-document requests continue through the full writer; other individual sections do not yet have a surgical patch path. Employer-site extension acceptance and optional future ChatGPT handoff work are separate backlog items.
+
+## Shipped-title spelling guard (2026-09-28)
+- User reported a generated resume spelling Darksiders as “Darksiers.” The exact-entity evidence check did not match misspelled output; general fact-word overlap could still pass.
+- Shared document writer now rejects a one-edit near miss of a verified single-word shipped title, requesting the existing bounded passage repair. Exact canonical spelling passes. This does not rewrite existing saved documents.
+- Targeted writer tests pass (23/23). GitHub main contains the validator and regression test at c631719/f96d74c. Supabase resume v105 and cover v78 are ACTIVE with the new guard; the resume health GET returned ok. No new real-model typo reproduction was run.
