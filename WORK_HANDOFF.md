@@ -14,3 +14,7 @@ User asked to fix the remaining document issues. Existing authorization covers v
 - No saved user document was overwritten or approved, and no application was submitted. Free-plan validation, zero-price routing, request quotas, provider circuits and the two-call ceiling remain intact.
 
 Current scope: narrow edits are enforced for resume summaries. Multi-section and whole-document requests continue through the full writer; other individual sections do not yet have a surgical patch path. Employer-site extension acceptance and optional future ChatGPT handoff work are separate backlog items.
+
+## Shipped-title spelling (2026-09-28)
+- User reported Darksiders rendered as Darksiers. Exact-title checking missed the typo. Shared writer now rejects one-edit near misses of distinctive single-word verified shipped titles and uses normal bounded repair.
+- Regression test 23/23 passed. Published GitHub changes c631719/f96d74c through the connected GitHub app after local git push lacked credentials. Deployed Supabase resume v105 and cover v78; both bundles contain the guard and are ACTIVE. Resume health GET returned ok. Existing saved documents remain unchanged; a real-model reproduction of the typo was not run.
