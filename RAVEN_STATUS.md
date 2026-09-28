@@ -203,5 +203,5 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 
 ## Shipped-title spelling guard (2026-09-28)
 - User reported a generated resume spelling Darksiders as “Darksiers.” The exact-entity evidence check did not match misspelled output; general fact-word overlap could still pass.
-- Shared document writer now rejects a one-edit near miss of a verified single-word shipped title, requesting the existing bounded passage repair. Exact canonical spelling passes. This does not rewrite existing saved documents.
-- Targeted writer tests pass (23/23). GitHub main contains the validator and regression test at c631719/f96d74c. Supabase resume v105 and cover v78 are ACTIVE with the new guard; the resume health GET returned ok. No new real-model typo reproduction was run.
+- Shared document writer now rejects a one-edit near miss in any verified shipped title, including all six known single- and multiword game names, requesting the existing bounded passage repair. Exact canonical spellings pass. This does not rewrite existing saved documents.
+- Targeted writer tests pass (23/23). GitHub main includes the expanded validator and regression test at 310a0fa/78c5f30. Supabase resume v106 and cover v79 are ACTIVE with the new guard; the prior resume health GET returned ok. No new real-model typo reproduction was run.
