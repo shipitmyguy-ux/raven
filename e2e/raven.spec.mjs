@@ -991,7 +991,7 @@ test("generators save discovery jobs and recover descriptions before generating 
 for (const track of ["Games / 3D", "Professional", "Labor", "Wildcard"]) {
   test(`canonical profile generates both documents without device masters: ${track}`, async ({page}) => {
     const errors=[]; page.on("pageerror",error=>errors.push(error.message));
-    const api=await mockRaven(page,{generatorDelayMs:700,initialJob:{track}});
+    const api=await mockRaven(page,{generatorDelayMs:700,initialJob:{track,...(track==="Games / 3D"?{title:"Senior Environment Artist",company:"Example Studio"}:{})}});
     await page.goto("/");
     await page.getByRole("tab",{name:track,exact:true}).click();
     await page.locator(".job-card-summary").first().click();
@@ -1113,4 +1113,19 @@ test("summary-only revision preserves exact saved HTML through reload and reject
   await page.locator("#reviewSubmit").click();
   await expect(page.locator("#reviewFeedback")).toContainText("previous document is unchanged");
   expect(api.getJob().resume).toBe(expected);
+});
+
+
+test("game tab hides unrelated saved roles and retains environment art after reload",async({page})=>{
+ await mockRaven(page);
+ await page.route("**/functions/v1/raven-backend-v3?action=jobs",route=>route.fulfill({json:{ok:true,jobs:[
+  {...savedJob,id:"art",track:"Games / 3D",title:"Senior Environment Artist",company:"Example Studio",url:"https://example.com/art"},
+  {...savedJob,id:"bad",track:"Games / 3D",title:"Community Participation Supports Supervisor",url:"https://example.com/community"}
+ ]}}));
+ for(let pass=0;pass<2;pass++){
+  if(pass)await page.reload();else await page.goto("/");
+  await page.getByRole("tab",{name:"Games / 3D",exact:true}).click();
+  await expect(page.locator(".job-card-summary").filter({hasText:"Senior Environment Artist"})).toBeVisible();
+  await expect(page.locator(".job-card-summary").filter({hasText:"Community Participation"})).toHaveCount(0);
+ }
 });

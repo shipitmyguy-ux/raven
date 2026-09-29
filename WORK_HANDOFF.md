@@ -10,3 +10,5 @@ Shared track-filter.js now requires an environment/world/level/prop/material/tex
 Backend v53 deployed. Live listResults returns 21 art-role results and excludes observed retail, sales, community-support, tutor, biotechnologist and game-design results. Regression suite: 85 tests pass, including actual rankCandidates collision tests. Frontend app v66 adds the shared script before app initialization. Work usage unavailable; proceeded normally.
 
 Prior document changes remain live: resume v115, cover v87; canonical full shipped credits, duplicate paragraph cleanup, skill casing, cached studio context. Prior release 2fb79bd passed all core/browser/smoke/Pages workflows. Saved Stone Kite documents were repaired in that task. No document changes made in this filtering task.
+
+Browser CI initially passed 61/62: its game-generation fixture incorrectly used an Implementation Project Manager title and was correctly hidden by the new rule. Fixture now uses Senior Environment Artist; a dedicated reload test verifies unrelated saved roles stay hidden while environment-art roles remain visible.
