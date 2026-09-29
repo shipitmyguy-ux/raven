@@ -94,7 +94,7 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
       // Initial drafts remain usable when the free service is down. Revisions
       // must succeed explicitly; a fallback must never masquerade as a rewrite.
       const initial=!instructions;
-      const fallback=(reason,detail="")=>json({ok:false,error:"Raven could not approve this draft. "+(validationDiagnostics.slice(-1)[0]||"Final factual review did not complete.")+" Your previous document is unchanged.",code:"FINAL_REVIEW_BLOCKED",cause:reason,review:{status:"blocked"},validation_details:validationDiagnostics,ai_used:false,fallback_used:false,retryable:true},503);
+      const fallback=(reason,detail="",error=null)=>json({ok:false,error:"Raven could not approve this draft. "+(validationDiagnostics.slice(-1)[0]||"Final factual review did not complete.")+" Your previous document is unchanged.",code:"FINAL_REVIEW_BLOCKED",cause:reason,provider_failures:(error?.providerFailures||[]).map(f=>({provider:f.provider,code:f.code,status:f.status,skipped:f.skipped})),final_review:{status:"blocked"},validation_details:validationDiagnostics,ai_used:false,fallback_used:false,retryable:true},503);
 
       // Cloudflare requires a verified Free plan; OpenRouter caps price at zero.
       if(!primaryProvider&&initial)return fallback("LLM_NOT_CONFIGURED");
@@ -132,7 +132,7 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
         // may be replaced with a document built from the verified profile.
         if(["INVALID_INPUT","PROFILE_MISSING"].includes(error?.code))throw error;
         await finish(requestFailureStatus(error),Number(error?.status||503),String(error?.code||"GENERATION_UNAVAILABLE")+": "+String(error?.message||"").slice(0,400)+" | "+validationDiagnostics.join(" | ").slice(0,500));
-        return fallback(String(error?.code||"GENERATION_UNAVAILABLE"),error?.message);
+        return fallback(String(error?.code||"GENERATION_UNAVAILABLE"),error?.message,error);
       }
     }catch(error){
       const known=error instanceof WriterError;

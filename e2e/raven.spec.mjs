@@ -1145,3 +1145,12 @@ for(const failure of ['unreviewed','fallback','rendered-duplicate'])test(`final 
  await page.reload();await page.getByRole('tab',{name:'Professional',exact:true}).click();await page.locator('.job-card-summary').first().click();await page.locator('[data-generate="resume"]').click();
  await expect(page.locator('#reviewFrame')).toHaveAttribute('src',old);
 });
+
+test('rendered review rejects omitted education and highlights',async({page})=>{
+ await mockRaven(page);await page.goto('/');
+ const result=await page.evaluate(async()=>{
+  const {reviewRenderedDocument}=await import('/supabase/functions/_shared/document-review.mjs');
+  return reviewRenderedDocument('resume','<html><body><h1>Candidate</h1><p>Summary text.</p></body></html>',{name:'Candidate',summary:'Summary text.',education:[{degree:'BFA',school:'College',dates:'2008'}],additional:['Mentored newer artists.']});
+ });
+ expect(result.status).toBe('blocked');expect(result.issues).toContain('Rendered document is missing expected content.');
+});

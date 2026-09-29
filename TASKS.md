@@ -207,4 +207,4 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Combine local/factual issues for one targeted repair and review the complete result again.
 - [x] Reject unreviewed, source-fallback and malformed rendered documents before persistence.
 - [x] Add regression cases for reported failures and preservation of prior saved documents.
-- [ ] Complete final live resume/browser acceptance and record limits.
+- [x] Complete live game/professional resume and cover checks, browser failure-preservation acceptance, and record remaining provider/reviewer limitations.

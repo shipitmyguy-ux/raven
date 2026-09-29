@@ -1755,7 +1755,7 @@
       html=applySummaryRevision(decodeURIComponent(document.revisionBase.slice(document.revisionBase.indexOf(",")+1)),document.summary);
     }else html=type==="resume"?generatedResumeHtml(job,document):generatedCoverLetterHtml(job,document);
     if(document.finalReview?.status!=="passed"||document.finalReview?.factual_review?.status!=="passed"||document.generationMode!=="ai")throw new Error("Final factual review is required before saving this draft. Your previous document is unchanged.");
-    const {reviewRenderedDocument}=await import("./supabase/functions/_shared/document-review.mjs?v=1");
+    const {reviewRenderedDocument}=await import("./supabase/functions/_shared/document-review.mjs?v=2");
     const renderedReview=reviewRenderedDocument(type,html,document);
     if(renderedReview.status!=="passed")throw new Error(renderedReview.issues.join(" ")+" Your previous document is unchanged.");
     if(!document.revisionSection)html=html.replace("</head>",'<meta name="raven-review" content="final-review-v1; factual-and-rendered-checks; human-review-required"></head>');
