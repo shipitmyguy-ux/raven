@@ -1,3 +1,4 @@
+import {candidateAllowedForTrack} from "./utils.ts";
 import type { Candidate, Track } from "./types.ts";
 import { validAtsRow } from "./csv-records.mjs";
 
@@ -67,7 +68,8 @@ export async function listResults(track:Track){
   const q="raven_search_results?select=id,track,title,company,location,remote,salary_text,url,source,snippet,score,status,created_at,last_seen&track=eq."+encodeURIComponent(track)+"&status=eq.Discovered&last_seen=gte."+encodeURIComponent(cutoff)+"&order=score.desc,last_seen.desc&limit=100";
   const r=await rest(q,{method:"GET"});
   if(!r.ok) throw new Error("Database read failed ("+r.status+")");
-  return await r.json();
+  const rows=await r.json();
+  return rows.filter((row:Candidate)=>candidateAllowedForTrack(track,row));
 }
 
 export async function updateDescription(url:string,c:Candidate){

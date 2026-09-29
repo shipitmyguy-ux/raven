@@ -67,6 +67,7 @@ jobs:
         run: node scripts/check-secrets.mjs
       - name: Core regression tests
         run: |
+          node tests/game-art-filter.test.mjs
           node tests/studio-context.test.mjs
           node tests/raven-core.test.mjs
           node tests/assistant-core.test.mjs

@@ -1,3 +1,5 @@
+import "../_shared/track-filter.js";
+const {gameArtRoleAllowed,hasWholePhrase}=(globalThis as any).RavenTrackFilter;
 import type { Candidate, Track } from "./types.ts";
 import { TRACKS } from "./config.ts";
 
@@ -76,8 +78,8 @@ export function score(track:Track,c:Candidate){
   const title=(c.title||"").toLowerCase();
   let n=0, titleMatch=false;
   for(const term of TRACKS[track].include){
-    if(title.includes(term)){n+=5;titleMatch=true;}
-    else if(text.includes(term)) n+=2;
+    if(track==="Games / 3D"?hasWholePhrase(title,term):title.includes(term)){n+=5;titleMatch=true;}
+    else if(track==="Games / 3D"?hasWholePhrase(text,term):text.includes(term)) n+=2;
   }
   for(const term of TRACKS[track].exclude) if(text.includes(term)) n-=10;
   if(!titleMatch) n-=4;
@@ -125,6 +127,7 @@ export function looksEnglishPosting(c:Candidate){
 
 export function candidateAllowedForTrack(track:Track,c:Candidate){
   const cfg=TRACKS[track];
+  if(track==="Games / 3D"&&!gameArtRoleAllowed(c)) return false;
   const title=String(c?.title||"").toLowerCase();
   if((cfg.titleExclude||[]).some(term=>title.includes(term.toLowerCase()))) return false;
   if(cfg.requireEnglish && !looksEnglishPosting(c)) return false;

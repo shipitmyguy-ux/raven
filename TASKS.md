@@ -196,3 +196,8 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Remove repeated cover paragraphs and repair the saved Stone Kite letter.
 - [x] Preserve complete shipped-credit lists and repair the saved Stone Kite resume.
 - [x] Test and deploy shared writers and cache schema; verify saved-document readback.
+
+## Game tab relevance (2026-09-28 MDT)
+- [x] Fix Unity/community and game/Burlingame substring collisions.
+- [x] Require actual relevant art roles in new searches, cached responses and browser lists.
+- [x] Preserve saved job data/documents; verify live backend excludes unrelated results.
