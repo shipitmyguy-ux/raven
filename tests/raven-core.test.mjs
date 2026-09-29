@@ -32,3 +32,5 @@ assert(cache.read("job","missing")==="missing","cache remove failed");
 console.log("raven-core tests passed");
 
 // CI trigger: reusable-core optimization pass 2026-09-20
+
+for(const [input,expected] of [["world building","World Building"],["materials and shaders","Materials and Shaders"],["ZBrush / PBR workflow","ZBrush / PBR Workflow"],["AI/automation scripting and module building","AI/Automation Scripting and Module Building"],["TEAM LEADERSHIP","Team Leadership"],["3DCoat","3DCoat"]]) assert(core.formatResumeSkillLabel(input)===expected,"Skill case: "+input);

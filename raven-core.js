@@ -447,5 +447,13 @@
       remove(name){try{localStorage.removeItem(key(name));}catch{}}
     };
   }
-  global.RavenCore={JOB_FIELDS,normalizeUrl,fromApiJob,fromDiscoveredJob,normalizeJob,normalizeJobs,isRenderableJob,jobFingerprint,stableHash,generationFingerprint,createCache,KNOWN_COMPANY_CASING,formatCompanyName,recoverCompanyFromUrl,recoverCompany,getCanonicalIdentity,analyzeCanonicalIdentity};
+  function formatResumeSkillLabel(value) {
+    const exact={zbrush:"ZBrush","3dcoat":"3DCoat","3ds":"3DS","3d":"3D",pbr:"PBR",ai:"AI",uv:"UV",sql:"SQL",html:"HTML",css:"CSS",javascript:"JavaScript",typescript:"TypeScript",github:"GitHub",api:"API",apis:"APIs",aws:"AWS",csharp:"CSharp"};
+    let index=0;
+    return String(value||"").trim().replace(/[A-Za-z0-9]+/g,word=>{
+      const lower=word.toLowerCase(),first=index++===0;
+      return exact[lower]||(!first&&/^(and|of|in|to|for|with)$/.test(lower)?lower:lower[0].toUpperCase()+lower.slice(1));
+    });
+  }
+  global.RavenCore={formatResumeSkillLabel,JOB_FIELDS,normalizeUrl,fromApiJob,fromDiscoveredJob,normalizeJob,normalizeJobs,isRenderableJob,jobFingerprint,stableHash,generationFingerprint,createCache,KNOWN_COMPANY_CASING,formatCompanyName,recoverCompanyFromUrl,recoverCompany,getCanonicalIdentity,analyzeCanonicalIdentity};
 }(window));

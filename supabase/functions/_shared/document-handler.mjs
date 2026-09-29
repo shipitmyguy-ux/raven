@@ -1,3 +1,4 @@
+import {getStudioContext} from "./studio-context.mjs";
 import {cloudflareFreeStatus} from "./cloudflare-free.mjs";
 import {writeDocument,WriterError,WRITER_VERSION} from "./document-writer.mjs";
 import {createLLMCompletion,llmProviderStatus,llmUsageStatus} from "./llm-router.mjs";
@@ -99,9 +100,10 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
           : buildDeterministicCover(profile,target);
         return json({ok:true,provider:"deterministic",model:"none",provider_attempts:0,
           verification_provider:"raven",verification_model:"source-facts",
-          architecture:written.architecture,validation_errors:[],[kind]:written.document,
+          architecture:written.architecture,validation_errors:[],[kind]:kind==="resume"?{...written.document,shipped_titles:track==="Games / 3D"?profile.shipped_titles||[]:[]}:written.document,
           job_analysis:written.analysis,evidence_selection:written.selection,
           ai_used:false,fallback_used:true,fallback_reason:reason,
+          studio_context:target.studioContext?{status:target.studioContext.status,source_urls:target.studioContext.sources.map(s=>s.url)}:null,
           validation_details:validationDiagnostics.length?validationDiagnostics:reason==="INVALID_DRAFT"?[String(detail).slice(0,1000)]:[],budget:null});
       };
       // Cloudflare requires a verified Free plan; OpenRouter caps price at zero.
@@ -116,6 +118,7 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
           return json({error:"Generation request budget reached. Your previous document is unchanged.",code:"REQUEST_BUDGET_EXCEEDED",retryable:true,retryAfterSeconds:Number(budget?.retry_after_seconds||60)},429);
         }
         eid=Number(budget.event_id||0)||null;
+        target.studioContext=await getStudioContext({company:target.company,track,getEnv,fetchImpl}).catch(()=>({status:"unavailable",sources:[]}));
         const written=await boundedGeneration(async signal=>{
           const complete=createLLMCompletion({getEnv:freeEnv,fetchImpl,signal});
           return writeDocument({kind,profile,target,instructions,currentDocument,revisionSection,complete,onDiagnostic:details=>{validationDiagnostics=details;}});
@@ -128,6 +131,7 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
           ...(written.revision_section?{document_patch:{section:written.revision_section,text:written.document.summary}}:{[kind]:written.document}),
           job_analysis:written.analysis,evidence_selection:written.selection,
           ai_used:true,fallback_used:false,
+          studio_context:{status:target.studioContext.status,company:target.studioContext.company,checked_at:target.studioContext.checked_at,source_urls:target.studioContext.sources.map(s=>s.url)},
           source_fact_passages:Number(written.source_fact_passages||0),
           validation_details:written.validation_details||[],
           budget:{short_remaining:budget.short_remaining,long_remaining:budget.long_remaining}});

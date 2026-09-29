@@ -42,7 +42,7 @@
     MASTER_RESUMES_KEY,APPLICATION_PROFILE_KEY,ANSWER_MEMORY_KEY,GENERATOR_PREFS_KEY,
     USER_SETTINGS_KEY,DOCUMENT_APPROVALS_KEY,VIEWED_JOBS_KEY
   ];
-  const RESUME_TEMPLATE_VERSION="modern-v14-evidence-rich";
+  const RESUME_TEMPLATE_VERSION="modern-v15-studio-context";
   const DEFAULT_FOLLOW_UP_DAYS=7;
   const activeGeneration=new Map();
   const generationErrors=new Map();
@@ -1605,9 +1605,10 @@
       (resume.contact||readCache(APPLICATION_PROFILE_KEY,{})?.linkedin||readCache(APPLICATION_PROFILE_KEY,{})?.portfolio?'<p class="contact">'+resumeContactHtml(resume)+'</p>':'')+
       '</header>'+
       '<h2>Professional Summary</h2><p class="summary">'+escapeHtml(resume.summary||"")+'</p>'+
-      '<h2>Core Skills</h2><p class="skills">'+(resume.skills||[]).map(s=>'<span>'+escapeHtml(s)+'</span>').join(' · ')+'</p>'+
+      '<h2>Core Skills</h2><p class="skills">'+(resume.skills||[]).map(s=>'<span>'+escapeHtml(window.RavenCore.formatResumeSkillLabel(s))+'</span>').join(' · ')+'</p>'+
       '<h2>'+(job.track==="Games / 3D"?"Professional Experience":"Relevant Experience")+'</h2>'+experiences+
       (education?'<h2>Education</h2>'+education:'')+
+      ((resume.shipped_titles||[]).length?'<h2>Shipped Titles</h2><p>'+resume.shipped_titles.map(escapeHtml).join(' · ')+'</p>':'')+
       ((resume.additional||[]).length?'<h2>'+(job.track==="Games / 3D"?"Career Highlights":"Transferable Qualifications")+'</h2><ul class="additional">'+list(resume.additional)+'</ul>':'')+
       '</body></html>';
   }

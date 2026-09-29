@@ -269,3 +269,26 @@ test("source citations block moving general facts or other employers into work h
  assert.throws(()=>validateDraft("coverLetter",{...cover,paragraphs:[claim("At Studio I worked with spreadsheets.",["x1"]),claim("Thank you.",[])]},profile),/employer-specific/);
  assert.throws(()=>validateDraft("resume",{...resume,summary:claim("A new claim.",["unknown"])},profile),/cite verified facts/);
 });
+
+test("cover duplicate paragraphs are removed while unique prose stays intact",()=>{
+ const result=validateDraft("coverLetter",{...cover,paragraphs:[cover.paragraphs[0],cover.paragraphs[0],cover.paragraphs[1]]},profile);
+ assert.deepEqual(result.paragraphs,cover.paragraphs.map(p=>p.text));
+ assert.throws(()=>validateDraft("coverLetter",{...cover,paragraphs:[cover.paragraphs[0],cover.paragraphs[0]]},profile));
+});
+test("game resumes restore every canonical shipped title independently of AI selection",()=>{
+ const p={...profile,shipped_titles:["Six Days in Fallujah","Example Game"]};
+ assert.deepEqual(validateDraft("resume",resume,p,{target:{...target,track:"Games / 3D"}}).shipped_titles,p.shipped_titles);
+});
+
+test("cover credit enumerations retain Six Days in Fallujah and every canonical credit",()=>{
+ const p={...profile,shipped_titles:["Six Days in Fallujah","Halo Infinite","Darksiders"]};
+ const d={...cover,paragraphs:[claim("My shipped credits include Halo Infinite and Darksiders.",["title:1","title:2"]),cover.paragraphs[1]]};
+ const result=validateDraft("coverLetter",d,p);
+ assert.match(result.paragraphs.join(" "),/Six Days in Fallujah/);
+ assert.equal(result.paragraphs.length,2);
+});
+
+test("oversized salutations use standard letter furniture without rejecting good body prose",()=>{
+ const result=validateDraft("coverLetter",{...cover,greeting:"Dear ".repeat(50),closing:"Thank you ".repeat(30)},profile);
+ assert.equal(result.greeting,"Dear Hiring Manager,");assert.equal(result.closing,"Sincerely,");assert.deepEqual(result.paragraphs,cover.paragraphs.map(p=>p.text));
+});

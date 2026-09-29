@@ -189,3 +189,10 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Restrict evidence references by employer and reject unsupported leadership claims.
 - [x] Preserve one bounded factual repair after provider fallback; test maximum-three-call limit.
 - [x] Improve skills and heading extraction for ATS parsing; invalidate old generation cache.
+
+## Studio context and document corrections (2026-09-28 MDT)
+- [x] Cache bounded official studio research and feed source-grounded relevance to both writers.
+- [x] Normalize skills casing while preserving brand names/acronyms.
+- [x] Remove repeated cover paragraphs and repair the saved Stone Kite letter.
+- [x] Preserve complete shipped-credit lists and repair the saved Stone Kite resume.
+- [x] Test and deploy shared writers and cache schema; verify saved-document readback.
