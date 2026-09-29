@@ -18,7 +18,7 @@ function service(kind,{allowed=true,configured=true,providerStatus=503,profileVa
   if(url.endsWith('raven_request_finish'))return Response.json(null);
   assert.match(url,/openrouter\.ai/,'Only the zero-price route may be called');
   assert.deepEqual(body.provider.max_price,{prompt:0,completion:0});
-  return modelData ? Response.json({model:'free-test',choices:[{finish_reason:'stop',message:{content:JSON.stringify(modelData)}}]}) : Response.json({error:{message:'unavailable'}},{status:providerStatus});
+  return modelData ? Response.json({model:'free-test',choices:[{finish_reason:'stop',message:{content:JSON.stringify(body.messages?.some(m=>String(m.content).includes("\"reviewStage\":true"))?{issues:[]}:modelData)}}]}) : Response.json({error:{message:'unavailable'}},{status:providerStatus});
  }});
  return {handler,calls};
 }
@@ -72,10 +72,8 @@ for(const kind of ['resume','coverLetter']){
   const options=reason==='unconfigured'?{configured:false}:reason==='rate-limit'?{allowed:false}:reason==='budget-unavailable'?{failBudget:true}:reason==='invalid-draft'?{modelData:{bad:true}}:{};
   const {handler,calls}=service(kind,options);
   const response=await handler(request());const body=await response.json();
-  assert.equal(response.status,200);assert.equal(body.ai_used,false);assert.equal(body.fallback_used,true);
-  assert.equal(body.provider,'deterministic');assert.ok(body[kind]);
-  assert.match(JSON.stringify(body[kind]),/Built environments/);
-  assert.doesNotMatch(JSON.stringify(body[kind]),/unavailable|Contributed verified/);
+  assert.equal(response.status,503);assert.equal(body.ai_used,false);assert.equal(body.fallback_used,false);
+  assert.equal(body.code,"FINAL_REVIEW_BLOCKED");assert.equal(body[kind],undefined);
   if(reason==='rate-limit'||reason==='unconfigured')assert.ok(calls.every(c=>!c.url.includes('openrouter')));
  });
  test(`${kind}: failed revision returns error, not an unchanged fallback labeled success`,async()=>{

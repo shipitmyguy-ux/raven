@@ -42,7 +42,7 @@
     MASTER_RESUMES_KEY,APPLICATION_PROFILE_KEY,ANSWER_MEMORY_KEY,GENERATOR_PREFS_KEY,
     USER_SETTINGS_KEY,DOCUMENT_APPROVALS_KEY,VIEWED_JOBS_KEY
   ];
-  const RESUME_TEMPLATE_VERSION="modern-v15-studio-context";
+  const RESUME_TEMPLATE_VERSION="modern-v16-final-review";
   const DEFAULT_FOLLOW_UP_DAYS=7;
   const activeGeneration=new Map();
   const generationErrors=new Map();
@@ -1754,6 +1754,11 @@
       const {applySummaryRevision}=await import("./document-revision.mjs?v=1");
       html=applySummaryRevision(decodeURIComponent(document.revisionBase.slice(document.revisionBase.indexOf(",")+1)),document.summary);
     }else html=type==="resume"?generatedResumeHtml(job,document):generatedCoverLetterHtml(job,document);
+    if(document.finalReview?.status!=="passed"||document.finalReview?.factual_review?.status!=="passed"||document.generationMode!=="ai")throw new Error("Final factual review is required before saving this draft. Your previous document is unchanged.");
+    const {reviewRenderedDocument}=await import("./supabase/functions/_shared/document-review.mjs?v=1");
+    const renderedReview=reviewRenderedDocument(type,html,document);
+    if(renderedReview.status!=="passed")throw new Error(renderedReview.issues.join(" ")+" Your previous document is unchanged.");
+    if(!document.revisionSection)html=html.replace("</head>",'<meta name="raven-review" content="final-review-v1; factual-and-rendered-checks; human-review-required"></head>');
     const dataUrl="data:text/html;charset=utf-8,"+encodeURIComponent(html);
     if(!job._discovered){
       job[type]=dataUrl;
@@ -1854,12 +1859,16 @@
       error.providerFailures=Array.isArray(payload.provider_failures)?payload.provider_failures:[];
       throw error;
     }
+    if(payload.ai_used===false||payload.fallback_used||Number(payload.source_fact_passages||0)>0||payload.final_review?.status!=="passed"||payload.final_review?.factual_review?.status!=="passed"){
+      throw new Error("This draft did not pass final factual review. Your previous document is unchanged. Please try again.");
+    }
     if(section){
       if(payload.document_patch?.section!==section)throw new Error("The generator did not return the requested summary edit. Your previous document is unchanged.");
-      return {summary:payload.document_patch.text,revisionSection:section,revisionBase,generationMode:"ai"};
+      return {summary:payload.document_patch.text,revisionSection:section,revisionBase,generationMode:"ai",finalReview:payload.final_review};
     }
     const document=type==="coverLetter"?payload.coverLetter:payload.resume;
     if(!document) throw new Error("Online generator returned no "+documentLabel(type)+".");
+    document.finalReview=payload.final_review;
     document.generationMode=payload.fallback_used?"source-facts":payload.source_fact_passages>0?"mixed":"ai";
     return document;
   }
@@ -1876,9 +1885,10 @@
         : await generateDocumentCached(job,masterResume,type);
       await saveGeneratedDocument(job,type,document);
       setDocumentApproved(job,type,false);
-      setStatus(label[0].toUpperCase()+label.slice(1)+" ready"+(document.generationMode==="source-facts"?" · built from verified facts; AI unavailable":document.generationMode==="mixed"?" · includes verified source wording":"")+" · approval required");
+      setStatus(label[0].toUpperCase()+label.slice(1)+" draft checked"+(document.generationMode==="source-facts"?" · built from verified facts; AI unavailable":document.generationMode==="mixed"?" · includes verified source wording":"")+" · approval required");
       return document;
     }catch(error){
+      const failedCache=generationCache();delete failedCache[generationCacheId(job,null,type)];writeCache(GENERATION_CACHE_KEY,failedCache);
       let message=String(error?.message||"Generation failed.");
       if(error?.code==="LLM_PROVIDER_ACCOUNT_ERROR") message="AI provider account problem: "+message;
       else if(error?.code==="LLM_RATE_LIMITED") message="AI providers are rate limited: "+message;

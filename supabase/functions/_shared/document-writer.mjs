@@ -1,3 +1,4 @@
+import {reviewDocument,reviewFacts,REVIEW_VERSION} from "./document-review.mjs";
 import {studioRelevance} from "./studio-context.mjs";
 // One structured writer for initial drafts and revisions; layout stays in Raven.
 export const WRITER_VERSION="grounded-llm-v4";
@@ -332,7 +333,7 @@ export function validateDraft(kind,draft,profile,{target=null,instructions=""}={
 const writingInstructions=[
   "Write a resume or cover letter for this candidate and this job, as if the candidate simply asked you to write an excellent application for this job.",
   "Read the full verified background and the full posting. Choose the strongest relevant material and write finished, natural prose. You own the wording, emphasis and narrative; do not assemble a template or merely copy the source bullets.",
-  "Keep the facts. The verified background is the only authority for candidate history, skills, qualifications and accomplishments. Do not invent numbers, credentials, duties, outcomes, personal motivations or company knowledge. Keep experience attributed to the correct employer. General transferable facts are not evidence of work at a particular employer. A job requirement is not a candidate qualification. Describe career transitions honestly.",
+  "Keep the facts. The verified background is the only authority for candidate history, skills, qualifications and accomplishments. Do not invent numbers, credentials, duties, outcomes, personal motivations or company knowledge. Do not label games or career experience AAA unless the verified background explicitly supplies that classification. Keep experience attributed to the correct employer. General transferable facts are not evidence of work at a particular employer. A job requirement is not a candidate qualification. Describe career transitions honestly.",
   "Use confident, specific professional language. Replace generic 'performed', 'worked on' and 'responsible for' openings with precise supported actions such as sculpted, developed, built, diagnosed, collaborated, mentored or defined. Explain related verified tasks together so the reader can see the function and scope of the work. Preserve whether the candidate led, contributed or supported; never promote a contribution into sole ownership. Avoid empty self-praise, repetition and invented impact.",
   "Do not describe onboarding/training colleagues as building training simulations or training environments. Do not connect independent facts into a new claim about purpose or causation. For example, automation scripting plus asset database experience does not establish automation of asset pipelines. Do not add unsupported qualifiers or outcomes: optimized, photorealistic, complex, strict standards, improved efficiency and similar descriptions require explicit evidence. Choose length based on the evidence; do not pad the document.",
   "The headline is a short description of supported strengths, not the candidate name or a copy of the target title. Do not label the candidate staff-level, principal or director unless that seniority is verified. Use past tense for roles with completed date ranges. Do not repeat education or summary claims in career highlights.",
@@ -395,7 +396,7 @@ function replacePath(object,path,value){
   const parent=atPath(object,path.slice(0,-1));
   if(parent&&value!==undefined)parent[path.at(-1)]=structuredClone(value);
 }
-async function writeSummary({profile,target,instructions,currentDocument,complete,onDiagnostic}){
+async function writeSummary({profile,target,instructions,currentDocument,complete,reviewComplete,onDiagnostic}){
   let correction=null;
   for(let attempt=0;attempt<2;attempt++){
     const written=await complete({
@@ -406,7 +407,16 @@ async function writeSummary({profile,target,instructions,currentDocument,complet
     try{
       const check=passageChecks("resume",{summary:written.data?.summary},profile,{target,instructions}).find(slot=>slot.path[0]==="summary");
       if(check.issue)fail(check.issue);
-      return {document:{summary:groundedText(written.data.summary,profile,{max:1600,target,instructions})},revision_section:"summary",
+      const document={summary:groundedText(written.data.summary,profile,{max:1600,target,instructions})};
+      const final_review=reviewDocument("resume",document);
+      if(final_review.issues.length)fail(final_review.issues[0].reason);
+      if(reviewComplete){
+        let facts;try{facts=await reviewFacts({kind:"resume",document,profile,target,complete:reviewComplete});}catch{throw new WriterError("Final factual review could not finish. Your previous document is unchanged.","FINAL_REVIEW_UNAVAILABLE",503);}
+        if(facts.issues.length)fail(facts.issues.map(i=>i.reason).join(" "));
+        final_review.factual_review={status:"passed",provider:facts.provider,model:facts.model};written.providerAttempts=facts.providerAttempts||written.providerAttempts;
+      }
+      final_review.scope="summary";
+      return {document,final_review,revision_section:"summary",
         provider:written.provider||"llm",model:written.model||"",provider_attempts:Number(written.providerAttempts||attempt+1),
         verification_provider:"raven",verification_model:"evidence-v1",architecture:WRITER_VERSION,source_fact_passages:0};
     }catch(error){
@@ -417,12 +427,12 @@ async function writeSummary({profile,target,instructions,currentDocument,complet
     }
   }
 }
-export async function writeDocument({kind,profile,target,instructions="",currentDocument="",revisionSection="",complete,onDiagnostic=()=>{}}){
+export async function writeDocument({kind,profile,target,instructions="",currentDocument="",revisionSection="",complete,reviewComplete=null,onDiagnostic=()=>{}}){
   if(!["resume","coverLetter"].includes(kind))throw new WriterError("Invalid document type.","INVALID_INPUT",400);
   if(!profile?.name||!Array.isArray(profile.experience)||!profile.experience.length)throw new WriterError("Verified candidate background is missing.","PROFILE_MISSING",503);
   if(revisionSection){
     if(revisionSection!=="summary"||kind!=="resume"||!instructions.trim()||!currentDocument.trim())throw new WriterError("Invalid summary revision request.","INVALID_INPUT",400);
-    return writeSummary({profile,target,instructions,currentDocument,complete,onDiagnostic});
+    return writeSummary({profile,target,instructions,currentDocument,complete,reviewComplete,onDiagnostic});
   }
   const schema=structuredClone(kind==="resume"?resumeSchema:coverSchema);
   if(kind==="resume"){
@@ -476,22 +486,44 @@ export async function writeDocument({kind,profile,target,instructions="",current
       const order=new Map(profile.experience.map((row,i)=>[row.id,i]));
       draft.experience.sort((a,b)=>(order.get(a.experience_id)??999)-(order.get(b.experience_id)??999));
     }
-    const result=(document,sourceFactPassages=0)=>({document,provider:written.provider||"llm",model:written.model||"",
+    const result=async(document,sourceFactPassages=0)=>{
+      const finalReview=reviewDocument(kind,document,{profile,target});
+      if(finalReview.issues.length){const e=new WriterError(finalReview.issues.map(i=>i.reason).join(" "),"INVALID_DRAFT");e.finalReviewIssues=finalReview.issues;throw e;}
+      if(reviewComplete){
+        let facts;try{facts=await reviewFacts({kind,document,profile,target,complete:reviewComplete});}
+        catch(error){throw new WriterError("Final factual review could not finish. Your previous document is unchanged.","FINAL_REVIEW_UNAVAILABLE",503);}
+        if(facts.issues.length){const e=new WriterError(facts.issues.map(i=>i.reason).join(" "),"INVALID_DRAFT");e.finalReviewIssues=facts.issues.map(i=>({...i,path:passageChecks(kind,draft,profile,{target,instructions}).find(c=>c.claim?.text?.includes(i.quote))?.path.join(".")||i.path}));throw e;}
+        finalReview.factual_review={status:"passed",provider:facts.provider,model:facts.model};
+        written.providerAttempts=facts.providerAttempts||written.providerAttempts;
+      }
+      return {document,final_review:finalReview,provider:written.provider||"llm",model:written.model||"",
       provider_attempts:Number(written.providerAttempts||attempt+1),
       verification_provider:"raven",verification_model:"evidence-v1",architecture:WRITER_VERSION,
-      source_fact_passages:sourcePaths.size+sourceFactPassages,validation_details:diagnostics});
+      source_fact_passages:sourcePaths.size+sourceFactPassages,validation_details:diagnostics};
+    };
     try{
-      return result(validateDraft(kind,draft,profile,{target,instructions}));
+      return await result(validateDraft(kind,draft,profile,{target,instructions}));
     }catch(error){
-      if(!(error instanceof WriterError))throw error;
+      if(!(error instanceof WriterError)||error.code==="FINAL_REVIEW_UNAVAILABLE")throw error;
+      // Collect factual issues alongside local failures before spending the one
+      // repair, so the second pass does not merely discover another error class.
+      if(reviewComplete&&attempt===0&&!error.finalReviewIssues){
+        const preview=kind==="coverLetter"?{greeting:draft?.greeting,paragraphs:(draft?.paragraphs||[]).map(p=>p.text)}:{headline:draft?.headline?.text,summary:draft?.summary?.text,experience:(draft?.experience||[]).map(r=>({...profile.experience.find(e=>e.id===r.experience_id),bullets:(r.bullets||[]).map(p=>p.text)})),additional:(draft?.additional||[]).map(p=>p.text)};
+        try{error.finalReviewIssues=(await reviewFacts({kind,document:preview,profile,target,complete:reviewComplete})).issues;}
+        catch{throw new WriterError("Final factual review could not finish. Your previous document is unchanged.","FINAL_REVIEW_UNAVAILABLE",503);}
+      }
       const checks=passageChecks(kind,draft,profile,{target,instructions});
+      for(const issue of error.finalReviewIssues||[]){
+        const slot=checks.find(c=>c.path.join(".")===issue.path);
+        if(slot)slot.issue=[slot.issue,issue.reason].filter(Boolean).join(" ");
+      }
       const failed=checks.filter(check=>check.issue);
       diagnostics.push(...(failed.length?failed.map(check=>check.path.join(".")+": "+check.issue):[error.message]));
       onDiagnostic(diagnostics.slice(-12));
       if(attempt===maxAttempts-1){
         // An initial draft may retain good AI prose while replacing only rejected
         // passages with their own verified source facts. Never do this to a rewrite.
-        if(!revisionRequested&&failed.length&&failed.length<checks.length){
+        if(!reviewComplete&&!revisionRequested&&failed.length&&failed.length<checks.length){
           const repaired=structuredClone(draft),catalog=evidenceCatalog(profile);
           let replaced=0;
           for(const check of failed){
@@ -508,7 +540,7 @@ export async function writeDocument({kind,profile,target,instructions="",current
             if(!facts.length||facts.some(f=>!f))continue;
             replacePath(repaired,check.path,{text:facts.map(f=>f.text).join(" "),fact_ids:ids});replaced++;
           }
-          try{if(replaced===failed.length)return result(validateDraft(kind,repaired,profile,{target,instructions}),replaced);}
+          try{if(replaced===failed.length)return await result(validateDraft(kind,repaired,profile,{target,instructions}),replaced);}
           catch(repairError){
             diagnostics.push("Source replacement: "+repairError.message);onDiagnostic(diagnostics.slice(-12));
             throw repairError;

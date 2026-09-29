@@ -5,7 +5,7 @@ import {createLLMCompletion,llmProviderStatus,llmUsageStatus} from "./llm-router
 import {buildDeterministicResumeV3} from "./document-v3.mjs";
 // Content failures consume rate quota, but do not imply a provider outage.
 export function requestFailureStatus(error){
-  const contentCodes=["INVALID_DRAFT","INCOMPLETE_DRAFT","FACT_CHECK_FAILED","LLM_CALL_BUDGET_EXHAUSTED"];
+  const contentCodes=["INVALID_DRAFT","INCOMPLETE_DRAFT","FACT_CHECK_FAILED","LLM_CALL_BUDGET_EXHAUSTED","FINAL_REVIEW_BLOCKED"];
   const failures=(error?.providerFailures||[]).filter(item=>!item.skipped);
   return contentCodes.includes(error?.code)||(failures.length&&failures.every(item=>contentCodes.includes(item.code)))?"rejected":"failure";
 }
@@ -94,18 +94,8 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
       // Initial drafts remain usable when the free service is down. Revisions
       // must succeed explicitly; a fallback must never masquerade as a rewrite.
       const initial=!instructions;
-      const fallback=(reason,detail="")=>{
-        const written=kind==="resume"
-          ? buildDeterministicResumeV3(profile,target)
-          : buildDeterministicCover(profile,target);
-        return json({ok:true,provider:"deterministic",model:"none",provider_attempts:0,
-          verification_provider:"raven",verification_model:"source-facts",
-          architecture:written.architecture,validation_errors:[],[kind]:kind==="resume"?{...written.document,shipped_titles:track==="Games / 3D"?profile.shipped_titles||[]:[]}:written.document,
-          job_analysis:written.analysis,evidence_selection:written.selection,
-          ai_used:false,fallback_used:true,fallback_reason:reason,
-          studio_context:target.studioContext?{status:target.studioContext.status,source_urls:target.studioContext.sources.map(s=>s.url)}:null,
-          validation_details:validationDiagnostics.length?validationDiagnostics:reason==="INVALID_DRAFT"?[String(detail).slice(0,1000)]:[],budget:null});
-      };
+      const fallback=(reason,detail="")=>json({ok:false,error:"Raven could not approve this draft. "+(validationDiagnostics.slice(-1)[0]||"Final factual review did not complete.")+" Your previous document is unchanged.",code:"FINAL_REVIEW_BLOCKED",cause:reason,review:{status:"blocked"},validation_details:validationDiagnostics,ai_used:false,fallback_used:false,retryable:true},503);
+
       // Cloudflare requires a verified Free plan; OpenRouter caps price at zero.
       if(!primaryProvider&&initial)return fallback("LLM_NOT_CONFIGURED");
       let budget;
@@ -121,8 +111,9 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
         target.studioContext=await getStudioContext({company:target.company,track,getEnv,fetchImpl}).catch(()=>({status:"unavailable",sources:[]}));
         const written=await boundedGeneration(async signal=>{
           const complete=createLLMCompletion({getEnv:freeEnv,fetchImpl,signal});
-          return writeDocument({kind,profile,target,instructions,currentDocument,revisionSection,complete,onDiagnostic:details=>{validationDiagnostics=details;}});
-        },initial?40000:45000);
+          return writeDocument({kind,profile,target,instructions,currentDocument,revisionSection,complete,reviewComplete:complete,onDiagnostic:details=>{validationDiagnostics=details;}});
+        },55000);
+        if(written.source_fact_passages>0)throw new WriterError("The draft contains source fallback passages and needs a successful AI rewrite.","FINAL_REVIEW_BLOCKED",503);
         await finish("success",200);
         return json({ok:true,provider:written.provider,model:written.model,
           provider_attempts:Number(written.provider_attempts||1),
@@ -130,7 +121,7 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
           architecture:written.architecture,validation_errors:[],
           ...(written.revision_section?{document_patch:{section:written.revision_section,text:written.document.summary}}:{[kind]:written.document}),
           job_analysis:written.analysis,evidence_selection:written.selection,
-          ai_used:true,fallback_used:false,
+          ai_used:true,fallback_used:false,final_review:written.final_review,
           studio_context:{status:target.studioContext.status,company:target.studioContext.company,checked_at:target.studioContext.checked_at,source_urls:target.studioContext.sources.map(s=>s.url)},
           source_fact_passages:Number(written.source_fact_passages||0),
           validation_details:written.validation_details||[],

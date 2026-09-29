@@ -121,17 +121,17 @@ async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJo
     if(generatorDelayMs) await new Promise(resolve=>setTimeout(resolve,generatorDelayMs));
     const body=JSON.parse(route.request().postData()||"{}");
     generationBodies.push(body);
-    if(body.revisionSection==="summary")return route.fulfill({json:{ok:true,document_patch:{section:"summary",text:"Experienced delivery leader. Updated to apply the requested revision."},resume:{...generatedResume,headline:"Unexpected unrelated rewrite"}}});
+    if(body.revisionSection==="summary")return route.fulfill({json:{ok:true,final_review:{status:"passed",factual_review:{status:"passed"}},document_patch:{section:"summary",text:"Experienced delivery leader. Updated to apply the requested revision."},resume:{...generatedResume,headline:"Unexpected unrelated rewrite"}}});
     if(body.documentType==="coverLetter"){
       const coverLetter=body.instructions
         ? {...generatedLetter,paragraphs:[...generatedLetter.paragraphs,"Updated to apply the requested revision."]}
         : generatedLetter;
-      return route.fulfill({json:{ok:true,coverLetter}});
+      return route.fulfill({json:{ok:true,final_review:{status:"passed",factual_review:{status:"passed"}},coverLetter}});
     }
     const resume=body.instructions
       ? {...generatedResume,summary:generatedResume.summary+" Updated to apply the requested revision."}
       : generatedResume;
-    return route.fulfill({json:{ok:true,resume}});
+    return route.fulfill({json:{ok:true,final_review:{status:"passed",factual_review:{status:"passed"}},resume}});
   });
   return {
     getJob:()=>job,
@@ -1036,7 +1036,7 @@ test("generation errors stay beside the button and allow a successful retry",asy
   await expect(page.locator(".document-generation-error")).toContainText("Mock generator unavailable");
   await expect(page.locator('[data-generate="resume"]')).toBeEnabled();
   await expect(page.locator(".generation-card-status")).toHaveCount(0);
-  await page.route("**/functions/v1/raven-generate-v1**",route=>route.fulfill({json:{ok:true,resume:generatedResume}}));
+  await page.route("**/functions/v1/raven-generate-v1**",route=>route.fulfill({json:{ok:true,final_review:{status:"passed",factual_review:{status:"passed"}},resume:generatedResume}}));
   await page.locator('[data-generate="resume"]').click();
   await expect(page.locator("#documentReviewDialog")).toBeVisible();
   await expect(page.locator(".document-generation-error")).toHaveCount(0);
@@ -1108,7 +1108,7 @@ test("summary-only revision preserves exact saved HTML through reload and reject
   await page.locator(".job-card-summary").first().click();
   await page.locator('[data-generate="resume"]').click();
   await expect(page.locator("#reviewFrame")).toHaveAttribute("src",expected);
-  await page.route("**/functions/v1/raven-generate-v1**",route=>route.fulfill({json:{ok:true,resume:generatedResume}}));
+  await page.route("**/functions/v1/raven-generate-v1**",route=>route.fulfill({json:{ok:true,final_review:{status:"passed",factual_review:{status:"passed"}},resume:generatedResume}}));
   await page.locator("#reviewInstructions").fill("Rewrite only the summary.");
   await page.locator("#reviewSubmit").click();
   await expect(page.locator("#reviewFeedback")).toContainText("previous document is unchanged");
@@ -1128,4 +1128,20 @@ test("game tab hides unrelated saved roles and retains environment art after rel
   await expect(page.locator(".job-card-summary").filter({hasText:"Senior Environment Artist"})).toBeVisible();
   await expect(page.locator(".job-card-summary").filter({hasText:"Community Participation"})).toHaveCount(0);
  }
+});
+
+for(const failure of ['unreviewed','fallback','rendered-duplicate'])test(`final review preserves saved resume on ${failure}`,async({page})=>{
+ const old='data:text/html;charset=utf-8,'+encodeURIComponent('<html><body><h1>Test Candidate</h1><p class="summary">Previously reviewed saved resume.</p></body></html>');
+ const api=await mockRaven(page,{initialJob:{resume:old}});
+ const repeated='Delivered complex projects with colleagues across several internal teams and departments.';
+ const resume=failure==='rendered-duplicate'?{...generatedResume,summary:repeated,experience:[{...generatedResume.experience[0],bullets:[repeated]}]}:generatedResume;
+ const payload={ok:true,resume,...(failure==='unreviewed'?{}:{final_review:{status:'passed',factual_review:{status:'passed'}}}),...(failure==='fallback'?{ai_used:false,fallback_used:true}:{})};
+ await page.route('**/functions/v1/raven-generate-v1**',route=>route.fulfill({json:payload}));
+ await page.goto('/');await page.getByRole('tab',{name:'Professional',exact:true}).click();
+ await page.locator('.job-card-summary').first().click();await page.locator('[data-generate="resume"]').click();
+ await page.locator('#reviewInstructions').fill('Rewrite this document with a more formal tone.');await page.locator('#reviewSubmit').click();
+ await expect(page.locator('#reviewFeedback')).toContainText('previous document is unchanged',{ignoreCase:true});
+ expect(api.getJob().resume).toBe(old);
+ await page.reload();await page.getByRole('tab',{name:'Professional',exact:true}).click();await page.locator('.job-card-summary').first().click();await page.locator('[data-generate="resume"]').click();
+ await expect(page.locator('#reviewFrame')).toHaveAttribute('src',old);
 });

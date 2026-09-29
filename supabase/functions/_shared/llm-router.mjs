@@ -317,16 +317,17 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
   if(!configuredOrder.length)throw new WriterError("No LLM provider is configured for Raven.","LLM_NOT_CONFIGURED",503);
 
   let remainingProviderCalls=2;
-  let totalProviderCalls=0;
+  let totalProviderCalls=0,remainingReviewCalls=2;
   let lastSuccessfulProvider="",repairReserveUsed=false;
-  return async({instructions,input,schema,name,maxOutputTokens=6000,responseMode="json"})=>{
+  return async({instructions,input,schema,name,maxOutputTokens=6000,responseMode="json",purpose="draft"})=>{
+    const reviewing=purpose==="final_review";
     // A provider fallback can consume both draft calls. Reserve one bounded
     // correction on the provider that actually returned prose, rather than
     // discarding a usable draft before its factual repair gets a chance.
-    if(remainingProviderCalls<=0&&input?.factualCorrection&&lastSuccessfulProvider&&!repairReserveUsed){
+    if(!reviewing&&remainingProviderCalls<=0&&input?.factualCorrection&&lastSuccessfulProvider&&!repairReserveUsed){
       remainingProviderCalls=1;repairReserveUsed=true;
     }
-    if(remainingProviderCalls<=0){
+    if((reviewing?remainingReviewCalls:remainingProviderCalls)<=0){
       const error=new WriterError("Raven reached its bounded LLM call limit for this generation request.","LLM_CALL_BUDGET_EXHAUSTED",502);
       error.providerAttempts=totalProviderCalls;
       throw error;
@@ -334,10 +335,10 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
     const stageSignal=combineSignals([signal,AbortSignal.timeout(timeoutFor(input))]);
     const healthy=configuredOrder.filter(name=>!providerOnCooldown(name));
     const ordered=[...healthy,...configuredOrder.filter(name=>providerOnCooldown(name))];
-    if(input?.factualCorrection&&lastSuccessfulProvider){
+    if((reviewing||input?.factualCorrection)&&lastSuccessfulProvider){
       ordered.splice(ordered.indexOf(lastSuccessfulProvider),1);ordered.unshift(lastSuccessfulProvider);
     }
-    const candidates=ordered.slice(0,remainingProviderCalls);
+    const candidates=ordered.slice(0,reviewing?1:remainingProviderCalls);
     const failures=[];
 
     for(const provider of candidates){
@@ -352,7 +353,7 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
       }
 
       try{
-        remainingProviderCalls-=1;
+        if(reviewing)remainingReviewCalls-=1;else remainingProviderCalls-=1;
         totalProviderCalls+=1;
         const common={getEnv,fetchImpl,signal:stageSignal,instructions,input,schema,name,maxOutputTokens,responseMode};
         let result;

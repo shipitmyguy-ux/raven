@@ -1,0 +1,53 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {reviewDocument,reviewFacts} from '../supabase/functions/_shared/document-review.mjs';
+import {writeDocument} from '../supabase/functions/_shared/document-writer.mjs';
+const c=(text,fact_ids)=>({text,fact_ids});
+const profile={name:'Candidate',contact:'candidate@example.com',skills:['Mentoring'],education:[],experience:[
+ {id:'one',company:'First Studio',role:'Artist',dates:'2020',facts:[{id:'a',text:'Created environment assets for Example Game.'}]},
+ {id:'two',company:'Second Studio',role:'Artist',dates:'2021',facts:[{id:'b',text:'Mentored newer artists.'}]}
+],shipped_titles:['Example Game','Six Days in Fallujah'],transferable_facts:[]};
+const target={company:'Target Studio',title:'Artist',track:'Games / 3D',description:'Create environments.'};
+const paragraph='I created environment assets for Example Game.';
+const good={greeting:'Dear Hiring Manager,',paragraphs:[c(paragraph,['a']),c('I mentored newer artists.',['b'])],closing:'Sincerely,'};
+test('whole-document check catches duplicates across sections and placeholders without style limits',()=>{
+ const bad=reviewDocument('resume',{summary:paragraph,experience:[{bullets:[paragraph,'[Insert company name]']}],additional:[]});
+ assert.deepEqual(bad.issues.map(i=>i.code).sort(),['duplicate','placeholder']);
+ assert.equal(reviewDocument('coverLetter',{paragraphs:['Meow! I built environments with care.','I would love to discuss this role.']}).status,'passed');
+});
+test('whole-document canonical credit guard catches omitted Six Days in Fallujah',()=>{
+ const result=reviewDocument('resume',{name:profile.name,contact:profile.contact,shipped_titles:['Example Game']},{profile,target});
+ assert.equal(result.issues[0].code,'missing_credits');
+});
+test('separate factual reviewer repairs only the wrong project attribution and rechecks the entire letter',async()=>{
+ const bad={...good,paragraphs:[c('For Example Game, I created environment assets and mentored newer artists.',['a','b']),good.paragraphs[1]]};
+ const drafts=[],reviews=[];
+ const result=await writeDocument({kind:'coverLetter',profile,target,complete:async args=>{
+  drafts.push(args);
+  return {provider:'test',data:args.name==='raven_passage_repair'?{repairs:[{path:'paragraphs.0',claim:good.paragraphs[0]}]}:bad};
+ },reviewComplete:async args=>{
+  reviews.push(args);
+  return {provider:'reviewer',model:'test',data:{issues:reviews.length===1?[{path:'paragraphs.0',code:'wrong_attribution',quote:'mentored newer artists',reason:'Mentoring belongs to Second Studio; do not attribute it to Example Game.'}]:[]}};
+ }});
+ assert.equal(reviews.length,2);assert.equal(drafts.length,2);
+ assert.deepEqual(drafts[1].input.factualCorrection.invalid_paths,['paragraphs.0']);
+ assert.deepEqual(result.document.paragraphs,good.paragraphs.map(p=>p.text));
+ assert.equal(result.final_review.factual_review.status,'passed');
+ assert.equal(reviews[1].input.document.paragraphs[1],good.paragraphs[1].text);
+});
+test('failed or malformed final review cannot return an approved document',async()=>{
+ for(const reviewComplete of [async()=>{throw Error('offline');},async()=>({data:{issues:[{path:'paragraphs.0',code:'wrong_attribution',quote:'not present',reason:'Unsubstantiated'}]}})]){
+  await assert.rejects(writeDocument({kind:'coverLetter',profile,target,complete:async()=>({data:good}),reviewComplete}),e=>e.code==='FINAL_REVIEW_UNAVAILABLE');
+ }
+});
+test('final review has two separate bounded calls and cannot consume or inflate draft repair budget',async()=>{
+ const {createLLMCompletion}=await import('../supabase/functions/_shared/llm-router.mjs?review-budget');
+ let calls=0;
+ const complete=createLLMCompletion({getEnv:n=>n==='OPENROUTER_API_KEY'?'test':undefined,fetchImpl:async()=>{calls++;return Response.json({choices:[{finish_reason:'stop',message:{content:'{"issues":[]}'}}]});}});
+ await complete({input:{},schema:{}});
+ await complete({purpose:'final_review',input:{reviewStage:true},schema:{}});
+ await complete({input:{factualCorrection:{}},schema:{}});
+ await complete({purpose:'final_review',input:{reviewStage:true},schema:{}});
+ await assert.rejects(complete({purpose:'final_review',input:{},schema:{}}),e=>e.code==='LLM_CALL_BUDGET_EXHAUSTED');
+ assert.equal(calls,4);
+});

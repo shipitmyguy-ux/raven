@@ -201,3 +201,10 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Fix Unity/community and game/Burlingame substring collisions.
 - [x] Require actual relevant art roles in new searches, cached responses and browser lists.
 - [x] Preserve saved job data/documents; verify live backend excludes unrelated results.
+
+## Final document review gate (2026-09-28 MDT)
+- [x] Add whole-document checks and separate source-grounded factual reviewer.
+- [x] Combine local/factual issues for one targeted repair and review the complete result again.
+- [x] Reject unreviewed, source-fallback and malformed rendered documents before persistence.
+- [x] Add regression cases for reported failures and preservation of prior saved documents.
+- [ ] Complete final live resume/browser acceptance and record limits.
