@@ -8,7 +8,7 @@ Initial resumes, cover letters, and revisions use `writeDocument` with the full 
 The retired initial-resume plain-text parser required exact bullet counts and rejected otherwise useful output. The shared writer accepts variable bullet counts within bounds and uses the full evidence catalog rather than truncated summary citations.
 
 ## Repair and failure behavior
-One draft and one repair fit the existing two-call provider budget. For passage failures the repair schema permits only locally identified paths and the model returns just the replacement claims. Valid passages remain unchanged. Structural failures permit one full repair.
+One draft and one repair use up to two draft-provider attempts plus one reserved correction call. For passage failures the repair schema permits only locally identified paths and the model returns just the replacement claims. Valid passages remain unchanged. Structural failures permit one full repair.
 
 Only initial drafts may replace remaining failed passages with their own cited source facts. Such documents carry `source_fact_passages` and the frontend marks them as mixed output. A total service failure can still produce the existing source-fact fallback. Revisions must validate successfully and never silently become fallback documents.
 
@@ -35,3 +35,12 @@ The frontend recognizes summary edits, including “rewrite only the summary” 
 The frontend requires the matching patch response, escapes its text, and replaces only the original summary element's content. All bytes outside that content stay unchanged, including existing formatting, contact links, skills and work history. No saved-document migration is required. Unsupported legacy formats, missing patches, validation failures, and changed revision bases leave the saved document intact. A successful edit uses the existing persistence/retry path and invalidates document approval.
 
 Only resume summaries have this narrow patch path. Multi-section and whole-document requests continue through the full writer. No other section-specific behavior is claimed.
+
+## Richer evidence-based writing and keyword support (2026-09-28)
+Games / 3D writing targets 550–700 words with flexible 3–5 bullets on strongest roles and 1–3 elsewhere, retaining the complete game chronology. Counts and keyword coverage are guidance rather than rejection rules. A supported-keyword catalog adds verified techniques from role facts and vetted equivalent phrases (e.g. PBR / physically based rendering). The posting cannot establish candidate qualifications. Non-game skills omit unrelated art tools unless the posting names them. The renderer uses continuous skills text and standard headings without letter spacing; caches now use modern-v14-evidence-rich.
+
+Identity, employer metadata, dates, and education remain canonical. Work-history schema branches restrict citations to the selected employer. A verified project association can support other bullets from that same employer; game-title numbers are excluded from metric checks only when the title is supported. Leadership wording requires role-specific evidence. Style-only adjectives do not independently trigger rejection. These checks still are not comprehensive semantic verification.
+
+Provider routing allows up to two draft attempts and, only if both were consumed before factual correction, one reserved repair on the last successful provider. This is at most three calls, still within the existing request deadline and free-only/rate guards. No cooldowns or quotas were reset. Existing source fallback behavior remains and is labeled; it is not AI-quality acceptance.
+
+Verified skill overflow is de-duplicated, ranked by supported posting matches, and capped at 16 without rejecting the resume. Unknown skills still fail.

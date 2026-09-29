@@ -181,3 +181,11 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Reject one-edit misspellings in all six verified shipped titles, including multiword names; test a near miss and exact spelling for each.
 - [x] Deploy shared validator to resume v106 and cover v79; verify active bundles and endpoint health.
 - [ ] Correct any existing saved resume containing “Darksiers” after locating and reviewing that document; the generation guard does not mutate saved documents.
+
+## Richer resume content and supported keywords (2026-09-28)
+- [x] Replace thin 3D bullet guidance with evidence-backed two-page writing targets.
+- [x] Add supported posting-keyword guidance without keyword-count rejection or invented qualifications.
+- [x] Accept verified technique names, same-employer project context, and legitimate game-title numbers.
+- [x] Restrict evidence references by employer and reject unsupported leadership claims.
+- [x] Preserve one bounded factual repair after provider fallback; test maximum-three-call limit.
+- [x] Improve skills and heading extraction for ATS parsing; invalidate old generation cache.

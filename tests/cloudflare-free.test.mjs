@@ -1,5 +1,20 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+test('provider fallback leaves one factual repair and never opens an unbounded retry loop',async()=>{
+ const {createLLMCompletion}=await import('../supabase/functions/_shared/llm-router.mjs?repair-reserve');
+ const calls=[];
+ const complete=createLLMCompletion({getEnv:n=>({CLOUDFLARE_API_TOKEN:'test',CLOUDFLARE_ACCOUNT_ID:'repair-account',OPENROUTER_API_KEY:'test',RAVEN_LLM_PROVIDER_ORDER:'cloudflare,openrouter'}[n]),fetchImpl:async(url,init)=>{
+  calls.push(url);
+  if(url.endsWith('/subscriptions'))return Response.json({success:false},{status:403});
+  assert.match(url,/openrouter/);assert.deepEqual(JSON.parse(init.body).provider.max_price,{prompt:0,completion:0});
+  return Response.json({choices:[{finish_reason:'stop',message:{content:'{"summary":"AI prose"}'}}]});
+ }});
+ await complete({instructions:'Draft',input:{},schema:{}});
+ const repaired=await complete({instructions:'Repair',input:{factualCorrection:{issues:['Citation mismatch']}},schema:{}});
+ assert.equal(repaired.providerAttempts,3);assert.equal(calls.length,3);
+ await assert.rejects(complete({instructions:'Repair again',input:{factualCorrection:{}},schema:{}}),e=>e.code==='LLM_CALL_BUDGET_EXHAUSTED');
+ assert.equal(calls.length,3);
+});
 import {cloudflareFreeStatus} from '../supabase/functions/_shared/cloudflare-free.mjs';
 const env={CLOUDFLARE_API_TOKEN:'test',CLOUDFLARE_ACCOUNT_ID:'account',RAVEN_LLM_PROVIDER_ORDER:'cloudflare'};
 const getEnv=n=>env[n];

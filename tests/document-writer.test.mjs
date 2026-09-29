@@ -23,6 +23,35 @@ const resume={headline:claim("Artist and mentor",["f1","f2"]),summary:claim("Bui
  experience:[{experience_id:"art",bullets:[claim("Built game environments and mentored newer artists.",["f1","f2"])]}],additional:[]};
 const cover={greeting:"Dear Hiring Manager,",paragraphs:[claim("My work combines environment art and mentoring newer artists.",["f1","f2"]),claim("I would welcome a conversation about the role.",[])],closing:"Sincerely,"};
 const accepted={supported:true,issues:[]};
+test("strong verbs preserve leadership scope and non-game skills stay relevant",()=>{
+ const bad={...resume,experience:[{experience_id:"art",bullets:[claim("Led game environment creation.")]}]};
+ assert.throws(()=>validateDraft("resume",bad,profile),/leadership/);
+ const lead={...profile,experience:[{...profile.experience[0],role:"Lead Artist"},profile.experience[1]]};
+ assert.doesNotThrow(()=>validateDraft("resume",bad,lead));
+ const d=validateDraft("resume",{...resume,skills:["Mentoring","Unity"]},profile,{target});
+ assert.deepEqual(d.skills,["Mentoring"]);
+ const relevant=validateDraft("resume",{...resume,skills:["Mentoring","Unity"]},profile,{target:{...target,description:"Coordinate Unity projects."}});
+ assert.deepEqual(relevant.skills,["Unity","Mentoring"]);
+});
+test("extra verified skills are ranked and capped without rejecting the resume",()=>{
+ const many=Array.from({length:25},(_,i)=>"Verified technique "+i);
+ const d=validateDraft("resume",{...resume,skills:[...many,many[0]]},{...profile,skills:many});
+ assert.equal(d.skills.length,16);assert.equal(new Set(d.skills).size,16);
+});
+test("project context can use another fact from the same employer, never another employer",()=>{
+ const p={...profile,shipped_titles:["Halo Infinite"],experience:[{...profile.experience[0],facts:[...profile.experience[0].facts,{id:"project",text:"Created environments for Halo Infinite."}]},profile.experience[1]]};
+ const valid={...resume,experience:[{experience_id:"art",bullets:[claim("Built environments for Halo Infinite.")]}]};
+ assert.doesNotThrow(()=>validateDraft("resume",valid,p));
+ const invalid={...resume,experience:[{experience_id:"repair",bullets:[claim("Repaired coffee makers for Halo Infinite.",["f3"])]}]};
+ assert.throws(()=>validateDraft("resume",invalid,p),/Halo Infinite/);
+});
+test("verified techniques can be skills and game-title numbers are not invented metrics",()=>{
+ const p={...profile,shipped_titles:["Dead Space 2"],experience:[{...profile.experience[0],facts:[{id:"f1",text:"Built environments using a PBR workflow."},{id:"game",text:"Created assets for Dead Space 2."}]},profile.experience[1]]};
+ const d={...resume,headline:claim("Environment builder"),summary:claim("Built environments."),skills:["PBR"],experience:[{experience_id:"art",bullets:[claim("Built environments for Dead Space 2.")]}]};
+ assert.doesNotThrow(()=>validateDraft("resume",d,p));
+ assert.throws(()=>validateDraft("resume",{...d,skills:["Python"]},p),/unverified skill/);
+ assert.throws(()=>validateDraft("resume",{...d,summary:claim("Built 2 environments for Dead Space 2.")},p),/unsupported number/);
+});
 test("posting keywords require verified evidence and do not infer SQL or Python",()=>{
  const p={...profile,experience:[{...profile.experience[0],facts:[{id:"pbr",text:"Used a PBR workflow to create game assets."}]}],transferable_facts:[{id:"db",text:"Used asset database queries and metadata."}]};
  const guide=resumeKeywordGuidance(p,{description:"Need physically based rendering, Unity, database querying, SQL, Python and Houdini."});
@@ -158,8 +187,10 @@ test("schema bounds guide document length; malformed draft can be repaired",asyn
  assert.deepEqual(requests[0].input.verifiedBackground.skills,profile.skills);
  assert.equal(requests[0].schema.properties.experience.minItems,1);
  assert.equal(requests[0].schema.properties.experience.maxItems,2);
- assert.deepEqual(requests[0].schema.properties.experience.items.properties.experience_id.enum,['art','repair']);
- assert.equal(requests[0].schema.properties.experience.items.properties.bullets.maxItems,6);
+ const roleSchemas=requests[0].schema.properties.experience.items.anyOf;
+ assert.deepEqual(roleSchemas.map(s=>s.properties.experience_id.enum[0]),['art','repair']);
+ assert.equal(roleSchemas[0].properties.bullets.maxItems,6);
+ assert.deepEqual(roleSchemas[0].properties.bullets.items.properties.fact_ids.items.enum,['f1','f2']);
  assert.ok(requests[1].input.factualCorrection);assert.equal(result.document.summary,resume.summary.text);
 });
 

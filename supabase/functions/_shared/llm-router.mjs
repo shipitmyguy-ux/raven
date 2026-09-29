@@ -318,15 +318,26 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
 
   let remainingProviderCalls=2;
   let totalProviderCalls=0;
+  let lastSuccessfulProvider="",repairReserveUsed=false;
   return async({instructions,input,schema,name,maxOutputTokens=6000,responseMode="json"})=>{
+    // A provider fallback can consume both draft calls. Reserve one bounded
+    // correction on the provider that actually returned prose, rather than
+    // discarding a usable draft before its factual repair gets a chance.
+    if(remainingProviderCalls<=0&&input?.factualCorrection&&lastSuccessfulProvider&&!repairReserveUsed){
+      remainingProviderCalls=1;repairReserveUsed=true;
+    }
     if(remainingProviderCalls<=0){
-      const error=new WriterError("Raven reached its two-call LLM limit for this generation request.","LLM_CALL_BUDGET_EXHAUSTED",502);
+      const error=new WriterError("Raven reached its bounded LLM call limit for this generation request.","LLM_CALL_BUDGET_EXHAUSTED",502);
       error.providerAttempts=totalProviderCalls;
       throw error;
     }
     const stageSignal=combineSignals([signal,AbortSignal.timeout(timeoutFor(input))]);
     const healthy=configuredOrder.filter(name=>!providerOnCooldown(name));
-    const candidates=[...healthy,...configuredOrder.filter(name=>providerOnCooldown(name))].slice(0,remainingProviderCalls);
+    const ordered=[...healthy,...configuredOrder.filter(name=>providerOnCooldown(name))];
+    if(input?.factualCorrection&&lastSuccessfulProvider){
+      ordered.splice(ordered.indexOf(lastSuccessfulProvider),1);ordered.unshift(lastSuccessfulProvider);
+    }
+    const candidates=ordered.slice(0,remainingProviderCalls);
     const failures=[];
 
     for(const provider of candidates){
@@ -352,6 +363,7 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
         else if(provider==="gemini")result=await geminiComplete(common);
         else continue;
         clearProviderFailure(provider);
+        lastSuccessfulProvider=provider;
         return {...result,providerAttempts:totalProviderCalls};
       }catch(caught){
         const error=stageSignal?.aborted?timeoutError(provider):caught;
@@ -400,4 +412,3 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
     throw error;
   };
 }
-

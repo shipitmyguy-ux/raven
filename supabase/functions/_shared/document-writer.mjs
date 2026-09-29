@@ -22,7 +22,7 @@ function prose(value,max=1800){
   return s;
 }
 function list(values,min,max,limit=1800){
-  if(!Array.isArray(values)||values.length<min||values.length>max)fail("The writer returned an incomplete document.");
+  if(!Array.isArray(values)||values.length<min||values.length>max)fail("The writer returned an incomplete document: text list has "+(Array.isArray(values)?values.length:"no")+" items; expected "+min+"-"+max+".");
   return values.map(v=>prose(v,limit));
 }
 export function evidenceCatalog(profile){
@@ -40,11 +40,11 @@ const STOP_WORDS=new Set("a an and are as at be been being by for from had has h
 const RISKY_TERMS=["optimized","photorealistic","proven expertise","strict standards","improved efficiency","measurable impact","expert in","specialist in"];
 const normalizedPhrase=value=>String(value||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
 const hasPhrase=(text,term)=>(" "+normalizedPhrase(text)+" ").includes(" "+normalizedPhrase(term)+" ");
-export function resumeKeywordGuidance(profile,target){
-  const catalog=evidenceCatalog(profile),posting=[target?.title,target?.description].join(" ");
+function verifiedKeywordEntries(profile){
+  const catalog=evidenceCatalog(profile);
   const groups=(profile.skills||[]).map(s=>[s,s.replace(/\s*\([^)]*\)/g,"")]);
   groups.push(
-    ["PBR","physically based rendering"],["world building","worldbuilding"],
+    ["PBR","PBR workflow","physically based rendering"],["world building","worldbuilding"],
     ["UV mapping","UV mapped"],["grey box","gray box","grey-box","gray-box"],
     ["Unreal Engine","Unreal"],["Excel","Microsoft Excel"],
     ["mentoring","mentored","mentorship"],["cross-functional collaboration","cross functional collaboration"],
@@ -61,12 +61,16 @@ export function resumeKeywordGuidance(profile,target){
     if(!evidence.length)continue;
     for(const keyword of terms){
       const key=normalizedPhrase(keyword);
-      if(!key||seen.has(key)||!hasPhrase(posting,keyword))continue;
+      if(!key||seen.has(key))continue;
       seen.add(key);
       recommended.push({keyword,evidence_ids:evidence.map(f=>f.id),experience_ids:[...new Set(evidence.map(f=>f.experience_id).filter(Boolean))]});
     }
   }
-  return {recommended,policy:"Advisory only. Use these supported posting terms naturally; missing terms never block generation. General evidence does not establish employer-specific use. Database queries do not establish SQL; automation does not establish Python or software engineering."};
+  return recommended;
+}
+export function resumeKeywordGuidance(profile,target){
+  const posting=[target?.title,target?.description].join(" ");
+  return {recommended:verifiedKeywordEntries(profile).filter(e=>hasPhrase(posting,e.keyword)),policy:"Advisory only. Use these supported posting terms naturally; missing terms never block generation. General evidence does not establish employer-specific use. Database queries do not establish SQL; automation does not establish Python or software engineering."};
 }
 function oneEditApart(a,b){
   if(Math.abs(a.length-b.length)>1)return false;
@@ -126,6 +130,8 @@ export function unsupportedSpecifics(value,evidence,profile,{roleId=null}={}){
   issues.push(...shippedTitleTypos(text,profile));
   const source=String(evidence||"");
   const role=(profile.experience||[]).find(row=>row.id===roleId);
+  if(role&&/\b(?:led|lead|leading)\b/i.test(text)&&!(/\b(?:led|lead|leading|leadership|spearheaded)\b/i.test([role.role,...(role.facts||[]).map(f=>f.text)].join(" "))))
+    issues.push("The passage promoted participation into leadership without evidence at this employer. Describe the verified action without claiming to lead it.");
   const toolSource=roleId?(role?.facts||[]).map(f=>f.text).join(" "):
     source+" "+(profile.skills||[]).join(" ");
   const tools=["Substance Designer","Substance Painter","Photoshop","ZBrush","Maya","Unity","Unreal Engine","Salesforce","Jira","Python","SQL","Power BI","Tableau","Excel"];
@@ -150,14 +156,19 @@ function claimEvidenceIssues(value,facts,profile,{target=null,instructions="",co
       issues.push("A cover-letter paragraph made a candidate-history claim without evidence.");
     return issues;
   }
-  for(const number of exactNumbers(value)){
+  const roleEvidenceText=roleId
+    ? ((profile.experience||[]).find(e=>e.id===roleId)?.facts||[]).map(f=>f.text).join(" ")
+    : "";
+  let numericText=value;
+  for(const title of profile.shipped_titles||[]){
+    if((evidenceText+" "+roleEvidenceText).toLowerCase().includes(title.toLowerCase()))
+      numericText=numericText.replace(new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"),"");
+  }
+  for(const number of exactNumbers(numericText)){
     if(!evidenceLower.includes(number.toLowerCase()))
       issues.push("The passage introduced an unsupported number: "+number+".");
   }
   const evidenceRootSet=new Set(roots(evidenceText));
-  const roleEvidenceText=roleId
-    ? ((profile.experience||[]).find(e=>e.id===roleId)?.facts||[]).map(f=>f.text).join(" ")
-    : "";
   // For employer-specific tool attribution, any verified fact from that same
   // employer is sufficient evidence. The bullet's own fact_ids still govern
   // the rest of the factual claim, but revisions do not have to cite the exact
@@ -186,7 +197,10 @@ function claimEvidenceIssues(value,facts,profile,{target=null,instructions="",co
   ].filter(Boolean).sort((a,b)=>b.length-a.length);
   for(const entity of entities){
     const lower=String(entity).toLowerCase();
-    if(value.toLowerCase().includes(lower)&&!evidenceLower.includes(lower))
+    // A project's verified association with this employer applies to its other
+    // cited work facts too; it need not be re-cited in every bullet.
+    const entityEvidence=(evidenceText+" "+roleEvidenceText).toLowerCase();
+    if(value.toLowerCase().includes(lower)&&!entityEvidence.includes(lower))
       issues.push("The passage introduced "+entity+" without citing evidence that supports it.");
   }
   for(const term of RISKY_TERMS){
@@ -223,7 +237,8 @@ function groundedText(claim,profile,{roleId=null,cover=false,max=1800,target=nul
   return value;
 }
 function groundedList(values,profile,{min,max,roleId=null,cover=false,limit=1800,target=null,instructions=""}){
-  if(!Array.isArray(values)||values.length<min||values.length>max)fail("The writer returned an incomplete document.");
+  if(values==null&&min===0)return [];
+  if(!Array.isArray(values)||values.length<min||values.length>max)fail("The writer returned an incomplete document: "+(roleId||"passage list")+" has "+(Array.isArray(values)?values.length:"no")+" items; expected "+min+"-"+max+".");
   return values.map(claim=>groundedText(claim,profile,{roleId,cover,max:limit,target,instructions}));
 }
 
@@ -236,9 +251,17 @@ export function validateDraft(kind,draft,profile,{target=null,instructions=""}={
     return {greeting,paragraphs:groundedList(paragraphs,profile,{min:2,max:6,cover:true,limit:2200,target,instructions}),
       closing:closingRaw.replace(profile.name,"").replace(/[,\s]+$/,"").trim()+",",signature:profile.name};
   }
-  const skills=list(draft.skills,1,20,160);
-  if(skills.some(s=>!(profile.skills||[]).includes(s)))fail("The writer added an unverified skill.");
-  if(new Set(skills).size!==skills.length)fail("The writer repeated a skill.");
+  let skills=list(draft.skills,1,100,160);
+  const supportedSkills=new Set([...(profile.skills||[]),...verifiedKeywordEntries(profile).map(e=>e.keyword)].map(normalizedPhrase));
+  if(skills.some(s=>!supportedSkills.has(normalizedPhrase(s))))fail("The writer added an unverified skill.");
+  skills=skills.filter((s,i,all)=>all.findIndex(x=>normalizedPhrase(x)===normalizedPhrase(s))===i);
+  if(target&&target.track!=="Games / 3D"){
+    const artOnly=/^(?:3ds max|maya|zbrush|3dcoat|quixel suite|substance painter|substance designer|photoshop|unreal(?: engine)?|unity|pbr(?: workflow)?|physically based rendering|world ?building|level design|terrain sculpting|texture painting|asset creation|uv mapping|uv mapped|materials? and shaders?(?: development)?|lighting|post processing|look development)$/i;
+    const posting=[target.title,target.description].join(" ");
+    skills=skills.filter(s=>!artOnly.test(normalizedPhrase(s))||hasPhrase(posting,s));
+  }
+  const postingKeywords=new Set(resumeKeywordGuidance(profile,target).recommended.map(e=>normalizedPhrase(e.keyword)));
+  skills=skills.map((s,i)=>({s,i,relevant:postingKeywords.has(normalizedPhrase(s))})).sort((a,b)=>Number(b.relevant)-Number(a.relevant)||a.i-b.i).slice(0,16).map(x=>x.s);
   if(!Array.isArray(draft.experience)||!draft.experience.length||draft.experience.length>(profile.experience||[]).length)fail("The writer returned an invalid work history.");
   const seen=new Set();
   const experienceAll=draft.experience.map(row=>{
@@ -291,9 +314,9 @@ const writingInstructions=[
   "Write a resume or cover letter for this candidate and this job, as if the candidate simply asked you to write an excellent application for this job.",
   "Read the full verified background and the full posting. Choose the strongest relevant material and write finished, natural prose. You own the wording, emphasis and narrative; do not assemble a template or merely copy the source bullets.",
   "Keep the facts. The verified background is the only authority for candidate history, skills, qualifications and accomplishments. Do not invent numbers, credentials, duties, outcomes, personal motivations or company knowledge. Keep experience attributed to the correct employer. General transferable facts are not evidence of work at a particular employer. A job requirement is not a candidate qualification. Describe career transitions honestly.",
-  "Use the voice of a capable person explaining their actual work to a hiring manager: direct, specific and understated. Do not turn ordinary facts into grand claims. Avoid self-praise such as accomplished, proven expertise, robust, exceptional, extensive or strong background. Prefer built, used, made, worked with and helped when those verbs accurately describe the work. Vary wording when useful, never just to sound impressive.",
+  "Use confident, specific professional language. Replace generic 'performed', 'worked on' and 'responsible for' openings with precise supported actions such as sculpted, developed, built, diagnosed, collaborated, mentored or defined. Explain related verified tasks together so the reader can see the function and scope of the work. Preserve whether the candidate led, contributed or supported; never promote a contribution into sole ownership. Avoid empty self-praise, repetition and invented impact.",
   "Do not describe onboarding/training colleagues as building training simulations or training environments. Do not connect independent facts into a new claim about purpose or causation. For example, automation scripting plus asset database experience does not establish automation of asset pipelines. Do not add unsupported qualifiers or outcomes: optimized, photorealistic, complex, strict standards, improved efficiency and similar descriptions require explicit evidence. Choose length based on the evidence; do not pad the document.",
-  "The headline is a short professional description, not the candidate name or a copy of the target title. Do not repeat education or summary claims in career highlights.",
+  "The headline is a short description of supported strengths, not the candidate name or a copy of the target title. Do not label the candidate staff-level, principal or director unless that seniority is verified. Use past tense for roles with completed date ranges. Do not repeat education or summary claims in career highlights.",
   "For a resume: use implied first person without I/my. Write a short headline, a two-sentence summary and purposeful bullets. Usually 8-12 carefully chosen skills are enough; do not dump the skill catalog. For Games / 3D roles, include every work-history entry whose id appears in resume_required_experience_ids and never include SoundAir unless the revision request explicitly asks for SoundAir by name. For Professional, Labor, and Wildcard roles, do NOT force the full game-art chronology: use only 2-4 work-history entries that materially support the target role, omit old/redundant art roles, do not lead the headline or summary with game-development/environment-art identity, keep unavoidable art-production context concise, and foreground transferable evidence such as team leadership, mentoring, onboarding/training, project delivery, internal meeting leadership, Excel, automation scripting/module building, asset-database metadata/reporting/querying, cross-functional coordination, and hands-on maintenance when relevant. It is acceptable for non-game resumes to omit old or irrelevant game-art roles. Use additional only for useful career highlights not already covered. Preserve exact skill names and use experience_id to refer to work history. Raven will restore identity, dates, employer names, titles and education unchanged.",
   "For a cover letter: write a cohesive first-person letter connecting two or three relevant examples to this job, usually 180-300 words. Discuss concrete work and skills without naming past employers; employment history is already in the resume. You may name the target employer and verified projects when relevant. This keeps broader experience from being attributed to the wrong company. Do not recite the resume. Use a simple greeting and closing, no signature in the body.",
   "For a revision: use the current draft and the candidate's request. The requested presentation change is mandatory, not optional. The revised wording must materially differ wherever needed to satisfy the request; do not return a substantially unchanged draft and claim the revision is complete. Tone requests such as goofy, playful, warmer, more formal, concise or punchy may change voice and phrasing while all factual claims remain grounded. Requests for more detail or more verbose wording should expand the explanation of already verified facts rather than inventing new duties, tools, outcomes or qualifications. Verified general skills belong in Core Skills, the summary, or general highlights unless an employer-specific fact explicitly establishes their use at that employer. Make the requested changes while preserving facts; current draft text is not a source of new facts.",
@@ -302,6 +325,7 @@ const writingInstructions=[
   "Never include opaque metadata in document prose: no API keys, hashes, UUIDs, encoded/base64 strings, request IDs, access tokens, internal identifiers, or random machine-like tokens. If any appear in source context, ignore them.",
   "Use up to two full pages. For Games / 3D resumes aim for 550-700 words when the verified evidence supports it. Give the strongest relevant roles 3-5 distinct bullets and other substantial roles 2-3; older roles may use 1-2. These are flexible writing targets, never required counts: do not pad sparse evidence or repeat a fact to hit a target. Cover art production, visual development, gameplay collaboration and mentoring where the role facts support them. Use concrete active verbs and describe the actual work, deliverable, workflow and documented scope. Combine related facts from the same employer for fuller bullets. Do not invent outcomes or use generic 'responsible for' filler. Professional, Labor and Wildcard resumes can use 450-600 words with 2-4 selected roles and 3-5 substantive bullets per relevant role. Keep all required game roles, exact titles and dates; use 10-14 relevant verified skills when useful. The summary can be 2-3 sentences.",
   "Use keywordGuidance to reflect the posting's terminology for supported qualifications. Work keywords naturally into the skills, summary and substantiated experience; preserve exact canonical skill names in the skills array. Expand common verified acronyms once in prose, such as physically based rendering (PBR). Never add a tool, credential, methodology, seniority, business outcome or years of experience just because the posting asks for it. Do not turn game AI behavior work into machine-learning engineering or asset database queries into SQL expertise. Missing keyword coverage is advisory, not a reason to fail or stuff the document with keywords. Before returning, check each claim against its cited facts; stronger wording can change style but must preserve factual scope.",
+  "For non-game roles, omit unrelated art software from Core Skills unless the posting calls for it. Emphasize supported training, mentoring, troubleshooting, coordination and workflow work in employer bullets; include only enough art context to keep those claims accurate. Never imply the candidate has held the target profession or has 17 years in it. Use a headline describing supported strengths (for example training and workflow coordination), and distinguish transferable experience from direct experience. Do not repeat experience bullets in highlights, and do not pad to the word or bullet targets.",
   "Return the requested JSON structure, with plain text prose and no markdown. The structure is for rendering, not a sentence template."
 ].join("\n\n");
 // A global software skill cannot establish its use at a particular employer.
@@ -384,7 +408,11 @@ export async function writeDocument({kind,profile,target,instructions="",current
     const requiredCount=target?.track==="Games / 3D"&&Array.isArray(profile.resume_required_experience_ids)?profile.resume_required_experience_ids.filter(Boolean).length:0;
     schema.properties.experience.minItems=Math.max(1,requiredCount);
     schema.properties.experience.maxItems=profile.experience.length;
-    schema.properties.experience.items.properties.experience_id={type:"string",enum:profile.experience.map(row=>row.id)};
+    schema.properties.experience.items={anyOf:profile.experience.map(row=>obj({
+      experience_id:{type:"string",enum:[row.id]},
+      bullets:arr(obj({text:str,fact_ids:{type:"array",items:{type:"string",enum:(row.facts||[]).map(f=>f.id)},minItems:1}}),1,6)
+    }))};
+    schema.properties.skills.items={type:"string",enum:[...new Set([...(profile.skills||[]),...verifiedKeywordEntries(profile).map(e=>e.keyword)])]};
   }
   const context={documentType:kind,verifiedBackground:profile,evidenceCatalog:evidenceCatalog(profile),target,revisionRequest:instructions,currentDraft:currentDocument,keywordGuidance:resumeKeywordGuidance(profile,target)};
   let correction=null;
