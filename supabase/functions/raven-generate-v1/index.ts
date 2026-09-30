@@ -62,7 +62,7 @@ Deno.serve(async(req:Request)=>{
     return json(req,{
       ok:true,
       service:"raven-generate-v1",
-      version:19,
+      version:20,
       resume_engine:"raven-generate-v2",
       resume_architecture:"grounded-llm-v4",
       cover_letter_engine:"raven-cover-v2"
