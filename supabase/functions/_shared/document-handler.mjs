@@ -34,8 +34,18 @@ export function buildDeterministicCover(profile,target){
 
 export function buildExternalChatPrompt(requestedKind,profile,target){
   const kind=requestedKind==="both"?"both":requestedKind==="coverLetter"?"coverLetter":"resume";
-  const catalog=evidenceCatalog(profile);
-  const keywordGuidance=resumeKeywordGuidance(profile,target);
+  // Identity/contact stay device-local. The external writer only receives the
+  // verified evidence needed to draft application content.
+  const promptProfile={
+    skills:structuredClone(profile.skills||[]),
+    education:structuredClone(profile.education||[]),
+    experience:structuredClone(profile.experience||[]),
+    transferable_facts:structuredClone(profile.transferable_facts||[]),
+    shipped_titles:structuredClone(profile.shipped_titles||[]),
+    resume_required_experience_ids:structuredClone(profile.resume_required_experience_ids||[])
+  };
+  const catalog=evidenceCatalog(promptProfile);
+  const keywordGuidance=resumeKeywordGuidance(promptProfile,target);
   const resumeShape={
     headline:{text:"Write a supported headline.",fact_ids:["supporting_fact_id"]},
     summary:{text:"Write a supported summary.",fact_ids:["supporting_fact_id"]},
@@ -71,7 +81,7 @@ export function buildExternalChatPrompt(requestedKind,profile,target){
     "REQUESTED OUTPUT: "+kind,
     rules.map((rule,index)=>(index+1)+". "+rule).join("\n"),
     "TARGET JOB\n"+JSON.stringify({track:target.track,title:target.title,company:target.company,description:target.description},null,2),
-    "VERIFIED CANDIDATE BACKGROUND\n"+JSON.stringify(profile,null,2),
+    "VERIFIED CANDIDATE BACKGROUND\n"+JSON.stringify(promptProfile,null,2),
     "EVIDENCE CATALOG — cite these IDs internally in fact_ids\n"+JSON.stringify(catalog,null,2),
     "SUPPORTED POSTING KEYWORD GUIDANCE\n"+JSON.stringify(keywordGuidance,null,2),
     "OUTPUT SHAPE\n"+JSON.stringify(output,null,2)
@@ -146,6 +156,9 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch,logEvidence=e
         const draft=body.manualDraft;
         if(typeof draft!=="object"||Array.isArray(draft))throw new WriterError("Paste the Raven JSON object returned by ChatGPT.","INVALID_INPUT",400);
         const document=validateDraft(kind,draft,profile,{target,instructions:""});
+        // Contact details are restored from Raven's device-local Application
+        // Profile in the browser and are never returned by this public endpoint.
+        if(kind==="resume") document.contact="";
         return json({ok:true,[kind]:document,manual_import:true,ai_used:false,fallback_used:false,
           final_review:{status:"passed",factual_review:{status:"passed",reviewer:"raven-deterministic-manual-import"}}});
       }
