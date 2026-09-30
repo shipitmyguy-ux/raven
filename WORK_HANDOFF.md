@@ -23,3 +23,5 @@ Read docs/qa/2026-09-30-v68-reliability-sweep.md and 2026-09-30-v68-live-results
 
 ## Active follow-up: unsupported number 17 (2026-09-30)
 The exact saved Accurx request and canonical profile match the sweep inputs. Historical event 354 has only the generic rejection; no old rejected passage was retained. Added private request-linked numeric evidence diagnostics without changing validation, writer instructions, evidence binding, or model-call budgets. Targeted local tests pass; diagnostic-only deployment and one Accurx reproduction are next. Do not repeat the six-call sweep or save generated documents.
+
+Private event 356 reproduced the exact rejection sequence: the framing repair retained environment-art tenure but omitted its prior supporting citation. The number validator behaved correctly. Added repair-only numeric citation obligations and explicit scope-preservation guidance; no automatic citation attachment or validator relaxation. 74 targeted tests pass. Diagnostic-only core/browser and production smoke pass. See docs/qa/2026-09-30-accurx-number-review.md; scoped repair deployment/live verification pending.

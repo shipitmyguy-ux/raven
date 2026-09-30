@@ -68,6 +68,7 @@ jobs:
       - name: Core regression tests
         run: |
           node tests/document-final-review.test.mjs
+          node tests/number-evidence-trace.test.mjs
           node tests/game-art-filter.test.mjs
           node tests/studio-context.test.mjs
           node tests/raven-core.test.mjs

@@ -49,6 +49,23 @@ test('trace failure cannot change acceptance or rejection',async()=>{
  assert.equal((await writeDocument({...args,complete:async()=>({data:{...draft,summary}})})).final_review.status,'passed');
  await assert.rejects(writeDocument({...args,complete:async()=>({data:draft})}),/unsupported number/);
 });
+test('framing repair carries prior numeric citations without binding them automatically',async()=>{
+ const original={...draft,summary:c('Environment artist with 17 years of experience.',['art-tenure'])};
+ const requests=[],trace=[];
+ const result=await writeDocument({kind:'resume',profile,target,onEvidenceTrace:e=>trace.push(e),reviewComplete:async()=>({data:{issues:[]}}),complete:async args=>{
+  requests.push(args);
+  if(args.name!=='raven_passage_repair')return {data:original};
+  const hints=args.input.factualCorrection.numeric_evidence;
+  assert.deepEqual(hints.map(h=>({path:h.path,number:h.number,ids:h.prior_cited_facts.map(f=>f.id)})),[{path:'summary',number:'17',ids:['art-tenure']}]);
+  assert.match(args.instructions,/original factual scope/);
+  return {data:{repairs:[{path:'summary',claim:c(draft.summary.text,hints[0].prior_cited_facts.map(f=>f.id))}]}};
+ }});
+ assert.equal(requests.length,2);assert.equal(result.final_review.status,'passed');
+ assert.deepEqual(result.document.experience.map(r=>r.bullets),[['Built environments and mentored artists.']]);
+ assert.equal(trace[0].numbers[0].binding,'cited_number_token');assert.equal(trace[1].numbers[0].binding,'cited_number_token');
+ // Even after a valid original citation, omitting it in the repair is blocked.
+ await assert.rejects(writeDocument({kind:'resume',profile,target,reviewComplete:async()=>({data:{issues:[]}}),complete:async args=>({data:args.name==='raven_passage_repair'?{repairs:[{path:'summary',claim:draft.summary}]}:original})}),/unsupported number: 17/);
+});
 test('handler logs request-linked evidence internally, never in HTTP errors or request-event detail',async()=>{
  const logs=[],finishes=[];
  const env={SUPABASE_URL:'https://db.example',SUPABASE_SERVICE_ROLE_KEY:'test-service',OPENROUTER_API_KEY:'test'};
