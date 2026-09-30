@@ -44,6 +44,15 @@ test('missed cover claim triggers a bounded passage repair even when the model r
  assert.deepEqual(result.document.paragraphs,[good.paragraphs[1].text,good.paragraphs[0].text]);
  assert.equal(result.final_review.status,'passed');
 });
+test('live professional retest: database reporting is not database management',()=>{
+ const p={...profile,skills:['Database querying'],transferable_facts:[{id:'db',text:'Has experience with game-production asset databases, metadata markup, report generation, and database queries.'}]};
+ assert.equal(reviewDocument('resume',{name:p.name,contact:p.contact,summary:'Skilled in automation scripting and asset database management.'},{profile:p,target:{track:'Professional'}}).status,'blocked');
+ assert.equal(reviewDocument('resume',{name:p.name,contact:p.contact,summary:'Experienced in asset database queries, metadata and report generation.'},{profile:p,target:{track:'Professional'}}).status,'passed');
+ assert.equal(reviewDocument('coverLetter',{paragraphs:['I would welcome the opportunity to learn database management.']},{profile:p,target}).status,'passed');
+ p.transferable_facts.push({id:'db_management',text:'Managed asset databases.'});
+ assert.equal(reviewDocument('resume',{name:p.name,contact:p.contact,summary:'Experienced in asset database management.'},{profile:p,target:{track:'Professional'}}).status,'passed');
+ assert.equal(reviewDocument('coverLetter',{paragraphs:['I believe my passion for tech makes me a strong fit.']},{profile:p,target}).status,'blocked');
+});
 test('whole-document check catches duplicates across sections and placeholders without style limits',()=>{
  const bad=reviewDocument('resume',{summary:paragraph,experience:[{bullets:[paragraph,'[Insert company name]']}],additional:[]});
  assert.deepEqual(bad.issues.map(i=>i.code).sort(),['duplicate','placeholder']);
