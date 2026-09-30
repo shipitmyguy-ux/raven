@@ -35,6 +35,7 @@ test("manual ChatGPT prompt is self-contained, grounded, and uses the canonical 
  assert.match(prompt,/fact_ids/i);
  assert.match(prompt,/two-page resume/i);
  assert.match(prompt,/ATS keyword/i);
+ assert.doesNotMatch(prompt,/candidate@example\.com/i);
 });
 test("strong verbs preserve leadership scope and non-game skills stay relevant",()=>{
  const bad={...resume,experience:[{experience_id:"art",bullets:[claim("Led game environment creation.")]}]};
