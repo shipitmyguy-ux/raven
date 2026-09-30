@@ -58,6 +58,20 @@ test('whole-document check catches duplicates across sections and placeholders w
  assert.deepEqual(bad.issues.map(i=>i.code).sort(),['duplicate','placeholder']);
  assert.equal(reviewDocument('coverLetter',{paragraphs:['Meow! I built environments with care.','I would love to discuss this role.']}).status,'passed');
 });
+test('live repaired summary cannot invent the target profession; transition language remains allowed',()=>{
+ const t={title:'Implementation Analyst',track:'Professional'};
+ const d={name:profile.name,contact:profile.contact,summary:'Implementation analyst with experience in onboarding, training, and project management.'};
+ assert.equal(reviewDocument('resume',d,{profile,target:t}).status,'blocked');
+ assert.equal(reviewDocument('resume',{...d,summary:'Seeking an Implementation Analyst role, bringing mentoring and workflow experience.'},{profile,target:t}).status,'passed');
+ const p={...profile,experience:[...profile.experience,{role:'Implementation Analyst',facts:[]}]};
+ assert.equal(reviewDocument('resume',d,{profile:p,target:t}).status,'passed');
+});
+test('live repaired cover cannot repeat a whole factual sentence inside otherwise different paragraphs',()=>{
+ const sentence='My experience with automation scripting and module building, as well as my familiarity with asset database metadata and reporting, aligns with the company goals.';
+ const result=reviewDocument('coverLetter',{paragraphs:['I am drawn to this role. '+sentence,sentence+' I would welcome a discussion.']});
+ assert.equal(result.status,'blocked');assert.equal(result.issues[0].path,'paragraphs.1');assert.equal(result.issues[0].code,'duplicate');
+ assert.equal(reviewDocument('coverLetter',{paragraphs:['I bring mentoring and workflow experience.','I would apply my mentoring skills to help new colleagues.']}).status,'passed');
+});
 test('whole-document canonical credit guard catches omitted Six Days in Fallujah',()=>{
  const result=reviewDocument('resume',{name:profile.name,contact:profile.contact,shipped_titles:['Example Game']},{profile,target});
  assert.equal(result.issues[0].code,'missing_credits');

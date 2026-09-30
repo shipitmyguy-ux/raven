@@ -175,6 +175,12 @@ test("one repair includes non-game framing and attribution errors together",asyn
  assert.equal(result.document.summary,'Mentored newer artists.');
  assert.equal(result.source_fact_passages,0);
 });
+test('professional summary allows truthful source-industry context after transferable strengths',()=>{
+ const p={...profile,transferable_facts:[...profile.transferable_facts,{id:'context',text:'Mentored newer artists in video game development.'}]};
+ const draft={...resume,headline:claim('Mentoring and workflow support',['f2']),summary:claim('Mentored newer artists in video game development.',['context'])};
+ assert.doesNotThrow(()=>validateDraft('resume',draft,p,{target}));
+ assert.throws(()=>validateDraft('resume',{...draft,summary:claim('Video game artist who mentored newer artists.',['f1','f2'])},p,{target}),/foreground/);
+});
 test("empty documents, duplicate work history and injected HTML are rejected",()=>{
  assert.throws(()=>validateDraft("resume",{...resume,experience:[]},profile));
  assert.throws(()=>validateDraft("resume",{...resume,experience:[resume.experience[0],resume.experience[0]]},profile));

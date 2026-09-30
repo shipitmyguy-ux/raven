@@ -28,12 +28,21 @@ export function reviewDocument(kind,d,{profile,target}={}){
  const issues=[],warnings=[],passages=documentPassages(kind,d);
  for(const p of passages){
   if(profile)for(const reason of knownUnsupportedClaims(p.text,profile))issues.push({path:p.path,code:'unsupported_claim',reason});
+  if(kind==='resume'&&profile&&target?.title&&['headline','summary'].includes(p.path)){
+   const title=norm(target.title),opening=norm(p.text).replace(/^(?:(?:an?|experienced|seasoned|accomplished|results driven)\s+)*/,'');
+   if((opening===title||opening.startsWith(title+' '))&&!(profile.experience||[]).some(r=>norm(r.role)===title))issues.push({path:p.path,code:'unsupported_claim',reason:'The target role is not a verified past profession. Describe transferable strengths or explicitly say seeking the role; do not identify the candidate as '+target.title+'.'});
+  }
   if(/\[(?:insert|your|company|name|date|job title)\b|\b(?:as an ai|language model|lorem ipsum|TODO|TBD)\b/i.test(p.text))issues.push({path:p.path,code:'placeholder',reason:'Remove unfinished or AI instruction text.'});
  }
  for(let i=0;i<passages.length;i++)for(let j=0;j<i;j++){
   const a=norm(passages[i].text),b=norm(passages[j].text),words=a.split(' ');
   if(a===b&&words.length>=5)issues.push({path:passages[i].path,code:'duplicate',reason:'Repeats '+passages[j].path+'. Give this passage a distinct purpose or remove it.'});
-  else if(words.length>=16&&b.split(' ').length>=16){
+  else if(kind==='coverLetter'){
+   const sentences=s=>s.split(/(?<=[.!?])\s+/).map(norm).filter(s=>s.split(' ').length>=12);
+   const earlier=new Set(sentences(passages[j].text));
+   if(sentences(passages[i].text).some(s=>earlier.has(s)))issues.push({path:passages[i].path,code:'duplicate',reason:'Repeats a complete substantive sentence from '+passages[j].path+'. Give this paragraph a distinct purpose without reusing that sentence.'});
+  }
+  if(a!==b&&words.length>=16&&b.split(' ').length>=16){
    const x=new Set(words),y=new Set(b.split(' ')),overlap=[...x].filter(w=>y.has(w)).length/new Set([...x,...y]).size;
    if(overlap>=.85)warnings.push({path:passages[i].path,code:'similar_passage',reason:'Substantial wording overlap with '+passages[j].path+'.'});
   }
