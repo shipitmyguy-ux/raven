@@ -12,7 +12,7 @@ test("verified shipped title spelling covers every known title without changing 
  assert.deepEqual(shippedTitleTypos("Worked on dark environments and online collaboration.",verified),[]);
 });
 import {createLLMCompletion,llmProviderStatus} from "../supabase/functions/_shared/llm-router.mjs";
-import {createDocumentHandler} from "../supabase/functions/_shared/document-handler.mjs";
+import {createDocumentHandler,buildExternalChatPrompt} from "../supabase/functions/_shared/document-handler.mjs";
 const profile={name:"Test Candidate",contact:"candidate@example.com",skills:["Mentoring","Unity"],education:[{degree:"BFA",school:"College",dates:"2008",location:""}],
  experience:[{id:"art",role:"Artist",company:"Studio",dates:"2020–2025",facts:[{id:"f1",text:"Built game environments."},{id:"f2",text:"Mentored newer artists."}]},
  {id:"repair",role:"Technician",company:"Repair Shop",dates:"2025–2026",facts:[{id:"f3",text:"Repaired coffee makers."}]}],
@@ -23,6 +23,19 @@ const resume={headline:claim("Artist and mentor",["f1","f2"]),summary:claim("Bui
  experience:[{experience_id:"art",bullets:[claim("Built game environments and mentored newer artists.",["f1","f2"])]}],additional:[]};
 const cover={greeting:"Dear Hiring Manager,",paragraphs:[claim("My work combines environment art and mentoring newer artists.",["f1","f2"]),claim("I would welcome a conversation about the role.",[])],closing:"Sincerely,"};
 const accepted={supported:true,issues:[]};
+
+test("manual ChatGPT prompt is self-contained, grounded, and uses the canonical ARK credit",()=>{
+ const promptProfile={...profile,shipped_titles:["ARK: Survival Evolved + DLCs"],resume_required_experience_ids:["art"]};
+ const prompt=buildExternalChatPrompt("both",promptProfile,{...target,track:"Games / 3D"});
+ assert.match(prompt,/raven-chatgpt-v1/);
+ assert.match(prompt,/ARK: Survival Evolved \+ DLCs/);
+ assert.match(prompt,/"f1"/);
+ assert.match(prompt,/Return ONLY valid JSON/i);
+ assert.match(prompt,/job locations/i);
+ assert.match(prompt,/fact_ids/i);
+ assert.match(prompt,/two-page resume/i);
+ assert.match(prompt,/ATS keyword/i);
+});
 test("strong verbs preserve leadership scope and non-game skills stay relevant",()=>{
  const bad={...resume,experience:[{experience_id:"art",bullets:[claim("Led game environment creation.")]}]};
  assert.throws(()=>validateDraft("resume",bad,profile),/leadership/);
