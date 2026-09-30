@@ -238,12 +238,39 @@ button,input,select { width:auto; }
 }
 .job-description p { margin:0; white-space:pre-wrap; }
 
-@media (max-width:1100px) {
+/* Laptop layouts: keep cards readable and wrap stages instead of side-scrolling. */
+@media (min-width:821px) and (max-width:1360px) {
   .pipeline-board {
-    grid-template-columns:repeat(5,minmax(250px,250px));
-    scroll-snap-type:x proximity;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    overflow-x:visible;
   }
-  .pipeline-stage { scroll-snap-align:start; }
+  .pipeline-stage {
+    min-width:0;
+  }
+}
+
+@media (min-width:821px) and (max-width:1050px) {
+  .pipeline-board {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+/* Short laptop displays: keep generated-document review inside the viewport. */
+@media (min-width:821px) and (max-height:800px) {
+  .document-review-dialog {
+    max-height:94vh;
+  }
+  .document-review-dialog form {
+    max-height:94vh;
+    overflow:hidden;
+  }
+  .document-review-dialog .document-review-body,
+  .document-review-dialog .review-body,
+  .document-review-dialog .review-content {
+    min-height:0;
+    max-height:calc(94vh - 120px);
+    overflow:auto;
+  }
 }
 
 @media (max-width:820px) {
