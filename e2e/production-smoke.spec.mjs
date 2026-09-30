@@ -113,6 +113,33 @@ test.describe("Deployed Raven App Production Smoke Tests", () => {
     expect(errors).toEqual([]);
   });
 
+  test("manual ChatGPT prompt endpoint returns the grounded Raven contract", async ({ request }) => {
+    const response=await request.post("https://umvmilulnqnmeqvfoxxc.supabase.co/functions/v1/raven-generate-v1",{
+      headers:{
+        "Origin":"https://shipitmyguy-ux.github.io",
+        "X-Raven-Client":"raven-web-v1",
+        "Content-Type":"application/json"
+      },
+      data:{
+        documentType:"resume",
+        promptOnly:true,
+        promptDocumentType:"both",
+        track:"Games / 3D",
+        jobTitle:"Synthetic Senior Environment Artist",
+        company:"Raven Smoke Studio",
+        jobDescription:"Create game environments, collaborate across disciplines, mentor artists, and work with Unreal Engine."
+      }
+    });
+    expect(response.ok()).toBeTruthy();
+    const payload=await response.json();
+    expect(payload.ok).toBe(true);
+    expect(payload.format).toBe("raven-chatgpt-v1");
+    expect(payload.prompt).toContain("raven-chatgpt-v1");
+    expect(payload.prompt).toContain("ARK: Survival Evolved + DLCs");
+    expect(payload.prompt).toContain("fact_ids");
+    expect(payload.prompt).not.toContain("candidate@example.com");
+  });
+
   test("jobs render without malformed/overflow cards and layout remains bounded", async ({ page }) => {
     await mockRavenBackend(page);
     await page.goto(RAVEN_PROD_URL, { waitUntil: "domcontentloaded" });
