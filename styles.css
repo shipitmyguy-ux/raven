@@ -239,19 +239,25 @@ button,input,select { width:auto; }
 .job-description p { margin:0; white-space:pre-wrap; }
 
 /* Laptop layouts: keep cards readable and wrap stages instead of side-scrolling. */
-@media (min-width:821px) and (max-width:1440px) {
+/* Fluid desktop/laptop pipeline.
+   The browser's available width determines how many readable stages fit.
+   auto-fit removes empty tracks; 1fr makes every visible stage/card widen
+   to consume the remaining screen width. */
+@media (min-width:821px) {
   .pipeline-board {
-    grid-template-columns:repeat(2,minmax(360px,1fr));
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));
     overflow-x:visible;
+    width:100%;
   }
+
   .pipeline-stage {
     min-width:0;
+    width:100%;
   }
-}
 
-@media (min-width:821px) and (max-width:900px) {
-  .pipeline-board {
-    grid-template-columns:minmax(0,1fr);
+  .stage-cards,
+  .job-card {
+    width:100%;
   }
 }
 
