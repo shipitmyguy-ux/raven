@@ -2904,3 +2904,100 @@ body.options-open > :not(main):not(.options-dialog) {
     opacity: .12 !important;
   }
 }
+
+
+/* Manual ChatGPT document fallback */
+.document-control .document-secondary {
+  min-height:26px;
+  padding:2px 7px;
+  font-size:.66rem;
+}
+
+.document-control .chatgpt-action,
+.workflow-action.chatgpt-action {
+  border-color:var(--accent-border);
+  color:var(--accent-strong);
+}
+
+.chatgpt-import-dialog {
+  width:min(760px,94vw);
+  max-height:90vh;
+  padding:0;
+  overflow:hidden;
+}
+
+.chatgpt-import-dialog form {
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr) auto auto;
+  gap:12px;
+  max-height:90vh;
+  padding:16px;
+}
+
+.chatgpt-import-dialog header {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+}
+
+.chatgpt-import-dialog header > div {
+  display:grid;
+  gap:4px;
+  min-width:0;
+}
+
+.chatgpt-import-dialog header p,
+#chatGptImportFeedback {
+  color:var(--text-muted);
+  font-size:.72rem;
+  overflow-wrap:anywhere;
+}
+
+.chatgpt-import-field {
+  display:grid;
+  gap:6px;
+  min-height:0;
+}
+
+.chatgpt-import-field > span {
+  color:var(--text-muted);
+  font-size:.7rem;
+  font-weight:var(--font-weight-strong);
+}
+
+#chatGptImportText {
+  width:100%;
+  min-width:0;
+  min-height:260px;
+  max-height:58vh;
+  resize:vertical;
+  overflow:auto;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.72rem;
+  line-height:1.4;
+}
+
+.chatgpt-import-dialog footer {
+  display:flex;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+@media (max-width:820px) {
+  .chatgpt-import-dialog {
+    width:96vw;
+    max-height:94vh;
+  }
+
+  .chatgpt-import-dialog form {
+    max-height:94vh;
+    padding:12px;
+  }
+
+  #chatGptImportText {
+    min-height:220px;
+    max-height:56vh;
+  }
+}
