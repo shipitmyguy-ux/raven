@@ -38,7 +38,7 @@ function field(value,max,label){
   if(typeof value!=="string"||value.length>max)throw new WriterError(label+" is too long or invalid.","INVALID_INPUT",400);
   return value.trim();
 }
-export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
+export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch,logEvidence=entry=>console.info("[raven-number-evidence] "+JSON.stringify(entry))}){
   const service=kind==="resume"?"raven-generate-v2":"raven-cover-v2";
   return async(req)=>{
     const origin=req.headers.get("origin")||"";
@@ -111,7 +111,9 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch}){
         target.studioContext=await getStudioContext({company:target.company,track,getEnv,fetchImpl}).catch(()=>({status:"unavailable",sources:[]}));
         const written=await boundedGeneration(async signal=>{
           const complete=createLLMCompletion({getEnv:freeEnv,fetchImpl,signal});
-          return writeDocument({kind,profile,target,instructions,currentDocument,revisionSection,complete,reviewComplete:complete,onDiagnostic:details=>{validationDiagnostics=details;}});
+          return writeDocument({kind,profile,target,instructions,currentDocument,revisionSection,complete,reviewComplete:complete,
+            onDiagnostic:details=>{validationDiagnostics=details;},
+            onEvidenceTrace:entry=>logEvidence({service,request_event_id:eid,...entry})});
         },55000);
         if(written.source_fact_passages>0)throw new WriterError("The draft contains source fallback passages and needs a successful AI rewrite.","FINAL_REVIEW_BLOCKED",503);
         await finish("success",200);

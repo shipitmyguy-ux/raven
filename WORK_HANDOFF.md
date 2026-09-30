@@ -20,3 +20,6 @@ Changes are restricted to shared document writer/review modules and tests: unsup
 - High generation success and comprehensive factual accuracy are NOT established. Narrow guards do not prove arbitrary wording safe; same-model writer/reviewer misses remain possible. No further model trials after the final pair.
 
 Read docs/qa/2026-09-30-v68-reliability-sweep.md and 2026-09-30-v68-live-results.json for the complete per-call history, manual findings and replay evidence. Raw candidate documents/profile are intentionally not committed. Work usage was unavailable. GitHub remains canonical.
+
+## Active follow-up: unsupported number 17 (2026-09-30)
+The exact saved Accurx request and canonical profile match the sweep inputs. Historical event 354 has only the generic rejection; no old rejected passage was retained. Added private request-linked numeric evidence diagnostics without changing validation, writer instructions, evidence binding, or model-call budgets. Targeted local tests pass; diagnostic-only deployment and one Accurx reproduction are next. Do not repeat the six-call sweep or save generated documents.

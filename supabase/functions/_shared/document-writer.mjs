@@ -398,11 +398,53 @@ function passageChecks(kind,draft,profile,options){
   });
 }
 function atPath(object,path){return path.reduce((value,key)=>value?.[key],object);}
+// Private diagnostic only: number presence is NOT semantic support. Keep the
+// rejected passage and verified IDs out of public errors and repair decisions.
+// Logging failures must never change validation or consume another model call.
+function traceNumbers({kind,draft,profile,target,instructions,attempt,outcome,reviewIssues=[],onEvidenceTrace}){
+  try{
+    const catalog=evidenceCatalog(profile);
+    for(const slot of passageChecks(kind,draft,profile,{target,instructions})){
+      const text=String(slot.claim?.text||"");
+      const numbers=[...new Set(exactNumbers(text))];
+      if(!numbers.length)continue;
+      const ids=Array.isArray(slot.claim?.fact_ids)?slot.claim.fact_ids:[];
+      const cited=catalog.filter(f=>ids.includes(f.id));
+      const path=slot.path.join(".");
+      const facts=catalog.filter(f=>numbers.some(n=>exactNumbers(f.text).includes(n)));
+      const entry={version:"number-evidence-v1",kind,attempt:attempt+1,outcome,path,
+        passage:text.slice(0,2200),passage_truncated:text.length>2200,
+        role_id:slot.options.roleId||null,
+        cited_fact_ids:cited.map(f=>f.id).slice(0,40),
+        unknown_fact_id_count:ids.filter(id=>!catalog.some(f=>f.id===id)).length,
+        cited_fact_ids_truncated:cited.length>40,
+        numbers:numbers.slice(0,20).map(number=>({number,
+          binding:cited.some(f=>exactNumbers(f.text).includes(number))?"cited_number_token":
+            cited.some(f=>String(f.text).includes(number))?"cited_substring_only":
+            facts.some(f=>exactNumbers(f.text).includes(number))?"uncited_number_token":"no_number_token",
+          candidate_fact_ids:facts.filter(f=>exactNumbers(f.text).includes(number)).map(f=>f.id).slice(0,20)})),
+        // Only numeric candidate facts, never the full profile/contact/posting.
+        number_facts:facts.slice(0,12).map(f=>({id:f.id,experience_id:f.experience_id,
+          text:String(f.text).slice(0,500),text_truncated:String(f.text).length>500})),
+        number_facts_truncated:facts.length>12,
+        local_issue:slot.issue,
+        review_issues:reviewIssues.filter(i=>i.path===path).slice(0,4).map(i=>({code:i.code,reason:String(i.reason||"").slice(0,500)})),
+        semantic_support:"not_inferred_from_number_presence"};
+      // Supabase custom log events are limited to 10,000 characters. Preserve
+      // the passage/bindings first; mark incomplete evidence rather than silently
+      // logging a truncated JSON record. No data moves into the public error.
+      const size=()=>JSON.stringify(entry).length;
+      while(size()>8800&&entry.number_facts.length){entry.number_facts.pop();entry.number_facts_truncated=true;}
+      if(size()>8800){entry.numbers=entry.numbers.map(n=>({...n,candidate_fact_ids:[]}));entry.candidate_ids_truncated=true;}
+      if(size()<=8800)onEvidenceTrace(entry);
+    }
+  }catch{/* Private observability must not affect the review gate. */}
+}
 function replacePath(object,path,value){
   const parent=atPath(object,path.slice(0,-1));
   if(parent&&value!==undefined)parent[path.at(-1)]=structuredClone(value);
 }
-async function writeSummary({profile,target,instructions,currentDocument,complete,reviewComplete,onDiagnostic}){
+async function writeSummary({profile,target,instructions,currentDocument,complete,reviewComplete,onDiagnostic,onEvidenceTrace}){
   let correction=null;
   for(let attempt=0;attempt<2;attempt++){
     const written=await complete({
@@ -418,27 +460,29 @@ async function writeSummary({profile,target,instructions,currentDocument,complet
       if(final_review.issues.length)fail(final_review.issues[0].reason);
       if(reviewComplete){
         let facts;try{facts=await reviewFacts({kind:"resume",document,profile,target,complete:reviewComplete});}catch{throw new WriterError("Final factual review could not finish. Your previous document is unchanged.","FINAL_REVIEW_UNAVAILABLE",503);}
-        if(facts.issues.length)fail(facts.issues.map(i=>i.reason).join(" "));
+        if(facts.issues.length){const error=new WriterError(facts.issues.map(i=>i.reason).join(" "),"INVALID_DRAFT");error.finalReviewIssues=facts.issues;throw error;}
         final_review.factual_review={status:"passed",provider:facts.provider,model:facts.model};written.providerAttempts=facts.providerAttempts||written.providerAttempts;
       }
       final_review.scope="summary";
+      traceNumbers({kind:"resume",draft:written.data,profile,target,instructions,attempt,outcome:"passed",onEvidenceTrace});
       return {document,final_review,revision_section:"summary",
         provider:written.provider||"llm",model:written.model||"",provider_attempts:Number(written.providerAttempts||attempt+1),
         verification_provider:"raven",verification_model:"evidence-v1",architecture:WRITER_VERSION,source_fact_passages:0};
     }catch(error){
       if(!(error instanceof WriterError))throw error;
+      traceNumbers({kind:"resume",draft:written.data,profile,target,instructions,attempt,outcome:error.code,reviewIssues:error.finalReviewIssues,onEvidenceTrace});
       onDiagnostic(["summary: "+error.message]);
       if(attempt===1)throw error;
       correction={summary:written.data?.summary,issues:[error.message]};
     }
   }
 }
-export async function writeDocument({kind,profile,target,instructions="",currentDocument="",revisionSection="",complete,reviewComplete=null,onDiagnostic=()=>{}}){
+export async function writeDocument({kind,profile,target,instructions="",currentDocument="",revisionSection="",complete,reviewComplete=null,onDiagnostic=()=>{},onEvidenceTrace=()=>{}}){
   if(!["resume","coverLetter"].includes(kind))throw new WriterError("Invalid document type.","INVALID_INPUT",400);
   if(!profile?.name||!Array.isArray(profile.experience)||!profile.experience.length)throw new WriterError("Verified candidate background is missing.","PROFILE_MISSING",503);
   if(revisionSection){
     if(revisionSection!=="summary"||kind!=="resume"||!instructions.trim()||!currentDocument.trim())throw new WriterError("Invalid summary revision request.","INVALID_INPUT",400);
-    return writeSummary({profile,target,instructions,currentDocument,complete,reviewComplete,onDiagnostic});
+    return writeSummary({profile,target,instructions,currentDocument,complete,reviewComplete,onDiagnostic,onEvidenceTrace});
   }
   const schema=structuredClone(kind==="resume"?resumeSchema:coverSchema);
   if(kind==="resume"){
@@ -508,7 +552,9 @@ export async function writeDocument({kind,profile,target,instructions="",current
       source_fact_passages:sourcePaths.size+sourceFactPassages,validation_details:diagnostics};
     };
     try{
-      return await result(validateDraft(kind,draft,profile,{target,instructions}));
+      const approved=await result(validateDraft(kind,draft,profile,{target,instructions}));
+      traceNumbers({kind,draft,profile,target,instructions,attempt,outcome:"passed",onEvidenceTrace});
+      return approved;
     }catch(error){
       if(!(error instanceof WriterError)||error.code==="FINAL_REVIEW_UNAVAILABLE")throw error;
       // Collect factual issues alongside local failures before spending the one
@@ -524,6 +570,7 @@ export async function writeDocument({kind,profile,target,instructions="",current
         if(slot)slot.issue=[slot.issue,issue.reason].filter(Boolean).join(" ");
       }
       const failed=checks.filter(check=>check.issue);
+      traceNumbers({kind,draft,profile,target,instructions,attempt,outcome:error.code,reviewIssues:error.finalReviewIssues,onEvidenceTrace});
       diagnostics.push(...(failed.length?failed.map(check=>check.path.join(".")+": "+check.issue):[error.message]));
       onDiagnostic(diagnostics.slice(-12));
       if(attempt===maxAttempts-1){
