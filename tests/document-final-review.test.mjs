@@ -10,6 +10,40 @@ const profile={name:'Candidate',contact:'candidate@example.com',skills:['Mentori
 const target={company:'Target Studio',title:'Artist',track:'Games / 3D',description:'Create environments.'};
 const paragraph='I created environment assets for Example Game.';
 const good={greeting:'Dear Hiring Manager,',paragraphs:[c(paragraph,['a']),c('I mentored newer artists.',['b'])],closing:'Sincerely,'};
+test('live cover regression: internal collaboration does not establish external partners, healthcare passion, or historical Excel use',()=>{
+ const p={...profile,skills:['Excel (intermediate)'],transferable_facts:[{id:'t',text:'Has led meetings with internal teams.'}]};
+ for(const text of [
+  'I have also developed strong relationships with internal teams and external partners, and I am comfortable working in a fast-paced environment with multiple stakeholders.',
+  'As someone with a passion for healthcare and Tech for Good, I believe that I would be a valuable addition to the team.',
+  'Additionally, I have intermediate Excel skills, which have been useful in my previous roles for tracking progress and managing assets.'
+ ]){
+  const result=reviewDocument('coverLetter',{paragraphs:[text]},{profile:p,target});
+  assert.equal(result.status,'blocked',text);
+  assert.equal(result.issues[0].path,'paragraphs.0');
+ }
+});
+test('live cover guards permit prospective relevance and explicitly supported history',()=>{
+ const texts=['I would welcome the opportunity to build relationships with external partners.',
+  'I am excited about this healthcare role and would bring intermediate Excel skills.',
+  'I have developed relationships with external partners.',
+  'I have a passion for healthcare.',
+  'I used Excel for tracking progress and managing assets.'];
+ const p={...profile,transferable_facts:[{id:'partners',text:'Developed relationships with external partners.'},{id:'interest',text:'Has a passion for healthcare.'},{id:'excel',text:'Used Excel for tracking progress and managing assets.'}]};
+ for(const text of texts)assert.equal(reviewDocument('coverLetter',{paragraphs:[text]},{profile:p,target}).status,'passed',text);
+ for(const text of texts.slice(0,2))assert.equal(reviewDocument('coverLetter',{paragraphs:[text]},{profile,target}).status,'passed',text);
+});
+test('missed cover claim triggers a bounded passage repair even when the model reviewer approves',async()=>{
+ const bad={...good,paragraphs:[c('I mentored newer artists and developed relationships with external partners.',['b']),good.paragraphs[0]]};
+ const requests=[];
+ const result=await writeDocument({kind:'coverLetter',profile,target,complete:async args=>{
+  requests.push(args);
+  return {data:args.name==='raven_passage_repair'?{repairs:[{path:'paragraphs.0',claim:good.paragraphs[1]}]}:bad};
+ },reviewComplete:async()=>({data:{issues:[]}})});
+ assert.equal(requests.length,2);
+ assert.deepEqual(requests[1].input.factualCorrection.invalid_paths,['paragraphs.0']);
+ assert.deepEqual(result.document.paragraphs,[good.paragraphs[1].text,good.paragraphs[0].text]);
+ assert.equal(result.final_review.status,'passed');
+});
 test('whole-document check catches duplicates across sections and placeholders without style limits',()=>{
  const bad=reviewDocument('resume',{summary:paragraph,experience:[{bullets:[paragraph,'[Insert company name]']}],additional:[]});
  assert.deepEqual(bad.issues.map(i=>i.code).sort(),['duplicate','placeholder']);
