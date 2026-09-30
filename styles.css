@@ -239,9 +239,9 @@ button,input,select { width:auto; }
 .job-description p { margin:0; white-space:pre-wrap; }
 
 /* Laptop layouts: keep cards readable and wrap stages instead of side-scrolling. */
-@media (min-width:821px) and (max-width:1360px) {
+@media (min-width:821px) and (max-width:1440px) {
   .pipeline-board {
-    grid-template-columns:repeat(3,minmax(0,1fr));
+    grid-template-columns:repeat(2,minmax(360px,1fr));
     overflow-x:visible;
   }
   .pipeline-stage {
@@ -249,9 +249,9 @@ button,input,select { width:auto; }
   }
 }
 
-@media (min-width:821px) and (max-width:1050px) {
+@media (min-width:821px) and (max-width:900px) {
   .pipeline-board {
-    grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-columns:minmax(0,1fr);
   }
 }
 
