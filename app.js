@@ -14,6 +14,8 @@
     analytics: null,
     generatorJob: null,
     generatorType: null,
+    manualImportJob: null,
+    manualImportType: null,
     returnScrollY: null
   };
   const columns = window.RavenCore?.JOB_FIELDS || ["id","added","track","title","company","location","remote","salaryMin","salaryMax","salaryText","url","source","status","viewed","appliedDate","followUp","resume","coverLetter","notes","lastUpdated"];
@@ -1267,6 +1269,18 @@
             expanded.querySelectorAll("[data-generate-both]").forEach(button=>{
               button.addEventListener("click",event=>{event.stopPropagation();generateBothForJob(job);});
             });
+            expanded.querySelectorAll("[data-chatgpt-prompt]").forEach((button)=>{
+              button.addEventListener("click",(event)=>{
+                event.stopPropagation();
+                launchChatGptPrompt(job,button.dataset.chatgptPrompt,button);
+              });
+            });
+            expanded.querySelectorAll("[data-chatgpt-import]").forEach((button)=>{
+              button.addEventListener("click",(event)=>{
+                event.stopPropagation();
+                openChatGptImport(job,button.dataset.chatgptImport);
+              });
+            });
             expanded.querySelectorAll("[data-generate]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
@@ -1456,6 +1470,10 @@
     const docsReady=documentsReadyForApplication(job);
     const generateBoth=(!job.resume||!job.coverLetter)&&featureEnabled("resume-generation")&&featureEnabled("cover-letter-generation")
       ? '<button class="workflow-action" type="button" data-generate-both'+(generationSession(job)?' disabled aria-busy="true"':'')+'><span>'+(generationSession(job)?'Creating documents…':job.resume||job.coverLetter?'Finish documents':'Generate both')+'</span></button>':"";
+    const chatGptBoth=!job.resume&&!job.coverLetter
+      ? '<button class="workflow-action chatgpt-action" type="button" data-chatgpt-prompt="both"><span class="workflow-icon" aria-hidden="true">✦</span><span>ChatGPT both</span></button>'+
+        '<button class="workflow-action" type="button" data-chatgpt-import="both"><span class="workflow-icon" aria-hidden="true">⇩</span><span>Import AI docs</span></button>'
+      : "";
     const statusLower=currentStatus.toLowerCase();
     const postApplication=["applied","interview","offer","rejected"].includes(statusLower);
     const applyGate=job.url&&!postApplication?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply aria-label="Open application with approved documents" title="'+(docsReady?'Open application':'Approve resume and cover letter first')+'"><span class="workflow-icon" aria-hidden="true">↗</span><span>'+(docsReady?'Apply with docs':'Approve docs')+'</span></button>':"";
@@ -1478,7 +1496,7 @@
       '</section>'+
       '<dl>'+detailHtml+'</dl>'+
       '<div class="detail-actions">'+
-        '<div class="workflow-actions" aria-label="Application actions">'+generateBoth+actions+applyGate+appliedAction+'</div>'+
+        '<div class="workflow-actions" aria-label="Application actions">'+generateBoth+chatGptBoth+actions+applyGate+appliedAction+'</div>'+
       '</div>'+
       renderCoverage(job)+
       renderJobActivity(job)+
@@ -1754,7 +1772,8 @@
       const {applySummaryRevision}=await import("./document-revision.mjs?v=1");
       html=applySummaryRevision(decodeURIComponent(document.revisionBase.slice(document.revisionBase.indexOf(",")+1)),document.summary);
     }else html=type==="resume"?generatedResumeHtml(job,document):generatedCoverLetterHtml(job,document);
-    if(document.finalReview?.status!=="passed"||document.finalReview?.factual_review?.status!=="passed"||document.generationMode!=="ai")throw new Error("Final factual review is required before saving this draft. Your previous document is unchanged.");
+    const approvedGenerationMode=document.generationMode==="ai"||document.generationMode==="manual-chatgpt";
+    if(document.finalReview?.status!=="passed"||document.finalReview?.factual_review?.status!=="passed"||!approvedGenerationMode)throw new Error("Final factual review is required before saving this draft. Your previous document is unchanged.");
     const {reviewRenderedDocument}=await import("./supabase/functions/_shared/document-review.mjs?v=2");
     const renderedReview=reviewRenderedDocument(type,html,document);
     if(renderedReview.status!=="passed")throw new Error(renderedReview.issues.join(" ")+" Your previous document is unchanged.");
@@ -1816,6 +1835,203 @@
       return (doc.body.textContent||"").trim();
     }catch{ return ""; }
   }
+  async function copyTextToClipboard(text){
+    const value=String(text||"");
+    if(!value) return false;
+    try{
+      if(navigator.clipboard?.writeText){
+        await navigator.clipboard.writeText(value);
+        return true;
+      }
+    }catch{}
+    const area=document.createElement("textarea");
+    area.value=value;
+    area.setAttribute("readonly","");
+    area.style.position="fixed";
+    area.style.left="-9999px";
+    area.style.top="0";
+    document.body.appendChild(area);
+    area.focus();
+    area.select();
+    let copied=false;
+    try{ copied=document.execCommand("copy"); }catch{}
+    area.remove();
+    return copied;
+  }
+
+  function manualGenerationRequestBody(job,type,extra={}){
+    return {
+      documentType:type==="coverLetter"?"coverLetter":"resume",
+      jobId:job.id,
+      jobTitle:job.title||"",
+      company:job.company||"",
+      track:job.track||"Professional",
+      sourceUrl:job.url||"",
+      jobDescription:job.notes||"",
+      ...extra
+    };
+  }
+
+  async function requestChatGptPrompt(job,type){
+    if(!config?.generateApiUrl) throw new Error("Raven's document service is not configured.");
+    await prepareJobForGeneration(job);
+    const response=await fetch(config.generateApiUrl,{
+      method:"POST",
+      headers:{"Content-Type":"application/json","X-Raven-Client":"raven-web-v1"},
+      body:JSON.stringify(manualGenerationRequestBody(job,type,{
+        promptOnly:true,
+        promptDocumentType:type
+      }))
+    });
+    const payload=await response.json().catch(()=>({}));
+    if(!response.ok) throw new Error(payload.error||("Could not build the ChatGPT prompt ("+response.status+")."));
+    if(!payload.prompt) throw new Error("Raven returned an empty ChatGPT prompt.");
+    return String(payload.prompt);
+  }
+
+  async function launchChatGptPrompt(job,type,button=null){
+    let chatTab=null;
+    try{
+      chatTab=window.open("about:blank","_blank");
+      if(chatTab){
+        try{
+          chatTab.opener=null;
+          chatTab.document.title="Preparing Raven prompt…";
+          chatTab.document.body.innerHTML="<p style=\"font-family:system-ui;padding:24px\">Preparing Raven prompt…</p>";
+        }catch{}
+      }
+      setGenerationButton(button,true,"Preparing ChatGPT…");
+      setStatus("Building a grounded ChatGPT prompt…");
+      const prompt=await requestChatGptPrompt(job,type);
+      const copied=await copyTextToClipboard(prompt);
+      if(chatTab) chatTab.location.replace("https://chatgpt.com/");
+      if(copied){
+        setStatus("ChatGPT prompt copied · paste it into the new ChatGPT tab and send");
+      }else{
+        setStatus("ChatGPT opened · copy the prompt from the fallback box");
+        window.prompt("Copy this Raven prompt, then paste it into ChatGPT:",prompt);
+      }
+    }catch(error){
+      if(chatTab && !chatTab.closed) chatTab.close();
+      setStatus("Could not prepare ChatGPT prompt: "+error.message);
+    }finally{
+      setGenerationButton(button,false);
+    }
+  }
+
+  function parseChatGptPayload(value){
+    let text=String(value||"").trim();
+    if(!text) throw new Error("Paste the ChatGPT response first.");
+    if(text.length>160000) throw new Error("The pasted response is too large to import.");
+    text=text.replace(/^\`\`\`(?:json)?\s*/i,"").replace(/\s*\`\`\`$/,"").trim();
+    const start=text.indexOf("{"),end=text.lastIndexOf("}");
+    if(start<0||end<=start) throw new Error("The ChatGPT response does not contain a JSON object.");
+    let parsed;
+    try{ parsed=JSON.parse(text.slice(start,end+1)); }
+    catch{ throw new Error("The ChatGPT response is not valid JSON. Ask ChatGPT to return only the Raven JSON object."); }
+    if(parsed?.raven_format && parsed.raven_format!=="raven-chatgpt-v1") throw new Error("This is not a compatible Raven ChatGPT response.");
+    return parsed;
+  }
+
+  async function validateManualChatGptDraft(job,type,draft){
+    if(!config?.generateApiUrl) throw new Error("Raven's document service is not configured.");
+    await prepareJobForGeneration(job);
+    const response=await fetch(config.generateApiUrl,{
+      method:"POST",
+      headers:{"Content-Type":"application/json","X-Raven-Client":"raven-web-v1"},
+      body:JSON.stringify(manualGenerationRequestBody(job,type,{manualDraft:draft}))
+    });
+    const payload=await response.json().catch(()=>({}));
+    if(!response.ok){
+      const detail=Array.isArray(payload.validation_details)&&payload.validation_details.length
+        ? " "+payload.validation_details.slice(-2).join(" ")
+        : "";
+      throw new Error((payload.error||("Raven rejected the imported "+documentLabel(type)+"."))+detail);
+    }
+    const document=type==="coverLetter"?payload.coverLetter:payload.resume;
+    if(!document) throw new Error("Raven returned no validated "+documentLabel(type)+".");
+    document.finalReview=payload.final_review;
+    document.generationMode="manual-chatgpt";
+    return document;
+  }
+
+  async function openChatGptImport(job,type){
+    state.manualImportJob=job;
+    state.manualImportType=type||"resume";
+    const dialog=document.getElementById("chatGptImportDialog");
+    const field=document.getElementById("chatGptImportText");
+    const feedback=document.getElementById("chatGptImportFeedback");
+    const label=type==="both"?"resume + cover letter":documentLabel(type);
+    document.getElementById("chatGptImportTitle").textContent="Import ChatGPT "+label;
+    document.getElementById("chatGptImportContext").textContent=(job.title||"Role")+(job.company?" at "+job.company:"");
+    field.value="";
+    if(feedback) feedback.textContent="Paste the complete ChatGPT JSON response. Raven will fact-check it before saving.";
+    dialog.showModal();
+    field.focus();
+    try{
+      const clipboard=await navigator.clipboard?.readText?.();
+      if(clipboard && clipboard.includes("raven-chatgpt-v1")){
+        field.value=clipboard;
+        if(feedback) feedback.textContent="ChatGPT response found on your clipboard · ready to validate and import.";
+        field.select();
+      }
+    }catch{}
+  }
+
+  function closeChatGptImport(){
+    const dialog=document.getElementById("chatGptImportDialog");
+    if(dialog?.open) dialog.close();
+    state.manualImportJob=null;
+    state.manualImportType=null;
+  }
+
+  async function submitChatGptImport(event){
+    event.preventDefault();
+    const job=state.manualImportJob;
+    const requestedType=state.manualImportType||"resume";
+    if(!job) return;
+    const button=document.getElementById("chatGptImportSubmit");
+    const feedback=document.getElementById("chatGptImportFeedback");
+    button.disabled=true;
+    button.setAttribute("aria-busy","true");
+    const original=button.textContent;
+    button.textContent="Validating…";
+    try{
+      const parsed=parseChatGptPayload(document.getElementById("chatGptImportText").value);
+      const requested=requestedType==="both"?["resume","coverLetter"]:[requestedType];
+      const drafts=requested.map(type=>({
+        type,
+        draft:parsed[type] || (requested.length===1 ? parsed : null)
+      }));
+      const missing=drafts.filter(item=>!item.draft).map(item=>documentLabel(item.type));
+      if(missing.length) throw new Error("The ChatGPT response is missing "+missing.join(" and ")+".");
+      if(requestedType==="both" && parsed.raven_format!=="raven-chatgpt-v1") throw new Error("The combined response is missing Raven's raven_format marker.");
+
+      setStatus("Fact-checking pasted ChatGPT document"+(requested.length>1?"s":"")+"…");
+      const validated=[];
+      for(const item of drafts){
+        validated.push({type:item.type,document:await validateManualChatGptDraft(job,item.type,item.draft)});
+      }
+      for(const item of validated) await saveGeneratedDocument(job,item.type,item.document);
+
+      const first=validated[0]?.type;
+      const dialog=document.getElementById("chatGptImportDialog");
+      if(dialog?.open) dialog.close();
+      state.manualImportJob=null;
+      state.manualImportType=null;
+      render();
+      setStatus("ChatGPT draft"+(validated.length>1?"s":"")+" imported and fact-checked · review required");
+      if(first) await openDocumentReview(job,first);
+    }catch(error){
+      if(feedback) feedback.textContent=error.message;
+      setStatus("ChatGPT import blocked: "+error.message);
+    }finally{
+      button.disabled=false;
+      button.removeAttribute("aria-busy");
+      button.textContent=original;
+    }
+  }
+
   async function generateDocumentOnline(job,masterResume,type="resume",instructions=""){
     if(!config?.generateApiUrl) throw new Error("Online document generator is not configured.");
     let section="",revisionBase="";
@@ -2207,7 +2423,9 @@
     }
     if(!value){
       return '<span class="document-control is-empty">'+
-        '<button class="document-primary" type="button" data-generate="'+escapeAttr(key)+'">Generate</button>'+feedback+
+        '<button class="document-primary" type="button" data-generate="'+escapeAttr(key)+'">Generate</button>'+
+        '<button class="document-secondary chatgpt-action" type="button" data-chatgpt-prompt="'+escapeAttr(key)+'">ChatGPT</button>'+
+        '<button class="document-secondary" type="button" data-chatgpt-import="'+escapeAttr(key)+'">Import</button>'+feedback+
       '</span>';
     }
     return '<span class="document-control has-file">'+
@@ -2217,6 +2435,8 @@
         '<span class="document-menu" role="menu" hidden>'+
           '<button type="button" role="menuitem" data-document-revise="'+escapeAttr(key)+'">Request changes</button>'+
           '<button type="button" role="menuitem" data-document-regenerate="'+escapeAttr(key)+'">Regenerate</button>'+
+          '<button type="button" role="menuitem" data-chatgpt-prompt="'+escapeAttr(key)+'">Create ChatGPT prompt</button>'+
+          '<button type="button" role="menuitem" data-chatgpt-import="'+escapeAttr(key)+'">Import ChatGPT result</button>'+
           '<button class="danger-action" type="button" role="menuitem" data-document-delete="'+escapeAttr(key)+'">Delete</button>'+
         '</span>'+
       '</span>'+
@@ -2440,6 +2660,10 @@
       saveCapture(document.getElementById("jobUrl").value.trim());
     });
     document.getElementById("documentReviewForm").addEventListener("submit",submitDocumentRevision);
+    document.getElementById("chatGptImportForm")?.addEventListener("submit",submitChatGptImport);
+    document.querySelectorAll("[data-chatgpt-import-close]").forEach((button)=>{
+      button.addEventListener("click",closeChatGptImport);
+    });
     document.getElementById("reviewApprove")?.addEventListener("click",()=>{ const job=state.generatorJob,type=state.generatorType; if(!job||!type)return; setDocumentApproved(job,type,true); const button=document.getElementById("reviewApprove"); button.textContent="Approved ✓"; button.classList.add("is-approved"); setStatus(documentLabel(type)+" approved"); render(); });
     document.querySelectorAll("[data-review-close]").forEach((button)=>{
       button.addEventListener("click",closeDocumentReview);
