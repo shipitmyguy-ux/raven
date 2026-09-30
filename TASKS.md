@@ -208,3 +208,11 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Reject unreviewed, source-fallback and malformed rendered documents before persistence.
 - [x] Add regression cases for reported failures and preservation of prior saved documents.
 - [x] Complete live game/professional resume and cover checks, browser failure-preservation acceptance, and record remaining provider/reviewer limitations.
+
+
+## Focused v68 reliability sweep (2026-09-29 MDT)
+- [x] Run the requested unchanged-baseline three resumes and three covers, record gate/provider outcomes and manually audit output.
+- [x] Reproduce and fix only observed generation/review defects; preserve truthful career transitions, verify supported-history/prospective wording controls, commit/deploy resume v124 / cover v96.
+- [x] Run 68 targeted tests, final core/targeted-browser CI and production smoke; verify final live rejection/repair behavior and rendered completeness.
+- [~] High clean-document generation success remains unestablished. Final professional resume still review-blocked; final letter's closing themes remain repetitive. Future investigation should distinguish missing citations from semantic number misuse without loosening safeguards or counting gate passes as clean acceptance.
+- Evidence: docs/qa/2026-09-30-v68-reliability-sweep.md. No further model trials beyond the recorded 13 calls.

@@ -1,0 +1,587 @@
+{
+  "baselineCommit": "20bd6107dfee707041ad19a6af2f42a216357a98",
+  "fixCommit": "124b508ab1e6871d6ed9fee7e396a60e31ebfa84",
+  "frontendVersion": 68,
+  "note": "Gate outcomes are separate from manual factual acceptance. No saved documents were overwritten. Canonical profile and raw document bodies are excluded. Accurx used Professional explicitly; its stored Wildcard track was unchanged. Output audits replay returned documents against final patched code.",
+  "runs": [
+    {
+      "key": "accurx-resume",
+      "jobId": "JT-1790281617867",
+      "track": "Professional",
+      "kind": "resume",
+      "startedAt": "2026-09-30T03:49:46.621Z",
+      "seconds": 40,
+      "http": 503,
+      "ok": false,
+      "cause": "INVALID_DRAFT",
+      "code": "FINAL_REVIEW_BLOCKED",
+      "final_review": {
+        "status": "blocked"
+      },
+      "diagnostics": [
+        "headline: Lead with verified transferable capabilities for this non-game role; omit game-art identity from this passage.",
+        "summary: Lead with verified transferable capabilities for this non-game role; omit game-art identity from this passage.",
+        "summary: The passage introduced an unsupported number: 17."
+      ],
+      "provider_failures": [],
+      "batch": "sweep-results",
+      "serviceVersion": 121,
+      "outcome": "review-block",
+      "requestEventId": 343
+    },
+    {
+      "key": "accurx-coverLetter",
+      "jobId": "JT-1790281617867",
+      "track": "Professional",
+      "kind": "coverLetter",
+      "startedAt": "2026-09-30T03:50:26.572Z",
+      "seconds": 19.7,
+      "http": 200,
+      "ok": true,
+      "provider": "cloudflare",
+      "attempts": 2,
+      "final_review": {
+        "version": "final-review-v1",
+        "status": "passed",
+        "issues": [],
+        "warnings": [],
+        "factual_review": {
+          "status": "passed",
+          "provider": "cloudflare",
+          "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+        }
+      },
+      "diagnostics": [],
+      "batch": "sweep-results",
+      "serviceVersion": 93,
+      "outcome": "pass",
+      "outputAudit": {
+        "key": "accurx-coverLetter",
+        "rendered": {
+          "version": "final-review-v1",
+          "status": "passed",
+          "issues": []
+        },
+        "patchedReview": {
+          "version": "final-review-v1",
+          "status": "blocked",
+          "issues": [
+            {
+              "path": "paragraphs.1",
+              "code": "unsupported_claim",
+              "reason": "Internal collaboration does not establish a history of external-partner relationships. Remove that history claim unless verified."
+            },
+            {
+              "path": "paragraphs.2",
+              "code": "unsupported_claim",
+              "reason": "The profile does not establish a personal passion for healthcare. Express prospective interest in the role without inventing personal background."
+            }
+          ],
+          "warnings": []
+        }
+      },
+      "requestEventId": 344
+    },
+    {
+      "key": "parallel-resume",
+      "jobId": "JT-1790317794781",
+      "track": "Games / 3D",
+      "kind": "resume",
+      "startedAt": "2026-09-30T03:50:46.230Z",
+      "seconds": 39.7,
+      "http": 200,
+      "ok": true,
+      "provider": "cloudflare",
+      "attempts": 2,
+      "final_review": {
+        "version": "final-review-v1",
+        "status": "passed",
+        "issues": [],
+        "warnings": [],
+        "factual_review": {
+          "status": "passed",
+          "provider": "cloudflare",
+          "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+        }
+      },
+      "diagnostics": [],
+      "batch": "sweep-results",
+      "serviceVersion": 121,
+      "outcome": "pass",
+      "outputAudit": {
+        "key": "parallel-resume",
+        "rendered": {
+          "version": "final-review-v1",
+          "status": "passed",
+          "issues": []
+        },
+        "patchedReview": {
+          "version": "final-review-v1",
+          "status": "passed",
+          "issues": [],
+          "warnings": []
+        },
+        "roles": 8,
+        "bullets": 9,
+        "shippedTitles": 7
+      },
+      "requestEventId": 345
+    },
+    {
+      "key": "parallel-coverLetter",
+      "jobId": "JT-1790317794781",
+      "track": "Games / 3D",
+      "kind": "coverLetter",
+      "startedAt": "2026-09-30T03:51:25.957Z",
+      "seconds": 21.3,
+      "http": 200,
+      "ok": true,
+      "provider": "cloudflare",
+      "attempts": 2,
+      "final_review": {
+        "version": "final-review-v1",
+        "status": "passed",
+        "issues": [],
+        "warnings": [],
+        "factual_review": {
+          "status": "passed",
+          "provider": "cloudflare",
+          "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+        }
+      },
+      "diagnostics": [],
+      "batch": "sweep-results",
+      "serviceVersion": 93,
+      "outcome": "pass",
+      "outputAudit": {
+        "key": "parallel-coverLetter",
+        "rendered": {
+          "version": "final-review-v1",
+          "status": "passed",
+          "issues": []
+        },
+        "patchedReview": {
+          "version": "final-review-v1",
+          "status": "blocked",
+          "issues": [
+            {
+              "path": "paragraphs.2",
+              "code": "unsupported_claim",
+              "reason": "Intermediate Excel proficiency does not establish historical Excel use for tracking progress. Keep the verified skill without inventing its past application."
+            },
+            {
+              "path": "paragraphs.2",
+              "code": "unsupported_claim",
+              "reason": "Intermediate Excel proficiency does not establish historical Excel use for managing assets. Keep the verified skill without inventing its past application."
+            }
+          ],
+          "warnings": []
+        }
+      },
+      "requestEventId": 346
+    },
+    {
+      "key": "stone-kite-resume",
+      "jobId": "JT-GH-STONEKITE-4697328006",
+      "track": "Games / 3D",
+      "kind": "resume",
+      "startedAt": "2026-09-30T03:51:47.271Z",
+      "seconds": 35.8,
+      "http": 200,
+      "ok": true,
+      "provider": "cloudflare",
+      "attempts": 2,
+      "final_review": {
+        "version": "final-review-v1",
+        "status": "passed",
+        "issues": [],
+        "warnings": [],
+        "factual_review": {
+          "status": "passed",
+          "provider": "cloudflare",
+          "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+        }
+      },
+      "diagnostics": [],
+      "batch": "sweep-results",
+      "serviceVersion": 121,
+      "outcome": "pass",
+      "outputAudit": {
+        "key": "stone-kite-resume",
+        "rendered": {
+          "version": "final-review-v1",
+          "status": "passed",
+          "issues": []
+        },
+        "patchedReview": {
+          "version": "final-review-v1",
+          "status": "passed",
+          "issues": [],
+          "warnings": []
+        },
+        "roles": 8,
+        "bullets": 9,
+        "shippedTitles": 7
+      },
+      "requestEventId": 347
+    },
+    {
+      "key": "stone-kite-coverLetter",
+      "jobId": "JT-GH-STONEKITE-4697328006",
+      "track": "Games / 3D",
+      "kind": "coverLetter",
+      "startedAt": "2026-09-30T03:52:23.047Z",
+      "seconds": 24.6,
+      "http": 200,
+      "ok": true,
+      "provider": "cloudflare",
+      "attempts": 4,
+      "final_review": {
+        "version": "final-review-v1",
+        "status": "passed",
+        "issues": [],
+        "warnings": [],
+        "factual_review": {
+          "status": "passed",
+          "provider": "cloudflare",
+          "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+        }
+      },
+      "diagnostics": [
+        "paragraphs.0: The passage introduced an unsupported number: 17."
+      ],
+      "batch": "sweep-results",
+      "serviceVersion": 93,
+      "outcome": "pass",
+      "outputAudit": {
+        "key": "stone-kite-coverLetter",
+        "rendered": {
+          "version": "final-review-v1",
+          "status": "passed",
+          "issues": []
+        },
+        "patchedReview": {
+          "version": "final-review-v1",
+          "status": "passed",
+          "issues": [],
+          "warnings": []
+        }
+      },
+      "requestEventId": 348
+    },
+    {
+      "key": "accurx-resume",
+      "jobId": "JT-1790281617867",
+      "track": "Professional",
+      "kind": "resume",
+      "startedAt": "2026-09-30T03:56:18.980Z",
+      "seconds": 25.5,
+      "http": 200,
+      "ok": true,
+      "provider": "cloudflare",
+      "attempts": 2,
+      "final_review": {
+        "version": "final-review-v1",
+        "status": "passed",
+        "issues": [],
+        "warnings": [],
+        "factual_review": {
+          "status": "passed",
+          "provider": "cloudflare",
+          "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+        }
+      },
+      "diagnostics": [],
+      "batch": "retest-results",
+      "serviceVersion": 122,
+      "outcome": "pass",
+      "outputAudit": {
+        "key": "accurx-resume",
+        "rendered": {
+          "version": "final-review-v1",
+          "status": "passed",
+          "issues": []
+        },
+        "patchedReview": {
+          "version": "final-review-v1",
+          "status": "blocked",
+          "issues": [
+            {
+              "path": "summary",
+              "code": "unsupported_claim",
+              "reason": "Database querying, metadata and reporting do not establish database management or administration. Describe the verified database work without adding ownership."
+            }
+          ],
+          "warnings": []
+        },
+        "roles": 3,
+        "bullets": 7,
+        "shippedTitles": 0
+      },
+      "requestEventId": 349
+    },
+    {
+      "key": "accurx-coverLetter",
+      "jobId": "JT-1790281617867",
+      "track": "Professional",
+      "kind": "coverLetter",
+      "startedAt": "2026-09-30T03:56:44.500Z",
+      "seconds": 19.6,
+      "http": 200,
+      "ok": true,
+      "provider": "cloudflare",
+      "attempts": 2,
+      "final_review": {
+        "version": "final-review-v1",
+        "status": "passed",
+        "issues": [],
+        "warnings": [],
+        "factual_review": {
+          "status": "passed",
+          "provider": "cloudflare",
+          "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+        }
+      },
+      "diagnostics": [],
+      "batch": "retest-results",
+      "serviceVersion": 94,
+      "outcome": "pass",
+      "outputAudit": {
+        "key": "accurx-coverLetter",
+        "rendered": {
+          "version": "final-review-v1",
+          "status": "passed",
+          "issues": []
+        },
+        "patchedReview": {
+          "version": "final-review-v1",
+          "status": "blocked",
+          "issues": [
+            {
+              "path": "paragraphs.2",
+              "code": "unsupported_claim",
+              "reason": "The profile does not establish a personal passion for tech. Express prospective interest in the role without inventing personal background."
+            }
+          ],
+          "warnings": []
+        }
+      },
+      "requestEventId": 350
+    },
+    {
+      "key": "parallel-coverLetter",
+      "jobId": "JT-1790317794781",
+      "track": "Games / 3D",
+      "kind": "coverLetter",
+      "startedAt": "2026-09-30T03:57:04.079Z",
+      "seconds": 23.6,
+      "http": 200,
+      "ok": true,
+      "provider": "cloudflare",
+      "attempts": 4,
+      "final_review": {
+        "version": "final-review-v1",
+        "status": "passed",
+        "issues": [],
+        "warnings": [],
+        "factual_review": {
+          "status": "passed",
+          "provider": "cloudflare",
+          "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+        }
+      },
+      "diagnostics": [
+        "paragraphs.0: The passage introduced an unsupported number: 17."
+      ],
+      "batch": "retest-results",
+      "serviceVersion": 94,
+      "outcome": "pass",
+      "outputAudit": {
+        "key": "parallel-coverLetter",
+        "rendered": {
+          "version": "final-review-v1",
+          "status": "passed",
+          "issues": []
+        },
+        "patchedReview": {
+          "version": "final-review-v1",
+          "status": "passed",
+          "issues": [],
+          "warnings": []
+        }
+      },
+      "requestEventId": 351
+    },
+    {
+      "key": "accurx-resume",
+      "jobId": "JT-1790281617867",
+      "track": "Professional",
+      "kind": "resume",
+      "startedAt": "2026-09-30T03:59:28.143Z",
+      "seconds": 28.7,
+      "http": 200,
+      "ok": true,
+      "provider": "cloudflare",
+      "attempts": 4,
+      "final_review": {
+        "version": "final-review-v1",
+        "status": "passed",
+        "issues": [],
+        "warnings": [],
+        "factual_review": {
+          "status": "passed",
+          "provider": "cloudflare",
+          "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+        }
+      },
+      "diagnostics": [
+        "summary: Lead with verified transferable capabilities for this non-game role; omit game-art identity from this passage."
+      ],
+      "batch": "final-results",
+      "serviceVersion": 123,
+      "outcome": "pass",
+      "outputAudit": {
+        "key": "accurx-resume",
+        "rendered": {
+          "version": "final-review-v1",
+          "status": "passed",
+          "issues": []
+        },
+        "patchedReview": {
+          "version": "final-review-v1",
+          "status": "blocked",
+          "issues": [
+            {
+              "path": "summary",
+              "code": "unsupported_claim",
+              "reason": "The target role is not a verified past profession. Describe transferable strengths or explicitly say seeking the role; do not identify the candidate as Implementation Analyst."
+            }
+          ],
+          "warnings": []
+        },
+        "roles": 3,
+        "bullets": 4,
+        "shippedTitles": 0
+      },
+      "requestEventId": 352
+    },
+    {
+      "key": "accurx-coverLetter",
+      "jobId": "JT-1790281617867",
+      "track": "Professional",
+      "kind": "coverLetter",
+      "startedAt": "2026-09-30T03:59:56.854Z",
+      "seconds": 26,
+      "http": 200,
+      "ok": true,
+      "provider": "cloudflare",
+      "attempts": 3,
+      "final_review": {
+        "version": "final-review-v1",
+        "status": "passed",
+        "issues": [],
+        "warnings": [],
+        "factual_review": {
+          "status": "passed",
+          "provider": "cloudflare",
+          "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+        }
+      },
+      "diagnostics": [
+        "paragraphs.2: The profile does not establish a personal passion for healthcare. Express prospective interest in the role without inventing personal background."
+      ],
+      "batch": "final-results",
+      "serviceVersion": 95,
+      "outcome": "pass",
+      "outputAudit": {
+        "key": "accurx-coverLetter",
+        "rendered": {
+          "version": "final-review-v1",
+          "status": "passed",
+          "issues": []
+        },
+        "patchedReview": {
+          "version": "final-review-v1",
+          "status": "blocked",
+          "issues": [
+            {
+              "path": "paragraphs.2",
+              "code": "duplicate",
+              "reason": "Repeats a complete substantive sentence from paragraphs.1. Give this paragraph a distinct purpose without reusing that sentence."
+            }
+          ],
+          "warnings": []
+        }
+      },
+      "requestEventId": 353
+    },
+    {
+      "key": "accurx-resume",
+      "jobId": "JT-1790281617867",
+      "track": "Professional",
+      "kind": "resume",
+      "startedAt": "2026-09-30T04:02:40.418Z",
+      "seconds": 31.4,
+      "http": 503,
+      "ok": false,
+      "cause": "INVALID_DRAFT",
+      "code": "FINAL_REVIEW_BLOCKED",
+      "final_review": {
+        "status": "blocked"
+      },
+      "diagnostics": [
+        "summary: Lead with verified transferable capabilities for this non-game role. A summary may mention truthful game-industry background as context; do not replace it with an unverified target profession.",
+        "summary: The passage introduced an unsupported number: 17."
+      ],
+      "provider_failures": [],
+      "batch": "verified-results",
+      "serviceVersion": 124,
+      "outcome": "review-block",
+      "requestEventId": 354
+    },
+    {
+      "key": "accurx-coverLetter",
+      "jobId": "JT-1790281617867",
+      "track": "Professional",
+      "kind": "coverLetter",
+      "startedAt": "2026-09-30T04:03:11.863Z",
+      "seconds": 25.9,
+      "http": 200,
+      "ok": true,
+      "provider": "cloudflare",
+      "attempts": 3,
+      "final_review": {
+        "version": "final-review-v1",
+        "status": "passed",
+        "issues": [],
+        "warnings": [],
+        "factual_review": {
+          "status": "passed",
+          "provider": "cloudflare",
+          "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+        }
+      },
+      "diagnostics": [
+        "paragraphs.2: The profile does not establish a personal passion for technology. Express prospective interest in the role without inventing personal background."
+      ],
+      "batch": "verified-results",
+      "serviceVersion": 96,
+      "outcome": "pass",
+      "outputAudit": {
+        "key": "accurx-coverLetter",
+        "rendered": {
+          "version": "final-review-v1",
+          "status": "passed",
+          "issues": []
+        },
+        "patchedReview": {
+          "version": "final-review-v1",
+          "status": "passed",
+          "issues": [],
+          "warnings": []
+        }
+      },
+      "requestEventId": 355
+    }
+  ]
+}
