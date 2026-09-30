@@ -29,9 +29,15 @@ The private `raven-number-evidence` log records request-event ID, attempt, passa
 
 Diagnostics do not alter the gate, repair attempts or HTTP shape. Sink failures cannot accept or reject a document. Oversized evidence is bounded and marked. No debug request flag exposes traces; HTTP responses and request-event detail receive no private trace fields. Logs remain in the existing restricted Supabase function logging surface. No new public endpoint, table or permission is added. Do not paste raw logs/profile/payloads into public issues, CI artifacts or this report.
 
-## Verification (in progress)
+## Verification and limits
 
 - 74 targeted tests pass: writer, final review, reliability and seven numeric-trace/repair tests. Includes valid cited tenure, missing evidence, numeric/semantic distinction, invented numbers, wrong employer, invented target profession, unchanged good passages, private HTTP boundary and log-sink failure.
 - Syntax/diff whitespace and repository secret checks pass.
 - Diagnostic-only core/targeted-browser CI 36754253602 and production smoke 36754253819 pass. Production smoke uses synthetic mocked backend writes against the deployed frontend; it does not overwrite user documents.
-- Follow-up: deploy the scoped repair, verify one Accurx call and private citations, then record final CI/production smoke and saved-document checksum comparison. Do not repeat the completed six-call sweep.
+- Scoped repair source: `b40692ea51f7c46751580c179a24a5c7c16151a6`, deployed ACTIVE as resume **v126**. Cover remains **v96**, frontend **v68**.
+- One verification call (event 357, 2026-09-30 17:54:35 UTC) returned HTTP 503 in 27.6 seconds, with no provider failures. The number rejection did not recur; the repaired summary instead triggered the existing duplicate-headline safeguard. The numeric trace contains the first summary only, consistent with the repair removing the tenure statement. **This is not a successful resume or live proof that the model reliably retains numeric citations.** The repair guidance is an improvement, not a deterministic guarantee.
+- An internal counterfactual replay of event 356's exact repaired summary, using the unchanged canonical profile and a minimal valid surrounding resume, reproduced the local unsupported-17 rejection. Adding only the omitted original tenure citation made local validation pass. The prose and validator were unchanged. This establishes the binding cause; it is not a new provider/semantic-review acceptance.
+- Final source core/targeted-browser CI **36754731600 passed**; production smoke **36754731548 passed**. The new numeric tests are explicitly included in core CI.
+- Before/after checksums of all saved resumes and letters across **368 job rows are identical**. Accurx's resume, cover, stored Wildcard track and last-updated value are also identical. No saved documents, approvals or applications changed.
+- Exactly two additional generation requests were made: one diagnostic-only reproduction and one scoped-repair verification. No cover calls, no repeat of the six-call sweep, no extra model trials after event 357.
+- The number-review investigation is complete. Full Accurx generation remains blocked by a separate duplicate-content rejection. That path was not changed. The original event 354's missing private payload remains unrecoverable, and broad model reliability is not established.

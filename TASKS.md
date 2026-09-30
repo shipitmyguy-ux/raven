@@ -216,3 +216,12 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Run 68 targeted tests, final core/targeted-browser CI and production smoke; verify final live rejection/repair behavior and rendered completeness.
 - [~] High clean-document generation success remains unestablished. Final professional resume still review-blocked; final letter's closing themes remain repetitive. Future investigation should distinguish missing citations from semantic number misuse without loosening safeguards or counting gate passes as clean acceptance.
 - Evidence: docs/qa/2026-09-30-v68-reliability-sweep.md. No further model trials beyond the recorded 13 calls.
+
+
+## Accurx unsupported-number follow-up (2026-09-30)
+- [x] Reproduce the prior case without saved-document writes and privately trace passage-to-fact attribution.
+- [x] Distinguish missing citation from semantic tenure misuse; add private numeric tracing with HTTP privacy tests.
+- [x] Improve repair citation obligations only after reproducing the omission; keep all validation safeguards.
+- [x] Deploy resume v126; pass 74 targeted tests, core/targeted-browser CI and production smoke; verify unchanged saved documents.
+- [~] Full Accurx generation still review-blocked: final event 357 repeats the headline. Number rejection did not recur, but live citation-retention reliability is not established. This separate repetition path is outside this task.
+- Evidence: docs/qa/2026-09-30-accurx-number-review.md. Two calls only; no repeated six-call sweep.

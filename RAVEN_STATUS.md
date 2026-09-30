@@ -252,3 +252,11 @@ The approved game resume was rendered with production HTML to two WeasyPrint pag
 - Final live pair: professional resume review-blocked for unsupported 17 (31.4s); letter passed after correcting unsupported technology passion (25.9s), with repetitive closing themes remaining. High generation reliability is NOT established. No further model trials after that pair.
 - All 11 returned documents passed rendered completeness checks. Baseline game resumes retain eight roles/all seven credits and render to two pages; baseline letters/final letter render to one page. Native Chrome print and new live persistence were not verified. No saved documents, approvals or applications changed.
 - Full outcomes, manual findings, false-positive limits, CI evidence and follow-up boundaries: docs/qa/2026-09-30-v68-reliability-sweep.md and adjacent JSON.
+
+
+## Accurx number-review investigation (2026-09-30)
+- Replayed the prior Accurx Professional request with an unchanged profile/posting. Diagnostic-only resume v125 reproduced the framing-then-unsupported-17 failure (event 356). Private traces show valid environment-art tenure retained in prose but its citation dropped by the framing repair. The numeric validator correctly rejected the missing citation; no transfer to an unsupported profession occurred in this replay.
+- Deployed resume v126 from `b40692ea51f7c46751580c179a24a5c7c16151a6`: private request-linked numeric evidence traces and explicit repair citation obligations. No automatic citation attachment or numeric/profession safeguard relaxation. Cover v96 and frontend v68 unchanged.
+- 74 targeted local tests, core/targeted-browser CI 36754731600, and production smoke 36754731548 pass. Public responses do not receive the new private trace data.
+- Live verification event 357 did not repeat the number error but was blocked for repeating the headline. It does not establish successful generation or reliable model citation retention. Do not broaden this fix to duplication or repeat the prior sweep.
+- Two generation requests total; all saved-document checksums across 368 rows and Accurx's stored track/last-updated value unchanged. Full evidence and limits: docs/qa/2026-09-30-accurx-number-review.md.

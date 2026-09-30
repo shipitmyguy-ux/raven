@@ -1,27 +1,22 @@
 # Raven execution handoff
 
-Latest task: focused live reliability sweep against deployed v68 final review gate.
+Latest task: Accurx unsupported-number investigation from `45513f278d2a46250b29d9feb9ea644e84a1b866`.
 
-## Completed and deployed
+## Completed
 
-Baseline repository commit 20bd6107dfee707041ad19a6af2f42a216357a98 and active resume v121/cover v93 were verified before six requested live calls. Cases: Parallel and Stone Kite Games / 3D, Accurx explicitly Professional (stored Wildcard unchanged). Outcome: 5 gate passes, 1 review-block, 0 provider failures. Two passing letters contained confirmed unsupported claims.
+- Confirmed GitHub baseline and ACTIVE resume v124 / cover v96. Recovered the exact prior Accurx Professional request; canonical profile and posting unchanged. Stored job track remains Wildcard.
+- Diagnostic-only commit `0ecc9838e3beb8ddc8854d3f67fefcdb69179608`, resume v125: one replay reproduced the same framing then unsupported-17 block (event 356, 28.2s). Private traces show the repair retained environment-art tenure in prose but dropped its original supporting citation. The numeric validator correctly blocked missing evidence. The reproduced prose did not transfer tenure to implementation analysis. Historical event 354 has no private payload; identical historical wording cannot be claimed.
+- Repair commit `b40692ea51f7c46751580c179a24a5c7c16151a6`, ACTIVE resume **v126**: explicit previously cited numeric evidence obligations and scope-preserving repair instructions. These are hints, not auto-attached citations or validator exemptions. Private logs link request, attempt, passage, cited IDs, candidate numeric facts and local/semantic reasons. No new trace fields enter HTTP responses or request-event detail. No public debug flag.
+- Cover remains **v96**, frontend **v68**. No filter, provider-order, quota, cooldown, schema, profile or saved-document changes.
 
-Seven bounded corrective live calls followed; total 13 across four service versions. Do not combine their gate outcomes into a clean-document reliability rate. Source fixes are 65bce83c7dcce41d9cc6b122423a750939b23954, 06b9b3046695bbfa8689f1bab98537eb63fdbc42 and final 124b508ab1e6871d6ed9fee7e396a60e31ebfa84. ACTIVE resume v124 / cover v96. App remains v68. No frontend deployment was needed.
+## Verified and remaining limits
 
-Changes are restricted to shared document writer/review modules and tests: unsupported external relationships, technology/healthcare passion, historical Excel tasks, database-management overstatement, target-role identity invention, and exact substantive sentence repetition. Repaired passages preserve valid content. A false-positive non-game framing rule was narrowed to permit truthful source-industry context following transferable strengths. No game-tab filter, provider order/CI fix, quota, cooldown, schema or profile changes.
+- **74 targeted local tests pass**; syntax, whitespace and repository secret scan pass. Numeric diagnostics tests are included in CI.
+- Final source core/targeted-browser CI **36754731600 passed**; production smoke **36754731548 passed**. Smoke uses mocked backend writes and synthetic data against the deployed frontend.
+- Exact private-summary counterfactual: omitted citation reproduces local number rejection; adding only the original tenure citation passes local validation. This is not semantic-provider approval.
+- Final live verification: event **357**, 27.6s, review-block for repeating the headline, no provider failures. Number error did not recur, and only the initial summary had a numeric trace. This does **not** establish a successful resume or reliable live citation retention. Do not claim full Accurx generation fixed; the separate duplicate-content path was left unchanged.
+- Two model-generation requests total (events 356–357); no cover calls or repeated six-call sweep. No further model trials after event 357.
+- Before/after checksums for saved resumes/letters across **368 jobs** match. Accurx documents, track and last-updated also match. No approvals/applications touched.
+- Work usage was unavailable; continued under repository contract. GitHub is canonical. Raw candidate source/passages remain outside the public repo; access existing restricted Supabase logs only when needed.
 
-## Verification and limits
-
-- 68 targeted execution tests pass; syntax, whitespace and secret scan pass. Final core/targeted-browser CI 36667098731 and production smoke 36667098510 pass.
-- Final live pair on v124/v96: Accurx resume blocked in 31.4s for unsupported number 17 after framing repair; letter passed in 25.9s after detected unsupported technology passion was repaired. The final letter still repeats closing themes, though it has no exact duplicate sentence/paragraph.
-- All 11 returned documents passed actual production rendered-completeness checks using locally executed v68 HTML renderer. Baseline game resumes retain all eight game roles, all seven canonical credits including Six Days in Fallujah, and education; both are two WeasyPrint pages. Baseline letters and final letter are one page. All baseline pages, intermediate professional resume and final letter were visually inspected.
-- Local native Chrome unavailable because browser downloads returned invalid ZIP files; no new native browser-print or live persistence claim. No saved documents were overwritten; no approvals or submissions.
-- Public errors do not include rejected passages/fact IDs. The two live unsupported-17 blocks cannot independently be declared false positives or semantically correct; 17 years is verified only for environment-art experience. Do not relax the number check speculatively.
-- High generation success and comprehensive factual accuracy are NOT established. Narrow guards do not prove arbitrary wording safe; same-model writer/reviewer misses remain possible. No further model trials after the final pair.
-
-Read docs/qa/2026-09-30-v68-reliability-sweep.md and 2026-09-30-v68-live-results.json for the complete per-call history, manual findings and replay evidence. Raw candidate documents/profile are intentionally not committed. Work usage was unavailable. GitHub remains canonical.
-
-## Active follow-up: unsupported number 17 (2026-09-30)
-The exact saved Accurx request and canonical profile match the sweep inputs. Historical event 354 has only the generic rejection; no old rejected passage was retained. Added private request-linked numeric evidence diagnostics without changing validation, writer instructions, evidence binding, or model-call budgets. Targeted local tests pass; diagnostic-only deployment and one Accurx reproduction are next. Do not repeat the six-call sweep or save generated documents.
-
-Private event 356 reproduced the exact rejection sequence: the framing repair retained environment-art tenure but omitted its prior supporting citation. The number validator behaved correctly. Added repair-only numeric citation obligations and explicit scope-preservation guidance; no automatic citation attachment or validator relaxation. 74 targeted tests pass. Diagnostic-only core/browser and production smoke pass. See docs/qa/2026-09-30-accurx-number-review.md; scoped repair deployment/live verification pending.
+Read docs/qa/2026-09-30-accurx-number-review.md for the full investigation. Prior sweep remains documented in docs/qa/2026-09-30-v68-reliability-sweep.md; do not redo it.
