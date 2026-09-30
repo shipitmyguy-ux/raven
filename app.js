@@ -1950,6 +1950,11 @@
     }
     const document=type==="coverLetter"?payload.coverLetter:payload.resume;
     if(!document) throw new Error("Raven returned no validated "+documentLabel(type)+".");
+    if(type==="resume"&&!document.contact){
+      const profile=readCache(APPLICATION_PROFILE_KEY,{})||{};
+      const location=[profile.city,profile.region].filter(Boolean).join(", ");
+      document.contact=[location,profile.email,profile.phone].filter(Boolean).join(" // ");
+    }
     document.finalReview=payload.final_review;
     document.generationMode="manual-chatgpt";
     return document;
