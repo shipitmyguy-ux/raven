@@ -1,6 +1,6 @@
 import {getStudioContext} from "./studio-context.mjs";
 import {cloudflareFreeStatus} from "./cloudflare-free.mjs";
-import {writeDocument,WriterError,WRITER_VERSION} from "./document-writer.mjs";
+import {writeDocument,validateDraft,evidenceCatalog,resumeKeywordGuidance,WriterError,WRITER_VERSION} from "./document-writer.mjs";
 import {createLLMCompletion,llmProviderStatus,llmUsageStatus} from "./llm-router.mjs";
 import {buildDeterministicResumeV3} from "./document-v3.mjs";
 // Content failures consume rate quota, but do not imply a provider outage.
@@ -31,6 +31,53 @@ export function buildDeterministicCover(profile,target){
   paragraphs.push("Thank you for considering my application. I would welcome the opportunity to discuss my experience and the role.");
   return {...resume,architecture:"cover-source-facts-v1",document:{greeting:"Dear Hiring Manager,",paragraphs,closing:"Sincerely,",signature:profile.name}};
 }
+
+export function buildExternalChatPrompt(requestedKind,profile,target){
+  const kind=requestedKind==="both"?"both":requestedKind==="coverLetter"?"coverLetter":"resume";
+  const catalog=evidenceCatalog(profile);
+  const keywordGuidance=resumeKeywordGuidance(profile,target);
+  const resumeShape={
+    headline:{text:"Write a supported headline.",fact_ids:["supporting_fact_id"]},
+    summary:{text:"Write a supported summary.",fact_ids:["supporting_fact_id"]},
+    skills:["Use exact verified skill names only"],
+    experience:[{experience_id:"verified_experience_id",bullets:[{text:"Supported accomplishment or responsibility.",fact_ids:["fact_id_from_this_experience"]}]}],
+    additional:[{text:"Optional supported career highlight.",fact_ids:["supporting_fact_id"]}]
+  };
+  const coverShape={
+    greeting:"Dear Hiring Manager,",
+    paragraphs:[{text:"Supported cover-letter paragraph.",fact_ids:["supporting_fact_id"]},{text:"Interest-only paragraph with no candidate-history claim.",fact_ids:[]}],
+    closing:"Sincerely,"
+  };
+  const output={raven_format:"raven-chatgpt-v1"};
+  if(kind==="resume"||kind==="both")output.resume=resumeShape;
+  if(kind==="coverLetter"||kind==="both")output.coverLetter=coverShape;
+  const rules=[
+    "Write polished application material tailored to the target job using ONLY the verified candidate background and evidence catalog below.",
+    "Do not invent employers, roles, dates, shipped titles, tools, credentials, metrics, duties, outcomes, years of experience, or personal motivations. A job requirement is not evidence that the candidate has it.",
+    "Every resume headline, summary, experience bullet, additional highlight, and every cover-letter paragraph that makes a candidate-history claim must include fact_ids from the evidence catalog that support the complete claim.",
+    "Resume bullets may cite only facts whose experience_id matches that row's experience_id. Never transfer duties, tools, leadership, projects, or numbers from one employer to another.",
+    "Use exact verified skill names in the skills array. Do not add a skill solely because the posting mentions it.",
+    "For Games / 3D resumes, include every experience id listed in resume_required_experience_ids and do not include SoundAir unless the user explicitly asks for it. Raven adds the complete shipped_titles list separately; do not rewrite or shorten that list.",
+    "For Professional, Labor, and Wildcard resumes, choose only 2-4 materially relevant roles, foreground transferable evidence, and do not claim the candidate has held the target profession or has 17 years in that profession.",
+    "Use confident, specific wording and make verified job functions sound substantial without exceeding the factual scope. A two-page resume is acceptable. For Games / 3D, give substantial relevant roles multiple distinct bullets when the evidence supports it.",
+    "Optimize naturally for ATS keyword matching using supported terminology from the posting. Never keyword-stuff or create unsupported qualifications.",
+    "Do not include job locations in work-history entries.",
+    "Return ONLY valid JSON. No markdown fences, commentary, explanation, or text before or after the JSON object. Keep the top-level raven_format value exactly raven-chatgpt-v1.",
+    "Do not output candidate name, contact, employer metadata, dates, education, or shipped_titles inside the resume object; Raven restores those from verified canonical data."
+  ];
+  if(kind==="coverLetter"||kind==="both")rules.push("For cover letters, write a cohesive first-person letter, usually 180-300 words, connecting two or three relevant verified examples to the job. Avoid naming past employers; Raven already carries employment history in the resume.");
+  return [
+    "RAVEN MANUAL CHATGPT GENERATION",
+    "REQUESTED OUTPUT: "+kind,
+    rules.map((rule,index)=>(index+1)+". "+rule).join("\n"),
+    "TARGET JOB\n"+JSON.stringify({track:target.track,title:target.title,company:target.company,description:target.description},null,2),
+    "VERIFIED CANDIDATE BACKGROUND\n"+JSON.stringify(profile,null,2),
+    "EVIDENCE CATALOG — cite these IDs internally in fact_ids\n"+JSON.stringify(catalog,null,2),
+    "SUPPORTED POSTING KEYWORD GUIDANCE\n"+JSON.stringify(keywordGuidance,null,2),
+    "OUTPUT SHAPE\n"+JSON.stringify(output,null,2)
+  ].join("\n\n");
+}
+
 const ORIGINS=new Set(["https://shipitmyguy-ux.github.io","http://localhost:8000","http://127.0.0.1:8000"]);
 const TRACKS=new Set(["Professional","Labor","Wildcard","Games / 3D"]);
 function field(value,max,label){
@@ -90,6 +137,18 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch,logEvidence=e
       if(!r.ok)throw new WriterError("Could not load your verified background.","PROFILE_UNAVAILABLE",503);
       const rows=await r.json(),profile=rows?.[0]?.profile;
       if(!profile||JSON.stringify(profile).length>150000)throw new WriterError("Verified candidate background is missing or too large.","PROFILE_UNAVAILABLE",503);
+
+      if(body.promptOnly===true){
+        const promptKind=body.promptDocumentType==="both"?"both":body.promptDocumentType==="coverLetter"?"coverLetter":kind;
+        return json({ok:true,format:"raven-chatgpt-v1",prompt:buildExternalChatPrompt(promptKind,profile,target)});
+      }
+      if(body.manualDraft){
+        const draft=body.manualDraft;
+        if(typeof draft!=="object"||Array.isArray(draft))throw new WriterError("Paste the Raven JSON object returned by ChatGPT.","INVALID_INPUT",400);
+        const document=validateDraft(kind,draft,profile,{target,instructions:""});
+        return json({ok:true,[kind]:document,manual_import:true,ai_used:false,fallback_used:false,
+          final_review:{status:"passed",factual_review:{status:"passed",reviewer:"raven-deterministic-manual-import"}}});
+      }
 
       // Initial drafts remain usable when the free service is down. Revisions
       // must succeed explicitly; a fallback must never masquerade as a rewrite.
