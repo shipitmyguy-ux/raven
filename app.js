@@ -1903,13 +1903,17 @@
       setGenerationButton(button,true,"Preparing ChatGPT…");
       setStatus("Building a grounded ChatGPT prompt…");
       const prompt=await requestChatGptPrompt(job,type);
+      const chatUrl="https://chatgpt.com/?q="+encodeURIComponent(prompt);
+      const opened=Boolean(chatTab && !chatTab.closed);
+      if(opened) chatTab.location.replace(chatUrl);
       const copied=await copyTextToClipboard(prompt);
-      if(chatTab) chatTab.location.replace("https://chatgpt.com/");
-      if(copied){
-        setStatus("ChatGPT prompt copied · paste it into the new ChatGPT tab and send");
+      if(opened){
+        setStatus("ChatGPT opened with your prompt · if the message box is empty, "+(copied?"press Ctrl+V (⌘V on Mac)":"copy the prompt below")+" and send");
       }else{
-        setStatus("ChatGPT opened · copy the prompt from the fallback box");
-        window.prompt("Copy this Raven prompt, then paste it into ChatGPT:",prompt);
+        setStatus("ChatGPT pop-up blocked · allow pop-ups for Raven and try again"+(copied?", or paste the copied prompt into ChatGPT":""));
+      }
+      if(!copied){
+        window.prompt("Backup: copy this Raven prompt if ChatGPT's message box is empty:",prompt);
       }
     }catch(error){
       if(chatTab && !chatTab.closed) chatTab.close();

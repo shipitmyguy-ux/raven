@@ -260,3 +260,7 @@ The approved game resume was rendered with production HTML to two WeasyPrint pag
 - 74 targeted local tests, core/targeted-browser CI 36754731600, and production smoke 36754731548 pass. Public responses do not receive the new private trace data.
 - Live verification event 357 did not repeat the number error but was blocked for repeating the headline. It does not establish successful generation or reliable model citation retention. Do not broaden this fix to duplication or repeat the prior sweep.
 - Two generation requests total; all saved-document checksums across 368 rows and Accurx's stored track/last-updated value unchanged. Full evidence and limits: docs/qa/2026-09-30-accurx-number-review.md.
+
+## ChatGPT prompt handoff (2026-09-30)
+- Frontend v71 carries the complete prompt in ChatGPT's `q` link instead of opening its bare homepage. Clipboard backup remains available, and blocked pop-ups are reported accurately.
+- Four focused handler tests pass (long/unicode prompt preservation, clipboard denial, popup blocking, request failure); syntax and whitespace checks pass. Actual signed-in ChatGPT composer prefill is not verified here and may depend on ChatGPT handling the link.

@@ -225,3 +225,8 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Deploy resume v126; pass 74 targeted tests, core/targeted-browser CI and production smoke; verify unchanged saved documents.
 - [~] Full Accurx generation still review-blocked: final event 357 repeats the headline. Number rejection did not recur, but live citation-retention reliability is not established. This separate repetition path is outside this task.
 - Evidence: docs/qa/2026-09-30-accurx-number-review.md. Two calls only; no repeated six-call sweep.
+
+## ChatGPT handoff correction (2026-09-30)
+- [x] Carry full prompt into the ChatGPT launch URL; preserve clipboard fallback and report blocked popups.
+- [x] Verify four focused handler cases and bump frontend to v71.
+- [ ] Verify prefill in the user’s signed-in ChatGPT session.
