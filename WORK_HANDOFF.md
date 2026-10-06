@@ -1,6 +1,11 @@
 # Raven execution handoff
 
-Latest task: resume downloads and ChatGPT JSON attachments (2026-10-06).
+Latest task: application-action labels escaping their buttons (2026-10-06).
+
+## Application action label containment
+- Fixed the single-span Generate both / Finish documents label occupying the 22px icon column. Single-span labels now span both grid columns; all action labels wrap and buttons/grid rows can grow.
+- Bumped stylesheet cache key. Verified every icon/label bounding box inside its button at 715x764, 375x764, and 320x764 in local Edge with mocked services; inspected the 715px screenshot. No live data was changed.
+- Local fix only. The previously rejected GitHub push still requires explicit user authorization; production remains unchanged.
 
 ## Resume downloads / JSON handoff
 - Frontend v72: real OOXML Word downloads, browser Save as PDF, and immediate JSON-file import. `document-download.mjs` exports existing rendered text. `resume-transfer.mjs` requests file delivery and binds imports to the job/request/previous document values.

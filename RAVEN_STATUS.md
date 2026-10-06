@@ -1,5 +1,9 @@
 # Raven Status
 
+## Action-button label containment (2026-10-06)
+- Local CSS fix makes single-span labels use the full button grid and allows wrapping with growing rows.
+- Local mocked Edge checks at 715, 375, and 320 pixels show every action label contained. Visually verified at 715px. GitHub push/publication remain blocked pending authorization recorded in WORK_HANDOFF.md.
+
 ## Resume downloads / ChatGPT JSON files (2026-10-06)
 - Frontend v72 adds Word downloads, browser Save as PDF, and immediate JSON-file import.
 - ChatGPT prompts request JSON attachments with job-bound request IDs. Extension 2.2.0 queues matching files for automatic validation/persistence, preserving newer documents and approval gating.

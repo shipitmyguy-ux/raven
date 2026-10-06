@@ -238,3 +238,8 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Verify focused units and mocked browser download/import/reload.
 - [ ] Publish frontend/extension and update the installed extension.
 - [ ] Verify signed-in ChatGPT file creation and attachment handoff; inspect Word/PDF pagination.
+
+## Action labels (2026-10-06)
+- [x] Fix text escaping Generate both and allow action labels to wrap.
+- [x] Verify containment at 715, 375, and 320 pixels in mocked Edge; visually inspect 715px.
+- [ ] Push/publish after resolving the recorded authorization blocker.

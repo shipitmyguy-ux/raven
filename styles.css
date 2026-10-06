@@ -2385,12 +2385,24 @@ body.options-open > :not(main):not(.options-dialog) {
 
 .workflow-actions .workflow-action {
   min-width: 0;
+  height: auto;
+  min-height: 44px;
+  padding: 8px 9px;
+}
+
+.workflow-actions {
+  grid-auto-rows: minmax(44px, auto);
 }
 
 .workflow-actions .workflow-action span:last-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
+.workflow-actions .workflow-action span:only-child {
+  grid-column: 1 / -1;
 }
 
 @media (max-width: 480px) {
