@@ -248,3 +248,7 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Add Download resume only when a saved resume exists; reuse direct Word export.
 - [x] Verify absent-before-generation and menu download in mocked Edge.
 - [ ] Publish with the pending frontend changes after push authorization.
+
+## GitHub delivery (2026-10-06)
+- [x] Push prepared changes to `shipitmyguy-ux/raven` after user authorization; open PR #55.
+- [ ] Merge and deploy PR #55; verify hosted assets and extension packaging.

@@ -1,5 +1,8 @@
 # Raven Status
 
+## GitHub delivery (2026-10-06)
+- Resume downloads, JSON handoff, and action-label fixes are pushed on `codex/resume-download-json`, with PR #55 open. Push authorization blocker is resolved. Merge/deployment remain pending.
+
 ## Resume menu download (2026-10-06)
 - Local frontend v73 adds Download resume to the populated resume's … menu, downloading Word directly. Mocked Edge verified absence before generation and direct download afterward. Publication remains pending.
 

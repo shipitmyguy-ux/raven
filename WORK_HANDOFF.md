@@ -1,6 +1,10 @@
 # Raven execution handoff
 
-Latest task: Download resume in the document overflow menu (2026-10-06).
+Latest task: push prepared Raven updates (2026-10-06).
+
+## GitHub delivery
+- User authorized pushing updates. Feature branch `codex/resume-download-json` was pushed successfully to `shipitmyguy-ux/raven`; PR #55 is open: https://github.com/shipitmyguy-ux/raven/pull/55.
+- Earlier push approval blocker is resolved. Implementation and documentation are now durable in GitHub. Merge and production deployment remain pending; do not report updates as live.
 
 ## Resume overflow download
 - Frontend v73 adds Download resume to the existing … menu only for a populated resume. Clicking downloads Word directly through the shared export helper, without opening review or changing review state.
