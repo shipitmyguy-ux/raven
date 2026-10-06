@@ -243,3 +243,8 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Fix text escaping Generate both and allow action labels to wrap.
 - [x] Verify containment at 715, 375, and 320 pixels in mocked Edge; visually inspect 715px.
 - [ ] Push/publish after resolving the recorded authorization blocker.
+
+## Resume overflow download (2026-10-06)
+- [x] Add Download resume only when a saved resume exists; reuse direct Word export.
+- [x] Verify absent-before-generation and menu download in mocked Edge.
+- [ ] Publish with the pending frontend changes after push authorization.

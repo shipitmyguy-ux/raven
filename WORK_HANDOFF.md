@@ -1,6 +1,10 @@
 # Raven execution handoff
 
-Latest task: application-action labels escaping their buttons (2026-10-06).
+Latest task: Download resume in the document overflow menu (2026-10-06).
+
+## Resume overflow download
+- Frontend v73 adds Download resume to the existing … menu only for a populated resume. Clicking downloads Word directly through the shared export helper, without opening review or changing review state.
+- Verified with local mocked Edge: no download control before generation; generated resume exposes the menu item and downloads a `.docx` directly. Syntax and whitespace pass. Local-only; previous push authorization blocker remains unresolved.
 
 ## Application action label containment
 - Fixed the single-span Generate both / Finish documents label occupying the 22px icon column. Single-span labels now span both grid columns; all action labels wrap and buttons/grid rows can grow.

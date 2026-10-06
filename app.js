@@ -1303,6 +1303,14 @@
                 openDocumentReview(job,button.dataset.documentRevise);
               });
             });
+            expanded.querySelectorAll("[data-document-download]").forEach((button)=>{
+              button.addEventListener("click",(event)=>{
+                event.stopPropagation();
+                button.closest(".document-menu").hidden=true;
+                expanded.querySelectorAll("[data-document-menu]").forEach(item=>item.setAttribute("aria-expanded","false"));
+                if(job.resume)downloadReviewedDocument("docx",job,"resume");
+              });
+            });
             expanded.querySelectorAll("[data-document-regenerate]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
@@ -1972,9 +1980,8 @@
     }finally{activeChatImports.delete(parsed.request_id);}
   }
 
-  async function downloadReviewedDocument(format){
-    const job=state.generatorJob,type=state.generatorType;
-    if(!job||!type)return;
+  async function downloadReviewedDocument(format,job=state.generatorJob,type=state.generatorType){
+    if(!job||!type||!job[type])return;
     try{
       if(type==="resume")await refreshSavedResumeContact(job);
       const value=String(job[type]||"");
@@ -2507,6 +2514,7 @@
       '<span class="document-overflow">'+
         '<button class="document-menu-button" type="button" data-document-menu aria-haspopup="menu" aria-expanded="false" aria-label="More '+escapeAttr(fileLabel)+' options" title="More options">…</button>'+
         '<span class="document-menu" role="menu" hidden>'+
+          (key==="resume"?'<button type="button" role="menuitem" data-document-download="resume" title="Download resume as Word (.docx)">Download resume</button>':"")+
           '<button type="button" role="menuitem" data-document-revise="'+escapeAttr(key)+'">Request changes</button>'+
           '<button type="button" role="menuitem" data-document-regenerate="'+escapeAttr(key)+'">Regenerate</button>'+
           '<button type="button" role="menuitem" data-chatgpt-prompt="'+escapeAttr(key)+'">Create ChatGPT prompt</button>'+

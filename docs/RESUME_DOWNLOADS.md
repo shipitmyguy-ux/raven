@@ -1,5 +1,7 @@
 # Resume downloads and ChatGPT files
 
+For an already-generated resume, the … menu next to Review includes **Download resume**, which downloads Word directly. The item is absent before generation. PDF saving remains available in review.
+
 Review a saved resume or cover letter to access **Download Word** (real OOXML `.docx`, selectable Unicode text) or **Save as PDF** (browser print dialog; choose Save as PDF and disable headers/footers). Word uses a single-column document with headings and bullet text. PDF preserves Raven's styled document. Downloads do not approve documents or submit applications.
 
 The frontend adds file-delivery instructions to the existing server-grounded prompt, asking ChatGPT to create a UTF-8 JSON attachment instead of printing the resume. Evidence IDs and `raven-chatgpt-v1` remain intact, plus a random `request_id`. File creation requires ChatGPT's file tool.
