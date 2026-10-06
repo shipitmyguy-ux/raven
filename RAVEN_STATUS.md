@@ -1,5 +1,10 @@
 # Raven Status
 
+## ChatGPT resume prompt efficiency (2026-10-06)
+- Manual ChatGPT prompts now use single-source minified evidence, matched supported keywords, and explicit must-preserve fact IDs for required Games / 3D roles. Suggested game resume length is 375–475 words. Local syntax/whitespace checks pass; this code is not deployed.
+- Live Smile-Break prompt request failed with browser `Failed to fetch` before ChatGPT opened. Generator edge functions report ACTIVE, but request reachability was not verified. A one-off ChatGPT response took approximately 10 seconds and still had malformed keys and unsupported summary wording.
+- A repaired JSON draft is available locally as `Smile-Break-Senior-Environment-Artist.json`; it was not imported into Raven or persisted. Existing saved resume and job status are unchanged. No end-to-end Raven generation or persistence is claimed.
+
 ## Applied-job badge (2026-10-06)
 - Frontend v74 adds a prominent APPLIED tag on cards with application history. Verified locally in mocked Edge at 375px across Saved, Applied, Interview, and previously applied Ignored cases. Pushed to PR #55; GitHub core and browser checks passed. Merge/publication blocked by automatic approval review pending explicit authorization.
 

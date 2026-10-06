@@ -20,6 +20,7 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] requires real-site/user-acc
 - [x] Malformed ATS rows were cleaned; current malformed saved/search-result counts are zero.
 
 ### Documents
+- [~] Reduce manual ChatGPT resume latency and omissions: compact prompts and explicit must-preserve facts are implemented locally; verify live prompt-service reachability and a clean under-10-second end-to-end output before claiming completion.
 - [x] Live resume generation verified on real stored jobs across all four tracks.
 - [x] Live cover-letter generation verified on real stored jobs across all four tracks.
 - [x] Eight-request live acceptance pass returned HTTP 200 and canonical-fact-only output.

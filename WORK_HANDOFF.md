@@ -1,35 +1,20 @@
 # Raven execution handoff
 
-Latest task: prominent applied-job badge (2026-10-06).
+Latest task: Smile-Break resume and manual ChatGPT generation speed (2026-10-06).
 
-## Applied card badge
-- Frontend v74 displays a large green checkmark/APPLIED badge above the title for applied jobs, later application stages, and rows retaining an applied date. Unapplied listings have no badge.
-- Mocked Edge verified Saved absence, Applied/Interview presence, applied-date retention on Ignored, and 375px containment. Mobile screenshot visually inspected; syntax and whitespace pass. GitHub Browser regression #205 and Reusable core tests #485 passed for e5481c3.
-- Pushed badge to PR #55. Automatic approval review rejected merging it, stating feature-branch push authorization does not include merge/production deployment. Explicit approval to merge/publish PR #55 is required before retrying; do not bypass through a main push. Production is unchanged.
+## Prompt optimization
+- `supabase/functions/_shared/document-handler.mjs` now sends candidate evidence once in compact, minified JSON instead of repeating all experience facts in both a background object and evidence catalog. The prompt includes only posting-matched supported keywords and lists up to two matched must-preserve fact IDs for each required Games / 3D experience. It requires every role, forbids unsupported claims/schema changes, and guides a 375–475 word output.
+- `docs/DOCUMENT_WRITING.md`, `RAVEN_STATUS.md`, and `TASKS.md` record the change and verification limits.
+- `node --check supabase/functions/_shared/document-handler.mjs` and `git diff --check` pass. No tests were run. Code and prompt-size savings are not deployed or measured against the live endpoint.
 
-## GitHub delivery
-- User authorized pushing updates. Feature branch `codex/resume-download-json` was pushed successfully to `shipitmyguy-ux/raven`; PR #55 is open: https://github.com/shipitmyguy-ux/raven/pull/55.
-- Earlier push approval blocker is resolved. Implementation and documentation are now durable in GitHub. Merge and production deployment remain pending; do not report updates as live.
+## Smile-Break attempt and timing
+- Target job: Smile-Break Senior Environment Artist. Current saved record has only a short description in Raven; the public listing was reviewed and used to tailor the one-off prompt. Existing saved resume/status were preserved.
+- Clicking Raven's “Create ChatGPT prompt” returned in about 0.42 seconds but the prompt request failed with browser `Failed to fetch`, before ChatGPT opened. Supabase shows the Raven generator functions ACTIVE (proxy v25, downstream v128); logs query returned a backend error, so POST/CORS reachability remains unknown.
+- A one-off ChatGPT prompt with verified profile evidence completed in approximately 10 seconds. Its response included malformed output keys and unsupported summary claims. It was not imported or persisted.
+- A corrected Raven-format JSON draft is in `Smile-Break-Senior-Environment-Artist.json`. It remains an untracked local artifact and is not verified by Raven or linked to the job. The canonical profile and current saved resume were not changed.
+- ChatGPT's public browser session is signed out; the anonymous prompt worked. No credentials were entered. The measured model time is a single run, not an under-10-second guarantee.
 
-## Resume overflow download
-- Frontend v73 adds Download resume to the existing … menu only for a populated resume. Clicking downloads Word directly through the shared export helper, without opening review or changing review state.
-- Verified with local mocked Edge: no download control before generation; generated resume exposes the menu item and downloads a `.docx` directly. Syntax and whitespace pass. Local-only; previous push authorization blocker remains unresolved.
-
-## Application action label containment
-- Fixed the single-span Generate both / Finish documents label occupying the 22px icon column. Single-span labels now span both grid columns; all action labels wrap and buttons/grid rows can grow.
-- Bumped stylesheet cache key. Verified every icon/label bounding box inside its button at 715x764, 375x764, and 320x764 in local Edge with mocked services; inspected the 715px screenshot. No live data was changed.
-- Local fix only. The previously rejected GitHub push still requires explicit user authorization; production remains unchanged.
-
-## Resume downloads / JSON handoff
-- Frontend v72: real OOXML Word downloads, browser Save as PDF, and immediate JSON-file import. `document-download.mjs` exports existing rendered text. `resume-transfer.mjs` requests file delivery and binds imports to the job/request/previous document values.
-- Extension 2.2.0 adds Downloads permission, watches matching ChatGPT attachment links, queues completed file contents until acknowledged, and transfers through Raven's unchanged manual-draft fact checks and save path. Human approval remains required. No backend deployment or schema change.
-- Verified: eleven focused unit checks plus 22 existing reliability checks; two mocked Edge browser checks cover Word download, print invocation, automatic import, and reload persistence. Syntax, secret scan, and whitespace pass.
-- Signed-in ChatGPT attachment links/URL access and final Word/PDF pagination are not verified. Update the installed extension and reload Raven/ChatGPT for automatic transfer. Publication is pending; do not report this as live.
-- Work branch: `codex/resume-download-json`, started from GitHub dacc259. See docs/RESUME_DOWNLOADS.md and extension/README.md.
-- Implementation committed locally as e53f0e8. Automatic approval review rejected pushing the feature branch to `https://github.com/shipitmyguy-ux/raven.git`, citing unverified external destination/code egress without explicit user authorization. GitHub durability, pull request, CI, and production publication remain pending. Request approval for this exact branch/destination before retrying; do not bypass the rejection.
-
-## ChatGPT prompt handoff (2026-09-30)
-- Frontend v71 carries the complete prompt in ChatGPT's `q` link instead of opening its bare homepage. Clipboard backup remains available, and blocked pop-ups are reported accurately.
-- Four focused handler tests pass (long/unicode prompt preservation, clipboard denial, popup blocking, request failure); syntax and whitespace checks pass. Actual signed-in ChatGPT composer prefill is not verified here and may depend on ChatGPT handling the link.
-
-Frontend-only change; no backend, saved-document, generation guard, or candidate-profile changes. Prior Accurx investigation remains documented in docs/qa/2026-09-30-accurx-number-review.md.
+## Delivery state
+- The current Git checkout is `codex/resume-download-json`; there is no Git remote configured in this workspace. No commit or push has been made for this task.
+- The user previously authorized pushing updates but not merging/deploying. Keep the local resume JSON out of GitHub. Restore the feature-branch remote before pushing if available; do not merge/deploy without its separate authorization.
+- Next useful step: check/repair the deployed generator POST path from the Raven origin, then regenerate from the compact must-preserve prompt, run deterministic manual-import checks, and confirm the saved document survives a fresh Raven read. Do not claim the 10-second goal or Raven persistence until that succeeds.
