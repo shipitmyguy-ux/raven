@@ -4,7 +4,8 @@ Latest task: prominent applied-job badge (2026-10-06).
 
 ## Applied card badge
 - Frontend v74 displays a large green checkmark/APPLIED badge above the title for applied jobs, later application stages, and rows retaining an applied date. Unapplied listings have no badge.
-- Mocked Edge verified Saved absence, Applied/Interview presence, applied-date retention on Ignored, and 375px containment. Mobile screenshot visually inspected; syntax and whitespace pass. Publication pending.
+- Mocked Edge verified Saved absence, Applied/Interview presence, applied-date retention on Ignored, and 375px containment. Mobile screenshot visually inspected; syntax and whitespace pass. GitHub Browser regression #205 and Reusable core tests #485 passed for e5481c3.
+- Pushed badge to PR #55. Automatic approval review rejected merging it, stating feature-branch push authorization does not include merge/production deployment. Explicit approval to merge/publish PR #55 is required before retrying; do not bypass through a main push. Production is unchanged.
 
 ## GitHub delivery
 - User authorized pushing updates. Feature branch `codex/resume-download-json` was pushed successfully to `shipitmyguy-ux/raven`; PR #55 is open: https://github.com/shipitmyguy-ux/raven/pull/55.

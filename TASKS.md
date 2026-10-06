@@ -256,4 +256,5 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 ## Applied-job badge (2026-10-06)
 - [x] Add prominent APPLIED badge, retaining it for later application stages/history.
 - [x] Verify badge presence/absence and mobile containment in mocked Edge.
-- [ ] Publish and verify live badge.
+- [x] Push badge to PR #55 and pass GitHub core/browser checks.
+- [ ] Merge/publish PR #55 after explicit authorization required by automatic approval review, then verify live badge.
