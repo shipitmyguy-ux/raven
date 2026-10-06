@@ -252,3 +252,8 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 ## GitHub delivery (2026-10-06)
 - [x] Push prepared changes to `shipitmyguy-ux/raven` after user authorization; open PR #55.
 - [ ] Merge and deploy PR #55; verify hosted assets and extension packaging.
+
+## Applied-job badge (2026-10-06)
+- [x] Add prominent APPLIED badge, retaining it for later application stages/history.
+- [x] Verify badge presence/absence and mobile containment in mocked Edge.
+- [ ] Publish and verify live badge.

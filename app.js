@@ -1196,9 +1196,10 @@
           const salary=job.salaryText||"";
           const degreeGap=degreeAlert(job);
           const rawStatus=String(job.status||"Saved");
+          const hasApplied=Boolean(job.appliedDate||job.applied_date)||/^(applied|interview|offer|rejected)$/i.test(rawStatus);
           const meaningfulStatus=!/^(saved|discovered|interested)$/i.test(rawStatus);
           const statusLabel=rawStatus;
-          const attentionIndicator=meaningfulStatus
+          const attentionIndicator=meaningfulStatus&&rawStatus.toLowerCase()!=="applied"
             ? '<span class="job-status">'+escapeHtml(statusLabel)+'</span>'
             : '';
           const generationIndicator=generating
@@ -1215,6 +1216,7 @@
           card.innerHTML=
             '<button class="job-card-summary" type="button" aria-expanded="'+String(job.id===state.selectedId)+'">'+
               '<span class="card-main">'+
+                (hasApplied?'<span class="applied-job-badge"><span aria-hidden="true">✓</span> APPLIED</span>':'')+
                 (attentionIndicator?'<span class="card-topline">'+attentionIndicator+'</span>':'')+
                 generationIndicator+
                 '<span class="job-title">'+escapeHtml(job.title||"Untitled job")+'</span>'+

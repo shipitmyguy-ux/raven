@@ -1,6 +1,10 @@
 # Raven execution handoff
 
-Latest task: push prepared Raven updates (2026-10-06).
+Latest task: prominent applied-job badge (2026-10-06).
+
+## Applied card badge
+- Frontend v74 displays a large green checkmark/APPLIED badge above the title for applied jobs, later application stages, and rows retaining an applied date. Unapplied listings have no badge.
+- Mocked Edge verified Saved absence, Applied/Interview presence, applied-date retention on Ignored, and 375px containment. Mobile screenshot visually inspected; syntax and whitespace pass. Publication pending.
 
 ## GitHub delivery
 - User authorized pushing updates. Feature branch `codex/resume-download-json` was pushed successfully to `shipitmyguy-ux/raven`; PR #55 is open: https://github.com/shipitmyguy-ux/raven/pull/55.

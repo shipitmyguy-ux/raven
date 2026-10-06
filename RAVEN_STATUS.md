@@ -1,5 +1,8 @@
 # Raven Status
 
+## Applied-job badge (2026-10-06)
+- Frontend v74 adds a prominent APPLIED tag on cards with application history. Verified locally in mocked Edge at 375px across Saved, Applied, Interview, and previously applied Ignored cases. Publication pending.
+
 ## GitHub delivery (2026-10-06)
 - Resume downloads, JSON handoff, and action-label fixes are pushed on `codex/resume-download-json`, with PR #55 open. Push authorization blocker is resolved. Merge/deployment remain pending.
 
