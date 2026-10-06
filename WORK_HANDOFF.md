@@ -8,6 +8,7 @@ Latest task: resume downloads and ChatGPT JSON attachments (2026-10-06).
 - Verified: eleven focused unit checks plus 22 existing reliability checks; two mocked Edge browser checks cover Word download, print invocation, automatic import, and reload persistence. Syntax, secret scan, and whitespace pass.
 - Signed-in ChatGPT attachment links/URL access and final Word/PDF pagination are not verified. Update the installed extension and reload Raven/ChatGPT for automatic transfer. Publication is pending; do not report this as live.
 - Work branch: `codex/resume-download-json`, started from GitHub dacc259. See docs/RESUME_DOWNLOADS.md and extension/README.md.
+- Implementation committed locally as e53f0e8. Automatic approval review rejected pushing the feature branch to `https://github.com/shipitmyguy-ux/raven.git`, citing unverified external destination/code egress without explicit user authorization. GitHub durability, pull request, CI, and production publication remain pending. Request approval for this exact branch/destination before retrying; do not bypass the rejection.
 
 ## ChatGPT prompt handoff (2026-09-30)
 - Frontend v71 carries the complete prompt in ChatGPT's `q` link instead of opening its bare homepage. Clipboard backup remains available, and blocked pop-ups are reported accurately.
