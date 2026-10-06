@@ -1,5 +1,10 @@
 # Raven Status
 
+## Resume downloads / ChatGPT JSON files (2026-10-06)
+- Frontend v72 adds Word downloads, browser Save as PDF, and immediate JSON-file import.
+- ChatGPT prompts request JSON attachments with job-bound request IDs. Extension 2.2.0 queues matching files for automatic validation/persistence, preserving newer documents and approval gating.
+- Eleven focused unit checks and two mocked Edge browser checks pass. Signed-in ChatGPT attachment transfer and final export pagination remain unverified. Changes are on a working branch; publication is pending.
+
 Last normalized: 2026-09-24
 
 ## Scope

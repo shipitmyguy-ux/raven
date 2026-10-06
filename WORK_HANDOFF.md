@@ -1,6 +1,13 @@
 # Raven execution handoff
 
-Latest task: correct ChatGPT button opening an empty chat.
+Latest task: resume downloads and ChatGPT JSON attachments (2026-10-06).
+
+## Resume downloads / JSON handoff
+- Frontend v72: real OOXML Word downloads, browser Save as PDF, and immediate JSON-file import. `document-download.mjs` exports existing rendered text. `resume-transfer.mjs` requests file delivery and binds imports to the job/request/previous document values.
+- Extension 2.2.0 adds Downloads permission, watches matching ChatGPT attachment links, queues completed file contents until acknowledged, and transfers through Raven's unchanged manual-draft fact checks and save path. Human approval remains required. No backend deployment or schema change.
+- Verified: eleven focused unit checks plus 22 existing reliability checks; two mocked Edge browser checks cover Word download, print invocation, automatic import, and reload persistence. Syntax, secret scan, and whitespace pass.
+- Signed-in ChatGPT attachment links/URL access and final Word/PDF pagination are not verified. Update the installed extension and reload Raven/ChatGPT for automatic transfer. Publication is pending; do not report this as live.
+- Work branch: `codex/resume-download-json`, started from GitHub dacc259. See docs/RESUME_DOWNLOADS.md and extension/README.md.
 
 ## ChatGPT prompt handoff (2026-09-30)
 - Frontend v71 carries the complete prompt in ChatGPT's `q` link instead of opening its bare homepage. Clipboard backup remains available, and blocked pop-ups are reported accurately.

@@ -230,3 +230,11 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Carry full prompt into the ChatGPT launch URL; preserve clipboard fallback and report blocked popups.
 - [x] Verify four focused handler cases and bump frontend to v71.
 - [ ] Verify prefill in the user’s signed-in ChatGPT session.
+
+## Resume downloads and ChatGPT JSON (2026-10-06)
+- [x] Add genuine Word download and Save as PDF in review.
+- [x] Request downloadable JSON instead of displayed resume text; add file import fallback.
+- [x] Implement job-bound extension handoff through existing fact-check/save.
+- [x] Verify focused units and mocked browser download/import/reload.
+- [ ] Publish frontend/extension and update the installed extension.
+- [ ] Verify signed-in ChatGPT file creation and attachment handoff; inspect Word/PDF pagination.
