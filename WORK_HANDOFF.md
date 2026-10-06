@@ -15,6 +15,5 @@ Latest task: Smile-Break resume and manual ChatGPT generation speed (2026-10-06)
 - ChatGPT's public browser session is signed out; the anonymous prompt worked. No credentials were entered. The measured model time is a single run, not an under-10-second guarantee.
 
 ## Delivery state
-- The current Git checkout is `codex/resume-download-json`; there is no Git remote configured in this workspace. No commit or push has been made for this task.
-- The user previously authorized pushing updates but not merging/deploying. Keep the local resume JSON out of GitHub. Restore the feature-branch remote before pushing if available; do not merge/deploy without its separate authorization.
+- The current Git checkout is `codex/resume-download-json`; no Git remote is configured in this workspace. Prompt/docs changes were committed as `af4c1db` and pushed directly to `https://github.com/shipitmyguy-ux/raven.git` on that branch, updating PR #55. The user previously authorized pushing updates but not merging/deploying. Keep the local resume JSON out of GitHub; do not merge/deploy without its separate authorization.
 - Next useful step: check/repair the deployed generator POST path from the Raven origin, then regenerate from the compact must-preserve prompt, run deterministic manual-import checks, and confirm the saved document survives a fresh Raven read. Do not claim the 10-second goal or Raven persistence until that succeeds.
