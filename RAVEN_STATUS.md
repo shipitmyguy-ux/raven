@@ -1,5 +1,12 @@
 # Raven Status
 
+## Professional sales-role exclusion (2026-10-07)
+- Shared eligibility excludes direct selling titles and explicit personal selling responsibilities from Professional discovery ranking, cached-result reads, and browser combined lists.
+- Sales operations, enablement, training and support roles remain eligible when they do not require direct selling. Other tracks are unchanged. Saved jobs, documents and application history are preserved.
+- Verified five focused sales-filter regressions, existing Games / 3D filters, tab architecture and search resilience; all core workflow regression commands, frontend syntax and repository secret scan pass. The browser list was executed with saved/applied/discovered fixtures; no live hosted-browser or production backend verification is claimed.
+- Isolated branch: codex/professional-no-sales. Publication awaits separate user authorization recorded in the prior handoff.
+
+
 ## ChatGPT resume prompt efficiency (2026-10-06)
 - Manual ChatGPT prompts now use single-source minified evidence, matched supported keywords, and explicit must-preserve fact IDs for required Games / 3D roles. Suggested game resume length is 375–475 words. Local syntax/whitespace checks pass; this code is not deployed.
 - Live Smile-Break prompt request failed with browser `Failed to fetch` before ChatGPT opened. Generator edge functions report ACTIVE, but request reachability was not verified. A one-off ChatGPT response took approximately 10 seconds and still had malformed keys and unsupported summary wording.

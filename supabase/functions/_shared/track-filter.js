@@ -11,5 +11,19 @@
     // Art leadership must explicitly be connected to environment/3D production.
     return /\b(?:art director|art lead|lead artist)\b/i.test(title)&&/\b(?:environment art|3d art|world building|worldbuilding)\b/i.test([title,job?.snippet,job?.notes].join(" "));
   }
-  root.RavenTrackFilter={gameArtRoleAllowed,hasWholePhrase};
+
+  function professionalRoleAllowed(job){
+    const title=String(job?.title||"").replace(/[–—_-]/g," ").replace(/\s+/g," ");
+    // Supporting a sales team is different from being responsible for selling.
+    const salesSupport=/\bsales\s+(?:operations|enablement|training|support|analytics|administration|administrator)\b/i.test(title);
+    if((/\bsales\b/i.test(title)&&!salesSupport)
+      || /\bsalesperson\b|\bseller\b|\baccount executive\b|\baccount manager\b|\bbusiness development\b|\b(?:SDR|BDR)\b|\bpre\s?sales\b|\bsolutions? consultant\b|\bcloser\b/i.test(title))return false;
+    const body=[job?.snippet,job?.notes,job?.description].filter(Boolean).join(" ").replace(/<[^>]*>/g," ");
+    // Catch selling responsibilities hidden behind customer-success or generic
+    // operations titles. Incidental mentions of sales, revenue, or colleagues'
+    // quotas are intentionally insufficient.
+    const responsibility=/\b(?:you(?:'ll| will)?|this role|the role|responsibilities include)\s+(?:will\s+)?(?:personally\s+)?(?:carry|own|meet|hit|achieve)\s+(?:an?\s+|your\s+|the\s+)?(?:sales\s+|revenue\s+)?quota\b|\b(?:own|carry|meet|hit|achieve)\s+(?:an?\s+|your\s+)?(?:sales|revenue)\s+quota\b|\b(?:responsible for|responsibilities include|you(?:'ll| will)?|this role will)\s+(?:personally\s+)?(?:closing\s+(?:new\s+)?(?:sales|deals)|close\s+(?:new\s+)?(?:sales|deals)|selling\s+(?:our\s+)?(?:products|services)|sell\s+(?:our\s+)?(?:products|services)|prospecting\s+(?:for\s+)?(?:new\s+)?(?:customers|clients)|cold\s+calling)\b/i;
+    return !responsibility.test(body);
+  }
+  root.RavenTrackFilter={gameArtRoleAllowed,professionalRoleAllowed,hasWholePhrase};
 })(globalThis);
