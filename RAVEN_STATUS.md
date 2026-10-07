@@ -1,11 +1,10 @@
 # Raven Status
 
 ## Professional sales-role exclusion (2026-10-07)
-- Shared eligibility excludes direct selling titles and explicit personal selling responsibilities from Professional discovery ranking, cached-result reads, and browser combined lists.
-- Sales operations, enablement, training and support roles remain eligible when they do not require direct selling. Other tracks are unchanged. Saved jobs, documents and application history are preserved.
-- Verified five focused sales-filter regressions, existing Games / 3D filters, tab architecture and search resilience; all core workflow regression commands, frontend syntax and repository secret scan pass. The browser list was executed with saved/applied/discovered fixtures; no live hosted-browser or production backend verification is claimed.
-- Isolated branch: codex/professional-no-sales. Pushed to GitHub PR #56. Standing push authorization is recorded in AGENTS.md. Production deployment was rejected by automatic approval review because explicit deployment authorization was not established; live app/backend remain unchanged.
-
+- Published PR #56 at a88dab9f4993df9f6c8345493a476c7a4f92b5a4; frontend app v75 and track-filter v2 confirmed on GitHub Pages. raven-backend-v3 v54 is ACTIVE and reports healthy.
+- Shared eligibility excludes direct selling titles and explicit personal selling responsibilities from Professional fresh ranking, cached reads, and browser lists. Non-selling operations, training, support and enablement remain eligible. Stored jobs, documents and application history are not mutated.
+- Five focused regressions and all 25 local core workflow commands passed, plus syntax, secret scan and whitespace checks. PR core/browser checks passed. Release core, Pages deploy and both production smoke runs passed. A read-only live query returned 99 Professional results; zero were rejected by the new shared filter.
+- Standing user authorization for future Raven pushes is recorded in AGENTS.md. User also explicitly approved this merge and deployment; prior approval blockers are resolved.
 
 ## ChatGPT resume prompt efficiency (2026-10-06)
 - Manual ChatGPT prompts now use single-source minified evidence, matched supported keywords, and explicit must-preserve fact IDs for required Games / 3D roles. Suggested game resume length is 375–475 words. Local syntax/whitespace checks pass; this code is not deployed.

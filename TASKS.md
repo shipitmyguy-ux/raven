@@ -264,8 +264,8 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Exclude direct sales roles and explicit selling duties using shared browser/backend eligibility.
 - [x] Preserve saved records and keep non-selling support, training, enablement and operations roles eligible.
 - [x] Verify focused filters, browser-list fixtures, ranking, all core workflow regressions, syntax and secret scan.
-- [ ] Merge/publish after separate user authorization, deploy backend shared filter and verify live Professional results.
+- [x] Merge/publish with explicit user authorization; deploy backend v54 and verify live frontend/filter, healthy service and 99 Professional results.
 
 - [x] Push Professional sales-filter review branch and create PR #56; attach to the active chat.
 - [x] Record user standing authorization for future Raven pushes.
-- [ ] Resolve automatic approval review's separate production-deployment requirement, then merge and deploy this filter.
+- [x] Resolve the production-deployment requirement through explicit user approval; merge PR #56 and deploy frontend/backend.
