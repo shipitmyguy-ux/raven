@@ -25,6 +25,28 @@
   }
 
   if(location.hostname===RAVEN_HOST){
+    document.addEventListener("raven-chatgpt-request",()=>{
+      const value=document.getElementById("ravenExtensionBridge")?.dataset.chatgptRequest;
+      try{chrome.runtime.sendMessage({type:"raven-chatgpt-request",...JSON.parse(value)},()=>void chrome.runtime.lastError);}catch{}
+    });
+    document.addEventListener("raven-chatgpt-ack",()=>{
+      const requestId=document.getElementById("ravenExtensionBridge")?.dataset.chatgptAck;
+      if(requestId)chrome.runtime.sendMessage({type:"raven-chatgpt-ack",requestId},()=>void chrome.runtime.lastError);
+    });
+    const deliverResults=()=>chrome.storage.local.get("ravenChatGptResults",values=>{
+      const bridge=document.getElementById("ravenExtensionBridge");if(!bridge)return;
+      for(const text of Object.values(values.ravenChatGptResults||{})){
+        bridge.dataset.chatgptResult=text;
+        document.dispatchEvent(new CustomEvent("raven-chatgpt-result"));
+      }
+    });
+    // Retry after Raven has loaded jobs, and retain files until Raven acknowledges saving.
+    setInterval(deliverResults,15000);
+    chrome.storage.onChanged.addListener(changes=>{
+      if(changes.ravenChatGptResults)deliverResults();
+      if(changes.ravenChatGptError?.newValue)banner(changes.ravenChatGptError.newValue);
+    });
+    deliverResults();
     document.addEventListener("raven-application-packet",()=>{
       const bridge=document.getElementById("ravenExtensionBridge");
       if(!bridge?.dataset.packet) return;

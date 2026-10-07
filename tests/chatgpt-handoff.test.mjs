@@ -2,16 +2,17 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import {filePrompt,REQUEST_KEY} from '../resume-transfer.mjs';
 const source=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
-const handler=source.slice(source.indexOf('  async function launchChatGptPrompt('),source.indexOf('  function parseChatGptPayload('));
+const handler=source.slice(source.indexOf('  async function launchChatGptPrompt('),source.indexOf('  function parseChatGptPayload(')).replace('await import("./resume-transfer.mjs?v=1")','transferModule');
 async function run({blocked=false,copied=true,fail=false}={}){
  const prompt='Resume & cover\nARK: Survival Evolved + DLCs\n'+ 'Verified source text — '.repeat(1500);
  const result={};
  const tab={closed:false,document:{title:'',body:{}},location:{replace:url=>{result.url=url;}},close:()=>{result.closed=true;}};
- const context={window:{open:()=>blocked?null:tab,prompt:(_,value)=>{result.fallback=value;}},requestChatGptPrompt:async()=>{if(fail)throw new Error('service failed');return prompt;},copyTextToClipboard:async value=>{result.clipboard=value;return copied;},setGenerationButton:(_,active)=>{result.busy=active;},setStatus:value=>{result.status=value;},encodeURIComponent};
+ const context={transferModule:{filePrompt,REQUEST_KEY},crypto:{randomUUID:()=>"test-request"},readCache:()=>({}),writeCache:(_,value)=>{result.requests=value;},document:{getElementById:()=>null},window:{open:()=>blocked?null:tab,prompt:(_,value)=>{result.fallback=value;}},requestChatGptPrompt:async()=>{if(fail)throw new Error('service failed');return prompt;},copyTextToClipboard:async value=>{result.clipboard=value;return copied;},setGenerationButton:(_,active)=>{result.busy=active;},setStatus:value=>{result.status=value;},encodeURIComponent};
  vm.createContext(context);
  await vm.runInContext(handler+'\nlaunchChatGptPrompt({},"resume")',context);
- return {...result,prompt};
+ return {...result,prompt:filePrompt(prompt,"test-request")};
 }
 test('handoff carries the entire encoded prompt and retains clipboard backup',async()=>{
  const result=await run();

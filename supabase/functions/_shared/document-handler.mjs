@@ -1,6 +1,6 @@
 import {getStudioContext} from "./studio-context.mjs";
 import {cloudflareFreeStatus} from "./cloudflare-free.mjs";
-import {writeDocument,validateDraft,evidenceCatalog,resumeKeywordGuidance,WriterError,WRITER_VERSION} from "./document-writer.mjs";
+import {writeDocument,validateDraft,resumeKeywordGuidance,WriterError,WRITER_VERSION} from "./document-writer.mjs";
 import {createLLMCompletion,llmProviderStatus,llmUsageStatus} from "./llm-router.mjs";
 import {buildDeterministicResumeV3} from "./document-v3.mjs";
 // Content failures consume rate quota, but do not imply a provider outage.
@@ -44,8 +44,33 @@ export function buildExternalChatPrompt(requestedKind,profile,target){
     shipped_titles:structuredClone(profile.shipped_titles||[]),
     resume_required_experience_ids:structuredClone(profile.resume_required_experience_ids||[])
   };
-  const catalog=evidenceCatalog(promptProfile);
-  const keywordGuidance=resumeKeywordGuidance(promptProfile,target);
+  // Keep the external prompt's evidence single-sourced. Previously the full
+  // experience facts appeared in promptProfile and again in evidenceCatalog,
+  // with pretty-printed JSON adding further input tokens. The compact records
+  // below retain every fact ID and text needed by validateDraft.
+  const evidence={
+    skills:(promptProfile.skills||[]).map((text,i)=>({id:"skill:"+i,text})),
+    education:(promptProfile.education||[]).map((item,i)=>({id:"education:"+i,text:Object.values(item).join(" / ")})),
+    shipped_titles:(promptProfile.shipped_titles||[]).map((text,i)=>({id:"title:"+i,text})),
+    experience:(promptProfile.experience||[]).map(({id,role,company,dates,facts=[]})=>({
+      id,role,company,dates,facts:facts.map(({id,text})=>({id,text}))
+    })),
+    transferable_facts:(promptProfile.transferable_facts||[]).map(({id,text})=>({id,text})),
+    resume_required_experience_ids:promptProfile.resume_required_experience_ids||[]
+  };
+  const keywordGuidance=resumeKeywordGuidance(promptProfile,target).recommended;
+  const supportedKeywords=keywordGuidance.map(entry=>entry.keyword);
+  const experienceFactIds=new Set((promptProfile.experience||[]).flatMap(role=>(role.facts||[]).map(fact=>fact.id)));
+  const postingMatchedFactIds=new Set(keywordGuidance.flatMap(entry=>entry.evidence_ids||[]).filter(id=>experienceFactIds.has(id)));
+  const mustPreserveFactIds=[...(promptProfile.resume_required_experience_ids||[])].flatMap(experienceId=>{
+    const role=promptProfile.experience.find(item=>item.id===experienceId);
+    if(!role)return [];
+    const matched=(role.facts||[]).filter(fact=>postingMatchedFactIds.has(fact.id));
+    // Keep up to two job-matched facts for each required Games / 3D role so
+    // the full chronology survives without forcing every unrelated fact.
+    const selected=matched.length?matched.slice(0,2):(role.facts||[]).slice(0,1);
+    return selected.map(fact=>fact.id);
+  });
   const resumeShape={
     headline:{text:"Write a supported headline.",fact_ids:["supporting_fact_id"]},
     summary:{text:"Write a supported summary.",fact_ids:["supporting_fact_id"]},
@@ -62,29 +87,29 @@ export function buildExternalChatPrompt(requestedKind,profile,target){
   if(kind==="resume"||kind==="both")output.resume=resumeShape;
   if(kind==="coverLetter"||kind==="both")output.coverLetter=coverShape;
   const rules=[
-    "Write polished application material tailored to the target job using ONLY the verified candidate background and evidence catalog below.",
-    "Do not invent employers, roles, dates, shipped titles, tools, credentials, metrics, duties, outcomes, years of experience, or personal motivations. A job requirement is not evidence that the candidate has it.",
-    "Every resume headline, summary, experience bullet, additional highlight, and every cover-letter paragraph that makes a candidate-history claim must include fact_ids from the evidence catalog that support the complete claim.",
-    "Resume bullets may cite only facts whose experience_id matches that row's experience_id. Never transfer duties, tools, leadership, projects, or numbers from one employer to another.",
+    "Write polished material tailored to the target using only the verified candidate evidence below.",
+    "Never invent employers, roles, dates, titles, tools, credentials, metrics, duties, outcomes, experience years, or motivations; job requirements are not candidate evidence.",
+    "Cite every factual headline, summary, resume bullet, highlight, and cover-letter paragraph with supporting fact_ids from the evidence below. Interest-only cover-letter paragraphs may use an empty fact_ids array.",
+    "Work-history bullets may cite only facts under that experience ID. Do not transfer facts between employers.",
     "Use exact verified skill names in the skills array. Do not add a skill solely because the posting mentions it.",
-    "For Games / 3D resumes, include every experience id listed in resume_required_experience_ids and do not include SoundAir unless the user explicitly asks for it. Raven adds the complete shipped_titles list separately; do not rewrite or shorten that list.",
-    "For Professional, Labor, and Wildcard resumes, choose only 2-4 materially relevant roles, foreground transferable evidence, and do not claim the candidate has held the target profession or has 17 years in that profession.",
-    "Use confident, specific wording and make verified job functions sound substantial without exceeding the factual scope. A two-page resume is acceptable. For Games / 3D, give substantial relevant roles multiple distinct bullets when the evidence supports it.",
-    "Optimize naturally for ATS keyword matching using supported terminology from the posting. Never keyword-stuff or create unsupported qualifications.",
+    "For Games / 3D, include every resume_required_experience_ids entry; exclude SoundAir unless explicitly requested. Raven restores the complete shipped_titles list.",
+    "For Professional, Labor, and Wildcard, select 2-4 relevant roles; foreground transferable evidence and never claim the target profession or 17 years in it.",
+    "Use confident, specific wording within the evidence. For Games / 3D, aim for 375-475 words and retain every must-preserve fact ID below at least once in a relevant bullet; combine closely related facts only when the complete claims remain clear. Give relevant roles distinct bullets when supported.",
+    "Use supported posting keywords naturally; never keyword-stuff or claim unsupported qualifications.",
     "Do not include job locations in work-history entries.",
-    "Return ONLY valid JSON. No markdown fences, commentary, explanation, or text before or after the JSON object. Keep the top-level raven_format value exactly raven-chatgpt-v1.",
-    "Do not output candidate name, contact, employer metadata, dates, education, or shipped_titles inside the resume object; Raven restores those from verified canonical data."
+    "Return only valid JSON (no markdown or commentary), with raven_format exactly raven-chatgpt-v1. Use the exact output keys shown; do not add keys or change key spelling.",
+    "Do not put candidate name, contact, employer metadata, dates, education, or shipped_titles in the resume object; Raven restores them."
   ];
   if(kind==="coverLetter"||kind==="both")rules.push("For cover letters, write a cohesive first-person letter, usually 180-300 words, connecting two or three relevant verified examples to the job. Avoid naming past employers; Raven already carries employment history in the resume.");
   return [
     "RAVEN MANUAL CHATGPT GENERATION",
     "REQUESTED OUTPUT: "+kind,
     rules.map((rule,index)=>(index+1)+". "+rule).join("\n"),
-    "TARGET JOB\n"+JSON.stringify({track:target.track,title:target.title,company:target.company,description:target.description},null,2),
-    "VERIFIED CANDIDATE BACKGROUND\n"+JSON.stringify(promptProfile,null,2),
-    "EVIDENCE CATALOG — cite these IDs internally in fact_ids\n"+JSON.stringify(catalog,null,2),
-    "SUPPORTED POSTING KEYWORD GUIDANCE\n"+JSON.stringify(keywordGuidance,null,2),
-    "OUTPUT SHAPE\n"+JSON.stringify(output,null,2)
+    "TARGET JOB\n"+JSON.stringify({track:target.track,title:target.title,company:target.company,description:target.description}),
+    "VERIFIED EVIDENCE — each record's id is valid for fact_ids; experience facts belong only to their enclosing experience\n"+JSON.stringify(evidence),
+    "SUPPORTED POSTING KEYWORDS\n"+JSON.stringify(supportedKeywords),
+    "MUST-PRESERVE FACT IDS — cite each at least once; never omit or generalize away these concrete examples\n"+JSON.stringify(mustPreserveFactIds),
+    "OUTPUT SHAPE\n"+JSON.stringify(output)
   ].join("\n\n");
 }
 

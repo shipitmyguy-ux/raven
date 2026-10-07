@@ -144,6 +144,39 @@ async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJo
   };
 }
 
+test("review downloads a Word file and opens the PDF print dialog",async({page})=>{
+  await mockRaven(page);await page.goto("/");
+  await page.locator('[data-track="Professional"]').click();
+  await page.locator('.job-title').filter({hasText:savedJob.title}).click();
+  await page.locator('[data-generate="resume"]').click();
+  await expect(page.locator('#documentReviewDialog')).toBeVisible();
+  const downloadPromise=page.waitForEvent('download');
+  await page.locator('#reviewDownloadWord').click();
+  const download=await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/\.docx$/);
+  await page.evaluate(()=>{window.__printed=false;Object.defineProperty(HTMLIFrameElement.prototype,'contentWindow',{get(){return {focus(){},print(){window.__printed=true;}};},configurable:true});});
+  await page.locator('#reviewDownloadPdf').click();
+  await expect.poll(()=>page.evaluate(()=>window.__printed)).toBe(true);
+});
+
+test("JSON attachment automatically validates and persists to its original job",async({page})=>{
+  const api=await mockRaven(page);await page.goto("/");
+  await page.locator('[data-track="Professional"]').click();
+  await expect(page.locator('.job-title').filter({hasText:savedJob.title})).toBeVisible();
+  await page.evaluate(()=>{
+    localStorage.setItem('ravenChatGptRequestsV1',JSON.stringify({test:{jobId:'job-1',type:'resume',createdAt:Date.now(),before:{resume:'',coverLetter:''}}}));
+    const bridge=document.getElementById('ravenExtensionBridge');
+    bridge.dataset.chatgptResult=JSON.stringify({raven_format:'raven-chatgpt-v1',request_id:'test',resume:{headline:{text:'Supported headline',fact_ids:['fact']}}});
+    document.dispatchEvent(new CustomEvent('raven-chatgpt-result'));
+  });
+  await expect(page.locator('#documentReviewDialog')).toBeVisible();
+  expect(api.getGenerationBodies()[0].manualDraft).toBeTruthy();
+  expect(api.getJob().resume).toContain('data:text/html');
+  await page.reload();await page.locator('[data-track="Professional"]').click();
+  await page.locator('.job-title').filter({hasText:savedJob.title}).click();
+  await expect(page.locator('[data-generate="resume"]')).toHaveText('Review');
+});
+
 test("loads mocked jobs and all tracks without page errors",async({page})=>{
   const errors=[];page.on("pageerror",e=>errors.push(e.message));await mockRaven(page);await page.goto("/");
   await page.locator('[data-track="Professional"]').click();

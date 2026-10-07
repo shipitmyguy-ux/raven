@@ -20,6 +20,7 @@ Legend: [ ] open, [x] complete, [~] in progress, [!] requires real-site/user-acc
 - [x] Malformed ATS rows were cleaned; current malformed saved/search-result counts are zero.
 
 ### Documents
+- [~] Reduce manual ChatGPT resume latency and omissions: compact prompts and explicit must-preserve facts are implemented locally; verify live prompt-service reachability and a clean under-10-second end-to-end output before claiming completion.
 - [x] Live resume generation verified on real stored jobs across all four tracks.
 - [x] Live cover-letter generation verified on real stored jobs across all four tracks.
 - [x] Eight-request live acceptance pass returned HTTP 200 and canonical-fact-only output.
@@ -230,3 +231,31 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Carry full prompt into the ChatGPT launch URL; preserve clipboard fallback and report blocked popups.
 - [x] Verify four focused handler cases and bump frontend to v71.
 - [ ] Verify prefill in the user’s signed-in ChatGPT session.
+
+## Resume downloads and ChatGPT JSON (2026-10-06)
+- [x] Add genuine Word download and Save as PDF in review.
+- [x] Request downloadable JSON instead of displayed resume text; add file import fallback.
+- [x] Implement job-bound extension handoff through existing fact-check/save.
+- [x] Verify focused units and mocked browser download/import/reload.
+- [ ] Publish frontend/extension and update the installed extension.
+- [ ] Verify signed-in ChatGPT file creation and attachment handoff; inspect Word/PDF pagination.
+
+## Action labels (2026-10-06)
+- [x] Fix text escaping Generate both and allow action labels to wrap.
+- [x] Verify containment at 715, 375, and 320 pixels in mocked Edge; visually inspect 715px.
+- [ ] Push/publish after resolving the recorded authorization blocker.
+
+## Resume overflow download (2026-10-06)
+- [x] Add Download resume only when a saved resume exists; reuse direct Word export.
+- [x] Verify absent-before-generation and menu download in mocked Edge.
+- [ ] Publish with the pending frontend changes after push authorization.
+
+## GitHub delivery (2026-10-06)
+- [x] Push prepared changes to `shipitmyguy-ux/raven` after user authorization; open PR #55.
+- [ ] Merge and deploy PR #55; verify hosted assets and extension packaging.
+
+## Applied-job badge (2026-10-06)
+- [x] Add prominent APPLIED badge, retaining it for later application stages/history.
+- [x] Verify badge presence/absence and mobile containment in mocked Edge.
+- [x] Push badge to PR #55 and pass GitHub core/browser checks.
+- [ ] Merge/publish PR #55 after explicit authorization required by automatic approval review, then verify live badge.

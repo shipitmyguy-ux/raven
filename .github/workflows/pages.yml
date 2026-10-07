@@ -7,6 +7,8 @@ on:
       - "index.html"
       - "app.js"
       - "document-revision.mjs"
+      - "document-download.mjs"
+      - "resume-transfer.mjs"
       - "raven-core.js"
       - "config.js"
       - "runtime-config.json"

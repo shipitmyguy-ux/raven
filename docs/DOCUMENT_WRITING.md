@@ -1,5 +1,10 @@
 # Raven document writing
 
+## Compact manual ChatGPT prompts (2026-10-06)
+Manual ChatGPT prompt generation now sends the candidate's verified evidence once in compact JSON instead of repeating experience facts in a second evidence catalog. It minifies target/evidence/output JSON, sends only supported keywords found in the posting, and explicitly lists up to two posting-matched facts for each required Games / 3D experience that the draft must preserve. The prompt caps the suggested game-resume length at 375–475 words, requires every required experience, and explicitly forbids unsupported qualifications and altered schema keys. This is prompt guidance; model output can still be malformed or factually incomplete.
+
+The manual import endpoint performs deterministic evidence/schema validation and does not run the full model writing/review pipeline. Keep that structural check before persistence. A separate model review is not needed for this manual path. On 2026-10-06, Raven's live prompt request failed in the browser with `Failed to fetch` before opening ChatGPT; service inventory showed the generator functions active, but did not establish POST reachability. A one-off ChatGPT draft completed in approximately 10 seconds and contained malformed keys plus unsupported summary claims, confirming that prompt constraints and deterministic import validation serve different purposes. The Smile-Break draft was not imported or persisted; the prior saved resume remains unchanged.
+
 ## Current architecture
 Cloudflare Workers AI is first, with zero-price OpenRouter fallback. Cloudflare inference requires the existing successful Workers Free subscription check. No paid route or billing changes are allowed.
 

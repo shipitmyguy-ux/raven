@@ -1196,9 +1196,10 @@
           const salary=job.salaryText||"";
           const degreeGap=degreeAlert(job);
           const rawStatus=String(job.status||"Saved");
+          const hasApplied=Boolean(job.appliedDate||job.applied_date)||/^(applied|interview|offer|rejected)$/i.test(rawStatus);
           const meaningfulStatus=!/^(saved|discovered|interested)$/i.test(rawStatus);
           const statusLabel=rawStatus;
-          const attentionIndicator=meaningfulStatus
+          const attentionIndicator=meaningfulStatus&&rawStatus.toLowerCase()!=="applied"
             ? '<span class="job-status">'+escapeHtml(statusLabel)+'</span>'
             : '';
           const generationIndicator=generating
@@ -1215,6 +1216,7 @@
           card.innerHTML=
             '<button class="job-card-summary" type="button" aria-expanded="'+String(job.id===state.selectedId)+'">'+
               '<span class="card-main">'+
+                (hasApplied?'<span class="applied-job-badge"><span aria-hidden="true">✓</span> APPLIED</span>':'')+
                 (attentionIndicator?'<span class="card-topline">'+attentionIndicator+'</span>':'')+
                 generationIndicator+
                 '<span class="job-title">'+escapeHtml(job.title||"Untitled job")+'</span>'+
@@ -1301,6 +1303,14 @@
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
                 openDocumentReview(job,button.dataset.documentRevise);
+              });
+            });
+            expanded.querySelectorAll("[data-document-download]").forEach((button)=>{
+              button.addEventListener("click",(event)=>{
+                event.stopPropagation();
+                button.closest(".document-menu").hidden=true;
+                expanded.querySelectorAll("[data-document-menu]").forEach(item=>item.setAttribute("aria-expanded","false"));
+                if(job.resume)downloadReviewedDocument("docx",job,"resume");
               });
             });
             expanded.querySelectorAll("[data-document-regenerate]").forEach((button)=>{
@@ -1902,7 +1912,16 @@
       }
       setGenerationButton(button,true,"Preparing ChatGPT…");
       setStatus("Building a grounded ChatGPT prompt…");
-      const prompt=await requestChatGptPrompt(job,type);
+      const basePrompt=await requestChatGptPrompt(job,type);
+      const {filePrompt,REQUEST_KEY}=await import("./resume-transfer.mjs?v=1");
+      const requestId=crypto.randomUUID();
+      const requests=readCache(REQUEST_KEY,{})||{};
+      for(const [id,request] of Object.entries(requests))if(Date.now()-request.createdAt>86400000)delete requests[id];
+      requests[requestId]={jobId:String(job.id),type,createdAt:Date.now(),before:{resume:job.resume||"",coverLetter:job.coverLetter||""}};
+      writeCache(REQUEST_KEY,requests);
+      const bridge=document.getElementById("ravenExtensionBridge");
+      if(bridge){bridge.dataset.chatgptRequest=JSON.stringify({requestId,createdAt:requests[requestId].createdAt});document.dispatchEvent(new CustomEvent("raven-chatgpt-request"));}
+      const prompt=filePrompt(basePrompt,requestId);
       const chatUrl="https://chatgpt.com/?q="+encodeURIComponent(prompt);
       const opened=Boolean(chatTab && !chatTab.closed);
       if(opened) chatTab.location.replace(chatUrl);
@@ -1935,6 +1954,58 @@
     catch{ throw new Error("The ChatGPT response is not valid JSON. Ask ChatGPT to return only the Raven JSON object."); }
     if(parsed?.raven_format && parsed.raven_format!=="raven-chatgpt-v1") throw new Error("This is not a compatible Raven ChatGPT response.");
     return parsed;
+  }
+
+  const activeChatImports=new Set();
+  async function importChatGptFile(value){
+    const parsed=parseChatGptPayload(value);
+    const {REQUEST_KEY,matchRequest}=await import("./resume-transfer.mjs?v=1");
+    const requests=readCache(REQUEST_KEY,{})||{};
+    const request=matchRequest(parsed,requests);
+    if(activeChatImports.has(parsed.request_id))return;
+    const job=state.jobs.find(item=>String(item.id)===request.jobId);
+    if(!job)throw new Error("The target job is not loaded. Open Raven and retry the import.");
+    const types=request.type==="both"?["resume","coverLetter"]:[request.type];
+    const assertUnchanged=()=>{if(types.some(type=>(job[type]||"")!==request.before[type]))throw new Error("A newer document exists. Use Import to review this file manually.");};
+    assertUnchanged();
+    activeChatImports.add(parsed.request_id);
+    try{
+      setStatus("Fact-checking ChatGPT file…");
+      const validated=[];
+      for(const type of types)validated.push({type,document:await validateManualChatGptDraft(job,type,parsed[type])});
+      assertUnchanged();
+      for(const item of validated)await saveGeneratedDocument(job,item.type,item.document);
+      const remaining=readCache(REQUEST_KEY,{})||{};
+      delete remaining[parsed.request_id];writeCache(REQUEST_KEY,remaining);
+      render();setStatus("ChatGPT file imported and fact-checked · review required");
+      if(!document.querySelector("dialog[open]"))await openDocumentReview(job,types[0]);
+    }finally{activeChatImports.delete(parsed.request_id);}
+  }
+
+  async function downloadReviewedDocument(format,job=state.generatorJob,type=state.generatorType){
+    if(!job||!type||!job[type])return;
+    try{
+      if(type==="resume")await refreshSavedResumeContact(job);
+      const value=String(job[type]||"");
+      if(!value.startsWith("data:text/html;charset=utf-8,")){
+        window.open(value,"_blank","noopener");return;
+      }
+      const html=decodeURIComponent(value.slice(value.indexOf(",")+1));
+      if(format==="pdf"){
+        const frame=document.getElementById("reviewFrame");
+        // srcdoc gives the print frame Raven's origin; saved data URLs are opaque.
+        frame.onload=()=>{frame.onload=null;frame.contentWindow.focus();frame.contentWindow.print();};
+        frame.srcdoc=html;
+        setStatus("Choose Save as PDF in the print dialog; turn off headers and footers.");
+      }else{
+        const {blocksFromHtml,docxFromBlocks}=await import("./document-download.mjs?v=1");
+        const url=URL.createObjectURL(docxFromBlocks(blocksFromHtml(html)));
+        const a=document.createElement("a");a.href=url;
+        a.download=[job.company,job.title,type].filter(Boolean).join(" - ").replace(/[<>:"/\\|?*\x00-\x1f]/g,"_").slice(0,180)+".docx";
+        a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
+        setStatus("Word document downloaded · review before submitting");
+      }
+    }catch(error){setStatus("Download failed: "+error.message);}
   }
 
   async function validateManualChatGptDraft(job,type,draft){
@@ -2168,6 +2239,7 @@
     const link=document.getElementById("reviewOpenFile");
     link.href=value;
     link.textContent="Open "+label+" in a new tab";
+    document.getElementById("reviewFrame").removeAttribute("srcdoc");
     document.getElementById("reviewFrame").src=previewableDocumentUrl(value);
     document.getElementById("reviewInstructions").value="";
     const feedback=document.getElementById("reviewFeedback");
@@ -2178,6 +2250,8 @@
   function closeDocumentReview() {
     const dialog=document.getElementById("documentReviewDialog");
     if(dialog.open) dialog.close();
+    document.getElementById("reviewFrame").removeAttribute("srcdoc");
+    document.getElementById("reviewFrame").onload=null;
     document.getElementById("reviewFrame").src="about:blank";
     if(state.generatorType) {
       const label=documentLabel(state.generatorType);
@@ -2442,6 +2516,7 @@
       '<span class="document-overflow">'+
         '<button class="document-menu-button" type="button" data-document-menu aria-haspopup="menu" aria-expanded="false" aria-label="More '+escapeAttr(fileLabel)+' options" title="More options">…</button>'+
         '<span class="document-menu" role="menu" hidden>'+
+          (key==="resume"?'<button type="button" role="menuitem" data-document-download="resume" title="Download resume as Word (.docx)">Download resume</button>':"")+
           '<button type="button" role="menuitem" data-document-revise="'+escapeAttr(key)+'">Request changes</button>'+
           '<button type="button" role="menuitem" data-document-regenerate="'+escapeAttr(key)+'">Regenerate</button>'+
           '<button type="button" role="menuitem" data-chatgpt-prompt="'+escapeAttr(key)+'">Create ChatGPT prompt</button>'+
@@ -2670,6 +2745,29 @@
     });
     document.getElementById("documentReviewForm").addEventListener("submit",submitDocumentRevision);
     document.getElementById("chatGptImportForm")?.addEventListener("submit",submitChatGptImport);
+    document.getElementById("reviewDownloadWord")?.addEventListener("click",()=>downloadReviewedDocument("docx"));
+    document.getElementById("reviewDownloadPdf")?.addEventListener("click",()=>downloadReviewedDocument("pdf"));
+    document.getElementById("chatGptImportFile")?.addEventListener("change",async(event)=>{
+      const file=event.target.files?.[0];if(!file)return;
+      const feedback=document.getElementById("chatGptImportFeedback");
+      try{
+        if(file.size>160000)throw new Error("This JSON file is too large.");
+        const text=await file.text();parseChatGptPayload(text);
+        document.getElementById("chatGptImportText").value=text;
+        await submitChatGptImport({preventDefault(){}});
+      }catch(error){feedback.textContent=error.message;}
+      event.target.value="";
+    });
+    document.addEventListener("raven-chatgpt-result",async()=>{
+      const bridge=document.getElementById("ravenExtensionBridge");
+      const value=bridge?.dataset.chatgptResult;delete bridge?.dataset.chatgptResult;
+      if(!value)return;
+      try{
+        await importChatGptFile(value);
+        bridge.dataset.chatgptAck=JSON.parse(value).request_id;
+        document.dispatchEvent(new CustomEvent("raven-chatgpt-ack"));
+      }catch(error){setStatus("ChatGPT file import blocked: "+error.message);}
+    });
     document.querySelectorAll("[data-chatgpt-import-close]").forEach((button)=>{
       button.addEventListener("click",closeChatGptImport);
     });
