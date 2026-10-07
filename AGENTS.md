@@ -46,3 +46,6 @@ Before ending a meaningful implementation session:
 5. Record what was actually verified versus what is only implemented or assumed.
 
 No Work session is considered complete until durable project state is in GitHub.
+
+## Standing push authorization (2026-10-07)
+The user explicitly authorized future Git pushes without asking again. Use the existing Raven GitHub repository for routine code and documentation pushes. This does not independently establish authorization for unrelated destructive actions. Automatic approval review currently requires explicit authorization for the Professional-filter production backend deployment and merge/publication.

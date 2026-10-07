@@ -1,5 +1,5 @@
 import "../_shared/track-filter.js";
-const {gameArtRoleAllowed,hasWholePhrase}=(globalThis as any).RavenTrackFilter;
+const {gameArtRoleAllowed,professionalRoleAllowed,hasWholePhrase}=(globalThis as any).RavenTrackFilter;
 import type { Candidate, Track } from "./types.ts";
 import { TRACKS } from "./config.ts";
 
@@ -128,6 +128,7 @@ export function looksEnglishPosting(c:Candidate){
 export function candidateAllowedForTrack(track:Track,c:Candidate){
   const cfg=TRACKS[track];
   if(track==="Games / 3D"&&!gameArtRoleAllowed(c)) return false;
+  if(track==="Professional"&&!professionalRoleAllowed(c)) return false;
   const title=String(c?.title||"").toLowerCase();
   if((cfg.titleExclude||[]).some(term=>title.includes(term.toLowerCase()))) return false;
   if(cfg.requireEnglish && !looksEnglishPosting(c)) return false;

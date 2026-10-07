@@ -259,3 +259,13 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Verify badge presence/absence and mobile containment in mocked Edge.
 - [x] Push badge to PR #55 and pass GitHub core/browser checks.
 - [ ] Merge/publish PR #55 after explicit authorization required by automatic approval review, then verify live badge.
+
+## Professional sales-role exclusion (2026-10-07)
+- [x] Exclude direct sales roles and explicit selling duties using shared browser/backend eligibility.
+- [x] Preserve saved records and keep non-selling support, training, enablement and operations roles eligible.
+- [x] Verify focused filters, browser-list fixtures, ranking, all core workflow regressions, syntax and secret scan.
+- [ ] Merge/publish after separate user authorization, deploy backend shared filter and verify live Professional results.
+
+- [x] Push Professional sales-filter review branch and create PR #56; attach to the active chat.
+- [x] Record user standing authorization for future Raven pushes.
+- [ ] Resolve automatic approval review's separate production-deployment requirement, then merge and deploy this filter.

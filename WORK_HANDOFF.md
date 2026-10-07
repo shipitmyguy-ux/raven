@@ -1,19 +1,16 @@
 # Raven execution handoff
 
-Latest task: Smile-Break resume and manual ChatGPT generation speed (2026-10-06).
+Latest task: exclude selling jobs from Professional (2026-10-07).
 
-## Prompt optimization
-- `supabase/functions/_shared/document-handler.mjs` now sends candidate evidence once in compact, minified JSON instead of repeating all experience facts in both a background object and evidence catalog. The prompt includes only posting-matched supported keywords and lists up to two matched must-preserve fact IDs for each required Games / 3D experience. It requires every role, forbids unsupported claims/schema changes, and guides a 375–475 word output.
-- `docs/DOCUMENT_WRITING.md`, `RAVEN_STATUS.md`, and `TASKS.md` record the change and verification limits.
-- `node --check supabase/functions/_shared/document-handler.mjs` and `git diff --check` pass. No tests were run. Code and prompt-size savings are not deployed or measured against the live endpoint.
+## Completed
+- Shared professionalRoleAllowed filters direct selling titles and explicit personal selling duties in backend ranking, cached-result reads, and browser saved/discovered lists. Existing job records and documents are preserved; non-selling operations/training/enablement remain eligible.
+- Five focused tests and all 25 core workflow regression commands pass locally, along with syntax, secret scan and whitespace checks. GitHub core job also passed; final browser CI status should be checked.
+- Pushed codex/professional-no-sales and opened https://github.com/shipitmyguy-ux/raven/pull/56. The PR is attached to the active chat.
+- User explicitly authorized future pushes without asking again; recorded in AGENTS.md. Prior push blocker is resolved.
 
-## Smile-Break attempt and timing
-- Target job: Smile-Break Senior Environment Artist. Current saved record has only a short description in Raven; the public listing was reviewed and used to tailor the one-off prompt. Existing saved resume/status were preserved.
-- Clicking Raven's “Create ChatGPT prompt” returned in about 0.42 seconds but the prompt request failed with browser `Failed to fetch`, before ChatGPT opened. Supabase shows the Raven generator functions ACTIVE (proxy v25, downstream v128); logs query returned a backend error, so POST/CORS reachability remains unknown.
-- A one-off ChatGPT prompt with verified profile evidence completed in approximately 10 seconds. Its response included malformed output keys and unsupported summary claims. It was not imported or persisted.
-- A corrected Raven-format JSON draft is in `Smile-Break-Senior-Environment-Artist.json`. It remains an untracked local artifact and is not verified by Raven or linked to the job. The canonical profile and current saved resume were not changed.
-- ChatGPT's public browser session is signed out; the anonymous prompt worked. No credentials were entered. The measured model time is a single run, not an under-10-second guarantee.
+## Production blocker
+Automatic approval review rejected supabase.deploy_edge_function for raven-backend-v3: the user authorized pushes but did not clearly authorize this specific production deployment. No backend deployment or PR merge occurred. Ask only for explicit merge/publication and production backend deployment authorization, then complete those actions and live checks. Do not retry the deployment through another path.
 
-## Delivery state
-- The current Git checkout is `codex/resume-download-json`; no Git remote is configured in this workspace. Prompt/docs changes were committed as `af4c1db` and pushed directly to `https://github.com/shipitmyguy-ux/raven.git` on that branch, updating PR #55. The user previously authorized pushing updates but not merging/deploying. Keep the local resume JSON out of GitHub; do not merge/deploy without its separate authorization.
-- Next useful step: check/repair the deployed generator POST path from the Raven origin, then regenerate from the compact must-preserve prompt, run deterministic manual-import checks, and confirm the saved document survives a fresh Raven read. Do not claim the 10-second goal or Raven persistence until that succeeds.
+Prepared backend deployment preserves the active v53 bundle and patches only functions/_shared/track-filter.js and functions/raven-backend-v3/utils.ts. Existing verify_jwt=false is preserved. Raven Backend project ref is umvmilulnqnmeqvfoxxc. Frontend changes publish through GitHub Pages on main merge. Check final PR browser/core CI before merging.
+
+Preserve untracked Smile-Break-Senior-Environment-Artist.json. It is unrelated and was not pushed.
