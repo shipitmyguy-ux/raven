@@ -4,7 +4,7 @@
 - Shared eligibility excludes direct selling titles and explicit personal selling responsibilities from Professional discovery ranking, cached-result reads, and browser combined lists.
 - Sales operations, enablement, training and support roles remain eligible when they do not require direct selling. Other tracks are unchanged. Saved jobs, documents and application history are preserved.
 - Verified five focused sales-filter regressions, existing Games / 3D filters, tab architecture and search resilience; all core workflow regression commands, frontend syntax and repository secret scan pass. The browser list was executed with saved/applied/discovered fixtures; no live hosted-browser or production backend verification is claimed.
-- Isolated branch: codex/professional-no-sales. Publication awaits separate user authorization recorded in the prior handoff.
+- Isolated branch: codex/professional-no-sales. Pushed to GitHub PR #56. Standing push authorization is recorded in AGENTS.md. Production deployment was rejected by automatic approval review because explicit deployment authorization was not established; live app/backend remain unchanged.
 
 
 ## ChatGPT resume prompt efficiency (2026-10-06)
