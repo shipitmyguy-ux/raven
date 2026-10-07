@@ -33,8 +33,8 @@ test("manual ChatGPT prompt is self-contained, grounded, and uses the canonical 
  assert.match(prompt,/Return ONLY valid JSON/i);
  assert.match(prompt,/job locations/i);
  assert.match(prompt,/fact_ids/i);
- assert.match(prompt,/two-page resume/i);
- assert.match(prompt,/ATS keyword/i);
+ assert.match(prompt,/375-475 words/i);
+ assert.match(prompt,/supported posting keywords/i);
  assert.doesNotMatch(prompt,/candidate@example\.com/i);
 });
 test("strong verbs preserve leadership scope and non-game skills stay relevant",()=>{
