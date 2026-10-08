@@ -1,5 +1,12 @@
 # Raven Status
 
+## OpenAI API / ChatGPT-plan evaluation (2026-10-08, draft PR #58)
+- Added opt-in OpenAI Chat Completions adapter to the existing source-grounded document router on `pilot/openai-chatgpt-options-20261008`; it is not deployed or enabled for production.
+- Synthetic dry-run tests verify two explicit paid-route gates and structured request/response handling. PR core and targeted browser regression checks passed on initial run. No OpenAI API charge, credential, user profile, or live resume was involved.
+- OpenAI's current Sign in with ChatGPT docs explicitly require remotely hosted apps to request access before using the open-source plan-sharing flow. Raven is remotely hosted; no OAuth authorization or plan eligibility has been confirmed.
+- See `docs/OPENAI_OPTIONS_PILOT.md` for technical results and next steps. No Raven jobs, applications or generated documents were modified.
+
+
 ## Global job location preference (2026-10-07)
 - All four tabs allow confirmed remote work anywhere; in-person and hybrid roles require an explicit nearby Colorado city/state work location.
 - Nearby communities: Fort Collins, Loveland, Windsor, Timnath, Wellington, Laporte/La Porte, Bellvue, Severance, Greeley, Johnstown, Berthoud, Eaton and Ault. This is a city whitelist, not a measured driving-radius promise.

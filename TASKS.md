@@ -1,5 +1,15 @@
 # Raven Tasks
 
+## 2026-10-08 OpenAI/ChatGPT-plan comparison
+- [x] Add an isolated OpenAI API provider adapter with explicit key + provider-order opt-in (draft PR #58; not deployed).
+- [x] Run zero-charge mock integration tests in core CI.
+- [x] Verify hosted Raven app requires an access request for ChatGPT-plan usage; document eligibility blocker.
+- [ ] Before any paid API trial: establish spending cap and obtain approval to send candidate profile/job data and incur charges; configure secret server-side only.
+- [ ] Run controlled live resume + factual review through OpenAI and compare latency/quality against existing free generator.
+- [ ] Test production-like save/reload and direct PDF download separately; do not claim one-click release until verified.
+
+
+
 Legend: [ ] open, [x] complete, [~] in progress, [!] requires real-site/user-account verification
 
 ## Closeout status
