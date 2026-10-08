@@ -1219,7 +1219,7 @@
           card.innerHTML=
             '<button class="job-card-summary" type="button" aria-expanded="'+String(job.id===state.selectedId)+'">'+
               '<span class="card-main">'+
-                (hasApplied?'<span class="applied-job-badge"><span aria-hidden="true">✓</span> APPLIED</span>':'')+
+                (hasApplied?'<span class="applied-job-badge" role="img" aria-label="Applied" title="Applied"><span aria-hidden="true">✓</span></span>':'')+
                 (attentionIndicator?'<span class="card-topline">'+attentionIndicator+'</span>':'')+
                 generationIndicator+
                 '<span class="job-title">'+escapeHtml(job.title||"Untitled job")+'</span>'+

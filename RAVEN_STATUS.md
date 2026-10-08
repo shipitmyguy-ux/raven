@@ -301,3 +301,5 @@ The approved game resume was rendered with production HTML to two WeasyPrint pag
 ## ChatGPT prompt handoff (2026-09-30)
 - Frontend v71 carries the complete prompt in ChatGPT's `q` link instead of opening its bare homepage. Clipboard backup remains available, and blocked pop-ups are reported accurately.
 - Four focused handler tests pass (long/unicode prompt preservation, clipboard denial, popup blocking, request failure); syntax and whitespace checks pass. Actual signed-in ChatGPT composer prefill is not verified here and may depend on ChatGPT handling the link.
+
+2026-10-08: Pill containment fix on isolated `fix/ui-pill-containment`: live Ignored pill collapse verified; width calculation corrected and APPLIED text replaced with accessible compact check. Multiwidth browser regression added; CI pending, not deployed.

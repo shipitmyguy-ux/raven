@@ -1187,3 +1187,22 @@ test('rendered review rejects omitted education and highlights',async({page})=>{
  });
  expect(result.status).toBe('blocked');expect(result.issues).toContain('Rendered document is missing expected content.');
 });
+
+for (const width of [320,375,768,1440]) {
+ test(`status pills and applied icon fit at ${width}px`,async({page})=>{
+  await page.setViewportSize({width,height:1000});
+  await mockRaven(page,{initialJob:{status:'Ignored',applied_date:'2026-10-01T12:00:00Z'}});
+  await page.goto('/');await page.locator('[data-track="Professional"]').click();
+  const badge=page.getByRole('img',{name:'Applied',exact:true});
+  await expect(badge).toBeVisible();await expect(badge).toHaveAttribute('title','Applied');
+  await expect(badge).not.toContainText('APPLIED');
+  const status=page.locator('.job-status').filter({hasText:'Ignored'});
+  await expect(status).toBeVisible();
+  const boxes=await status.evaluate(el=>({pill:el.getBoundingClientRect().toJSON(),parent:el.parentElement.getBoundingClientRect().toJSON(),scroll:el.scrollWidth,client:el.clientWidth}));
+  expect(boxes.pill.width).toBeGreaterThan(40);
+  expect(boxes.pill.height).toBeLessThan(35);
+  expect(boxes.scroll).toBeLessThanOrEqual(boxes.client+1);
+  expect(boxes.pill.right).toBeLessThanOrEqual(boxes.parent.right+1);
+  expect((await badge.boundingBox()).width).toBeLessThanOrEqual(30);
+ });
+}
