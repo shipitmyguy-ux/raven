@@ -44,6 +44,7 @@ test('global policy permits remote work and gates all four tracks',()=>{
  assert.equal(globalAllowed({location:'Remote - United States'}),true);
  assert.equal(globalAllowed({remote:true,location:'Denver, CO (Hybrid)'}),false);
  assert.equal(globalAllowed({location:'Fort Collins, CO (Hybrid)'}),true);
+ assert.equal(globalAllowed({title:'Operations Coordinator (Hybrid)',remote:true,location:'Denver, CO'}),false);
  assert.equal(globalAllowed({location:'Denver, CO',notes:'remote possibility'}),false);
  for(const track of ['Professional','Labor','Wildcard','Games / 3D']){
   const title=track==='Games / 3D'?'Environment Artist':'Operations Coordinator';

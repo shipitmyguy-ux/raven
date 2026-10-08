@@ -36,7 +36,7 @@
   }
   function jobLocationAllowed(job){
     const location=String(job?.location||'');
-    const inPerson=/\b(?:hybrid|on[- ]?site|in[- ]office)\b/i.test(location);
+    const inPerson=/\b(?:hybrid|on[- ]?site|in[- ]office)\b/i.test([location,job?.title].join(' '));
     const remote=job?.remote===true || /^(?:true|yes|remote)$/i.test(String(job?.remote||'')) || /\bremote\b/i.test(location);
     if(remote&&!inPerson)return true;
     // Ignore contradictory remote flags when the work location is in-person.
