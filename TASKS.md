@@ -274,3 +274,11 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Apply remote-anywhere / local-in-person eligibility across every tab, including cached and saved lists.
 - [x] Verify geographic, remote, hybrid, ranking and browser preservation regressions plus required core checks.
 - [x] Publish frontend/backend and verify live results (PR #57, app v76/filter v3, backend v55, zero violations in all four tracks).
+
+
+## Word and PDF export inspection (2026-10-08)
+- [x] Reproduce and fix Word export joining a cover-letter closing to its signature; preserve HTML breaks as OOXML line breaks.
+- [x] Render actual Word exports with LibreOffice and current HTML/PDF with WeasyPrint: two-page resume and one-page letter, every source block present, all final page images clean.
+- [x] Pass all existing core regression commands, added line-break unit check, syntax, secret scan and whitespace.
+- [ ] Run new browser export regression in CI and verify live download/native Word/browser print after integration. No deployment by this worker.
+- Evidence and precise acceptance limits: docs/qa/2026-10-08-document-exports.md.

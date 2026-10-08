@@ -29,3 +29,15 @@ test('Word download is an actual OOXML ZIP with escaped Unicode document text',a
  assert.match(files['word/document.xml'],/• Built &lt;tools&gt;/);
  assert.match(files['_rels/.rels'],/word\/document.xml/);
 });
+
+test('Word export retains explicit line breaks between closing and signature',async()=>{
+ const blob=docxFromBlocks([{tag:'P',text:'Sincerely,\nTest Candidate'}]);
+ const bytes=new Uint8Array(await blob.arrayBuffer()),view=new DataView(bytes.buffer);let pos=0,document='';
+ while(view.getUint32(pos,true)===0x04034b50){
+  const length=view.getUint32(pos+18,true),nameLength=view.getUint16(pos+26,true),start=pos+30+nameLength;
+  if(new TextDecoder().decode(bytes.slice(pos+30,start))==='word/document.xml')document=new TextDecoder().decode(bytes.slice(start,start+length));
+  pos=start+length;
+ }
+ assert.match(document,/Sincerely,<\/w:t><w:br\/><w:t xml:space="preserve">Test Candidate/);
+ assert.doesNotMatch(document,/Sincerely,Test Candidate/);
+});

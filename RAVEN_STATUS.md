@@ -301,3 +301,11 @@ The approved game resume was rendered with production HTML to two WeasyPrint pag
 ## ChatGPT prompt handoff (2026-09-30)
 - Frontend v71 carries the complete prompt in ChatGPT's `q` link instead of opening its bare homepage. Clipboard backup remains available, and blocked pop-ups are reported accurately.
 - Four focused handler tests pass (long/unicode prompt preservation, clipboard denial, popup blocking, request failure); syntax and whitespace checks pass. Actual signed-in ChatGPT composer prefill is not verified here and may depend on ChatGPT handling the link.
+
+
+## Word and PDF export inspection (2026-10-08)
+- [x] Reproduce and fix Word export joining a cover-letter closing to its signature; preserve HTML breaks as OOXML line breaks.
+- [x] Render actual Word exports with LibreOffice and current HTML/PDF with WeasyPrint: two-page resume and one-page letter, every source block present, all final page images clean.
+- [x] Pass all existing core regression commands, added line-break unit check, syntax, secret scan and whitespace.
+- [ ] Run new browser export regression in CI and verify live download/native Word/browser print after integration. No deployment by this worker.
+- Evidence and precise acceptance limits: docs/qa/2026-10-08-document-exports.md.
