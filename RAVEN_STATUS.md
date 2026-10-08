@@ -1,5 +1,11 @@
 # Raven Status
 
+## Reusable Codex agents (2026-10-08)
+- Added five project-scoped custom agents: explorer, three equivalent general implementers and reviewer. Read-only inspection/review and workspace-write implementation defaults; model settings inherit.
+- Separate task ownership and worktrees are required for simultaneous edits; parent coordinates integration and shared project-state updates. See docs/SUBAGENTS.md.
+- TOML/schema checks and whitespace verification pass. Live discovery/spawning remains unverified; definitions alone do not start workers or isolate checkouts.
+
+
 ## Global job location preference (2026-10-07)
 - All four tabs allow confirmed remote work anywhere; in-person and hybrid roles require an explicit nearby Colorado city/state work location.
 - Nearby communities: Fort Collins, Loveland, Windsor, Timnath, Wellington, Laporte/La Porte, Bellvue, Severance, Greeley, Johnstown, Berthoud, Eaton and Ault. This is a city whitelist, not a measured driving-radius promise.
