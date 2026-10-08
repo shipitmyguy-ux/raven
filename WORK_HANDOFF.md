@@ -19,3 +19,5 @@ Latest task: closed-listing detection/culling, isolated codex/closed-job-detecti
 - Live SQL filtering and real employer/ATS acceptance remain pending. API-only/JavaScript-only availability remains unconfirmed. Individual user-triggered checks only; no bulk sweep.
 - docs/CLOSED_LISTINGS.md documents behavior and release order. Source committed/pushed for review; production unchanged. Standing push authorization persists in AGENTS.md.
 - Parallel tasks may change app.js, styles.css, index.html and project-state files. Merge while retaining their changes. Prior global location release remains recorded in RAVEN_STATUS.md.
+
+Review: draft PR #66 (https://github.com/shipitmyguy-ux/raven/pull/66), implementation commit 6e7445cd5e6dd3f0c96dd4ebc1b1faab20b3c672. Local checkout clean after push; production acceptance pending.
