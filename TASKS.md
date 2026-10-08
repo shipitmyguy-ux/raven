@@ -269,3 +269,8 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Push Professional sales-filter review branch and create PR #56; attach to the active chat.
 - [x] Record user standing authorization for future Raven pushes.
 - [x] Resolve the production-deployment requirement through explicit user approval; merge PR #56 and deploy frontend/backend.
+
+## Global location preference (2026-10-07)
+- [x] Apply remote-anywhere / local-in-person eligibility across every tab, including cached and saved lists.
+- [x] Verify geographic, remote, hybrid, ranking and browser preservation regressions plus required core checks.
+- [ ] Publish frontend/backend and verify live results.

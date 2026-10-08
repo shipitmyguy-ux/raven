@@ -772,7 +772,8 @@
     const unsaved = discovered.filter((job)=>!savedUrls.has(normalizeComparableUrl(job.url)));
     return [...saved, ...unsaved].filter(job=>
       (state.activeTrack!=="Games / 3D"||window.RavenTrackFilter.gameArtRoleAllowed(job))
-      && (state.activeTrack!=="Professional"||window.RavenTrackFilter.professionalRoleAllowed(job)));
+      && (state.activeTrack!=="Professional"||window.RavenTrackFilter.professionalRoleAllowed(job))
+      && window.RavenTrackFilter.jobLocationAllowed(job));
   }
   function filteredJobs() {
     const query=searchBox.value.trim().toLowerCase();

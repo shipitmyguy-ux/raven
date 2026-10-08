@@ -21,8 +21,8 @@ test('support, enablement and implementation are not rejected for sales mentions
 });
 test('backend eligibility and ranking reject selling before score boosts',()=>{
  const sales={title:'Sales Manager',snippet:'project manager operations manager training manager',location:'Colorado',source:'Remotive',url:'https://example.com/sales'};
- const success={title:'Customer Success Manager',notes:'You will carry a sales quota.',source:'Remotive',url:'https://example.com/csm'};
- const implementation={title:'Implementation Specialist',source:'Remotive',url:'https://example.com/implementation'};
+ const success={remote:true,title:'Customer Success Manager',notes:'You will carry a sales quota.',source:'Remotive',url:'https://example.com/csm'};
+ const implementation={remote:true,title:'Implementation Specialist',source:'Remotive',url:'https://example.com/implementation'};
  assert.equal(candidateAllowedForTrack('Professional',sales),false);
  assert.equal(candidateAllowedForTrack('Professional',success),false);
  assert.deepEqual(rankCandidates('Professional',[sales,success,implementation]).map(r=>r.title),['Implementation Specialist']);
@@ -32,7 +32,7 @@ test('browser hides saved and discovered sales without modifying records',()=>{
  const code=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
  const start=code.indexOf('  function combinedJobs() {'),end=code.indexOf('  function filteredJobs()',start);
  assert.ok(start>=0&&end>start);
- const state={activeTrack:'Professional',jobs:[{id:'saved-sales',track:'Professional',title:'Account Executive',url:'https://example.com/saved',status:'Saved'},{id:'applied-sales',track:'Professional',title:'Sales Manager',url:'https://example.com/applied',status:'Applied'}],discovered:{Professional:[{title:'Business Development Manager',url:'https://example.com/discovered'},{title:'Implementation Manager',url:'https://example.com/allowed'}]}};
+ const state={activeTrack:'Professional',jobs:[{id:'saved-sales',track:'Professional',title:'Account Executive',url:'https://example.com/saved',status:'Saved'},{id:'applied-sales',track:'Professional',title:'Sales Manager',url:'https://example.com/applied',status:'Applied'}],discovered:{Professional:[{title:'Business Development Manager',url:'https://example.com/discovered'},{title:'Implementation Manager',remote:true,url:'https://example.com/allowed'}]}};
  const before=JSON.stringify(state);
  const context={state,window:{RavenTrackFilter:globalThis.RavenTrackFilter},normalizeComparableUrl:v=>v||'',parseBool:v=>Boolean(v),preferredDescription:(a,b)=>a||b};
  vm.createContext(context);
