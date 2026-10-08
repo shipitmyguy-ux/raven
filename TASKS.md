@@ -274,3 +274,7 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Apply remote-anywhere / local-in-person eligibility across every tab, including cached and saved lists.
 - [x] Verify geographic, remote, hybrid, ranking and browser preservation regressions plus required core checks.
 - [x] Publish frontend/backend and verify live results (PR #57, app v76/filter v3, backend v55, zero violations in all four tracks).
+
+- [x] Export QA/fix and mobile pill containment + accessible Applied icon: PR62/63 core/browser CI successful.
+- [x] Implement bounded explicit source closure detection, independent persisted evidence and preserved saved document/application history; local core/classification/persistence fixtures pass.
+- [ ] Verify closure browser CI, integrate frontend overlaps, then perform separately authorized migration/deployment and production persistence acceptance.

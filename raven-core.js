@@ -19,6 +19,7 @@
       salaryText: row.salary_text || row.salaryText || "", url: row.url || "", source: row.source || "",
       status: row.status || "Saved", viewed: Boolean(row.viewed), appliedDate: row.applied_date || row.appliedDate || "",
       followUp: row.follow_up || row.followUp || "", resume: row.resume || "", coverLetter: row.cover_letter || row.coverLetter || "",
+      listing_state:row.listing_state||"",listing_reason:row.listing_reason||"",listing_checked_at:row.listing_checked_at||"",listing_source_url:row.listing_source_url||"",listing_http_status:row.listing_http_status||0,
       notes: row.notes || "", lastUpdated: row.last_updated || row.lastUpdated || ""
     };
   }
@@ -28,6 +29,7 @@
       id: "DISC-" + text(raw.id), added: raw.created_at || raw.last_seen || "", track: raw.track,
       title: raw.title, company: raw.company, location: raw.location, remote: raw.remote ? "Remote" : "",
       salaryText: raw.salary_text || "", url: raw.url, source: raw.source || "Web", status: "Discovered",
+      listing_state:raw.listing_state||"",listing_reason:raw.listing_reason||"",listing_checked_at:raw.listing_checked_at||"",listing_source_url:raw.listing_source_url||"",
       viewed: false, notes: raw.snippet || "", lastUpdated: raw.last_seen || "",
       fitScore: Math.max(55, Math.min(96, 50 + Number(raw.score || 7) * 3)), _discovered: true
     });
