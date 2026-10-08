@@ -5,7 +5,7 @@ const savedJob={id:"job-1",track:"Professional",title:"Implementation Project Ma
 const generatedResume={name:"Test Candidate",headline:"Project & Implementation Leader",contact:"candidate@example.com",summary:"Experienced delivery leader.",skills:["Project delivery","Team leadership"],experience:[{role:"Environment Artist",company:"Example Studio",dates:"2020–2025",bullets:["Led delivery across internal teams."]}],education:[{degree:"Bachelor's Degree",school:"Example University",location:"",dates:""}],additional:[]};
 const generatedLetter={greeting:"Dear Hiring Manager,",paragraphs:["I am applying for the Implementation Project Manager role.","My background includes project delivery and internal team leadership."],closing:"Sincerely,",signature:"Test Candidate"};
 
-async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJob=null,dataDelayMs=0,discoveredJob=null}={}){
+async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJob=null,dataDelayMs=0,discoveredJob=null,listingCheck=null}={}){
   let job={...savedJob,...(initialJob||{})};
   let persisted=!discoveredJob;
   let generationCalls=0;
@@ -113,7 +113,13 @@ async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJo
     }
     return route.fulfill({json:{ok:true,track,count:0,jobs:[],results:[],phase:"quick",deep_search:"started"}});
   });
-  await page.route("**/functions/v1/raven-enrich-v1**",route=>route.fulfill({json:{ok:true,description:savedJob.notes}}));
+  await page.route("**/functions/v1/raven-enrich-v1**",route=>{
+    if(new URL(route.request().url()).searchParams.get("action")==="checkListing"&&listingCheck){
+      job.listing_check=listingCheck;
+      return route.fulfill({json:{ok:true,listing_check:listingCheck}});
+    }
+    return route.fulfill({json:{ok:true,description:savedJob.notes}});
+  });
   await page.route("**/functions/v1/raven-commute-v1**",route=>route.fulfill({json:{ok:true,minutes:0}}));
   await page.route("**/functions/v1/raven-generate-v1**",async route=>{
     generationCalls++;
@@ -143,6 +149,41 @@ async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJo
     getSnapshots:()=>snapshots.slice()
   };
 }
+
+test("listing closure persists after reload and preserves saved application documents",async({page})=>{
+  const check={state:"closed",reason:"This position has been filled",checked_at:"2026-10-08T00:00:00Z"};
+  const api=await mockRaven(page,{initialJob:{status:"Interview",applied_date:"2026-10-01",resume:"https://example.com/resume.docx",cover_letter:"https://example.com/cover.docx"},listingCheck:check});
+  await page.goto("/");
+  await page.locator('[data-track="Professional"]').click();
+  await page.locator('.job-title').filter({hasText:savedJob.title}).click();
+  await page.getByRole("button",{name:"Check listing",exact:true}).click();
+  await expect(page.getByText("CLOSED LISTING",{exact:true})).toBeVisible();
+  await expect(page.locator('.listing-check-status')).toContainText("has been filled");
+  await expect(page.getByRole("link",{name:"Apply on site",exact:true})).toHaveCount(0);
+  expect(api.getJob().status).toBe("Interview");
+  expect(api.getJob().resume).toBe("https://example.com/resume.docx");
+  expect(api.getJob().cover_letter).toBe("https://example.com/cover.docx");
+  await page.reload();
+  await page.locator('[data-track="Professional"]').click();
+  await expect(page.getByText("CLOSED LISTING",{exact:true})).toBeVisible();
+  await expect(page.locator('.stage-header').filter({hasText:"Interview"})).toBeVisible();
+});
+
+test("confirmed closed saved job moves out of active jobs",async({page})=>{
+  await page.setViewportSize({width:375,height:812});
+  await mockRaven(page,{listingCheck:{state:"closed",reason:"This job is closed",checked_at:"2026-10-08T00:00:00Z"}});
+  await page.goto("/");await page.locator('[data-track="Professional"]').click();
+  await page.locator('.job-title').filter({hasText:savedJob.title}).click();
+  await page.getByRole("button",{name:"Check listing",exact:true}).click();
+  await expect(page.locator('.stage-header').filter({hasText:"Closed listings"})).toBeVisible();
+  await expect(page.locator('.stage-header').filter({hasText:"Active jobs"})).toHaveCount(0);
+  await expect(page.getByRole("link",{name:"Apply on site",exact:true})).toHaveCount(0);
+  const badge=page.locator('.closed-listing-badge');
+  await expect(badge).toBeVisible();
+  expect(await badge.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+  await page.screenshot({path:"test-results/closed-listing.png",fullPage:true});
+  await page.reload();await page.locator('[data-track="Professional"]').click();await expect(page.locator('.stage-header').filter({hasText:"Closed listings"})).toBeVisible();
+});
 
 test("review downloads a Word file and opens the PDF print dialog",async({page})=>{
   await mockRaven(page);await page.goto("/");

@@ -77,7 +77,7 @@ export async function enrichCandidate(c:Candidate):Promise<Candidate>{
       redirect:"follow",
       signal:AbortSignal.timeout(7000)
     });
-    if(!r.ok) return {...current,_httpStatus:r.status,_expired:r.status===404||r.status===410} as Candidate & {_httpStatus:number;_expired:boolean};
+    if(!r.ok) return {...current,_httpStatus:r.status,_expired:false} as Candidate & {_httpStatus:number;_expired:boolean};
     const html=await r.text();
 
     for(const s of html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)){

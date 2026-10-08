@@ -1,5 +1,10 @@
 # Raven Status
 
+## Closed listing checks (2026-10-08, review branch)
+- Expanded jobs expose a bounded Check listing action. Explicit closure notices or expired matching JobPosting evidence confirm closure; HTTP errors, access blocks, timeouts, redirects and missing text stay unconfirmed.
+- Separate listing_check metadata preserves lifecycle/documents/history. Closed saved jobs move to Closed listings; post-application stages retain their stage with a closure badge. Fresh/cached discovery excludes confirmed closed rows across refreshes.
+- Five focused execution checks, all 27 core regression commands, syntax/secret scan and four mocked Edge browser cases pass. Saved/interview/document preservation after reload verified; 375px closure badge containment verified. Production schema/functions and real-source/database acceptance remain pending. Release prerequisites: docs/CLOSED_LISTINGS.md and supabase/closed-listing-schema.sql.
+
 ## Global job location preference (2026-10-07)
 - All four tabs allow confirmed remote work anywhere; in-person and hybrid roles require an explicit nearby Colorado city/state work location.
 - Nearby communities: Fort Collins, Loveland, Windsor, Timnath, Wellington, Laporte/La Porte, Bellvue, Severance, Greeley, Johnstown, Berthoud, Eaton and Ault. This is a city whitelist, not a measured driving-radius promise.

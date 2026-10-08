@@ -19,7 +19,7 @@
       salaryText: row.salary_text || row.salaryText || "", url: row.url || "", source: row.source || "",
       status: row.status || "Saved", viewed: Boolean(row.viewed), appliedDate: row.applied_date || row.appliedDate || "",
       followUp: row.follow_up || row.followUp || "", resume: row.resume || "", coverLetter: row.cover_letter || row.coverLetter || "",
-      notes: row.notes || "", lastUpdated: row.last_updated || row.lastUpdated || ""
+      notes: row.notes || "", lastUpdated: row.last_updated || row.lastUpdated || "", listingCheck: row.listing_check || row.listingCheck || null
     };
   }
   function fromDiscoveredJob(job) {
@@ -28,7 +28,7 @@
       id: "DISC-" + text(raw.id), added: raw.created_at || raw.last_seen || "", track: raw.track,
       title: raw.title, company: raw.company, location: raw.location, remote: raw.remote ? "Remote" : "",
       salaryText: raw.salary_text || "", url: raw.url, source: raw.source || "Web", status: "Discovered",
-      viewed: false, notes: raw.snippet || "", lastUpdated: raw.last_seen || "",
+      viewed: false, notes: raw.snippet || "", lastUpdated: raw.last_seen || "", listingCheck:raw.listing_check || null,
       fitScore: Math.max(55, Math.min(96, 50 + Number(raw.score || 7) * 3)), _discovered: true
     });
   }

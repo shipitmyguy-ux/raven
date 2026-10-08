@@ -26,7 +26,11 @@ export async function quickSearch(track:Track){
     return await listResults(track).catch(()=>[] as Candidate[]);
   }
   await upsertResults(rows);
-  return rows;
+  // Read the durable availability evidence after upsert; source feeds can
+  // continue returning a vacancy after the actual listing has closed.
+  const current=await listResults(track);
+  const urls=new Set(rows.map(row=>row.url));
+  return current.filter(row=>urls.has(row.url));
 }
 
 export async function deepSearch(track:Track){

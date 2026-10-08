@@ -769,7 +769,7 @@
         };
       });
     const savedUrls = new Set(saved.map((job)=>normalizeComparableUrl(job.url)).filter(Boolean));
-    const unsaved = discovered.filter((job)=>!savedUrls.has(normalizeComparableUrl(job.url)));
+    const unsaved = discovered.filter((job)=>!savedUrls.has(normalizeComparableUrl(job.url)) && job.listingCheck?.state!=="closed");
     return [...saved, ...unsaved].filter(job=>
       (state.activeTrack!=="Games / 3D"||window.RavenTrackFilter.gameArtRoleAllowed(job))
       && (state.activeTrack!=="Professional"||window.RavenTrackFilter.professionalRoleAllowed(job))
@@ -812,6 +812,7 @@
     if (s.includes("offer")) return "Offer";
     if (s.includes("interview")) return "Interview";
     if (s.includes("applied")) return "Applied";
+    if (job.listingCheck?.state==="closed") return "Closed";
     if (s.includes("interested")) return "Interested";
     if (s.includes("ready") || s.includes("tailor")) return "Tailoring";
     return "Saved";
@@ -1177,6 +1178,7 @@
       {bucket:"Interview",label:"Interview"},
       {bucket:"Offer",label:"Offer"},
       {bucket:"Rejected",label:"Rejected"},
+      {bucket:"Closed",label:"Closed listings"},
       {bucket:"Ignored",label:"Ignored"}
     ];
     groups.forEach((group)=>{
@@ -1202,9 +1204,10 @@
           const hasApplied=Boolean(job.appliedDate||job.applied_date)||/^(applied|interview|offer|rejected)$/i.test(rawStatus);
           const meaningfulStatus=!/^(saved|discovered|interested)$/i.test(rawStatus);
           const statusLabel=rawStatus;
-          const attentionIndicator=meaningfulStatus&&rawStatus.toLowerCase()!=="applied"
+          const closureIndicator=job.listingCheck?.state==="closed"?'<span class="closed-listing-badge" title="'+escapeAttr(job.listingCheck.reason||"Confirmed closed")+'">CLOSED LISTING</span>':"";
+          const attentionIndicator=(meaningfulStatus&&rawStatus.toLowerCase()!=="applied"
             ? '<span class="job-status">'+escapeHtml(statusLabel)+'</span>'
-            : '';
+            : '');
           const generationIndicator=generating
             ? '<span class="generation-card-status" role="status" aria-live="polite"><span class="generation-spinner" aria-hidden="true"></span><span>AI is generating '+escapeHtml(documentLabel(generating.type))+'…</span></span>'
             : '';
@@ -1220,6 +1223,7 @@
             '<button class="job-card-summary" type="button" aria-expanded="'+String(job.id===state.selectedId)+'">'+
               '<span class="card-main">'+
                 (hasApplied?'<span class="applied-job-badge"><span aria-hidden="true">✓</span> APPLIED</span>':'')+
+                closureIndicator+
                 (attentionIndicator?'<span class="card-topline">'+attentionIndicator+'</span>':'')+
                 generationIndicator+
                 '<span class="job-title">'+escapeHtml(job.title||"Untitled job")+'</span>'+
@@ -1238,6 +1242,24 @@
             expanded.className="job-card-expanded";
             expanded.innerHTML=renderInlineDetail(job);
             card.appendChild(expanded);
+            expanded.querySelector("[data-check-listing]")?.addEventListener("click",async(event)=>{
+              event.stopPropagation();
+              const button=event.currentTarget;button.disabled=true;
+              setStatus("Checking source listing…");
+              try{
+                const result=await window.RavenAPI.checkListing(job);
+                if(!result.listing_check) throw new Error("Listing check service needs updating");
+                job.listingCheck=result.listing_check;
+                for(const stored of state.jobs) if(normalizeComparableUrl(stored.url)===normalizeComparableUrl(job.url)) stored.listingCheck=result.listing_check;
+                for(const rows of Object.values(state.discovered)) for(const stored of rows) if(normalizeComparableUrl(stored.url)===normalizeComparableUrl(job.url)) stored.listingCheck=result.listing_check;
+                // A checked discovery row stays a discovery row. Persisted saved jobs
+                // receive the same evidence through the source service.
+                writeCache(CACHE_JOBS_KEY,state.jobs);
+                writeCache(CACHE_DISCOVERED_KEY,state.discovered);
+                render();
+                setStatus("Listing check: "+(result.listing_check.last_check?.state||result.listing_check.state));
+              }catch(error){button.disabled=false;setStatus("Listing check failed: "+error.message);}
+            });
             expanded.querySelectorAll("[data-approved-apply]").forEach((button)=>{ button.addEventListener("click",(event)=>{ event.stopPropagation(); beginApprovedApplication(job); }); });
             expanded.querySelectorAll("[data-apply-status]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
@@ -1481,19 +1503,23 @@
     const lifecycleControl='<div class="job-lifecycle-row"><label class="lifecycle-control"><span>Status</span><select data-lifecycle-status aria-label="Job status">'+lifecycleOptions+'</select></label>'+
       followUpControl+(nextAction?'<span class="next-action">'+escapeHtml(nextAction)+'</span>':'')+'</div>';
     const docsReady=documentsReadyForApplication(job);
-    const generateBoth=(!job.resume||!job.coverLetter)&&featureEnabled("resume-generation")&&featureEnabled("cover-letter-generation")
+    const generateBoth=job.listingCheck?.state!=="closed"&&(!job.resume||!job.coverLetter)&&featureEnabled("resume-generation")&&featureEnabled("cover-letter-generation")
       ? '<button class="workflow-action" type="button" data-generate-both'+(generationSession(job)?' disabled aria-busy="true"':'')+'><span>'+(generationSession(job)?'Creating documents…':job.resume||job.coverLetter?'Finish documents':'Generate both')+'</span></button>':"";
-    const chatGptBoth=!job.resume&&!job.coverLetter
+    const chatGptBoth=job.listingCheck?.state!=="closed"&&!job.resume&&!job.coverLetter
       ? '<button class="workflow-action chatgpt-action" type="button" data-chatgpt-prompt="both"><span class="workflow-icon" aria-hidden="true">✦</span><span>ChatGPT both</span></button>'+
         '<button class="workflow-action" type="button" data-chatgpt-import="both"><span class="workflow-icon" aria-hidden="true">⇩</span><span>Import AI docs</span></button>'
       : "";
     const statusLower=currentStatus.toLowerCase();
-    const postApplication=["applied","interview","offer","rejected"].includes(statusLower);
+    const postApplication=job.listingCheck?.state==="closed"||["applied","interview","offer","rejected"].includes(statusLower);
     const applyGate=job.url&&!postApplication?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply aria-label="Open application with approved documents" title="'+(docsReady?'Open application':'Approve resume and cover letter first')+'"><span class="workflow-icon" aria-hidden="true">↗</span><span>'+(docsReady?'Apply with docs':'Approve docs')+'</span></button>':"";
-    const appliedAction=!["interview","offer","rejected","ignored"].includes(statusLower)?'<button class="workflow-action'+(isApplied?' is-applied':'')+'" type="button" data-apply-status="'+(isApplied?'saved':'applied')+'" aria-pressed="'+String(isApplied)+'" aria-label="'+(isApplied?'Unmark as applied':'Mark as applied')+'" title="'+(isApplied?'Unmark as applied':'Mark as applied')+'"><span class="workflow-icon" aria-hidden="true">✓</span><span>Applied</span></button>':"";
+    const appliedAction=job.listingCheck?.state!=="closed"&&!["interview","offer","rejected","ignored"].includes(statusLower)?'<button class="workflow-action'+(isApplied?' is-applied':'')+'" type="button" data-apply-status="'+(isApplied?'saved':'applied')+'" aria-pressed="'+String(isApplied)+'" aria-label="'+(isApplied?'Unmark as applied':'Mark as applied')+'" title="'+(isApplied?'Unmark as applied':'Mark as applied')+'"><span class="workflow-icon" aria-hidden="true">✓</span><span>Applied</span></button>':"";
     const postingUrl=/^https?:\/\//i.test(String(job.url||""))?job.url:"";
+    const check=job.listingCheck;
+    const lastCheck=check?.last_check||check;
+    const checkSummary=check?'<p class="listing-check-status" role="status">'+escapeHtml((check.state==="closed"?"Confirmed closed. ":"")+(lastCheck?.reason||"")+" · Checked "+(lastCheck?.checked_at||check.checked_at||""))+'</p>':"";
     const actions=postingUrl
       ? '<a class="workflow-action" href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener" aria-label="View listing"><span class="workflow-icon" aria-hidden="true">↗</span><span>View listing</span></a>'+
+        '<button class="workflow-action" type="button" data-check-listing><span>Check listing</span></button>'+
         (!postApplication?'<a class="workflow-action" href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener" aria-label="Apply on site"><span class="workflow-icon" aria-hidden="true">↗</span><span>Apply on site</span></a>':'')
       : '<span class="posting-unavailable">Listing link unavailable</span>';
 
@@ -1501,7 +1527,7 @@
     const summary=jobDetailSummary(job);
     const canExpand=fullDescription.length>summary.length+40;
     return '<section class="inline-job-detail">'+
-      lifecycleControl+
+      lifecycleControl+checkSummary+
       '<section class="job-description"><h3>Job summary</h3>'+
         '<p class="job-description-text" data-description-summary>'+escapeHtml(summary)+'</p>'+
         (canExpand?'<p class="job-description-text full-description" data-description-full hidden>'+escapeHtml(fullDescription)+'</p>':'')+
@@ -1667,6 +1693,7 @@
 
   const generationPreparation=new WeakMap();
   async function prepareJobForGeneration(job){
+    if(job.listingCheck?.state==="closed") throw new Error("This source listing is confirmed closed. Saved documents remain available.");
     if(generationPreparation.has(job)) return generationPreparation.get(job);
     const pending=(async()=>{
       if(job._discovered){
@@ -2219,6 +2246,7 @@
     return Boolean(job.resume&&job.coverLetter&&isDocumentApproved(job,"resume")&&isDocumentApproved(job,"coverLetter"));
   }
   function beginApprovedApplication(job){
+    if(job.listingCheck?.state==="closed"){setStatus("This source listing is confirmed closed");return;}
     if(!documentsReadyForApplication(job)){ setStatus("Approve the resume and cover letter before applying"); return; }
     const packet={version:1,createdAt:new Date().toISOString(),jobId:job.id||"",jobUrl:job.url||"",title:job.title||"",company:job.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory(),resume:job.resume,coverLetter:job.coverLetter};
     const bridge=document.getElementById("ravenExtensionBridge");
@@ -2498,6 +2526,7 @@
   }
   function documentControl(job,key,label) {
     const value=job[key];
+    if(!value&&job.listingCheck?.state==="closed") return '<span>No saved document</span>';
     const error=generationErrors.get(documentApprovalKey(job,key));
     const feedback=error?'<span class="document-generation-error" role="alert">'+escapeHtml(error)+'</span>':"";
     const fileLabel=String(label||"file").toLowerCase();

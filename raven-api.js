@@ -72,6 +72,7 @@
     analytics() { return read(config.searchApiUrl, "analytics"); },
     coverage(jobId) { return read(config.searchApiUrl, "coverage", { jobId }); },
     describeJob(job) { return read(config.enrichApiUrl, "describe", job || {}); },
+    checkListing(job) { return read(config.enrichApiUrl, "checkListing", {url:job.url}); },
     commute(location) { return read(config.commuteApiUrl, "commute", { location }); },
     controlHealth() { return read(config.controlApiUrl, "health"); },
     getControlConfig() { return read(config.controlApiUrl, "getConfig"); },

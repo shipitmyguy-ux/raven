@@ -274,3 +274,8 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Apply remote-anywhere / local-in-person eligibility across every tab, including cached and saved lists.
 - [x] Verify geographic, remote, hybrid, ranking and browser preservation regressions plus required core checks.
 - [x] Publish frontend/backend and verify live results (PR #57, app v76/filter v3, backend v55, zero violations in all four tracks).
+## Closed listing checks (2026-10-08)
+- [x] Add user-triggered source availability checks, explicit evidence/reason/time, conservative unconfirmed states, and reopening evidence.
+- [x] Cull confirmed closed discovery results across fresh/cache refreshes; group saved closures separately and preserve documents/application history.
+- [x] Verify focused evidence/persistence tests, core regressions, mocked browser visible behavior and reload, including 375px badge containment.
+- [ ] Apply additive schema through release migration workflow, deploy enrichment/backend/frontend, and verify real source and live database closure persistence.
