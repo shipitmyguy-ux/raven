@@ -1,6 +1,6 @@
 import type { Candidate, Track } from "./types.ts";
 import { enrichCandidate } from "./enrich.ts";
-import { markExpired, updateDescription } from "./db.ts";
+import { saveAvailability, updateDescription } from "./db.ts";
 import { normalizeUrl, json } from "./utils.ts";
 
 Deno.serve(async(req:Request)=>{
@@ -19,9 +19,10 @@ Deno.serve(async(req:Request)=>{
       location:String(u.searchParams.get("location")||""),remote:String(u.searchParams.get("remote")||"")==="true",
       salary_text:String(u.searchParams.get("salary_text")||""),url,source:String(u.searchParams.get("source")||"Web"),snippet:""
     };
-    const e=await enrichCandidate(c) as Candidate & {_httpStatus?:number;_expired?:boolean};
-    if(e._expired) await markExpired(url,e._httpStatus||0).catch(()=>{});
-    else await updateDescription(url,e).catch(()=>{});
-    return json({ok:true,url,expired:Boolean(e._expired),http_status:e._httpStatus||200,description:String(e.snippet||""),company:e.company||"",location:e.location||"",remote:Boolean(e.remote),salary_text:e.salary_text||""});
+    const e=await enrichCandidate(c) as Candidate & {_httpStatus?:number;_availability?:any};
+    const evidence=e._availability;
+    if(evidence) await saveAvailability(url,evidence,String(u.searchParams.get("url")||url));
+    if(evidence?.state!=="closed" && e.snippet) await updateDescription(url,e);
+    return json({ok:true,url,expired:evidence?.state==="closed",availability:evidence,http_status:e._httpStatus||0,description:String(e.snippet||""),company:e.company||"",location:e.location||"",remote:Boolean(e.remote),salary_text:e.salary_text||""});
   }catch(e){return json({error:e instanceof Error?e.message:String(e)},500);}
 });

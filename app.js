@@ -590,7 +590,7 @@
     if(window.RavenCore?.fromDiscoveredJob) {
       return (results||[])
         .map(window.RavenCore.fromDiscoveredJob)
-        .filter((job)=>job.url && (!window.RavenCore.isRenderableJob || window.RavenCore.isRenderableJob(job)));
+        .filter((job)=>job.listing_state!=="closed" && job.url && (!window.RavenCore.isRenderableJob || window.RavenCore.isRenderableJob(job)));
     }
     return (results||[]).filter((job)=>job?.url && (!/^ATS:/i.test(String(job.source||"")) || /^https?:\/\//i.test(String(job.url||""))));
   }
@@ -637,6 +637,7 @@
         console.warn("Job refresh failed for "+track,error);
       }
     }
+    await checkListingAvailability();
     searchJobsButton.disabled=false;
     searchJobsButton.textContent=original;
     if(failed.length) setStatus(total+" refreshed · failed: "+failed.join(", "));
@@ -738,7 +739,7 @@
   }
 
   function combinedJobs() {
-    const discovered = state.discovered[state.activeTrack] || [];
+    const discovered = (state.discovered[state.activeTrack] || []).filter(job=>job.listing_state!=="closed");
     const discoveredByUrl = new Map(discovered.map((job)=>[normalizeComparableUrl(job.url),job]));
     const saved = state.jobs
       .filter((job)=>{
@@ -746,7 +747,7 @@
         const legacyAutoDiscovered=/^DISC-/i.test(String(job.id||""))
           && String(job.status||"Saved").toLowerCase()==="saved"
           && !parseBool(job.viewed,false)
-          && !job.resume && !job.coverLetter && !job.appliedDate;
+          && !job.resume && !job.coverLetter && !job.appliedDate && job.listing_state!=="closed";
         // Older deep-search builds copied discovered rows into raven_jobs.
         // Keep them visible only while the posting is still in the fresh
         // discovered set. Any explicit user action changes status/identity and
@@ -770,17 +771,17 @@
       });
     const savedUrls = new Set(saved.map((job)=>normalizeComparableUrl(job.url)).filter(Boolean));
     const unsaved = discovered.filter((job)=>!savedUrls.has(normalizeComparableUrl(job.url)));
-    return [...saved, ...unsaved].filter(job=>
+    return [...saved, ...unsaved].filter(job=>job.listing_state==="closed" || (
       (state.activeTrack!=="Games / 3D"||window.RavenTrackFilter.gameArtRoleAllowed(job))
       && (state.activeTrack!=="Professional"||window.RavenTrackFilter.professionalRoleAllowed(job))
-      && window.RavenTrackFilter.jobLocationAllowed(job));
+      && window.RavenTrackFilter.jobLocationAllowed(job)));
   }
   function filteredJobs() {
     const query=searchBox.value.trim().toLowerCase();
     const selectedStatus=statusFilter.value;
     return sortedJobs(combinedJobs().filter((job)=>{
       const haystack=[job.title,job.company,job.location,job.notes,job.url].join(" ").toLowerCase();
-      return (!query||haystack.includes(query)) && (!selectedStatus||job.status===selectedStatus);
+      return (!query||haystack.includes(query)) && (!selectedStatus||job.status===selectedStatus||(selectedStatus==="Ignored"&&job.listing_state==="closed"&&pipelineBucket(job)==="Ignored"));
     }));
   }
   function uiRows(surface) {
@@ -812,6 +813,7 @@
     if (s.includes("offer")) return "Offer";
     if (s.includes("interview")) return "Interview";
     if (s.includes("applied")) return "Applied";
+    if(job.listing_state==="closed") return "Ignored";
     if (s.includes("interested")) return "Interested";
     if (s.includes("ready") || s.includes("tailor")) return "Tailoring";
     return "Saved";
@@ -1177,7 +1179,7 @@
       {bucket:"Interview",label:"Interview"},
       {bucket:"Offer",label:"Offer"},
       {bucket:"Rejected",label:"Rejected"},
-      {bucket:"Ignored",label:"Ignored"}
+      {bucket:"Ignored",label:"Archived / ignored"}
     ];
     groups.forEach((group)=>{
       const groupJobs=jobs.filter((job)=>pipelineBucket(job)===group.bucket);
@@ -1219,7 +1221,8 @@
           card.innerHTML=
             '<button class="job-card-summary" type="button" aria-expanded="'+String(job.id===state.selectedId)+'">'+
               '<span class="card-main">'+
-                (hasApplied?'<span class="applied-job-badge"><span aria-hidden="true">✓</span> APPLIED</span>':'')+
+                (job.listing_state==="closed"?'<span class="listing-availability" title="'+escapeHtml(job.listing_reason||"Source confirmed closed")+'">Listing closed · source checked '+escapeHtml(job.listing_checked_at?new Date(job.listing_checked_at).toLocaleString():"")+'</span>':'')+
+                 (hasApplied?'<span class="applied-job-badge" role="img" aria-label="Applied" title="Applied — application recorded"><span aria-hidden="true">✓</span></span>':'')+
                 (attentionIndicator?'<span class="card-topline">'+attentionIndicator+'</span>':'')+
                 generationIndicator+
                 '<span class="job-title">'+escapeHtml(job.title||"Untitled job")+'</span>'+
@@ -1499,7 +1502,7 @@
       : "";
     const statusLower=currentStatus.toLowerCase();
     const postApplication=["applied","interview","offer","rejected"].includes(statusLower);
-    const applyGate=job.url&&!postApplication?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply aria-label="Open application with approved documents" title="'+(docsReady?'Open application':'Approve resume and cover letter first')+'"><span class="workflow-icon" aria-hidden="true">↗</span><span>'+(docsReady?'Apply with docs':'Approve docs')+'</span></button>':"";
+    const applyGate=job.url&&job.listing_state!=="closed"&&!postApplication?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply aria-label="Open application with approved documents" title="'+(docsReady?'Open application':'Approve resume and cover letter first')+'"><span class="workflow-icon" aria-hidden="true">↗</span><span>'+(docsReady?'Apply with docs':'Approve docs')+'</span></button>':"";
     const appliedAction=!["interview","offer","rejected","ignored"].includes(statusLower)?'<button class="workflow-action'+(isApplied?' is-applied':'')+'" type="button" data-apply-status="'+(isApplied?'saved':'applied')+'" aria-pressed="'+String(isApplied)+'" aria-label="'+(isApplied?'Unmark as applied':'Mark as applied')+'" title="'+(isApplied?'Unmark as applied':'Mark as applied')+'"><span class="workflow-icon" aria-hidden="true">✓</span><span>Applied</span></button>':"";
     const postingUrl=/^https?:\/\//i.test(String(job.url||""))?job.url:"";
     const actions=postingUrl
@@ -1677,6 +1680,7 @@
 
   const generationPreparation=new WeakMap();
   async function prepareJobForGeneration(job,{refreshDescription=false}={}){
+    if(job.listing_state==="closed")throw new Error("Source confirmed this listing closed. Saved documents remain available for review.");
     if(generationPreparation.has(job)) return generationPreparation.get(job);
     const pending=(async()=>{
       if(job._discovered){
@@ -1708,7 +1712,7 @@
           url:job.url,title:job.title,company:job.company,track:job.track,
           location:job.location,source:job.source
         });
-        if(result.expired) throw new Error("This listing has expired. Open View listing to check it.");
+        if(result.expired){ applyListingEvidence(job,result.availability);render();throw new Error("This listing has expired. Open View listing to check it.");}
         const description=String(result.description||"").trim();
         if(!description) throw new Error("The listing did not provide a job description. Open View listing to check the source.");
         await window.RavenAPI.updateJob(job.id,{notes:description});
@@ -2011,7 +2015,7 @@
         frame.srcdoc=html;
         setStatus("Choose Save as PDF in the print dialog; turn off headers and footers.");
       }else{
-        const {blocksFromHtml,docxFromBlocks}=await import("./document-download.mjs?v=1");
+        const {blocksFromHtml,docxFromBlocks}=await import("./document-download.mjs?v=2");
         const url=URL.createObjectURL(docxFromBlocks(blocksFromHtml(html)));
         const a=document.createElement("a");a.href=url;
         a.download=[job.company,job.title,type].filter(Boolean).join(" - ").replace(/[<>:"/\\|?*\x00-\x1f]/g,"_").slice(0,180)+".docx";
@@ -2620,6 +2624,7 @@
         try{
           await window.RavenAPI.refreshAllControl();
           await refreshAllJobs({includeDiscovered:true});
+          await checkListingAvailability();
           await loadControlPanelData();
           setStatus("All tracks refreshed");
         }catch(error){setStatus("Refresh failed: "+error.message);}
@@ -2819,6 +2824,33 @@
       const parts=sharedUrl.split(/\s+/);
       document.getElementById("jobUrl").value=parts.find((part)=>/^https?:\/\//.test(part))||sharedUrl;
     }
+  }
+  function applyListingEvidence(job,evidence){
+    if(!evidence) return;
+    if(job.listing_state==="closed" && evidence.state!=="closed")return;
+    Object.assign(job,{listing_state:evidence.state==="closed"?"closed":job.listing_state||"",listing_reason:evidence.reason,listing_checked_at:evidence.checked_at,listing_source_url:evidence.source_url,listing_http_status:evidence.http_status});
+    for(const saved of state.jobs){
+      if(normalizeComparableUrl(saved.url)===normalizeComparableUrl(job.url))Object.assign(saved,{listing_state:job.listing_state,listing_reason:job.listing_reason,listing_checked_at:job.listing_checked_at,listing_source_url:job.listing_source_url,listing_http_status:job.listing_http_status});
+    }
+    if(evidence.state==="closed"){
+      for(const track of JOB_TRACKS)state.discovered[track]=(state.discovered[track]||[]).filter(row=>normalizeComparableUrl(row.url)!==normalizeComparableUrl(job.url));
+    }
+    writeCache(CACHE_JOBS_KEY,state.jobs);writeCache(CACHE_DISCOVERED_KEY,state.discovered);
+  }
+  async function checkListingAvailability(){
+    // User-triggered refresh only. At most five sequential checks; six-hour freshness.
+    const seen=new Set();
+    const jobs=[...state.jobs,...JOB_TRACKS.flatMap(track=>state.discovered[track]||[])].filter(job=>{
+      const key=normalizeComparableUrl(job.url);
+      if(!key||seen.has(key)||job.listing_state==="closed")return false;
+      seen.add(key);
+      return !job.listing_checked_at||Date.now()-Date.parse(job.listing_checked_at)>6*60*60*1000;
+    }).slice(0,5);
+    for(const job of jobs){
+      try{const result=await window.RavenAPI.describeJob({url:job.url,title:job.title,company:job.company,track:job.track,source:job.source});applyListingEvidence(job,result.availability);}
+      catch(error){console.warn("Listing availability remains unconfirmed",error);}
+    }
+    render();
   }
   async function refreshAllJobs(options={}) {
     const includeDiscovered=options.includeDiscovered!==false;

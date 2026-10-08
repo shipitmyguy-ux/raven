@@ -23,7 +23,6 @@ export async function updateDescription(url:string,c:Candidate){
     location:c.location||null,
     remote:Boolean(c.remote),
     salary_text:c.salary_text||null,
-    status:"Discovered",
     last_seen:new Date().toISOString()
   };
   const r=await rest("raven_search_results?url=eq."+encodeURIComponent(url),{
@@ -34,11 +33,14 @@ export async function updateDescription(url:string,c:Candidate){
   if(!r.ok) throw new Error("Description save failed ("+r.status+")");
 }
 
-export async function markExpired(url:string,httpStatus:number){
-  const r=await rest("raven_search_results?url=eq."+encodeURIComponent(url),{
-    method:"PATCH",
-    headers:{Prefer:"return=minimal"},
-    body:JSON.stringify({status:"Expired"})
-  });
-  if(!r.ok) throw new Error("Expired status save failed ("+r.status+")");
+export async function saveAvailability(url:string,evidence:any,originalUrl=url){
+  const body:any={listing_reason:evidence.reason,listing_checked_at:evidence.checked_at,listing_source_url:evidence.source_url,listing_http_status:evidence.http_status};
+  if(evidence.state==="closed") body.listing_state="closed";
+  // Failed checks must neither reopen closures nor overwrite their evidence.
+  const condition=evidence.state==="closed"?"":"&or=(listing_state.is.null,listing_state.neq.closed)";
+  for(const table of ["raven_jobs","raven_search_results"]){
+    const patch={...body,...(table==="raven_search_results"&&evidence.state==="closed"?{status:"Expired"}:{})};
+    const r=await rest(table+"?url=in."+encodeURIComponent("("+[...new Set([url,originalUrl])].map(value=>JSON.stringify(value)).join(",")+")")+condition,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify(patch)});
+    if(!r.ok) throw new Error("Availability save failed ("+r.status+")");
+  }
 }
