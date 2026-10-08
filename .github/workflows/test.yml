@@ -89,6 +89,7 @@ jobs:
           node tests/document-writer.test.mjs
           node tests/document-revision.test.mjs
           node tests/document-reliability.test.mjs
+          node --test tests/openai-provider-pilot.test.mjs
           node tests/cloudflare-free.test.mjs
           node tests/control-panel.test.mjs
           node tests/canonical-identity.test.mjs
