@@ -739,7 +739,7 @@
   }
 
   function combinedJobs() {
-    const discovered = state.discovered[state.activeTrack] || [];
+    const discovered = (state.discovered[state.activeTrack] || []).filter(job=>job.listing_state!=="closed");
     const discoveredByUrl = new Map(discovered.map((job)=>[normalizeComparableUrl(job.url),job]));
     const saved = state.jobs
       .filter((job)=>{
@@ -771,10 +771,10 @@
       });
     const savedUrls = new Set(saved.map((job)=>normalizeComparableUrl(job.url)).filter(Boolean));
     const unsaved = discovered.filter((job)=>!savedUrls.has(normalizeComparableUrl(job.url)));
-    return [...saved, ...unsaved].filter(job=>
+    return [...saved, ...unsaved].filter(job=>job.listing_state==="closed" || (
       (state.activeTrack!=="Games / 3D"||window.RavenTrackFilter.gameArtRoleAllowed(job))
       && (state.activeTrack!=="Professional"||window.RavenTrackFilter.professionalRoleAllowed(job))
-      && window.RavenTrackFilter.jobLocationAllowed(job));
+      && window.RavenTrackFilter.jobLocationAllowed(job)));
   }
   function filteredJobs() {
     const query=searchBox.value.trim().toLowerCase();

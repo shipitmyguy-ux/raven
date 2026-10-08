@@ -1231,3 +1231,16 @@ test('legacy closed saved row remains accessible even without fresh discovery',a
  await expect(page.locator('.job-title')).toHaveText(savedJob.title);
  await expect(page.locator('.stage-header')).toContainText(['Archived / ignored']);
 });
+
+test('closed discovery is excluded while closed saved history survives active location eligibility',async({page})=>{
+ await mockRaven(page,{initialJob:{status:'Saved',location:'New York, NY',remote:false,listing_state:'closed',listing_reason:'Source confirmed closed',listing_checked_at:'2026-10-08T16:00:00Z'}});
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();
+ await expect(page.locator('.job-title')).toHaveText(savedJob.title);
+ await expect(page.locator('.stage-header')).toContainText(['Archived / ignored']);
+});
+
+test('confirmed closed discovered row never enters active results',async({page})=>{
+ await mockRaven(page,{discoveredJob:{id:'closed-discovery',track:'Professional',title:savedJob.title,company:savedJob.company,location:'Remote',remote:true,url:savedJob.url,listing_state:'closed',last_seen:new Date().toISOString(),snippet:savedJob.notes}});
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();
+ await expect(page.locator('.job-title')).toHaveCount(0);
+});
