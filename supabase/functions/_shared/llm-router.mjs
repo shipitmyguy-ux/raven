@@ -108,6 +108,8 @@ function geminiSchema(schema){
 }
 function configured(getEnv){
   return {
+    // Paid OpenAI requests require both a server-side key and explicit provider-order opt-in.
+    openai:Boolean(getEnv("RAVEN_OPENAI_API_KEY")),
     openrouter:Boolean(getEnv("RAVEN_OPENROUTER_API_KEY")||getEnv("OPENROUTER_API_KEY")),
     cloudflare:Boolean(
       (getEnv("RAVEN_CLOUDFLARE_API_TOKEN")||getEnv("CLOUDFLARE_API_TOKEN")||getEnv("CLOUDFLARE_AUTH_TOKEN")) &&
@@ -121,7 +123,7 @@ function configured(getEnv){
 function providerOrder(getEnv){
   const requested=String(getEnv("RAVEN_LLM_PROVIDER_ORDER")||"openrouter,groq")
     .split(",").map(v=>v.trim().toLowerCase()).filter(Boolean);
-  return [...new Set(requested.filter(v=>["openrouter","cloudflare","cerebras","groq","gemini"].includes(v)))];
+  return [...new Set(requested.filter(v=>["openai","openrouter","cloudflare","cerebras","groq","gemini"].includes(v)))];
 }
 async function openAICompatibleComplete({provider,baseUrl,apiKey,model,fetchImpl,signal,instructions,input,schema,name,maxOutputTokens,responseMode="json"}){
   const response=await fetchImpl(baseUrl+"/chat/completions",{
@@ -225,6 +227,12 @@ async function cloudflareComplete(args){
   return {data:args.responseMode==="text"?String(value):typeof value==="object"?value:parseJsonText(value),provider:"cloudflare",model};
 }
 
+async function openaiComplete(args){
+  const apiKey=args.getEnv("RAVEN_OPENAI_API_KEY");
+  if(!apiKey)throw new WriterError("OpenAI API is not configured.","PROVIDER_NOT_CONFIGURED",503);
+  return openAICompatibleComplete({...args,provider:"openai",baseUrl:"https://api.openai.com/v1",apiKey,
+    model:args.getEnv("RAVEN_OPENAI_MODEL")||"gpt-5.6-luna"});
+}
 async function cerebrasComplete(args){
   const apiKey=args.getEnv("RAVEN_CEREBRAS_API_KEY")||args.getEnv("CEREBRAS_API_KEY");
   if(!apiKey)throw new WriterError("Cerebras is not configured.","PROVIDER_NOT_CONFIGURED",503);
@@ -357,7 +365,8 @@ export function createLLMCompletion({getEnv,fetchImpl=fetch,signal}){
         totalProviderCalls+=1;
         const common={getEnv,fetchImpl,signal:stageSignal,instructions,input,schema,name,maxOutputTokens,responseMode};
         let result;
-        if(provider==="openrouter")result=await openrouterComplete(common);
+        if(provider==="openai")result=await openaiComplete(common);
+        else if(provider==="openrouter")result=await openrouterComplete(common);
         else if(provider==="cloudflare")result=await cloudflareComplete(common);
         else if(provider==="cerebras")result=await cerebrasComplete(common);
         else if(provider==="groq")result=await groqComplete(common);
