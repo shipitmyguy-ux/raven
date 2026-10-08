@@ -1,12 +1,15 @@
 # Raven execution handoff
 
-Latest task: global remote-anywhere / local-in-person location preference.
+Latest task: compare a direct OpenAI API route against ChatGPT-plan sign-in without enabling paid services.
 
-## Global job location preference (2026-10-07)
-- All four tabs allow confirmed remote work anywhere; in-person and hybrid roles require an explicit nearby Colorado city/state work location.
-- Nearby communities: Fort Collins, Loveland, Windsor, Timnath, Wellington, Laporte/La Porte, Bellvue, Severance, Greeley, Johnstown, Berthoud, Eaton and Ault. This is a city whitelist, not a measured driving-radius promise.
-- Missing/broad locations and statewide/travel work are excluded. Employer headquarters and description mentions do not establish the work location.
-- Shared eligibility applies before ranking, to cached backend discovery reads, and to browser saved/discovered lists. Stored records, documents and application history remain intact.
-- Policy is shown globally in Options > Behavior. All 26 core regression commands, syntax, secret scan and whitespace pass locally; Published PR #57 at b6811ba26264ce27fc8e7c74387e608644421352. Hosted app v76/filter v3 and Options > Behavior policy verified; backend v55 ACTIVE, health healthy. Live results: Professional 56, Labor 47, Wildcard 47, Games / 3D 1, with zero global location violations. PR core/full-browser CI passed after adding a local location to the valid cached ATS fixture (69 of 70 passed before fixture correction). Release core, Pages and both production smoke runs passed; release full-browser job was still running at last check.
+## 2026-10-08 pilot
+- Draft PR #58: https://github.com/shipitmyguy-ux/raven/pull/58 on `pilot/openai-chatgpt-options-20261008`.
+- Added opt-in OpenAI provider inside the existing LLM router, server-side key and explicit provider-order double gate, default `gpt-5.6-luna`. Production config and Supabase deploy unchanged.
+- New synthetic request-contract tests added to core CI. Core tests passed on initial PR run; browser checks still running at last check.
+- Hosted ChatGPT-plan sharing requires provider approval; no legitimate OAuth sign-in test can yet be performed for hosted Raven. See `docs/OPENAI_OPTIONS_PILOT.md`.
+- No paid model requests or actual resume generation have been executed. Do not merge or set a paid provider order without explicit authorization of the cost and private data flow.
+- Next: check PR CI status, then if user authorizes paid API trial, set a spend cap and an Edge Function server-side secret for a gated real resume quality test; otherwise retain existing no-cost provider route.
 
-Standing push authorization remains in AGENTS.md. Unrelated untracked Smile-Break JSON is untouched. Prior release browser regression completed successfully.
+## Previous handoff: Global location preference
+- All four tracks permit confirmed remote jobs anywhere; in-person/hybrid require explicit nearby Colorado community work city. Unknown or broad locations are excluded before ranking, including cached and browser displays.
+- Published PR #57 at b6811ba26264ce27fc8e7c74387e608644421352, hosted v76/filter v3 and backend v55 active, health healthy; core release, Pages and production smoke passed. Stored records unchanged.
