@@ -2370,9 +2370,11 @@ body.options-open > :not(main):not(.options-dialog) {
 }
 
 .job-status {
-  max-width: calc(100% - 76px);
+  max-width: 100%;
+  flex: 0 1 auto;
   white-space: normal;
-  text-align: right;
+  text-align: center;
+  line-height: 1.25;
 }
 
 .topbar-actions #syncStatus {
@@ -2441,9 +2443,6 @@ body.options-open > :not(main):not(.options-dialog) {
     padding-right: 36px;
   }
 
-  .job-status {
-    max-width: calc(100% - 72px);
-  }
 }
 
 

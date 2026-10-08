@@ -309,3 +309,4 @@ The approved game resume was rendered with production HTML to two WeasyPrint pag
 - [x] Pass all existing core regression commands, added line-break unit check, syntax, secret scan and whitespace.
 - [ ] Run new browser export regression in CI and verify live download/native Word/browser print after integration. No deployment by this worker.
 - Evidence and precise acceptance limits: docs/qa/2026-10-08-document-exports.md.
+2026-10-08: PR63 narrowed to independently reproduced Ignored status pill collapse (16px width/~80px height); available width corrected. Applied icon and busy document-control containment are owned by parallel worker PR64; duplicate icon change removed here. Initial PR63 core/browser CI passed; revised four-width status-only CI pending. No deployment.

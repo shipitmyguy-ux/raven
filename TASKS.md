@@ -282,3 +282,5 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Pass all existing core regression commands, added line-break unit check, syntax, secret scan and whitespace.
 - [ ] Run new browser export regression in CI and verify live download/native Word/browser print after integration. No deployment by this worker.
 - Evidence and precise acceptance limits: docs/qa/2026-10-08-document-exports.md.
+- [x] Reproduce collapsed Ignored status pill and correct duplicate reserved-width deduction (PR63).
+- [ ] Confirm revised 320/375/768/1440 browser CI; integrate with independent document-control/icon PR64 without duplicating icon.
