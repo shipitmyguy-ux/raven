@@ -1,5 +1,10 @@
 # Raven Tasks
 
+## Project Codex agents (2026-10-08)
+- [x] Save project-scoped explorer, implementer and reviewer roles with Raven boundaries and inherited model defaults.
+- [x] Validate TOML, required fields, sandbox modes and repository secret scan; document parent coordination and workspace semantics.
+- [ ] Verify custom-role discovery in a new Raven Codex session when delegation is requested; no agents were launched during definition setup.
+
 Legend: [ ] open, [x] complete, [~] in progress, [!] requires real-site/user-account verification
 
 ## Closeout status

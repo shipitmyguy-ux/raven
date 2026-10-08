@@ -1,5 +1,9 @@
 # Raven Status
 
+## Project Codex agents (2026-10-08)
+- Reusable project roles are saved under `.codex/agents/`: explorer and reviewer are read-only; implementer is workspace-write. Model/reasoning defaults are inherited. Parent coordinates bounded assignments, verification and durable delivery; definitions do not create isolated worktrees or automatically launch agents.
+- All three files passed Python TOML parsing and required-field/sandbox checks; repository secret scan passed. Live agent discovery/spawning is unverified. Start a new Raven Codex session with these files in its checkout. See `docs/CODEX_AGENTS.md`.
+
 ## Global job location preference (2026-10-07)
 - All four tabs allow confirmed remote work anywhere; in-person and hybrid roles require an explicit nearby Colorado city/state work location.
 - Nearby communities: Fort Collins, Loveland, Windsor, Timnath, Wellington, Laporte/La Porte, Bellvue, Severance, Greeley, Johnstown, Berthoud, Eaton and Ault. This is a city whitelist, not a measured driving-radius promise.
