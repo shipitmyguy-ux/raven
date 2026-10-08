@@ -25,5 +25,22 @@
     const responsibility=/\b(?:you(?:'ll| will)?|this role|the role|responsibilities include)\s+(?:will\s+)?(?:personally\s+)?(?:carry|own|meet|hit|achieve)\s+(?:an?\s+|your\s+|the\s+)?(?:sales\s+|revenue\s+)?quota\b|\b(?:own|carry|meet|hit|achieve)\s+(?:an?\s+|your\s+)?(?:sales|revenue)\s+quota\b|\b(?:responsible for|responsibilities include|you(?:'ll| will)?|this role will)\s+(?:personally\s+)?(?:closing\s+(?:new\s+)?(?:sales|deals)|close\s+(?:new\s+)?(?:sales|deals)|selling\s+(?:our\s+)?(?:products|services)|sell\s+(?:our\s+)?(?:products|services)|prospecting\s+(?:for\s+)?(?:new\s+)?(?:customers|clients)|cold\s+calling)\b/i;
     return !responsibility.test(body);
   }
-  root.RavenTrackFilter={gameArtRoleAllowed,professionalRoleAllowed,hasWholePhrase};
+  // Global commute policy. Only an explicit nearby Colorado work
+  // location qualifies; employer headquarters and description mentions do not.
+  const LOCAL_TOWNS=['Fort Collins','Loveland','Windsor','Timnath','Wellington','Laporte','La Porte','Bellvue','Severance','Greeley','Johnstown','Berthoud','Eaton','Ault'];
+  function localLocationAllowed(job){
+    const location=String(job?.location||'').trim();
+    if(job?.remote===true || /^(?:true|yes|remote)$/i.test(String(job?.remote||'')) || /\b(?:remote|nationwide|statewide|travel|multiple locations)\b/i.test(location))return false;
+    // Match a city/state pair, not an incidental local city in another region.
+    return LOCAL_TOWNS.some(town=>new RegExp('(?:^|[;,/|])\\s*'+town+'\\s*,?\\s+(?:CO|Colorado)(?=$|[\\s,;()/|])','i').test(location));
+  }
+  function jobLocationAllowed(job){
+    const location=String(job?.location||'');
+    const inPerson=/\b(?:hybrid|on[- ]?site|in[- ]office)\b/i.test([location,job?.title].join(' '));
+    const remote=job?.remote===true || /^(?:true|yes|remote)$/i.test(String(job?.remote||'')) || /\bremote\b/i.test(location);
+    if(remote&&!inPerson)return true;
+    // Ignore contradictory remote flags when the work location is in-person.
+    return localLocationAllowed({...job,remote:false});
+  }
+  root.RavenTrackFilter={gameArtRoleAllowed,professionalRoleAllowed,localLocationAllowed,jobLocationAllowed,hasWholePhrase};
 })(globalThis);

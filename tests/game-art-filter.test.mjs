@@ -21,7 +21,7 @@ test('ranking applies role eligibility before incidental keyword and location bo
  const rows=rankCandidates('Games / 3D',[
   {title:'Community Participation Supports Supervisor',snippet:'community game changer unity',remote:true,location:'Fort Collins',url:'https://example.com/community'},
   {title:'Assistant Manager - Burlingame Avenue',remote:true,location:'Colorado',url:'https://example.com/retail'},
-  {title:'Senior Environment Artist',snippet:'Unity environment art',url:'https://example.com/artist'}
+  {title:'Senior Environment Artist',remote:true,location:'Remote',snippet:'Unity environment art',url:'https://example.com/artist'}
  ]);
  assert.deepEqual(rows.map(r=>r.title),['Senior Environment Artist']);
 });

@@ -72,6 +72,7 @@ jobs:
           node tests/number-evidence-trace.test.mjs
           node tests/game-art-filter.test.mjs
           node tests/professional-sales-filter.test.mjs
+          node tests/labor-location-filter.test.mjs
           node tests/studio-context.test.mjs
           node tests/raven-core.test.mjs
           node tests/assistant-core.test.mjs
