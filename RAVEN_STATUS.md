@@ -1,5 +1,10 @@
 # Raven Status
 
+## UI pill containment and applied icon (2026-10-08)
+- Review branch `codex/ui-pill-applied-icon` builds on main `74e852c`; PR #55 is already merged. Document controls wrap without shrinking adjacent labels, including ChatGPT preparation spinner/label states. Frontend v77 replaces the APPLIED card text with a green circular check, accessible name and tooltip; application-history presence rules are unchanged.
+- Six widths (320/375/715/768/1024/1440), ten badge/history cases including fresh reload, and lifecycle/responsive checks pass in mocked Edge: 16 browser tests. The new busy-label regression fails against original CSS (Import becomes 48.75px tall) and passes after repair. Three core/workflow suites, syntax, secret scan and whitespace pass. Screenshots visually reviewed; see docs/qa/2026-10-08-ui-containment.md.
+- Implemented and locally verified; merge/deployment and live-data visual verification remain pending. No runtime data or document workflow changes.
+
 ## Global job location preference (2026-10-07)
 - All four tabs allow confirmed remote work anywhere; in-person and hybrid roles require an explicit nearby Colorado city/state work location.
 - Nearby communities: Fort Collins, Loveland, Windsor, Timnath, Wellington, Laporte/La Porte, Bellvue, Severance, Greeley, Johnstown, Berthoud, Eaton and Ault. This is a city whitelist, not a measured driving-radius promise.

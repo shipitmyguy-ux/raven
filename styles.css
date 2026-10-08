@@ -1506,7 +1506,9 @@ main {
   position: relative;
   display: inline-flex;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
   gap: 4px;
 }
 
@@ -1521,6 +1523,26 @@ main {
 .document-primary {
   min-width: 64px;
   padding: 2px 8px;
+}
+
+.document-control > button {
+  flex: 0 0 auto;
+  max-width: 100%;
+  height: auto;
+  min-height: 26px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
+.document-control > button.is-generating {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.document-control > button.is-generating > span:last-child {
+  min-width: 0;
 }
 
 .document-menu-button {
@@ -2408,19 +2430,19 @@ body.options-open > :not(main):not(.options-dialog) {
 .applied-job-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  max-width: 100%;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   margin: 0 0 10px;
-  padding: 7px 13px;
+  padding: 0;
   border: 2px solid #8be3a8;
-  border-radius: 7px;
+  border-radius: 50%;
   background: #173b29;
   color: #baffce;
   font-family: var(--font-ui);
   font-size: 1rem;
   font-weight: 800;
   line-height: 1.25;
-  letter-spacing: .07em;
 }
 
 @media (max-width: 480px) {

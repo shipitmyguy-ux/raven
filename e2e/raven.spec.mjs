@@ -661,6 +661,58 @@ test("completion event with host mismatch is ignored",async({page})=>{
 });
 
 
+test("document pills keep busy labels and adjacent controls contained",async({page})=>{
+  await mockRaven(page);
+  await page.addInitScript(()=>window.open=()=>null);
+  await page.route("**/functions/v1/raven-generate-v1**",()=>{});
+  for(const width of [320,375,715,768,1024,1440]){
+    await page.setViewportSize({width,height:900});
+    await page.goto("/");
+    await page.locator('[data-track="Professional"]').click();
+    await page.locator(".job-card-summary").first().click();
+    await page.locator('[data-chatgpt-prompt="resume"]').click();
+    await expect(page.locator('[data-chatgpt-prompt="resume"]')).toHaveAttribute("aria-busy","true");
+    const issues=await page.evaluate(()=>{
+      const failures=[];
+      for(const el of document.querySelectorAll('.document-control > button,.workflow-action,.generation-card-status')){
+        const box=el.getBoundingClientRect(),parent=el.closest('.inline-job-detail,.card-main').getBoundingClientRect();
+        if(box.left<parent.left-1||box.right>parent.right+1)failures.push(el.textContent+": outside container");
+        const range=document.createRange();range.selectNodeContents(el);
+        if([...range.getClientRects()].some(r=>r.left<box.left-1||r.right>box.right+1||r.top<box.top-1||r.bottom>box.bottom+1))failures.push(el.textContent+": outside button");
+      }
+      return failures;
+    });
+    expect(issues).toEqual([]);
+    const importButton=page.locator('[data-chatgpt-import="resume"]');
+    await expect(importButton).toBeVisible();
+    expect((await importButton.boundingBox()).height).toBeLessThan(35);
+    if(width===320||width===1440)await page.screenshot({path:`test-results/document-pills-${width}.png`,fullPage:true});
+  }
+});
+
+for(const [status,appliedDate,visible] of [
+  ["Saved",null,false],["Interested",null,false],["Ready",null,false],
+  ["Applied",null,true],["Interview",null,true],["Offer",null,true],["Rejected",null,true],
+  ["Saved","2026-10-01",true],["Ignored","2026-10-01",true],["Ignored",null,false]
+])test(`applied icon preserves history for ${status} / ${appliedDate||"no date"}`,async({page})=>{
+  await mockRaven(page,{initialJob:{status,applied_date:appliedDate}});
+  await page.setViewportSize({width:375,height:900});
+  await page.goto("/");
+  await page.locator('[data-track="Professional"]').click();
+  const icon=page.locator('.applied-job-badge');
+  await expect(page.locator('.job-card')).toHaveCount(1);
+  await expect(icon).toHaveCount(visible?1:0);
+  if(visible){
+    await expect(icon).toHaveAccessibleName('Applied');
+    await expect(icon).toHaveAttribute('title','Applied — application recorded');
+    await expect(icon).toHaveText('✓');
+    await page.reload();
+    await page.locator('[data-track="Professional"]').click();
+    await expect(icon).toBeVisible();
+    if(status==='Applied')await page.screenshot({path:'test-results/applied-icon-375.png',fullPage:true});
+  }
+});
+
 test("representative responsive widths keep primary Raven surfaces bounded",async({page})=>{
   await mockRaven(page);
   for(const viewport of [

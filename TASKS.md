@@ -1,5 +1,11 @@
 # Raven Tasks
 
+## UI pill containment and applied icon (2026-10-08)
+- [x] Reproduce narrow busy document controls; wrap rows and preserve readable neighboring labels.
+- [x] Replace APPLIED card tag with accessible check; preserve application-history presence rules.
+- [x] Verify six widths, ten history cases/reload, lifecycle and responsive behavior (16 browser tests); three core suites, syntax, secret scan and whitespace; visually inspect mobile/desktop screenshots.
+- [ ] Merge/publish review branch and verify hosted v77/icon/wrapping. See docs/qa/2026-10-08-ui-containment.md.
+
 Legend: [ ] open, [x] complete, [~] in progress, [!] requires real-site/user-account verification
 
 ## Closeout status
