@@ -1224,3 +1224,10 @@ test('unconfirmed source check retains active saved job',async({page})=>{
  await expect(page.locator('.stage-header')).toContainText(['Active jobs']);await expect(page.locator('.listing-availability')).toHaveCount(0);
  expect(api.getJob().status).toBe('Saved');
 });
+
+test('legacy closed saved row remains accessible even without fresh discovery',async({page})=>{
+ await mockRaven(page,{initialJob:{id:'DISC-legacy',status:'Saved',viewed:false,listing_state:'closed',listing_reason:'Source confirmed closed',listing_checked_at:'2026-10-08T16:00:00Z'}});
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();
+ await expect(page.locator('.job-title')).toHaveText(savedJob.title);
+ await expect(page.locator('.stage-header')).toContainText(['Archived / ignored']);
+});

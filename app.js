@@ -747,7 +747,7 @@
         const legacyAutoDiscovered=/^DISC-/i.test(String(job.id||""))
           && String(job.status||"Saved").toLowerCase()==="saved"
           && !parseBool(job.viewed,false)
-          && !job.resume && !job.coverLetter && !job.appliedDate;
+          && !job.resume && !job.coverLetter && !job.appliedDate && job.listing_state!=="closed";
         // Older deep-search builds copied discovered rows into raven_jobs.
         // Keep them visible only while the posting is still in the fresh
         // discovered set. Any explicit user action changes status/identity and
@@ -781,7 +781,7 @@
     const selectedStatus=statusFilter.value;
     return sortedJobs(combinedJobs().filter((job)=>{
       const haystack=[job.title,job.company,job.location,job.notes,job.url].join(" ").toLowerCase();
-      return (!query||haystack.includes(query)) && (!selectedStatus||job.status===selectedStatus||(selectedStatus==="Ignored"&&job.listing_state==="closed"));
+      return (!query||haystack.includes(query)) && (!selectedStatus||job.status===selectedStatus||(selectedStatus==="Ignored"&&job.listing_state==="closed"&&pipelineBucket(job)==="Ignored"));
     }));
   }
   function uiRows(surface) {
