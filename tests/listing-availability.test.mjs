@@ -6,6 +6,8 @@ test('transport and missing-content failures never confirm closure',()=>{
  for(const status of [0,404,410,403,429,500,502]) assert.equal(check({...base,status}).state,'unconfirmed');
  assert.equal(check({...base,html:'<script>This job is closed</script><!-- This job is closed -->'}).state,'unconfirmed');
  assert.equal(check({...base,status:403,html:'This job is closed'}).state,'unconfirmed');
+ assert.equal(check({...base,html:'Contact us if this job is closed.'}).state,'unconfirmed');
+ assert.equal(check({...base,html:'<script>"<span>No longer accepting applications</span>"</script>'}).state,'unconfirmed');
 });
 test('source closure statements, explicit JobPosting state and expiry are evidence',()=>{
  for(const html of ['This job is closed','This position has been filled','This listing has expired','This job is no longer accepting applications'])assert.equal(check({...base,html}).state,'closed');

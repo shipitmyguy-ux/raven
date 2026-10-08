@@ -12,8 +12,8 @@ export function listingAvailability({status=0,html='',posting=null,atsInactive=f
  }
  // Ignore scripts, styles and hidden comments: matching these can hide a live listing.
  const bodyHtml=String(html).replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi,' ').replace(/<!--[\s\S]*?-->/g,' ');
- const visible=bodyHtml.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ');
- const match=visible.match(/\b(?:this (?:job|position|listing|posting) (?:is (?:no longer available|closed|expired)|has (?:been filled|closed|expired))|(?:this job|this position|this listing) is no longer accepting applications|no longer accepting applications (?:for|to) this (?:job|position))\b/i);
+ const visible=bodyHtml.replace(/<\/?(?:p|div|section|article|h[1-6]|li)\b[^>]*>/gi,'\n').replace(/<[^>]+>/g,' ').replace(/[ \t]+/g,' ');
+ const match=visible.match(/(?:^|[.!?]\s*|\n\s*)(?:this (?:job|position|listing|posting) (?:is (?:no longer available|closed|expired)|has (?:been filled|closed|expired))|(?:this job|this position|this listing) is no longer accepting applications|no longer accepting applications (?:for|to) this (?:job|position))(?=[.!?]|\s*$)/im);
  const closureLabel=bodyHtml.match(/>\s*(No longer accepting applications|This job is no longer available|The job you are looking for is no longer available)\s*</i);
  if(closureLabel) return {...base,state:'closed',reason:'Source states: '+closureLabel[1]};
  if(match) return {...base,state:'closed',reason:'Source states: '+match[0]};
