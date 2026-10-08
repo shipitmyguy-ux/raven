@@ -1,5 +1,14 @@
 # Raven Status
 
+## Option 3 integration milestone (2026-10-08)
+- Five tools: granted-job lookup, job/profile reads, current document/hash read, resume/cover save and scope/hash/version-protected replacement.
+- Archive migration applied; transactional replacement, stale rejection and document independence verified on disposable database fixtures. Archives are service-only and included in backups.
+- Deployed raven-mcp-v1 ACTIVE v1 (bridge 0.2.0); unauthenticated requests verified 401. Actual authenticated MCP saves and ChatGPT connection remain unverified.
+- 15 bridge tests, all 27 core commands, renderer/syntax/secret/whitespace checks passed.
+- Connected Drive verified; existing NetBox Labs resume PDF copied unchanged and metadata-read back in private Raven Applications folder. Automatic Drive synchronization is not implemented.
+- Blocker: Supabase OAuth server disabled, no owner Auth user, no exposed secure-settings/secret provisioning operation. Standards-compliant OAuth/consent and account activation remain necessary.
+
+
 ## Global job location preference (2026-10-07)
 - All four tabs allow confirmed remote work anywhere; in-person and hybrid roles require an explicit nearby Colorado city/state work location.
 - Nearby communities: Fort Collins, Loveland, Windsor, Timnath, Wellington, Laporte/La Porte, Bellvue, Severance, Greeley, Johnstown, Berthoud, Eaton and Ault. This is a city whitelist, not a measured driving-radius promise.
@@ -308,3 +317,9 @@ The approved game resume was rendered with production HTML to two WeasyPrint pag
 - Live read-only schema inspection confirms no tenant ownership columns; explicit single-owner binding replaces any claim of multi-user isolation. No migrations or production writes/deployments occurred.
 - Twelve synthetic bridge tests and all existing core regression commands pass, plus renderer consistency, syntax, secret scan and whitespace. Mocks establish behavior, not real database persistence or ChatGPT connection.
 - Connection/deployment still requires secure grant setup and client authentication verification. No OAuth server or native PDF generation is implemented. Existing paid API pilot is untouched. See docs/RAVEN_MCP_BRIDGE.md.
+
+## Apply on site resume trigger (2026-10-08)
+- App v77: native employer link opens immediately; scheduled resume-only preparation reuses existing writer, job preparation and persistence. No cover auto-generation or employer submission.
+- Refreshes actual source description and saves discovery jobs first; empty/expired sources fail visibly. Existing resumes are preserved and repeated clicks share active generation.
+- Six focused execution checks pass. Three browser tests added for save/reload, preservation and missing listing. Local Chromium download failed with invalid archive; browser tests and authenticated live generation/reload remain unverified.
+- Existing frontend persistence is reused; no new cross-device transactional-save guarantee is claimed. The MCP bridge retains its separate CAS/archive gate.

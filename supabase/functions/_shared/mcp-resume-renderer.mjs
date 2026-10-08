@@ -43,3 +43,7 @@ export function generatedResumeHtml(job,resume){
       '</body></html>';
   }
 
+export function generatedCoverLetterHtml(job,letter){
+    const paragraphs=(letter.paragraphs||[]).map((p)=>"<p>"+escapeHtml(String(p))+"</p>").join("");
+    return '<!doctype html><html><head><meta charset="utf-8"><title>'+escapeHtml("Cover Letter — "+(job.title||"Role"))+'</title><style>@page{size:letter;margin:.75in}body{font-family:Arial,Helvetica,sans-serif;color:#20242a;font-size:11pt;line-height:1.5;max-width:7in;margin:0 auto}p{margin:0 0 14px}.closing{margin-top:24px}</style></head><body><p>'+escapeHtml(letter.greeting||"Dear Hiring Manager,")+'</p>'+paragraphs+'<p class="closing">'+escapeHtml(letter.closing||"Sincerely,")+'<br>'+escapeHtml(letter.signature||"")+'</p></body></html>';
+  }

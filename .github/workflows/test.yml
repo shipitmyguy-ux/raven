@@ -71,7 +71,7 @@ jobs:
         run: node scripts/check-secrets.mjs
       - name: Core regression tests
         run: |
-          node --test tests/mcp-bridge.test.mjs
+          node --test tests/mcp-bridge.test.mjs tests/apply-resume.test.mjs
           node --test tests/chatgpt-handoff.test.mjs tests/resume-transfer.test.mjs tests/chatgpt-extension.test.mjs
           node tests/document-final-review.test.mjs
           node tests/number-evidence-trace.test.mjs
@@ -111,4 +111,4 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Targeted browser regression tests
-        run: npx playwright test --grep "summary-only revision|listing and direct application remain available|generators save discovery jobs|application requires approval of both exact documents|review preserves approved document and revision invalidates approval|failed revision keeps the saved document and its approval|local master resume and track assignments persist through reload|offline resume fallback creates a local draft without network generation|generation cache prevents a duplicate resume model call|iPhone SE viewport keeps Raven usable without page overflow|refresh updates every job track and tabs are filter-only"
+        run: npx playwright test --grep "Apply on site|summary-only revision|listing and direct application remain available|generators save discovery jobs|application requires approval of both exact documents|review preserves approved document and revision invalidates approval|failed revision keeps the saved document and its approval|local master resume and track assignments persist through reload|offline resume fallback creates a local draft without network generation|generation cache prevents a duplicate resume model call|iPhone SE viewport keeps Raven usable without page overflow|refresh updates every job track and tabs are filter-only"

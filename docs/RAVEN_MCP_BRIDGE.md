@@ -1,42 +1,50 @@
-# Raven MCP bridge prototype
+# Raven MCP bridge
 
-## Implemented
-`supabase/functions/raven-mcp-v1/index.ts` serves a stateless, JSON-response Streamable HTTP MCP endpoint. It handles initialization, ping, tool discovery/calls and initialization/cancellation notifications. GET is authenticated but returns 405 because there is no SSE stream. Supported negotiated versions: 2025-03-26, 2025-06-18 and 2025-11-25. This is an isolated prototype; production deployment and a ChatGPT connection are not verified.
+## Option 3 integration milestone (2026-10-08)
+- Five tools: granted-job lookup, job/profile reads, current document/hash read, resume/cover save and scope/hash/version-protected replacement.
+- Archive migration applied; transactional replacement, stale rejection and document independence verified on disposable database fixtures. Archives are service-only and included in backups.
+- Deployed raven-mcp-v1 ACTIVE v1 (bridge 0.2.0); unauthenticated requests verified 401. Actual authenticated MCP saves and ChatGPT connection remain unverified.
+- 15 bridge tests, all 27 core commands, renderer/syntax/secret/whitespace checks passed.
+- Connected Drive verified; existing NetBox Labs resume PDF copied unchanged and metadata-read back in private Raven Applications folder. Automatic Drive synchronization is not implemented.
+- Blocker: Supabase OAuth server disabled, no owner Auth user, no exposed secure-settings/secret provisioning operation. Standards-compliant OAuth/consent and account activation remain necessary.
 
-Three tools reuse existing Raven data and manual ChatGPT validation:
-- `get_job(job_id)`: reads an explicitly granted saved job, its stored notes/description, version and resume-present flag. When the grant also permits profile access, returns Raven's existing grounded writing prompt. Stored descriptions may be incomplete; no live retrieval or completeness guarantee is implied.
-- `get_verified_profile()`: returns career evidence and canonical fact IDs, excluding name/contact. This is still private career data and requires explicit profile scope.
-- `save_generated_document(job_id, document, expected_version)`: accepts the inner structured resume object from the existing Raven ChatGPT schema, validates it against the current canonical profile and job, runs existing deterministic final-review checks, renders the canonical browser layout, checks content presence, and atomically saves an initial resume into `raven_jobs.resume`. Returns the persisted HTML data URL and new version. No cover-letter save yet.
+## Tools and storage
+- list_jobs(query?) finds only explicitly granted job IDs, matching title/company, at most 200 entries.
+- get_job(job_id) returns stored description, current job version and grounded writing prompt for both documents.
+- get_verified_profile() returns canonical evidence/fact IDs without name/contact.
+- get_document(job_id, document_type) returns current HTML data URL, version and SHA-256 for revision/export.
+- save_generated_document(job_id, document, expected_version, document_type?) defaults to resume; coverLetter selects raven_jobs.cover_letter. Uses existing evidence validator, deterministic final review and canonical escaped renderer. No model call or comprehensive semantic-truth guarantee; human approval required.
 
-The write path never replaces an existing resume, even with a matching version. A database PATCH predicates on job ID, exact prior `last_updated`, and an empty/null resume in the same request, so racing writers cannot overwrite the winner. Other fields, existing documents, approvals and employer submissions are not modified. Data URLs follow Raven's existing preview/print workflow; this is not native PDF generation.
+Initial saves use atomic version and empty-field predicates. Replacements require explicit replace=true, documents:revise scope and expected_document_sha256 matching the exact current document. The SECURITY INVOKER RPC locks the job, checks version and prior content, archives into raven_document_versions, and updates only the chosen field in one transaction. Approval remains tied to exact content and must be renewed. Stored output is HTML, not native PDF.
 
-## Access model
-The inspected live schema has no user/tenant ownership columns on `raven_jobs` or `raven_canonical_profiles`. Therefore this version deliberately supports only a configured single owner of the existing default profile. It must not be presented as a general multi-user service.
+The applied SQL is supabase/sql/raven-mcp-document-versions.sql, migration name raven_mcp_document_versions. Archive RLS is enabled with no anon/authenticated access. Service-role access is SELECT/INSERT only. Backups include archives; restore ignores existing IDs. Destructive admin restore is separate.
 
-Server-only settings:
-- Existing `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
-- `RAVEN_MCP_OWNER_SUBJECT`: an operator-chosen stable identifier for the owner of this Raven dataset; not a user-editable claim.
-- `RAVEN_MCP_GRANTS`: JSON array of explicit scoped grants. Each entry has `token_sha256`, `subject`, `expires_at`, `job_ids` and `scopes`. Scopes are `jobs:read`, `profile:read`, `documents:create`. Save requires all three. Subject must match the owner configuration. Job IDs must be listed individually; no wildcard is accepted. Use short expirations and random credentials with at least 256 bits of entropy.
-- `RAVEN_MCP_ALLOWED_ORIGINS`: optional comma-separated exact browser origins; any supplied origin is rejected unless listed. Server-to-server clients normally send no Origin.
+## Dedicated bearer grants
+Server-only settings: existing SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY; RAVEN_MCP_OWNER_SUBJECT; RAVEN_MCP_GRANTS JSON array with token_sha256, subject, expires_at, explicit job_ids and scopes; optional exact RAVEN_MCP_ALLOWED_ORIGINS. Scopes: jobs:read, profile:read, documents:create, documents:revise. Save requires jobs/profile/create; replacement additionally requires revise.
 
-The bearer credential must consist of 43–128 base64url-safe characters. Only its SHA-256 hash is stored in grants. Requests are authenticated before any database access, including initialization and tool discovery. Expiration, owner binding and grant configuration are checked on every request. Revoke by removing a grant or rotating its hash in server secrets. A service-role key, public anon key or `x-raven-client` header must never be used as the MCP client credential. Do not store credentials in Git, browser config, URLs, chat prompts or logs.
+Credential is 43-128 base64url characters with at least 256 bits random entropy; only SHA-256 stored. Expiration, owner binding and grant membership checked on every request. Revocation removes/rotates grant. Public anon keys and x-raven-client do not authorize MCP. Never put credentials in code, public config, prompts or logs. No grant provisioning was confirmed in production here. This is a single-owner prototype because canonical jobs/profile have no tenant columns; never claim general multi-user isolation.
 
-Body size is streamed and bounded to 200 KB even without an honest Content-Length. Outbound database requests have a 10-second timeout. Tool IDs/arguments are checked before use; database errors expose no response payload or credential. Model HTML is not accepted: the server escapes authored text through a generated copy of the canonical resume renderer.
+Transport: JSON Streamable HTTP, initialize/ping/tool calls/notifications, supported versions 2025-03-26, 2025-06-18, 2025-11-25. No GET SSE stream. Authentication precedes database access. Request body streamed/bounded to 200KB; database requests timeout after 10 seconds; supplied browser Origin must be allowlisted. Deploy with verify_jwt=false only because handler enforces dedicated custom authentication.
 
-## Deployment and connection steps
-1. Review the draft PR and security model, including the single-owner limitation. Confirm the desired authorized fixture and job-ID grants.
-2. Provision a dedicated random bridge credential and configure its hash, scopes, job allowlist, expiry and owner subject through secure server settings. There are no production grants by default.
-3. When deployment is authorized, deploy `raven-mcp-v1` plus its shared imports with gateway `verify_jwt=false`; the function's own dedicated-credential validator is mandatory. Do not modify existing production generators or enable paid OpenAI routing. No database migration or new Data API grants are required.
-4. Test initialize, tools/list, authorized reads, negative credential/scope cases and an initial document save/read/reload using a disposable authorized fixture. Never overwrite an approved resume.
-5. Verify the intended ChatGPT account's custom MCP connection flow and authentication requirements. This prototype supplies dedicated bearer authentication, **not an OAuth authorization server, browser consent screen, or automatic ChatGPT app installation**. If that connection requires OAuth, add a standards-compliant authorization flow before declaring ChatGPT connection ready. Do not expose an unauthenticated endpoint to sidestep setup.
-6. Verify ChatGPT retrieval -> grounded generation -> validation -> saved Raven preview -> full reload, then user review. Until this succeeds, claim only implemented/synthetic-tested status.
+## ChatGPT connection blocker and next steps
+Official ChatGPT connection choices are OAuth/no-auth; arbitrary static bearer configuration is not a verified path. Never enable no-auth to bypass setup. The project's OAuth discovery currently returns 404 feature_disabled, and the owner's connected email has zero Supabase Auth users. Available connectors do not expose secret provisioning or project Auth configuration.
 
-## Validation limits
-This follows Raven's manual ChatGPT import contract, which requires deterministic evidence/schema validation rather than another provider/model call. It adds the existing deterministic `reviewDocument` checks. It does not claim separate model semantic review, flawless truth checking or application approval. Human review remains required. No provider calls, paid API usage, automatic submission or new provider disclosure happen in this backend.
+Use existing Supabase OAuth 2.1 rather than a homegrown authorization server. Enable OAuth/DCR, provision the owner through sign-in, host consent, implement protected-resource metadata and token validation (issuer/audience/expiry/client/owner/job scopes), then install the custom MCP connection and verify real ChatGPT retrieval -> grounded generation -> confirmed save -> Raven full reload. This code does not implement that OAuth resource/consent path yet. Required tests include real expired/revoked/wrong-owner credentials and actual authenticated Edge Function writes. Deployment/SQL/mocks are not evidence of a usable ChatGPT plugin.
 
-## Tests and maintenance
-Run `node --test tests/mcp-bridge.test.mjs`, `node scripts/build-mcp-renderer.mjs --check`, `node scripts/check-secrets.mjs` and the repository core regression commands. Twelve synthetic tests cover scoped access, expiry/revocation/owner binding, privacy, unsafe input, version conflicts, racing saves, evidence validation, preservation, readback and escaping. They use a mock REST store and do not prove real Supabase/ChatGPT deployment or live-model quality.
+## Verified Google Drive copy
+Private folder: https://drive.google.com/drive/folders/1xF6dKybo9TVhQ7ypSBeKtSX2ZYSng2Pr . Connected account verified. One existing NetBox Labs resume was decoded unchanged from Raven, rendered to a one-page PDF, visually inspected, uploaded and metadata-read back: https://drive.google.com/file/d/1skokFujSfzT0RbObb2ip5ePTYdYtsU-u/view . Supabase attachment untouched.
 
-The renderer is generated from `app.js` and the skill-label helper in `raven-core.js`; run `node scripts/build-mcp-renderer.mjs` after layout changes. CI rejects stale generated layouts. Backend contact rendering uses only the canonical server profile, not device-local LinkedIn/portfolio overrides.
+This establishes a real connector-assisted PDF copy, not automatic backend synchronization. Connector OAuth credentials are unavailable to the Edge Function. Future flow must use connected Drive tools after confirmed Raven saves or an independently authorized server-side Google OAuth integration. Persist separate Drive success/failure/retry state. Native Google Docs, cover-letter copies and continuous sync remain unverified.
 
-Sources checked: MCP Streamable HTTP transport specification (`https://modelcontextprotocol.io/specification/2025-11-25/basic/transports`), current Supabase documentation through its docs search, Supabase changelog index and live read-only column inspection on 2026-10-08. No relevant schema/auth breaking change applies to this migration-free REST adapter.
+## Verification/maintenance
+Run node --test tests/mcp-bridge.test.mjs, node scripts/build-mcp-renderer.mjs --check, node scripts/check-secrets.mjs and all core CI commands. Fifteen synthetic cases cover authorization, expiry/revocation, scoped lookup, evidence rejection, resume/cover save, readback, stale/race preservation and replacement gating. Database fixtures verified transactional old-content archival, stale rejection and independent resume/cover replacement; user data preserved. Security advisors report only INFO RLS-without-policy for intentionally service-only tables.
+
+Renderer generated from app.js and raven-core.js; regenerate after layout changes. Canonical server contact rendering excludes device-local overrides.
+
+Official references verified: https://developers.openai.com/plugins/build/auth ; https://developers.openai.com/api/docs/guides/custom-mcp-server ; https://supabase.com/docs/guides/auth/oauth-server/mcp-authentication .
+
+## Apply on site resume trigger (2026-10-08)
+- App v77: native employer link opens immediately; scheduled resume-only preparation reuses existing writer, job preparation and persistence. No cover auto-generation or employer submission.
+- Refreshes actual source description and saves discovery jobs first; empty/expired sources fail visibly. Existing resumes are preserved and repeated clicks share active generation.
+- Six focused execution checks pass. Three browser tests added for save/reload, preservation and missing listing. Local Chromium download failed with invalid archive; browser tests and authenticated live generation/reload remain unverified.
+- Existing frontend persistence is reused; no new cross-device transactional-save guarantee is claimed. The MCP bridge retains its separate CAS/archive gate.

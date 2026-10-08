@@ -5,6 +5,7 @@ export const BACKUP_VERSION=1;
 
 export const TABLES=[
   {name:"raven_jobs",pk:"id",tier:"durable",restoreable:true,onConflict:"id"},
+  {name:"raven_document_versions",pk:"id",tier:"durable",restoreable:true,onConflict:"id"},
   {name:"raven_job_events",pk:"id",tier:"durable",restoreable:true,onConflict:"id"},
   {name:"raven_job_snapshots",pk:"id",tier:"durable",restoreable:true,onConflict:"id"},
   {name:"raven_bookmark_keys",pk:"key_hash",tier:"durable",restoreable:true,onConflict:"key_hash"},
@@ -19,6 +20,7 @@ export const TABLES=[
 
 export const RESTORE_ORDER=[
   "raven_jobs",
+  "raven_document_versions",
   "raven_job_events",
   "raven_job_snapshots",
   "raven_bookmark_keys",

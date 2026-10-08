@@ -14,11 +14,18 @@ async function fixture(options={}){
  const handler=createMcpHandler({getEnv:k=>env[k],now:()=>clock,fetchImpl:async (url,init)=>{
   requests.push({url,init});const u=new URL(url);
   if(u.pathname.includes('raven_canonical_profiles'))return Response.json([{profile}]);
+  if(u.pathname.includes('raven_mcp_replace_document')){
+   const input=JSON.parse(init.body),field=input.p_document_type==='resume'?'resume':'cover_letter';
+   if(options.race){job.last_updated='2026-10-08T14:01:00Z';}
+   if(input.p_expected_version!==job.last_updated||input.p_previous_document!==job[field])return Response.json([]);
+   job={...job,[field]:input.p_document,last_updated:input.p_new_version};return Response.json([job]);
+  }
   if(init.method==='PATCH'){
    assert.equal(u.searchParams.get('id'),'eq.JT-test');
-   assert.equal(u.searchParams.get('or'),'(resume.is.null,resume.eq.)');
+   const field=Object.hasOwn(JSON.parse(init.body),'resume')?'resume':'cover_letter';
+   assert.equal(u.searchParams.get('or'),'('+field+'.is.null,'+field+'.eq.)');
    if(options.race){job.last_updated='2026-10-08T14:01:00Z';job.resume='other writer';}
-   if(u.searchParams.get('last_updated')!=='eq.'+job.last_updated||job.resume)return Response.json([]);
+   if(u.searchParams.get('last_updated')!=='eq.'+job.last_updated||job[field])return Response.json([]);
    job={...job,...JSON.parse(init.body)};return Response.json([job]);
   }return Response.json([job]);
  }});
@@ -30,7 +37,7 @@ async function fixture(options={}){
 }
 test('initialize, tool discovery, scoped job and private evidence reads',async()=>{
  const f=await fixture();assert.equal((await f.send('initialize',{protocolVersion:'2025-11-25'})).body.result.protocolVersion,'2025-11-25');
- assert.equal((await f.send('tools/list')).body.result.tools.length,3);
+ assert.equal((await f.send('tools/list')).body.result.tools.length,5);
  const result=(await f.call('get_job',{job_id:'JT-test'})).body.result;
  assert.equal(result.structuredContent.job.expected_version,f.getJob().last_updated);
  assert.match(result.structuredContent.writing_prompt,/fact_ids/);
@@ -54,7 +61,7 @@ test('ungranted job IDs and public client headers never authorize access',async(
 });
 test('read-only grants cannot save or fetch private profile indirectly',async()=>{
  const f=await fixture({grant:{scopes:['jobs:read']}});
- assert.equal((await f.send('tools/list')).body.result.tools.length,1);
+ assert.equal((await f.send('tools/list')).body.result.tools.length,3);
  assert.equal((await f.call('get_job',{job_id:'JT-test'})).body.result.structuredContent.writing_prompt,undefined);
  assert.equal((await f.call('get_verified_profile')).body.result.isError,true);
  assert.equal((await f.call('save_generated_document',{job_id:'JT-test',expected_version:f.getJob().last_updated,document:draft})).body.result.isError,true);
@@ -102,4 +109,24 @@ test('notifications acknowledge without body and unsupported GET returns 405',as
 test('renderer escapes all externally authored text',()=>{
  const html=generatedResumeHtml({title:'<script>bad()</script>',track:'Games / 3D'},{name:'<img src=x onerror=bad()>',summary:'A & B',skills:[],experience:[],education:[]});
  assert.ok(!html.includes('<script>'));assert.ok(!html.includes('<img'));assert.ok(html.includes('&lt;img'));assert.ok(html.includes('A &amp; B'));
+});
+
+test('lookup only lists granted jobs and filters by title/company',async()=>{
+ const f=await fixture();assert.equal((await f.call('list_jobs',{query:'environment'})).body.result.structuredContent.jobs[0].id,'JT-test');
+ assert.deepEqual((await f.call('list_jobs',{query:'missing'})).body.result.structuredContent.jobs,[]);
+});
+test('cover letter saves, reads and preserves resume',async()=>{
+ const f=await fixture({job:{resume:'existing resume'}});
+ const document={greeting:'Dear Hiring Manager,',paragraphs:[claim('I built game environments.'),claim('I mentored newer artists.',['f2'])],closing:'Sincerely,'};
+ const r=(await f.call('save_generated_document',{job_id:'JT-test',document_type:'coverLetter',expected_version:f.getJob().last_updated,document})).body.result;
+ assert.equal(r.isError,false);assert.equal(f.getJob().resume,'existing resume');assert.ok(f.getJob().cover_letter);
+ const read=(await f.call('get_document',{job_id:'JT-test',document_type:'coverLetter'})).body.result.structuredContent;
+ assert.equal(read.document_sha256,await sha256(f.getJob().cover_letter));assert.equal(read.document_url,f.getJob().cover_letter);
+});
+test('revision requires scope, exact content hash and version, and rejects a racing save',async()=>{
+ for(const mode of ['scope','hash','race','success']){
+  const f=await fixture({job:{resume:'old resume'},grant:{scopes:mode==='scope'?['jobs:read','profile:read','documents:create']:['jobs:read','profile:read','documents:create','documents:revise']},race:mode==='race'});
+  const r=(await f.call('save_generated_document',{job_id:'JT-test',expected_version:f.getJob().last_updated,replace:true,expected_document_sha256:mode==='hash'?'0'.repeat(64):await sha256('old resume'),document:draft})).body.result;
+  assert.equal(r.isError,mode!=='success');if(mode!=='success')assert.equal(f.getJob().resume,'old resume');else assert.match(f.getJob().resume,/^data:text/);
+ }
 });

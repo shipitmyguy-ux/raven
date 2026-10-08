@@ -281,3 +281,15 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Twelve synthetic bridge tests and the full repository core regression commands pass; renderer consistency, syntax, secret scan and whitespace pass.
 - [ ] Configure secure grants and verify authorized staging/production deployment and real persistence/reload.
 - [ ] Verify ChatGPT connection authentication; OAuth is not implemented in this bearer-authenticated prototype.
+
+## Option 3 integration follow-up (2026-10-08)
+- [x] Five tools, cover save, exact-hash/version revisions and transactional old-document archive.
+- [x] Archive schema deployed and disposable database replacement verified; 15 bridge + 27 core commands pass.
+- [x] MCP deployed with fail-closed authentication; anonymous calls return 401.
+- [x] Google Drive PDF copy verified on one existing saved resume.
+- [ ] OAuth settings, owner sign-in, consent/resource/token verification, secure grants and ChatGPT activation.
+- [ ] Authenticated MCP generation/save/full Raven reload acceptance.
+- [ ] Automatic Drive copies with persisted success/failure and retry; cover-letter Drive acceptance.
+
+- [x] Apply on site starts resume-only source-grounded preparation; six focused checks pass.
+- [ ] Added browser cases and live saved output/reload acceptance (local Chromium download failed).

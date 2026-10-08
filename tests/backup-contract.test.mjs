@@ -26,7 +26,7 @@ assert.equal(chunks.flat().length,rows.length);
 assert.ok(chunks.every(chunk=>chunk.length<=250));
 
 const core=tablesForScope("core").map(t=>t.name);
-assert.deepEqual(core,["raven_jobs","raven_job_events","raven_job_snapshots","raven_bookmark_keys","raven_bookmark_urls"]);
+assert.deepEqual(core,["raven_jobs","raven_document_versions","raven_job_events","raven_job_snapshots","raven_bookmark_keys","raven_bookmark_urls"]);
 assert.ok(!tablesForScope("full").find(t=>t.name==="raven_request_events").restoreable);
 
 const dir=mkdtempSync(join(tmpdir(),"raven-backup-test-"));
