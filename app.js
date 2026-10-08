@@ -2001,7 +2001,7 @@
         frame.srcdoc=html;
         setStatus("Choose Save as PDF in the print dialog; turn off headers and footers.");
       }else{
-        const {blocksFromHtml,docxFromBlocks}=await import("./document-download.mjs?v=1");
+        const {blocksFromHtml,docxFromBlocks}=await import("./document-download.mjs?v=2");
         const url=URL.createObjectURL(docxFromBlocks(blocksFromHtml(html)));
         const a=document.createElement("a");a.href=url;
         a.download=[job.company,job.title,type].filter(Boolean).join(" - ").replace(/[<>:"/\\|?*\x00-\x1f]/g,"_").slice(0,180)+".docx";

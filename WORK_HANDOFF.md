@@ -1,5 +1,14 @@
 # Raven execution handoff
 
+## Latest task: Word/PDF export inspection (2026-10-08)
+Separate export worker branched from main at 74e852c on `fix/document-export-layout`, leaving the MCP checkout untouched. PR #55 already merged. Fixed demonstrated Word closing/signature concatenation by preserving explicit HTML breaks and writing OOXML breaks; no saved documents or qualification prose mutated. Import/frontend cache versions incremented.
+
+All existing core test commands, added line-break unit test, syntax, secret scan and whitespace pass. Actual converter outputs rendered with LibreOffice and current HTML with WeasyPrint: resume two pages, cover one page; every source block retained and all final pages visually clean. New browser regression added but not locally run because Chromium unavailable and installation failed. Native Word, actual live download and browser print acceptance remain unverified. No production deployment. Work usage state unavailable.
+
+See `docs/qa/2026-10-08-document-exports.md` for evidence and limitations. Next: CI/browser check, review/integrate, then live Word/PDF export verification. Keep concurrent MCP work isolated.
+
+## Prior production baseline
+
 Latest task: global remote-anywhere / local-in-person location preference.
 
 ## Global job location preference (2026-10-07)
