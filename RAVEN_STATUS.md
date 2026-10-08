@@ -2,7 +2,7 @@
 
 ## OpenAI API / ChatGPT-plan evaluation (2026-10-08, draft PR #58)
 - Added opt-in OpenAI Chat Completions adapter to the existing source-grounded document router on `pilot/openai-chatgpt-options-20261008`; it is not deployed or enabled for production.
-- Synthetic dry-run tests verify two explicit paid-route gates and structured request/response handling. The PR core CI passed; targeted browser checks were still running at handoff. No OpenAI API charge, credential, user profile, or live resume was involved.
+- Synthetic dry-run tests verify two explicit paid-route gates and structured request/response handling. PR core and targeted browser regression checks passed on initial run. No OpenAI API charge, credential, user profile, or live resume was involved.
 - OpenAI's current Sign in with ChatGPT docs explicitly require remotely hosted apps to request access before using the open-source plan-sharing flow. Raven is remotely hosted; no OAuth authorization or plan eligibility has been confirmed.
 - See `docs/OPENAI_OPTIONS_PILOT.md` for technical results and next steps. No Raven jobs, applications or generated documents were modified.
 
