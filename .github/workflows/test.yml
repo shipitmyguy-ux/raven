@@ -74,6 +74,7 @@ jobs:
           node tests/professional-sales-filter.test.mjs
           node tests/labor-location-filter.test.mjs
           node tests/studio-context.test.mjs
+          node --test tests/listing-availability.test.mjs tests/listing-persistence.test.mjs
           node tests/raven-core.test.mjs
           node tests/assistant-core.test.mjs
           node tests/ats-csv.test.mjs

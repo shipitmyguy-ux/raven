@@ -5,7 +5,7 @@ const savedJob={id:"job-1",track:"Professional",title:"Implementation Project Ma
 const generatedResume={name:"Test Candidate",headline:"Project & Implementation Leader",contact:"candidate@example.com",summary:"Experienced delivery leader.",skills:["Project delivery","Team leadership"],experience:[{role:"Environment Artist",company:"Example Studio",dates:"2020–2025",bullets:["Led delivery across internal teams."]}],education:[{degree:"Bachelor's Degree",school:"Example University",location:"",dates:""}],additional:[]};
 const generatedLetter={greeting:"Dear Hiring Manager,",paragraphs:["I am applying for the Implementation Project Manager role.","My background includes project delivery and internal team leadership."],closing:"Sincerely,",signature:"Test Candidate"};
 
-async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJob=null,dataDelayMs=0,discoveredJob=null}={}){
+async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJob=null,dataDelayMs=0,discoveredJob=null,availabilityResponse=null}={}){
   let job={...savedJob,...(initialJob||{})};
   let persisted=!discoveredJob;
   let generationCalls=0;
@@ -113,7 +113,13 @@ async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJo
     }
     return route.fulfill({json:{ok:true,track,count:0,jobs:[],results:[],phase:"quick",deep_search:"started"}});
   });
-  await page.route("**/functions/v1/raven-enrich-v1**",route=>route.fulfill({json:{ok:true,description:savedJob.notes}}));
+  await page.route("**/functions/v1/raven-enrich-v1**",route=>{
+    if(availabilityResponse?.availability?.state==="closed"){
+      const a=availabilityResponse.availability;
+      job={...job,listing_state:'closed',listing_reason:a.reason,listing_checked_at:a.checked_at,listing_source_url:a.source_url};
+    }
+    return route.fulfill({json:availabilityResponse||{ok:true,description:savedJob.notes}});
+  });
   await page.route("**/functions/v1/raven-commute-v1**",route=>route.fulfill({json:{ok:true,minutes:0}}));
   await page.route("**/functions/v1/raven-generate-v1**",async route=>{
     generationCalls++;
@@ -1254,3 +1260,53 @@ for (const width of [320,375,768,1440]) {
   expect(boxes.pill.right).toBeLessThanOrEqual(boxes.parent.right+1);
  });
 }
+
+test('confirmed closure removes saved job from active stage but preserves documents through reload',async({page})=>{
+ const resume='data:text/html,<h1>Existing resume</h1>',letter='data:text/html,<p>Existing cover letter</p>';
+ const api=await mockRaven(page,{initialJob:{resume,cover_letter:letter},availabilityResponse:{ok:true,expired:true,availability:{state:'closed',reason:'Source states: This job is closed',checked_at:'2026-10-08T16:00:00Z',source_url:savedJob.url,http_status:200}}});
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();
+ await expect(page.locator('.stage-header')).toContainText(['Active jobs']);
+ await page.locator('#searchJobsButton').click();
+ await expect(page.locator('.listing-availability')).toContainText('Listing closed');
+ await expect(page.locator('.stage-header')).toContainText(['Archived / ignored']);
+ expect(api.getJob().status).toBe('Saved');expect(api.getJob().resume).toBe(resume);expect(api.getJob().cover_letter).toBe(letter);
+ await page.reload();await page.locator('[data-track="Professional"]').click();
+ await expect(page.locator('.listing-availability')).toContainText('Listing closed');
+ await page.locator('.job-title').click();
+ await expect(page.locator('button[data-generate="resume"]')).toBeVisible();
+});
+
+test('closed interview retains interview stage and application history',async({page})=>{
+ const api=await mockRaven(page,{initialJob:{status:'Interview',applied_date:'2026-10-01T12:00:00Z',listing_state:'closed',listing_reason:'JobPosting expired',listing_checked_at:'2026-10-08T16:00:00Z'}});
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();
+ await expect(page.locator('.stage-header')).toContainText(['Interview']);
+ await expect(page.locator('.listing-availability')).toBeVisible();
+ expect(api.getJob().status).toBe('Interview');expect(api.getJob().applied_date).toBe('2026-10-01T12:00:00Z');
+});
+
+test('unconfirmed source check retains active saved job',async({page})=>{
+ const api=await mockRaven(page,{availabilityResponse:{ok:true,expired:false,availability:{state:'unconfirmed',reason:'Source check blocked or unavailable',checked_at:'2026-10-08T16:00:00Z',http_status:403}}});
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('#searchJobsButton').click();
+ await expect(page.locator('.stage-header')).toContainText(['Active jobs']);await expect(page.locator('.listing-availability')).toHaveCount(0);
+ expect(api.getJob().status).toBe('Saved');
+});
+
+test('legacy closed saved row remains accessible even without fresh discovery',async({page})=>{
+ await mockRaven(page,{initialJob:{id:'DISC-legacy',status:'Saved',viewed:false,listing_state:'closed',listing_reason:'Source confirmed closed',listing_checked_at:'2026-10-08T16:00:00Z'}});
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();
+ await expect(page.locator('.job-title')).toHaveText(savedJob.title);
+ await expect(page.locator('.stage-header')).toContainText(['Archived / ignored']);
+});
+
+test('closed discovery is excluded while closed saved history survives active location eligibility',async({page})=>{
+ await mockRaven(page,{initialJob:{status:'Saved',location:'New York, NY',remote:false,listing_state:'closed',listing_reason:'Source confirmed closed',listing_checked_at:'2026-10-08T16:00:00Z'}});
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();
+ await expect(page.locator('.job-title')).toHaveText(savedJob.title);
+ await expect(page.locator('.stage-header')).toContainText(['Archived / ignored']);
+});
+
+test('confirmed closed discovered row never enters active results',async({page})=>{
+ await mockRaven(page,{discoveredJob:{id:'closed-discovery',track:'Professional',title:savedJob.title,company:savedJob.company,location:'Remote',remote:true,url:savedJob.url,listing_state:'closed',last_seen:new Date().toISOString(),snippet:savedJob.notes}});
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();
+ await expect(page.locator('.job-title')).toHaveCount(0);
+});

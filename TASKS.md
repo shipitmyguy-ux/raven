@@ -290,3 +290,7 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - Evidence and precise acceptance limits: docs/qa/2026-10-08-document-exports.md.
 - [x] Reproduce collapsed Ignored status pill and correct duplicate reserved-width deduction (PR63).
 - [ ] Confirm revised 320/375/768/1440 browser CI; integrate with independent document-control/icon PR64 without duplicating icon.
+- [x] Export QA/fix and mobile pill containment + accessible Applied icon: PR62/63 core/browser CI successful.
+- [x] Implement bounded explicit source closure detection, independent persisted evidence and preserved saved document/application history; local core/classification/persistence fixtures pass.
+- [x] Final closure browser/core CI and revised PR63 status-only CI pass; parallel PR64 owns document-control/icon changes.
+- [ ] Integrate frontend overlaps, then perform separately authorized migration/deployment and production persistence acceptance.

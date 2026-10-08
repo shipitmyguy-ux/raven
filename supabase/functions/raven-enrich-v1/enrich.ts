@@ -1,4 +1,5 @@
 import type { Candidate } from "./types.ts";
+import { listingAvailability, authoritativePostingEndpoint } from "../_shared/listing-availability.mjs";
 import { decodeHtml } from "./utils.ts";
 
 function linkedInId(url:string){
@@ -71,19 +72,34 @@ export async function enrichCandidate(c:Candidate):Promise<Candidate>{
     if(d) current={...current,snippet:d.slice(0,10000)};
   }
 
+  const checkedAt=new Date().toISOString();
+  let atsInactive=false;
+  const endpoint=authoritativePostingEndpoint(current.url);
+  if(endpoint){
+    try{
+      const check=await fetch(endpoint,{signal:AbortSignal.timeout(4000)});
+      if(check.status===404){
+        const body=await check.json();
+        atsInactive=/^(?:job|posting) not found[.!]?$/i.test(String(body.error||body.message||""));
+      }
+    }catch{/* A failed ATS check is unconfirmed. */}
+  }
   try{
     const r=await fetch(current.url,{
       headers:{"User-Agent":"Mozilla/5.0 RavenJobSearch/3.0"},
       redirect:"follow",
       signal:AbortSignal.timeout(7000)
     });
-    if(!r.ok) return {...current,_httpStatus:r.status,_expired:r.status===404||r.status===410} as Candidate & {_httpStatus:number;_expired:boolean};
     const html=await r.text();
+    const availability=listingAvailability({status:r.status,html,atsInactive,checkedAt,sourceUrl:atsInactive?endpoint:r.url||current.url});
+    const details={_httpStatus:r.status,_expired:availability.state==="closed",_availability:availability};
+    if(!r.ok) return {...current,...details};
 
     for(const s of html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)){
       try{
         const job=findPosting(JSON.parse(s[1].trim()));
         if(!job) continue;
+        const samePosting=String(job.title||"").trim().toLowerCase()===String(current.title||"").trim().toLowerCase() || (job.url&&String(job.url).replace(/\/$/,"")===current.url.replace(/\/$/,""));
         const org=job.hiringOrganization?.name||job.hiringOrganization||"";
         const jl=job.jobLocation;
         let loc="";
@@ -100,6 +116,8 @@ export async function enrichCandidate(c:Candidate):Promise<Candidate>{
         const description=decodeHtml(job.description||"");
         return {
           ...current,
+          ...details,
+          _availability:listingAvailability({status:r.status,html,posting:samePosting?job:null,atsInactive,checkedAt,sourceUrl:atsInactive?endpoint:r.url||current.url}),
           title:job.title||current.title,
           company:typeof org==="string"&&org?org:current.company,
           location:loc||current.location,
@@ -111,8 +129,8 @@ export async function enrichCandidate(c:Candidate):Promise<Candidate>{
     }
 
     const fallback=(isLinkedIn?extractLinkedIn(html):"")||extractVisible(html)||extractMeta(html)||current.snippet||"";
-    return {...current,snippet:fallback.slice(0,10000)};
+    return {...current,...details,snippet:fallback.slice(0,10000)};
   }catch{
-    return current;
+    return {...current,_availability:listingAvailability({atsInactive,checkedAt,sourceUrl:atsInactive?endpoint:current.url})};
   }
 }

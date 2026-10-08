@@ -12,4 +12,7 @@ export type Candidate = {
   snippet?: string;
   posted_at?: string;
   score?: number;
+  _httpStatus?: number;
+  _expired?: boolean;
+  _availability?: {state:string;reason:string;checked_at:string;source_url:string;http_status:number};
 };
