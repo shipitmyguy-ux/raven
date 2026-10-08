@@ -301,3 +301,10 @@ The approved game resume was rendered with production HTML to two WeasyPrint pag
 ## ChatGPT prompt handoff (2026-09-30)
 - Frontend v71 carries the complete prompt in ChatGPT's `q` link instead of opening its bare homepage. Clipboard backup remains available, and blocked pop-ups are reported accurately.
 - Four focused handler tests pass (long/unicode prompt preservation, clipboard denial, popup blocking, request failure); syntax and whitespace checks pass. Actual signed-in ChatGPT composer prefill is not verified here and may depend on ChatGPT handling the link.
+
+
+## Option 3 MCP backend prototype (2026-10-08)
+- Implementation uses existing Raven jobs/default profile, manual ChatGPT fact-ID validator and canonical HTML layout. Server-only scoped credentials restrict individually granted job IDs. Existing resumes are never overwritten, and atomic version/empty-document predicates protect against races.
+- Live read-only schema inspection confirms no tenant ownership columns; explicit single-owner binding replaces any claim of multi-user isolation. No migrations or production writes/deployments occurred.
+- Twelve synthetic bridge tests and all existing core regression commands pass, plus renderer consistency, syntax, secret scan and whitespace. Mocks establish behavior, not real database persistence or ChatGPT connection.
+- Connection/deployment still requires secure grant setup and client authentication verification. No OAuth server or native PDF generation is implemented. Existing paid API pilot is untouched. See docs/RAVEN_MCP_BRIDGE.md.

@@ -274,3 +274,10 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Apply remote-anywhere / local-in-person eligibility across every tab, including cached and saved lists.
 - [x] Verify geographic, remote, hybrid, ranking and browser preservation regressions plus required core checks.
 - [x] Publish frontend/backend and verify live results (PR #57, app v76/filter v3, backend v55, zero violations in all four tracks).
+
+
+## Option 3 MCP backend prototype (2026-10-08)
+- [x] Implement isolated authenticated MCP endpoint with three tools, job-scoped single-owner grants, deterministic manual-import validation and atomic initial-resume save.
+- [x] Twelve synthetic bridge tests and the full repository core regression commands pass; renderer consistency, syntax, secret scan and whitespace pass.
+- [ ] Configure secure grants and verify authorized staging/production deployment and real persistence/reload.
+- [ ] Verify ChatGPT connection authentication; OAuth is not implemented in this bearer-authenticated prototype.

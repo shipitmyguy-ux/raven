@@ -19,6 +19,7 @@ on:
       - "supabase/functions/raven-generate-v1/**"
       - "supabase/functions/raven-generate-v2/**"
       - "supabase/functions/raven-cover-v2/**"
+      - "supabase/functions/raven-mcp-v1/**"
       - "supabase/functions/_shared/**"
       - ".github/workflows/test.yml"
   push:
@@ -40,6 +41,7 @@ on:
       - "supabase/functions/raven-generate-v1/**"
       - "supabase/functions/raven-generate-v2/**"
       - "supabase/functions/raven-cover-v2/**"
+      - "supabase/functions/raven-mcp-v1/**"
       - "supabase/functions/_shared/**"
 jobs:
   test:
@@ -54,6 +56,8 @@ jobs:
           node --check raven-core.js
           node --check raven-api.js
           node --check app.js
+          node --check supabase/functions/_shared/mcp-bridge.mjs
+          node scripts/build-mcp-renderer.mjs --check
           node --check extension/src/assistant-core.js
           node --check extension/src/content.js
           node --check extension/src/background.js
@@ -67,6 +71,7 @@ jobs:
         run: node scripts/check-secrets.mjs
       - name: Core regression tests
         run: |
+          node --test tests/mcp-bridge.test.mjs
           node --test tests/chatgpt-handoff.test.mjs tests/resume-transfer.test.mjs tests/chatgpt-extension.test.mjs
           node tests/document-final-review.test.mjs
           node tests/number-evidence-trace.test.mjs
