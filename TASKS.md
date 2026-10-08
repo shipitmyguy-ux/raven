@@ -1,10 +1,17 @@
 # Raven Tasks
 
+## Ready fixes release (2026-10-08)
+- [x] Publish and verify PR67 integrating #62/#63/#64/#65; frontend v80/enrich v10.
+- [x] Preserve existing user data and remove disposable QA records.
+- [ ] Generation/MCP experiments #58/#59/#61 and dependency maintenance #53/#54 remain pending.
+- Alternate closure #66 closed as duplicate; code retained on its branch.
+- Evidence: docs/qa/2026-10-08-ready-fixes-release.md.
+
 ## UI pill containment and applied icon (2026-10-08)
 - [x] Reproduce narrow busy document controls; wrap rows and preserve readable neighboring labels.
 - [x] Replace APPLIED card tag with accessible check; preserve application-history presence rules.
 - [x] Verify six widths, ten history cases/reload, lifecycle and responsive behavior (16 browser tests); three core suites, syntax, secret scan and whitespace; visually inspect mobile/desktop screenshots.
-- [ ] Merge/publish review branch and verify hosted v77/icon/wrapping. See docs/qa/2026-10-08-ui-containment.md.
+- [x] Integrate PR64 in PR67; verify hosted v80/icon/wrapping and passing full-browser CI. See docs/qa/2026-10-08-ready-fixes-release.md.
 
 Legend: [ ] open, [x] complete, [~] in progress, [!] requires real-site/user-account verification
 
@@ -243,28 +250,29 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Request downloadable JSON instead of displayed resume text; add file import fallback.
 - [x] Implement job-bound extension handoff through existing fact-check/save.
 - [x] Verify focused units and mocked browser download/import/reload.
-- [ ] Publish frontend/extension and update the installed extension.
+- [x] Publish frontend and extension package (#55 already merged; hosted v80/ZIP 2.2.0 verified).
+- [!] Update/reload the installed extension on the user device; installation is not verified.
 - [ ] Verify signed-in ChatGPT file creation and attachment handoff; inspect Word/PDF pagination.
 
 ## Action labels (2026-10-06)
 - [x] Fix text escaping Generate both and allow action labels to wrap.
 - [x] Verify containment at 715, 375, and 320 pixels in mocked Edge; visually inspect 715px.
-- [ ] Push/publish after resolving the recorded authorization blocker.
+- [x] Push/publish action-label fix; verified hosted release and CI.
 
 ## Resume overflow download (2026-10-06)
 - [x] Add Download resume only when a saved resume exists; reuse direct Word export.
 - [x] Verify absent-before-generation and menu download in mocked Edge.
-- [ ] Publish with the pending frontend changes after push authorization.
+- [x] Publish resume overflow download; hosted release verified.
 
 ## GitHub delivery (2026-10-06)
 - [x] Push prepared changes to `shipitmyguy-ux/raven` after user authorization; open PR #55.
-- [ ] Merge and deploy PR #55; verify hosted assets and extension packaging.
+- [x] PR #55 merged; hosted frontend and extension ZIP 2.2.0 verified.
 
 ## Applied-job badge (2026-10-06)
 - [x] Add prominent APPLIED badge, retaining it for later application stages/history.
 - [x] Verify badge presence/absence and mobile containment in mocked Edge.
 - [x] Push badge to PR #55 and pass GitHub core/browser checks.
-- [ ] Merge/publish PR #55 after explicit authorization required by automatic approval review, then verify live badge.
+- [x] Publish application-history indicator; PR #67 replaces the prior APPLIED tag with an accessible check icon.
 
 ## Professional sales-role exclusion (2026-10-07)
 - [x] Exclude direct sales roles and explicit selling duties using shared browser/backend eligibility.
@@ -286,11 +294,12 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Reproduce and fix Word export joining a cover-letter closing to its signature; preserve HTML breaks as OOXML line breaks.
 - [x] Render actual Word exports with LibreOffice and current HTML/PDF with WeasyPrint: two-page resume and one-page letter, every source block present, all final page images clean.
 - [x] Pass all existing core regression commands, added line-break unit check, syntax, secret scan and whitespace.
-- [ ] Run new browser export regression in CI and verify live download/native Word/browser print after integration. No deployment by this worker.
+- [x] Browser export CI and actual hosted Word converter check passed; export fix deployed via PR67.
+- [!] Native Word/browser-print visual and signed-in transfer acceptance remain.
 - Evidence and precise acceptance limits: docs/qa/2026-10-08-document-exports.md.
 - [x] Reproduce collapsed Ignored status pill and correct duplicate reserved-width deduction (PR63).
-- [ ] Confirm revised 320/375/768/1440 browser CI; integrate with independent document-control/icon PR64 without duplicating icon.
+- [x] Revised status-only CI and combined full-browser CI passed; integrated independent PR63/64 fixes.
 - [x] Export QA/fix and mobile pill containment + accessible Applied icon: PR62/63 core/browser CI successful.
 - [x] Implement bounded explicit source closure detection, independent persisted evidence and preserved saved document/application history; local core/classification/persistence fixtures pass.
 - [x] Final closure browser/core CI and revised PR63 status-only CI pass; parallel PR64 owns document-control/icon changes.
-- [ ] Integrate frontend overlaps, then perform separately authorized migration/deployment and production persistence acceptance.
+- [x] Integrate overlaps, apply migration, deploy enrich v10/frontend v80 and verify disposable live closure/persistence/data preservation.

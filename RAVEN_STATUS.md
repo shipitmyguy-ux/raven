@@ -1,5 +1,12 @@
 # Raven Status
 
+## Ready fixes published (2026-10-08)
+- PR #67 merged at ba223bcbd019bf4918cbc9dc22ad20c2b4f8bea4, integrating #62/#63/#64/#65. Frontend v80/core v5/export v2, applied check icon, status/document containment and Word signature breaks are live.
+- Listing migration applied and enrich v10 ACTIVE. Source-confirmed closures leave discovery; saved documents/application stages survive. Backend v55 unchanged.
+- Combined/release core and full-browser CI, Pages and both production smoke runs passed; 14 hosted Edge smoke cases and hosted Word converter check passed. Extension ZIP 2.2.0 verified.
+- Disposable live ATS fixture verified closure persistence, discovery exclusion and ingestion-reset protection. QA rows removed. All 378 existing job document/lifecycle digests match before/after.
+- This release supersedes historical pending-publication notes for #55 and #62–#65 below. Device extension reload, signed-in ChatGPT transfer, native Word/browser-print visual acceptance and real employer-form acceptance remain outstanding. Experiments #58/#59/#61 remain pending; duplicate #66 closed without merging. Full evidence: docs/qa/2026-10-08-ready-fixes-release.md.
+
 ## UI pill containment and applied icon (2026-10-08)
 - Review branch `codex/ui-pill-applied-icon` builds on main `74e852c`; PR #55 is already merged. Document controls wrap without shrinking adjacent labels, including ChatGPT preparation spinner/label states. Frontend v77 replaces the APPLIED card text with a green circular check, accessible name and tooltip; application-history presence rules are unchanged.
 - Six widths (320/375/715/768/1024/1440), ten badge/history cases including fresh reload, and lifecycle/responsive checks pass in mocked Edge: 16 browser tests. The new busy-label regression fails against original CSS (Import becomes 48.75px tall) and passes after repair. Three core/workflow suites, syntax, secret scan and whitespace pass. Screenshots visually reviewed; see docs/qa/2026-10-08-ui-containment.md.
