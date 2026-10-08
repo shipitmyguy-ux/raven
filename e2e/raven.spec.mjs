@@ -726,7 +726,7 @@ test("iPhone SE viewport keeps Raven usable without page overflow",async({page})
 test("malformed ATS rows are pruned from cached startup data before refresh",async({page})=>{
   await page.addInitScript(()=>{
     localStorage.setItem("ravenJobsCacheV1",JSON.stringify([
-      {id:"cached-good",track:"Professional",title:"Cached Project Manager",company:"Acme",url:"https://job-boards.greenhouse.io/acme/jobs/123",source:"ATS:greenhouse",status:"Saved",notes:"Valid cached job."},
+      {id:"cached-good",track:"Professional",title:"Cached Project Manager",company:"Acme",location:"Fort Collins, CO",remote:false,url:"https://job-boards.greenhouse.io/acme/jobs/123",source:"ATS:greenhouse",status:"Saved",notes:"Valid cached job."},
       {id:"cached-bad",track:"Professional",title:"Coordinate internal teams and manage implementation",company:"greenhouse",url:"- Lead project delivery",source:"ATS:greenhouse",status:"Saved",notes:"Description overflow fragment."}
     ]));
     localStorage.setItem("ravenDiscoveredCacheV1",JSON.stringify({
