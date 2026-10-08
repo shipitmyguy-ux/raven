@@ -20,7 +20,7 @@ export function docxFromBlocks(blocks){
   if(!blocks.length)throw new Error("No document text is available to download.");
   const body=blocks.map(({text,tag})=>{
     const heading=/^H[1-3]$/.test(tag),size=tag==="H1"?"44":heading?"24":"21";
-    return '<w:p><w:pPr><w:spacing w:after="100"/>'+(heading?'<w:keepNext/>':'')+'</w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="'+size+'"/>'+(heading?'<w:b/>':'')+'</w:rPr><w:t xml:space="preserve">'+xml((tag==="LI"?"• ":"")+text)+'</w:t></w:r></w:p>';
+    return '<w:p><w:pPr><w:spacing w:after="100"/>'+(heading?'<w:keepNext/>':'')+'</w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="'+size+'"/>'+(heading?'<w:b/>':'')+'</w:rPr><w:t xml:space="preserve">'+((tag==="LI"?"• ":"")+text).split(/\r?\n/).map(xml).join('</w:t><w:br/><w:t xml:space="preserve">')+'</w:t></w:r></w:p>';
   }).join("");
   return zipFiles({
     "[Content_Types].xml":'<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>',
@@ -31,5 +31,14 @@ export function docxFromBlocks(blocks){
 export function blocksFromHtml(html){
   const doc=new DOMParser().parseFromString(html,"text/html");
   const selector="h1,h2,h3,p,li,.resume-job-head,.resume-education";
-  return [...doc.body.querySelectorAll(selector)].filter(el=>!el.parentElement?.closest(selector)).map(el=>({tag:el.tagName,text:(el.matches(".resume-job-head,.resume-education")?[...el.querySelectorAll("strong,span")].map(x=>x.textContent).join(" | "):el.textContent).replace(/\s+/g," ").trim()})).filter(x=>x.text);
+  return [...doc.body.querySelectorAll(selector)].filter(el=>!el.parentElement?.closest(selector)).map(el=>{
+    // textContent drops <br>, joining the cover-letter closing to its signature.
+    // Preserve explicit breaks in a clone so the preview/source stays unchanged.
+    const copy=el.cloneNode(true);
+    copy.querySelectorAll("br").forEach(br=>br.replaceWith(doc.createTextNode("\n")));
+    const text=copy.matches(".resume-job-head,.resume-education")
+      ? [...copy.querySelectorAll("strong,span")].map(x=>x.textContent).join(" | ")
+      : copy.textContent;
+    return {tag:el.tagName,text:text.split(/\r?\n/).map(line=>line.replace(/\s+/g," ").trim()).join("\n").trim()};
+  }).filter(x=>x.text);
 }

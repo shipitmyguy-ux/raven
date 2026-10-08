@@ -1,5 +1,10 @@
 # Raven Status
 
+## UI pill containment and applied icon (2026-10-08)
+- Review branch `codex/ui-pill-applied-icon` builds on main `74e852c`; PR #55 is already merged. Document controls wrap without shrinking adjacent labels, including ChatGPT preparation spinner/label states. Frontend v77 replaces the APPLIED card text with a green circular check, accessible name and tooltip; application-history presence rules are unchanged.
+- Six widths (320/375/715/768/1024/1440), ten badge/history cases including fresh reload, and lifecycle/responsive checks pass in mocked Edge: 16 browser tests. The new busy-label regression fails against original CSS (Import becomes 48.75px tall) and passes after repair. Three core/workflow suites, syntax, secret scan and whitespace pass. Screenshots visually reviewed; see docs/qa/2026-10-08-ui-containment.md.
+- Implemented and locally verified; merge/deployment and live-data visual verification remain pending. No runtime data or document workflow changes.
+
 ## Global job location preference (2026-10-07)
 - All four tabs allow confirmed remote work anywhere; in-person and hybrid roles require an explicit nearby Colorado city/state work location.
 - Nearby communities: Fort Collins, Loveland, Windsor, Timnath, Wellington, Laporte/La Porte, Bellvue, Severance, Greeley, Johnstown, Berthoud, Eaton and Ault. This is a city whitelist, not a measured driving-radius promise.
@@ -301,3 +306,13 @@ The approved game resume was rendered with production HTML to two WeasyPrint pag
 ## ChatGPT prompt handoff (2026-09-30)
 - Frontend v71 carries the complete prompt in ChatGPT's `q` link instead of opening its bare homepage. Clipboard backup remains available, and blocked pop-ups are reported accurately.
 - Four focused handler tests pass (long/unicode prompt preservation, clipboard denial, popup blocking, request failure); syntax and whitespace checks pass. Actual signed-in ChatGPT composer prefill is not verified here and may depend on ChatGPT handling the link.
+
+
+## Word and PDF export inspection (2026-10-08)
+- [x] Reproduce and fix Word export joining a cover-letter closing to its signature; preserve HTML breaks as OOXML line breaks.
+- [x] Render actual Word exports with LibreOffice and current HTML/PDF with WeasyPrint: two-page resume and one-page letter, every source block present, all final page images clean.
+- [x] Pass all existing core regression commands, added line-break unit check, syntax, secret scan and whitespace.
+- [ ] Run new browser export regression in CI and verify live download/native Word/browser print after integration. No deployment by this worker.
+- Evidence and precise acceptance limits: docs/qa/2026-10-08-document-exports.md.
+2026-10-08: PR63 narrowed to independently reproduced Ignored status pill collapse (16px width/~80px height); available width corrected. Applied icon and busy document-control containment are owned by parallel worker PR64; duplicate icon change removed here. Initial PR63 core/browser CI passed; revised four-width status-only CI pending. No deployment.
+2026-10-08 isolated QA worker: PR62 line-break preservation and initial PR63 containment pass core/browser CI. PR63 is now status-pill-only to avoid duplicating parallel PR64 document controls/Applied icon. Source-confirmed closure implementation is on `fix/source-confirmed-closure`: availability independent of lifecycle, preservation tests and isolated PostgreSQL migration fixture pass; final closure core/browser CI pass at `8a9096f`, including legacy/out-of-region archived history. Authorized integration, production migration/deployment and live acceptance remain. See `docs/qa/2026-10-08-listing-availability.md`.

@@ -1,5 +1,11 @@
 # Raven Tasks
 
+## UI pill containment and applied icon (2026-10-08)
+- [x] Reproduce narrow busy document controls; wrap rows and preserve readable neighboring labels.
+- [x] Replace APPLIED card tag with accessible check; preserve application-history presence rules.
+- [x] Verify six widths, ten history cases/reload, lifecycle and responsive behavior (16 browser tests); three core suites, syntax, secret scan and whitespace; visually inspect mobile/desktop screenshots.
+- [ ] Merge/publish review branch and verify hosted v77/icon/wrapping. See docs/qa/2026-10-08-ui-containment.md.
+
 Legend: [ ] open, [x] complete, [~] in progress, [!] requires real-site/user-account verification
 
 ## Closeout status
@@ -274,3 +280,17 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Apply remote-anywhere / local-in-person eligibility across every tab, including cached and saved lists.
 - [x] Verify geographic, remote, hybrid, ranking and browser preservation regressions plus required core checks.
 - [x] Publish frontend/backend and verify live results (PR #57, app v76/filter v3, backend v55, zero violations in all four tracks).
+
+
+## Word and PDF export inspection (2026-10-08)
+- [x] Reproduce and fix Word export joining a cover-letter closing to its signature; preserve HTML breaks as OOXML line breaks.
+- [x] Render actual Word exports with LibreOffice and current HTML/PDF with WeasyPrint: two-page resume and one-page letter, every source block present, all final page images clean.
+- [x] Pass all existing core regression commands, added line-break unit check, syntax, secret scan and whitespace.
+- [ ] Run new browser export regression in CI and verify live download/native Word/browser print after integration. No deployment by this worker.
+- Evidence and precise acceptance limits: docs/qa/2026-10-08-document-exports.md.
+- [x] Reproduce collapsed Ignored status pill and correct duplicate reserved-width deduction (PR63).
+- [ ] Confirm revised 320/375/768/1440 browser CI; integrate with independent document-control/icon PR64 without duplicating icon.
+- [x] Export QA/fix and mobile pill containment + accessible Applied icon: PR62/63 core/browser CI successful.
+- [x] Implement bounded explicit source closure detection, independent persisted evidence and preserved saved document/application history; local core/classification/persistence fixtures pass.
+- [x] Final closure browser/core CI and revised PR63 status-only CI pass; parallel PR64 owns document-control/icon changes.
+- [ ] Integrate frontend overlaps, then perform separately authorized migration/deployment and production persistence acceptance.
