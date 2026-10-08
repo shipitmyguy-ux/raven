@@ -2,6 +2,10 @@
 
 Latest task: compare a direct OpenAI API route against ChatGPT-plan sign-in without enabling paid services.
 
+## User decision (2026-10-08)
+- User chose Option 2 (Sign in with ChatGPT / eligible plan usage) as primary, with the paid OpenAI API adapter retained as an inactive backup. Do not enable paid calls or merge the adapter into production merely because the pilot tests passed.
+- Next step: request hosted-application eligibility/client registration through OpenAI's official process. Application submission and approval have not been confirmed. Do not claim a connected ChatGPT subscription or working OAuth flow.
+
 ## 2026-10-08 pilot
 - Draft PR #58: https://github.com/shipitmyguy-ux/raven/pull/58 on `pilot/openai-chatgpt-options-20261008`.
 - Added opt-in OpenAI provider inside the existing LLM router, server-side key and explicit provider-order double gate, default `gpt-5.6-luna`. Production config and Supabase deploy unchanged.
