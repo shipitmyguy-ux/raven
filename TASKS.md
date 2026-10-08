@@ -273,4 +273,4 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 ## Global location preference (2026-10-07)
 - [x] Apply remote-anywhere / local-in-person eligibility across every tab, including cached and saved lists.
 - [x] Verify geographic, remote, hybrid, ranking and browser preservation regressions plus required core checks.
-- [ ] Publish frontend/backend and verify live results.
+- [x] Publish frontend/backend and verify live results (PR #57, app v76/filter v3, backend v55, zero violations in all four tracks).
