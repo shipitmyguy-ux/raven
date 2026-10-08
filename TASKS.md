@@ -303,3 +303,15 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [x] Implement bounded explicit source closure detection, independent persisted evidence and preserved saved document/application history; local core/classification/persistence fixtures pass.
 - [x] Final closure browser/core CI and revised PR63 status-only CI pass; parallel PR64 owns document-control/icon changes.
 - [x] Integrate overlaps, apply migration, deploy enrich v10/frontend v80 and verify disposable live closure/persistence/data preservation.
+
+## Option 3 integration follow-up (2026-10-08)
+- [x] Five tools, cover save, exact-hash/version revisions and transactional old-document archive.
+- [x] Archive schema deployed and disposable database replacement verified; 15 bridge + 27 core commands pass.
+- [x] MCP deployed with fail-closed authentication; anonymous calls return 401.
+- [x] Google Drive PDF copy verified on one existing saved resume.
+- [ ] OAuth settings, owner sign-in, consent/resource/token verification, secure grants and ChatGPT activation.
+- [ ] Authenticated MCP generation/save/full Raven reload acceptance.
+- [ ] Automatic Drive copies with persisted success/failure and retry; cover-letter Drive acceptance.
+
+- [x] Apply on site starts resume-only source-grounded preparation; six focused checks pass.
+- [ ] Added browser cases and live saved output/reload acceptance (local Chromium download failed).

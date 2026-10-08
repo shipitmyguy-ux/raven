@@ -1241,6 +1241,16 @@
             expanded.className="job-card-expanded";
             expanded.innerHTML=renderInlineDetail(job);
             card.appendChild(expanded);
+            expanded.querySelectorAll("[data-resume-apply]").forEach((link)=>{
+              link.addEventListener("click",(event)=>{
+                event.stopPropagation();
+                // Keep native link activation synchronous; begin preparation after navigation opens.
+                setTimeout(()=>{
+                  if(job.resume){setStatus("Opening employer site · existing resume preserved");return;}
+                  void generateForJob(job,"resume",null,{autoOpen:false,refreshDescription:true});
+                },0);
+              });
+            });
             expanded.querySelectorAll("[data-approved-apply]").forEach((button)=>{ button.addEventListener("click",(event)=>{ event.stopPropagation(); beginApprovedApplication(job); }); });
             expanded.querySelectorAll("[data-apply-status]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
@@ -1497,7 +1507,7 @@
     const postingUrl=/^https?:\/\//i.test(String(job.url||""))?job.url:"";
     const actions=postingUrl
       ? '<a class="workflow-action" href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener" aria-label="View listing"><span class="workflow-icon" aria-hidden="true">↗</span><span>View listing</span></a>'+
-        (!postApplication?'<a class="workflow-action" href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener" aria-label="Apply on site"><span class="workflow-icon" aria-hidden="true">↗</span><span>Apply on site</span></a>':'')
+        (!postApplication?'<a class="workflow-action" href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener" aria-label="Apply on site" data-resume-apply><span class="workflow-icon" aria-hidden="true">↗</span><span>Apply on site</span></a>':'')
       : '<span class="posting-unavailable">Listing link unavailable</span>';
 
     const fullDescription=cleanJobDescription(job.notes)||"Full job description not yet available.";
@@ -1669,7 +1679,7 @@
   }
 
   const generationPreparation=new WeakMap();
-  async function prepareJobForGeneration(job){
+  async function prepareJobForGeneration(job,{refreshDescription=false}={}){
     if(job.listing_state==="closed")throw new Error("Source confirmed this listing closed. Saved documents remain available for review.");
     if(generationPreparation.has(job)) return generationPreparation.get(job);
     const pending=(async()=>{
@@ -1696,7 +1706,7 @@
         if(state.selectedId===previousId) state.selectedId=job.id;
         writeCache(CACHE_JOBS_KEY,state.jobs);
       }
-      if(navigator.onLine!==false && !String(job.notes||"").trim()){
+      if(navigator.onLine!==false && (refreshDescription||!String(job.notes||"").trim())){
         setStatus("Retrieving job description...");
         const result=await window.RavenAPI.describeJob({
           url:job.url,title:job.title,company:job.company,track:job.track,
@@ -1757,7 +1767,7 @@
     try{
       generationErrors.delete(documentApprovalKey(job,type));
       if(job[type]&&!options.force) return openDocumentReview(job,type);
-      const session={type,autoOpen:state.selectedId===job.id,startedAt:Date.now(),phase:"Writing with AI"};
+      const session={type,autoOpen:options.autoOpen!==false&&state.selectedId===job.id,startedAt:Date.now(),phase:"Writing with AI"};
       activeGeneration.set(generationKey(job),session);
       setGenerationButton(button,true,type==="resume"?"Generating resume…":"AI generating cover letter…");
       setStatus(type==="resume"?"Building your tailored resume…":"AI is preparing your cover letter…");
@@ -2182,10 +2192,12 @@
     try{
       if(navigator.onLine===false) throw new Error("An internet connection is required for AI "+label+" generation.");
       const masterResume=null;
-      await prepareJobForGeneration(job);
+      await prepareJobForGeneration(job,{refreshDescription:options.refreshDescription===true});
+      if(options.refreshDescription&&job[type]) return {generationMode:"existing"};
       const document=instructions||options.force
         ? await generateDocumentOnline(job,masterResume,type,instructions)
         : await generateDocumentCached(job,masterResume,type);
+      if(options.refreshDescription&&job[type]) return {generationMode:"existing"};
       await saveGeneratedDocument(job,type,document);
       setDocumentApproved(job,type,false);
       setStatus(label[0].toUpperCase()+label.slice(1)+" draft checked"+(document.generationMode==="source-facts"?" · built from verified facts; AI unavailable":document.generationMode==="mixed"?" · includes verified source wording":"")+" · approval required");

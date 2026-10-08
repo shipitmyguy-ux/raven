@@ -1310,3 +1310,33 @@ test('confirmed closed discovered row never enters active results',async({page})
  await page.goto('/');await page.locator('[data-track="Professional"]').click();
  await expect(page.locator('.job-title')).toHaveCount(0);
 });
+
+test("Apply on site opens employer and prepares only one resume that survives reload",async({page})=>{
+ const api=await mockRaven(page,{generatorDelayMs:250});
+ await page.goto("/");await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+ const popup=page.waitForEvent('popup');await page.getByRole('link',{name:'Apply on site',exact:true}).click();
+ const employer=await popup;await employer.close();
+ await expect.poll(()=>api.getGenerationCalls()).toBe(1);
+ await expect.poll(()=>api.getJob().resume).toContain('data:text/html');
+ expect(api.getJob().coverLetter||api.getJob().cover_letter||'').toBe('');
+ expect(api.getGenerationBodies()[0].jobDescription).toBe(savedJob.notes);
+ await expect(page.locator('#documentReviewDialog')).not.toBeVisible();
+ await page.getByRole('link',{name:'Apply on site',exact:true}).click();
+ expect(api.getGenerationCalls()).toBe(1);
+ await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+ await expect(page.locator('[data-generate="resume"]')).toHaveText('Review');
+});
+test("Apply on site preserves existing resume without generation",async({page})=>{
+ const api=await mockRaven(page,{initialJob:{resume:'data:text/html,existing'}});
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+ await page.getByRole('link',{name:'Apply on site',exact:true}).click();
+ await expect(page.locator('#syncStatus')).toContainText('existing resume preserved');
+ expect(api.getGenerationCalls()).toBe(0);expect(api.getJob().resume).toBe('data:text/html,existing');
+});
+test("Apply on site reports missing listing and does not write a resume",async({page})=>{
+ const api=await mockRaven(page);await page.route('**/functions/v1/raven-enrich-v1**',r=>r.fulfill({json:{ok:true,description:''}}));
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+ await page.getByRole('link',{name:'Apply on site',exact:true}).click();
+ await expect(page.locator('#syncStatus')).toContainText('did not provide a job description');
+ expect(api.getGenerationCalls()).toBe(0);expect(api.getJob().resume).toBe('');
+});

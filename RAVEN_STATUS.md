@@ -323,3 +323,18 @@ The approved game resume was rendered with production HTML to two WeasyPrint pag
 - Evidence and precise acceptance limits: docs/qa/2026-10-08-document-exports.md.
 2026-10-08: PR63 narrowed to independently reproduced Ignored status pill collapse (16px width/~80px height); available width corrected. Applied icon and busy document-control containment are owned by parallel worker PR64; duplicate icon change removed here. Initial PR63 core/browser CI passed; revised four-width status-only CI pending. No deployment.
 2026-10-08 isolated QA worker: PR62 line-break preservation and initial PR63 containment pass core/browser CI. PR63 is now status-pill-only to avoid duplicating parallel PR64 document controls/Applied icon. Source-confirmed closure implementation is on `fix/source-confirmed-closure`: availability independent of lifecycle, preservation tests and isolated PostgreSQL migration fixture pass; final closure core/browser CI pass at `8a9096f`, including legacy/out-of-region archived history. Authorized integration, production migration/deployment and live acceptance remain. See `docs/qa/2026-10-08-listing-availability.md`.
+
+## Option 3 integration milestone (2026-10-08)
+- Five tools: granted-job lookup, job/profile reads, current document/hash read, resume/cover save and scope/hash/version-protected replacement.
+- Archive migration applied; transactional replacement, stale rejection and document independence verified on disposable database fixtures. Archives are service-only and included in backups.
+- Deployed raven-mcp-v1 ACTIVE v1 (bridge 0.2.0); unauthenticated requests verified 401. Actual authenticated MCP saves and ChatGPT connection remain unverified.
+- 15 bridge tests, all 27 core commands, renderer/syntax/secret/whitespace checks passed.
+- Connected Drive verified; existing NetBox Labs resume PDF copied unchanged and metadata-read back in private Raven Applications folder. Automatic Drive synchronization is not implemented.
+- Blocker: Supabase OAuth server disabled, no owner Auth user, no exposed secure-settings/secret provisioning operation. Standards-compliant OAuth/consent and account activation remain necessary.
+
+
+## Apply on site resume trigger (2026-10-08)
+- App v81: native employer link opens immediately; scheduled resume-only preparation reuses existing writer, job preparation and persistence. No cover auto-generation or employer submission.
+- Refreshes actual source description and saves discovery jobs first; empty/expired sources fail visibly. Existing resumes are preserved and repeated clicks share active generation.
+- Six focused execution checks pass. Three browser tests added for save/reload, preservation and missing listing. Local Chromium download failed with invalid archive; browser tests and authenticated live generation/reload remain unverified.
+- Existing frontend persistence is reused; no new cross-device transactional-save guarantee is claimed. The MCP bridge retains its separate CAS/archive gate.

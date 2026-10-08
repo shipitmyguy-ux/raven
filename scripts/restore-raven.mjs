@@ -49,7 +49,7 @@ async function request(method,table,query="",body){
       apikey:key,
       Accept:"application/json",
       ...(body?{"Content-Type":"application/json"}:{}),
-      Prefer:"resolution=merge-duplicates,return=minimal"
+      Prefer:table==="raven_document_versions"?"resolution=ignore-duplicates,return=minimal":"resolution=merge-duplicates,return=minimal"
     },
     body:body?JSON.stringify(body):undefined
   });
