@@ -4,7 +4,7 @@ const authId=new URL(location.href).searchParams.get('authorization_id');
 let client,details,email,approvedRedirect;
 function checked(result){if(result.error)throw result.error;return result.data;}
 async function busy(button,action){
-  if(button.disabled)return;button.disabled=true;
+  if(!button||button.disabled)return;button.disabled=true;
   try{await action();}catch(error){message(error.message||'Unable to connect. Please try again.');}
   finally{button.disabled=false;}
 }
@@ -18,6 +18,8 @@ async function showAccount(){
   const {user}=checked(await client.auth.getUser());
   element('sign-in').hidden=Boolean(user);element('account').hidden=!user;
   element('verify-code').hidden=true;element('consent').hidden=true;approvedRedirect=null;
+  element('new-password').value='';element('confirm-password').value='';
+  element('password-setup').open=false;
   if(!user){message('Enter your email to sign in.');return;}
   element('identity').textContent=user.email; element('owner-id').textContent=user.id;
   if(!authId){message('Signed in. Your account is ready for the remaining connection setup.');return;}
@@ -51,6 +53,14 @@ async function start(){
     storage:sessionStorage,storageKey:'raven-mcp-consent',detectSessionInUrl:true}});
   element('sign-in').addEventListener('submit',event=>{event.preventDefault();busy(event.submitter,async()=>{
     email=element('email').value.trim();
+    if(event.submitter?.id!=='email-sign-in'){
+      const password=element('password').value;
+      if(!password)throw new Error('Enter your password, or choose email sign-in.');
+      try{checked(await client.auth.signInWithPassword({email,password}));}
+      finally{element('password').value='';}
+      await showAccount();return;
+    }
+    element('password').value='';
     const emailRedirectTo=location.origin+location.pathname+(authId?'?authorization_id='+encodeURIComponent(authId):'');
     checked(await client.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo}}));
     element('verify-code').hidden=false;message('Check your email for a sign-in link or code. Open the link, or enter the code below.');
@@ -62,6 +72,17 @@ async function start(){
   element('sign-out').addEventListener('click',event=>busy(event.currentTarget,async()=>{
     checked(await client.auth.signOut());details=null;email=null;await showAccount();
   }));
+  element('set-password').addEventListener('submit',event=>{event.preventDefault();busy(event.submitter,async()=>{
+    const password=element('new-password').value;
+    if(password!==element('confirm-password').value)throw new Error('The passwords do not match.');
+    try{
+      const {user}=checked(await client.auth.getUser());
+      if(!user)throw new Error('Sign in before setting a password.');
+      checked(await client.auth.updateUser({password}));
+      element('password-setup').open=false;
+      message('Password saved. You can now use it for future sign-ins. Continue the connection below if shown.');
+    }finally{element('new-password').value='';element('confirm-password').value='';}
+  });});
   for(const [id,method] of [['approve','approveAuthorization'],['deny','denyAuthorization']])
     element(id).addEventListener('click',event=>busy(event.currentTarget,async()=>{
       if(approvedRedirect){location.assign(approvedRedirect);return;}

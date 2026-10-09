@@ -17,7 +17,11 @@
   <form id="sign-in" hidden>
     <label for="email">Email</label>
     <input id="email" type="email" autocomplete="email" required>
-    <button type="submit">Email a sign-in link or code</button>
+    <label for="password">Password</label>
+    <input id="password" type="password" autocomplete="current-password">
+    <button type="submit" id="password-sign-in">Sign in with password</button>
+    <button type="submit" id="email-sign-in">Email a sign-in link or code</button>
+    <p>Use your existing Raven account password to avoid sending another email. If you use email sign-in, leave the password blank.</p>
   </form>
   <form id="verify-code" hidden>
     <label for="code">Code from your email</label>
@@ -27,6 +31,16 @@
   <section id="account" hidden>
     <h2>Your account</h2><p id="identity"></p>
     <details><summary>Account setup identifier</summary><p id="owner-id"></p></details>
+    <details id="password-setup"><summary>Set password</summary>
+      <p>Set a password for this signed-in account so future connections do not need an email. Enter it only here.</p>
+      <form id="set-password">
+        <label for="new-password">New password</label>
+        <input id="new-password" type="password" autocomplete="new-password" minlength="12" required>
+        <label for="confirm-password">Confirm password</label>
+        <input id="confirm-password" type="password" autocomplete="new-password" minlength="12" required>
+        <button type="submit">Save password</button>
+      </form>
+    </details>
     <button id="sign-out" type="button">Sign out</button>
   </section>
   <section id="consent" hidden>
