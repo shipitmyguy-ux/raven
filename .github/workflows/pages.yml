@@ -12,6 +12,7 @@ on:
       - "raven-core.js"
       - "config.js"
       - "runtime-config.json"
+      - "oauth-consent.*"
       - "raven-api.js"
       - "snapshot.js"
       - "styles.css"

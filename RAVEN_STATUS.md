@@ -1,5 +1,11 @@
 # Raven Status
 
+## OAuth connection implementation (2026-10-09)
+- Supabase OAuth discovery now returns 200 after user enablement; public JWKS contains ES256. Dynamic registration was not advertised at the last check.
+- Bridge 0.3.0 adds protected-resource metadata, 401 discovery challenges and strict JOSE signature/issuer/resource-audience/expiry/owner/client validation. Explicit server grants retain job/document permissions; Supabase OIDC scopes do not grant Raven access.
+- A dedicated consent/sign-in page uses pinned SDK/SRI and public runtime configuration. Nineteen bridge/OAuth tests, all required core commands and four installed-Edge consent tests pass; mobile screenshot inspected.
+- Publication is being prepared. Owner sign-in, explicit OAuth client/job grants, resource-audience token hook, authenticated saves and full ChatGPT/Raven reload acceptance remain pending. No live user documents were changed.
+
 ## Ready fixes published (2026-10-08)
 - PR #67 merged at ba223bcbd019bf4918cbc9dc22ad20c2b4f8bea4, integrating #62/#63/#64/#65. Frontend v80/core v5/export v2, applied check icon, status/document containment and Word signature breaks are live.
 - Listing migration applied and enrich v10 ACTIVE. Source-confirmed closures leave discovery; saved documents/application stages survive. Backend v55 unchanged.

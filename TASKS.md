@@ -1,5 +1,13 @@
 # Raven Tasks
 
+## OAuth connection follow-up (2026-10-09)
+- [x] Verify user-enabled OAuth discovery and ES256 signing key.
+- [x] Implement protected-resource discovery, challenge and signed OAuth JWT validation with explicit client/owner/job grants.
+- [x] Implement sign-in/consent UI; test explicit email/approval, escaped metadata, callback validation, SDK integrity and mobile layout.
+- [ ] Publish and verify live consent page/metadata.
+- [ ] Configure authorization path/redirects/DCR; owner sign-in; provision grants and resource-audience token hook.
+- [ ] Verify authenticated ChatGPT retrieval/generation/save and Raven reload, including production expired/revoked credentials.
+
 ## Ready fixes release (2026-10-08)
 - [x] Publish and verify PR67 integrating #62/#63/#64/#65; frontend v80/enrich v10.
 - [x] Preserve existing user data and remove disposable QA records.

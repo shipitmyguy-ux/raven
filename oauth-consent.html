@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self'; connect-src 'self' https://umvmilulnqnmeqvfoxxc.supabase.co; base-uri 'none'; form-action 'self'">
+  <title>Connect Raven</title>
+  <link rel="stylesheet" href="oauth-consent.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js" integrity="sha384-BWcjm9OdFth9TbhCxZPdm+gAOUMAzQy9nmTs12ioXdCcbVnJaPMn+fMUoQCLt60R" crossorigin="anonymous"></script>
+  <script type="module" src="oauth-consent.mjs"></script>
+</head>
+<body><main>
+  <h1>Connect Raven</h1>
+  <p>Sign in to connect your Raven account to ChatGPT.</p>
+  <p id="message" role="status" aria-live="polite">Loading…</p>
+  <form id="sign-in" hidden>
+    <label for="email">Email</label>
+    <input id="email" type="email" autocomplete="email" required>
+    <button type="submit">Email a sign-in link or code</button>
+  </form>
+  <form id="verify-code" hidden>
+    <label for="code">Code from your email</label>
+    <input id="code" inputmode="numeric" autocomplete="one-time-code" required>
+    <button type="submit">Sign in</button>
+  </form>
+  <section id="account" hidden>
+    <h2>Your account</h2><p id="identity"></p>
+    <details><summary>Account setup identifier</summary><p id="owner-id"></p></details>
+    <button id="sign-out" type="button">Sign out</button>
+  </section>
+  <section id="consent" hidden>
+    <h2>Review this connection</h2>
+    <p id="client-name"></p><p id="client-id"></p><p id="callback"></p><p id="scopes"></p>
+    <p>Once configured, this connection can access explicitly authorized jobs and career facts, and save or revise documents according to its Raven permissions. Documents still need your review. Employer submission remains manual.</p>
+    <button id="approve" type="button">Allow connection</button>
+    <button id="deny" type="button">Deny connection</button>
+  </section>
+  <p><a href="./">Return to Raven</a></p>
+</main></body>
+</html>

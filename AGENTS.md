@@ -49,3 +49,6 @@ No Work session is considered complete until durable project state is in GitHub.
 
 ## Standing push authorization (2026-10-07)
 The user explicitly authorized future Git pushes without asking again. Use the existing Raven GitHub repository for routine code and documentation pushes. This does not independently establish authorization for unrelated destructive actions. The user also explicitly approved merging and publishing the Professional sales-filter change on 2026-10-07. That change is deployed; its earlier approval blocker is resolved.
+
+## User shorthand (2026-10-09)
+When the user types `d`, interpret it as “do it” for the current proposed action or stated priority. Existing authorization boundaries still apply.

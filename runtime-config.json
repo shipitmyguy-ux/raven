@@ -310,5 +310,9 @@
     "search": true,
     "status-filter": true,
     "job-search-trigger": true
+  },
+  "mcpAuth": {
+    "supabaseUrl": "https://umvmilulnqnmeqvfoxxc.supabase.co",
+    "publishableKey": "sb_publishable_4z6kOIThd1Mc-mZl4u7_qg_gP3NNqH_"
   }
 }
