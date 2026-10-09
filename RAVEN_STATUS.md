@@ -4,11 +4,11 @@
 Project orientation, architecture/key files, shipped capabilities, prioritized upcoming work, known defects versus unverified acceptance, continuation checks and a replacement-AI prompt are consolidated in docs/RAVEN_AI_HANDOFF.md. Current status/tasks/execution handoff remain authoritative for later changes.
 
 ## OAuth connection implementation (2026-10-09)
-- Supabase OAuth discovery now returns 200 after user enablement; public JWKS contains ES256. Dynamic registration was not advertised at the last check.
+- Supabase OAuth discovery now returns 200 after user enablement; public JWKS contains ES256. Dynamic registration is now verified; discovery advertises the registration endpoint.
 - Bridge 0.3.0 adds protected-resource metadata, 401 discovery challenges and strict JOSE signature/issuer/resource-audience/expiry/owner/client validation. Explicit server grants retain job/document permissions; Supabase OIDC scopes do not grant Raven access.
 - A dedicated consent/sign-in page uses pinned SDK/SRI and public runtime configuration. Nineteen bridge/OAuth tests, all required core commands and four installed-Edge consent tests pass; mobile screenshot inspected.
 - Published PR68 at a2936122841d60c668ae8ed6fd9ad81847edb45a; consent page returns 200 and raven-mcp-v1 v3 ACTIVE serves metadata 200. Anonymous/public-key/untrusted-signed-JWT calls each return 401. Final PR and main core/full-browser CI, Pages and both smoke runs pass. Evidence: docs/qa/2026-10-09-mcp-oauth-connection.md.
-- Owner sign-in succeeded; direct database read confirms one email-verified Auth account. No OAuth client is registered yet; discovery still lacks registration_endpoint. Explicit server-side owner/client/job grants, resource-audience token hook, authenticated saves and full ChatGPT/Raven reload acceptance remain pending. No live user documents were changed.
+- Owner sign-in succeeded; direct database read confirms one email-verified Auth account. No OAuth client is registered yet; dynamic registration is enabled and verified. Explicit server-side owner/client/job grants, resource-audience token hook, authenticated saves and full ChatGPT/Raven reload acceptance remain pending. No live user documents were changed.
 
 ## Ready fixes published (2026-10-08)
 - PR #67 merged at ba223bcbd019bf4918cbc9dc22ad20c2b4f8bea4, integrating #62/#63/#64/#65. Frontend v80/core v5/export v2, applied check icon, status/document containment and Word signature breaks are live.

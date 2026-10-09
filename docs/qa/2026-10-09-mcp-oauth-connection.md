@@ -22,7 +22,7 @@ PR [68](https://github.com/shipitmyguy-ux/raven/pull/68) merged at a2936122841d6
 - Windows checkout line endings caused a renderer freshness mismatch; local regeneration has no content diff. No renderer source change was committed.
 
 ## Remaining acceptance and limits
-- Dashboard Site URL, authorization path, redirect URLs and DCR require user configuration. Registration endpoint was absent from the last discovery check.
+- User enabled and saved Allow Dynamic OAuth Apps; live discovery now advertises https://umvmilulnqnmeqvfoxxc.supabase.co/auth/v1/oauth/clients/register. A subsequent read found no active OAuth clients. Dashboard Site URL, authorization path and redirect acceptance still need end-to-end verification.
 - Owner sign-in is complete. Configure its UUID and explicit client/job grants server-side, and a custom token hook that issues the exact bridge audience for the approved client. Generic authenticated audiences and ID tokens are intentionally rejected.
 - Supabase does not currently support custom application OAuth scopes. Standard email scope supplies identity; Raven permissions come from the server grant.
 - Real OAuth client consent/token issuance, production grant/session revocation and expiry, authenticated MCP read/save, ChatGPT generation and Raven full-refresh persistence remain unverified.

@@ -68,7 +68,7 @@ Option 3 MCP PR59 is merged into main `2512fdd`. OAuth PR68 is merged at `a29361
 
 Primary-agent live verification reports `raven-mcp-v1` v3 ACTIVE, bridge 0.3.0: public protected-resource metadata HTTP 200; anonymous, public-key and untrusted-JWT calls HTTP 401. Nineteen bridge/OAuth tests and required core commands pass. Four installed-Edge consent cases include real pinned SDK/SRI loading and mobile screenshot inspection. Owner sign-in has separate live evidence; these tests do not establish a connected ChatGPT session.
 
-The user enabled Supabase OAuth. Discovery returns 200 and JWKS has ES256. Last discovery lacked `registration_endpoint`; dynamic client registration remains unverified, and no undeleted OAuth client existed at the last database read. Do not repeat obsolete claims that OAuth is disabled or there is no owner Auth account.
+The user enabled Supabase OAuth. Discovery returns 200 and JWKS has ES256. Dynamic client registration is enabled and verified: discovery advertises `registration_endpoint`. No undeleted OAuth client exists at the latest database read. Do not repeat obsolete claims that OAuth is disabled or there is no owner Auth account.
 
 Bridge tools are `list_jobs`, `get_job`, `get_verified_profile`, `get_document`, `save_generated_document`. Access is single-owner, explicitly granted jobs/permissions, not tenant-isolated multi-user access. OAuth validates signature, issuer, exact bridge resource audience, expiry, owner, client and session. Standard Supabase OIDC scopes do not grant Raven job/document permissions. Server grants are separate. Public keys and `x-raven-client` never authorize MCP.
 
@@ -76,7 +76,7 @@ Initial document saves check empty field and version atomically. Replacements ad
 
 Continue in this order:
 
-1. Verify published consent page and protected-resource metadata. Dashboard Site URL is `https://shipitmyguy-ux.github.io`; Authorization Path is `/raven/oauth-consent.html`. Allow the consent URL and authorization-query variant in Auth redirect settings; verify DCR. Supabase's actual toggle label is **Allow Dynamic OAuth Apps**, below Authorization Path. Confirm **Enable dynamic app registration**, then **Save changes**.
+1. Verify published consent page and protected-resource metadata. Dashboard Site URL is `https://shipitmyguy-ux.github.io`; Authorization Path is `/raven/oauth-consent.html`. Allow the consent URL and authorization-query variant in Auth redirect settings; DCR is already enabled and verified. The enabled Supabase toggle is **Allow Dynamic OAuth Apps**.
 2. Owner sign-in is complete. Provision `RAVEN_MCP_OWNER_SUBJECT` as that account's Supabase Auth UUID securely, never in public files; server provisioning is still pending.
 3. Register/approve the actual client. Provision `RAVEN_MCP_OAUTH_GRANTS` with owner subject, exact client ID, expiry, explicit job IDs (1–200) and selected `jobs:read`, `profile:read`, `documents:create`, `documents:revise` permissions. Secrets tooling is not currently exposed through the connector; dashboard/approved secure configuration may be necessary.
 4. Configure a Custom Access Token Hook for the explicitly registered Raven client to issue audience `https://umvmilulnqnmeqvfoxxc.supabase.co/functions/v1/raven-mcp-v1`. Preserve required claims and other clients' audiences. Never relax validation to generic `authenticated` or accept ID tokens.
