@@ -1,5 +1,15 @@
 # Raven Tasks
 
+## Current verified fixes and follow-ups (2026-10-09)
+- [x] Deploy role-evidence planning, employer-scoped repair, art-dominance and unsupported-claim guards (writer v7).
+- [x] Persist document failure feedback through refresh and retain a successful sibling on partial failure.
+- [x] Verify one-button Mercury Readiness resume/cover creation, exact saved URLs after reload, and independent job-specific content review.
+- [x] Deploy Fort Collins-only hybrid rule in backend56 and hosted shared filter4; verify seven location cases and preserve history.
+- [ ] Polish generic wording, repetitive suffixes and weakest selected history example; strengthen precise readiness relevance.
+- [ ] Inspect native Word/PDF layout and extend the bounded independent audit to more distinct Professional roles.
+- [ ] Improve cross-device error reporting and clear stale feedback when documents are replaced externally.
+Evidence: docs/qa/2026-10-09-professional-fixes.md. Historical unresolved entries below are superseded only where explicitly checked above.
+
 ## Professional one-button tailoring (2026-10-09)
 - [x] Run random visible Professional Generate both test and verify both exact saved URLs after reload.
 - [x] Reproduce user-reported art-centered content, implement writer v5 evidence guidance and relevance checks, pass required core/targeted checks.
@@ -418,3 +428,4 @@ Final cover-letter acceptance: worker fresh hosted Raven load/full reload each r
 - [x] Verify Mercury onebuttonpair savedboth and exacthostedreload; independentcoverqualitativepass/resumefail separated.
 - [x] Implement v7 relevant initialhistorychoice and deterministic artdominance/efficiency/generic-bypass checks;72targeted/47corepass.
 - [ ] Verify v7 actual pair on another eligible Professional job; independent tailoring review required.
+
