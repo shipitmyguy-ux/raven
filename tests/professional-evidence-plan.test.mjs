@@ -84,7 +84,7 @@ test('art-dominant irrelevant production remains repairable while source-industr
  {path:'experience.0.bullets.2',code:'irrelevant_framing',quote:doc.experience[0].bullets[2],reason:'Mentoring from games does not count.'}
  ]}})});
  assert.deepEqual(result.issues.map(i=>i.path),['experience.0.bullets.0']);
- const artTarget={...mercury,description:'Coordinate PBR and environment-art production.'};
+ const artTarget={...mercury,title:'PBR Production Coordinator',description:'Coordinate PBR and environment-art production.'};
  assert.equal(isArtDominatedDocument('resume',doc,artTarget),false);
 });
 

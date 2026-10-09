@@ -160,7 +160,7 @@ test("passage repair requests only failed paths and cannot edit valid work histo
    {path:'experience.0.bullets.0',claim:claim('Invented work.', ['f1'])}
   ]}};
  }});
- assert.deepEqual(requests[1].schema.properties.repairs.items.properties.path.enum,['summary']);
+ assert.deepEqual(requests[1].schema.properties.repairs.items.anyOf.flatMap(branch=>branch.properties.path.enum),['summary']);
  assert.equal(result.document.summary,resume.summary.text);
  assert.equal(result.document.experience[0].bullets[0],resume.experience[0].bullets[0].text);
  assert.equal(result.source_fact_passages,0);
@@ -325,4 +325,31 @@ test('Anduril Professional regression rejects art-tenure opening and all-art emp
  assert.deepEqual(requests[0].input.roleEvidenceGuidance.employer_evidence[0].priority_facts.map(f=>f.id),['f2']);
  assert.deepEqual(requests[0].input.roleEvidenceGuidance.general_evidence.map(f=>f.id),['delivery']);
  assert.doesNotThrow(()=>validateDraft('resume',{...bad,summary:resume.summary},p,{target:{...t,description:'Coordinate environment art and PBR production.'}}));
+});
+
+
+test('Mercury repair schema and allowed evidence scope each employer path without restricting general summary evidence',async()=>{
+ const bad={...resume,summary:claim('Video game artist who mentored newer artists.',['f1','f2']),experience:[{experience_id:'art',bullets:[claim('Repaired coffee makers.',['f3'])]}]};
+ const fixed={...resume,summary:claim('Mentored newer artists.',['f2'])};
+ const requests=[];
+ const result=await writeDocument({kind:'resume',profile,target,complete:sequence([bad,fixed],requests)});
+ assert.equal(requests.length,2);
+ const repair=requests[1];assert.equal(repair.name,'raven_passage_repair');
+ const branches=repair.schema.properties.repairs.items.anyOf;
+ assert.ok(Array.isArray(branches));assert.equal(branches.length,2);
+ for(const branch of branches)assert.equal(branch.properties.path.enum.length,1);
+ const bullet=branches.find(b=>b.properties.path.enum[0]==='experience.0.bullets.0');
+ const summary=branches.find(b=>b.properties.path.enum[0]==='summary');
+ assert.deepEqual(bullet.properties.claim.properties.fact_ids.items.enum,['f1','f2']);
+ assert.ok(!bullet.properties.claim.properties.fact_ids.items.enum.includes('f3'));
+ assert.ok(!bullet.properties.claim.properties.fact_ids.items.enum.includes('x1'));
+ for(const id of ['f1','f2','f3','x1','skill:0'])assert.ok(summary.properties.claim.properties.fact_ids.items.enum.includes(id),id);
+ const allowed=repair.input.factualCorrection.allowed_evidence;
+ assert.ok(allowed);
+ const evidenceAt=path=>Array.isArray(allowed)?allowed.find(e=>e.path===path)?.facts:allowed[path];
+ const facts=evidenceAt('experience.0.bullets.0');
+ assert.deepEqual(facts.map(f=>f.id),['f1','f2']);
+ assert.ok(evidenceAt('summary').some(f=>f.id==='x1'));
+ assert.equal(result.document.summary,'Mentored newer artists.');
+ assert.equal(result.document.experience[0].role,profile.experience[0].role);
 });
