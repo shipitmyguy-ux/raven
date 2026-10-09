@@ -11,3 +11,6 @@ References: https://developers.openai.com/api/docs/guides/secure-mcp-tunnels ; h
 
 Preserve unrelated renderer line-ending change and Smile-Break-Senior-Environment-Artist.json. PR70 remains deployed; prior OAuth setup is not the active route. Routine pushes authorized. Usage 89% remaining at check.
 
+
+## Tunnel runtime verified (2026-10-09)
+User entered the restricted runtime key privately and started the demo. Read-only local health verified live=true, ready=true, control-plane status=ok/state=polling, recent successful poll and zero consecutive failures. Demo startup probe succeeded. No dispatched requests or response deliveries yet; ChatGPT tool discovery/calls remain unverified. No Raven data is attached. Keep the test window running; next connect a personal custom plugin using Tunnel + No authentication and test server_info/echo before implementing Raven access. Local launcher uses a process-only PowerShell execution-policy override because the host blocks script files; persistent policy unchanged.

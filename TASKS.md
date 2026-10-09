@@ -346,3 +346,6 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 
 - [x] Apply on site starts resume-only source-grounded preparation; six focused checks pass.
 - [~] Added browser cases pass in final PR68/main CI; live generated output/readback/reload remains pending. Earlier local Chromium download failure is superseded by CI browser acceptance.
+
+- [x] Verify private tunnel demo runtime readiness and successful OpenAI polling (2026-10-09).
+- [ ] Connect no-auth private demo plugin and verify actual ChatGPT tool call before attaching Raven data.
