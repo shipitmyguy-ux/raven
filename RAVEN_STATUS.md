@@ -375,3 +375,8 @@ User corrected and saved Authorization Path /raven/oauth-consent.html after the 
 
 ## Merge authorization resolved (2026-10-09)
 User explicitly authorized PR69 merge and reaffirmed that routine pushes never require another approval. PR69 merged at b344c2b71d40ad766f30adbf082a36382480e879. Prior merge approval blocker is resolved. No source changes since the passing CI; final premerge commit only recorded QA/publication state. Real ChatGPT list/read/save/reload remains pending.
+
+## PR70 publication approved and deployed
+User explicitly approved merging/publishing PR70. Merged at bb86e2b0fd35fb62e17cc9d9109c6e95b6fec388; the previous approval blocker is resolved. Pages run 37961312719, main core 37961312588 and first smoke 37961312686 passed. Hosted consent HTML returns 200 and contains the private password form. Full main browser 37961312723 and post-Pages smoke 37961362431 also passed. All release checks are green.
+
+Next action: owner reloads their original signed-in consent tab and privately saves a password. If signed out, authenticate by email after its limit clears. Then reconnect ChatGPT and test actual Raven tools. No private password has been supplied to the agent; actual password setup, OAuth tool access and document save/reload remain unverified.
