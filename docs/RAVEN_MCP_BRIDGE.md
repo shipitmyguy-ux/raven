@@ -1,5 +1,18 @@
 # Raven MCP bridge
 
+## OAuth follow-up (2026-10-09)
+User-enabled OAuth discovery now returns 200 and JWKS contains ES256. Bridge 0.3.0 adds public metadata at https://umvmilulnqnmeqvfoxxc.supabase.co/functions/v1/raven-mcp-v1/.well-known/oauth-protected-resource and an HTTP 401 discovery challenge. Signed OAuth access tokens must have the exact issuer, bridge resource audience, expiration, authenticated owner, client ID and session ID. Generic `authenticated` audiences, ID tokens, unsigned tokens and other owners/clients fail before job/profile access.
+
+The consent page is https://shipitmyguy-ux.github.io/raven/oauth-consent.html. Configure Site URL https://shipitmyguy-ux.github.io and Authorization Path /raven/oauth-consent.html. Allow the consent URL and its authorization_id query variant in Auth redirect settings. Sign-in supports the default email magic link as well as code templates. Enable dynamic registration; registration_endpoint was absent from the last live discovery check. OAuth metadata alone does not establish ChatGPT connection acceptance.
+
+Server settings: RAVEN_MCP_OWNER_SUBJECT is the owner's Supabase Auth UUID. RAVEN_MCP_OAUTH_GRANTS is an array of objects with `subject`, `client_id`, `expires_at`, explicit `job_ids` (1–200) and `scopes` selected from jobs:read/profile:read/documents:create/documents:revise. Remove a grant to revoke bridge access on the next request. Existing hashed bearer grants remain separate and unchanged. OAuth permissions are not inferred from user_metadata or from identity scopes.
+
+Supabase currently supports only standard OIDC scopes, not custom application scopes. Discovery requests email identity scope; Raven grants supply the effective job/document permissions. Configure a Custom Access Token Hook for the explicitly registered Raven client to issue aud=https://umvmilulnqnmeqvfoxxc.supabase.co/functions/v1/raven-mcp-v1. Preserve all required token claims and other clients' audiences. This hook and server grants still require secure configuration; they are not enabled by this source patch. Accepting the generic audience would defeat resource binding and is intentionally prohibited.
+
+Verification: 19 actual signed-JWT/bridge regression cases, all required core commands, four installed-Edge consent page cases and mobile visual inspection pass. The pinned Supabase SDK 2.117.3 is loaded with SRI. Tests do not send email or approve a live connection. Actual user sign-in, token issuance/audience, authenticated writes, production token revocation/expiry and full ChatGPT/Raven reload are still pending. Signature verification alone does not provide immediate Supabase session/consent revocation; server grant removal is the verified immediate bridge revocation mechanism.
+
+References: https://supabase.com/docs/guides/auth/oauth-server/getting-started ; https://supabase.com/docs/guides/auth/oauth-server/oauth-flows ; https://supabase.com/docs/guides/auth/oauth-server/token-security ; https://developers.openai.com/plugins/build/auth .
+
 ## Option 3 integration milestone (2026-10-08)
 - Five tools: granted-job lookup, job/profile reads, current document/hash read, resume/cover save and scope/hash/version-protected replacement.
 - Archive migration applied; transactional replacement, stale rejection and document independence verified on disposable database fixtures. Archives are service-only and included in backups.

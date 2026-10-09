@@ -51,12 +51,16 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: "22"
+      - name: Install core test dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Syntax check
         run: |
           node --check raven-core.js
           node --check raven-api.js
           node --check app.js
           node --check supabase/functions/_shared/mcp-bridge.mjs
+          node --check supabase/functions/_shared/mcp-oauth.mjs
+          node --check oauth-consent.mjs
           node scripts/build-mcp-renderer.mjs --check
           node --check extension/src/assistant-core.js
           node --check extension/src/content.js
@@ -71,7 +75,7 @@ jobs:
         run: node scripts/check-secrets.mjs
       - name: Core regression tests
         run: |
-          node --test tests/mcp-bridge.test.mjs tests/apply-resume.test.mjs
+          node --test tests/mcp-bridge.test.mjs tests/mcp-oauth.test.mjs tests/apply-resume.test.mjs
           node --test tests/chatgpt-handoff.test.mjs tests/resume-transfer.test.mjs tests/chatgpt-extension.test.mjs
           node tests/document-final-review.test.mjs
           node tests/number-evidence-trace.test.mjs
