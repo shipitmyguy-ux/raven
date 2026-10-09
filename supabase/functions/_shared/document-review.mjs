@@ -31,6 +31,12 @@ export function reviewDocument(kind,d,{profile,target}={}){
  const issues=[],warnings=[],passages=documentPassages(kind,d);
  for(const p of passages){
   if(profile)for(const reason of knownUnsupportedClaims(p.text,profile))issues.push({path:p.path,code:'unsupported_claim',reason});
+  if(kind==='resume'&&profile&&/^experience\.\d+\.bullets\.\d+$/.test(p.path)){
+   const row=d.experience?.[Number(p.path.split('.')[1])];
+   const original=(profile.experience||[]).find(r=>r.role===row?.role&&r.company===row?.company&&r.dates===row?.dates);
+   const execution=/\b(?:drive|drove|driving|led|lead|managed|coordinated) execution across (?:multiple|several|different) teams\b/i;
+   if(execution.test(p.text)&&!original?.facts?.some(f=>execution.test(f.text)))issues.push({path:p.path,code:'unsupported_claim',reason:'Work with gameplay or backend features does not establish responsibility for driving execution across multiple teams at this employer. Describe the verified work without adding cross-team execution ownership.'});
+  }
   if(kind==='resume'&&profile&&target?.title&&['headline','summary'].includes(p.path)){
    const title=norm(target.title),opening=norm(p.text).replace(/^(?:(?:an?|experienced|seasoned|accomplished|results driven)\s+)*/,'');
    if((opening===title||opening.startsWith(title+' '))&&!(profile.experience||[]).some(r=>norm(r.role)===title))issues.push({path:p.path,code:'unsupported_claim',reason:'The target role is not a verified past profession. Describe transferable strengths or explicitly say seeking the role; do not identify the candidate as '+target.title+'.'});

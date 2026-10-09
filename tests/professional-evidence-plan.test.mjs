@@ -117,3 +117,17 @@ test('actual Mercury data-analysis qualification is not established by Excel rep
  const skill={...reporting,skills:[...reporting.skills,'Data analysis']};
  assert.equal(reviewDocument('resume',{...assembled(),summary:'Skilled in data analysis.'},{profile:skill,target:mercury}).status,'passed');
 });
+
+
+test('actual Mercury cross-team execution cannot be promoted from gameplay work or borrowed general/other-employer facts',()=>{
+ const p={...profile,experience:[{id:'gameplay',role:'Senior Environment Artist',company:'Gameplay Studio',dates:'2021–2025',facts:[{id:'paths',text:'Worked with AI paths and backend functionality.'}]},{id:'other',role:'Lead Artist',company:'Other Studio',dates:'2019',facts:[{id:'other-execution',text:'Drove execution across multiple teams.'}]}],transferable_facts:[...profile.transferable_facts,{id:'general-cross',text:'Has cross-functional collaboration experience with artists, programmers and designers.'},{id:'general-execution',text:'Drove execution across multiple teams.'}]};
+ const row={role:'Senior Environment Artist',company:'Gameplay Studio',dates:'2021–2025',bullets:['Worked with AI paths and backend functionality to drive execution across multiple teams.']};
+ const d={...assembled(),experience:[row]};
+ const rejected=reviewDocument('resume',d,{profile:p,target:mercury});
+ assert.equal(rejected.status,'blocked');
+ assert.ok(rejected.issues.some(i=>i.path==='experience.0.bullets.0'&&i.code==='unsupported_claim'));
+ const plain={...d,experience:[{...row,bullets:['Worked with AI paths and backend functionality.']}]};
+ assert.equal(reviewDocument('resume',plain,{profile:p,target:mercury}).status,'passed');
+ const supported={...p,experience:[{...p.experience[0],facts:[...p.experience[0].facts,{id:'own-execution',text:'Drove execution across multiple teams.'}]},p.experience[1]]};
+ assert.equal(reviewDocument('resume',d,{profile:supported,target:mercury}).status,'passed');
+});

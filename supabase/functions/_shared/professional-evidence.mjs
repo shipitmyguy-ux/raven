@@ -18,7 +18,11 @@ export function buildRoleEvidencePlan(profile,target){
  return {requirements,employer_evidence:(profile.experience||[]).map(role=>({experience_id:role.id,priority_facts:ranked(role.facts||[])})),general_evidence:ranked(profile.transferable_facts||[]),gaps:[...new Set(domains.filter(([,re])=>re.test(posting)&&!re.test(allEvidence)).map(([name])=>name))],policy:'This is a relevance plan, not proof of domain qualifications. Employer facts stay at that employer. General delivery/meetings/skills belong in summary or separate highlights. Select concrete examples and explain prospective relevance without inventing outcomes, customer ownership, domain tenure or tools. Missing domain qualifications describe fit; they do not invalidate truthful transferable evidence.'};
 }
 export function isArtDominatedDocument(kind,document,target){
- if(target?.track!=='Professional'||production.test([target.title,target.description].join(' ')))return false;
+ if(target?.track!=='Professional'||production.test(target.title||''))return false;
+ const artDuty=String(target.description||'').split(/\n|[•●]|(?<=[.!?])\s+/).some(line=>/^(?:coordinate|lead|manage|create|develop|design|build|produce)\b/i.test(line.trim())&&production.test(line));
+ if(artDuty)return false;
+ const opening=kind==='coverLetter'?(document.paragraphs||[])[0]:String(document.headline||'')+' '+String(document.summary||'').split(/(?<=[.!?])\s+/)[0];
+ if(/\b(?:environment[- ]art|game[- ]art|sculpt\w*|textur\w*|pbr|world ?building)\b/i.test(opening)&&!transferable.test(opening))return true;
  const text=kind==='coverLetter'?(document.paragraphs||[]):(document.experience||[]).flatMap(r=>r.bullets||[]);
  const art=text.filter(s=>production.test(s)&&!transferable.test(s)).length;
  return art>=2&&art>text.length/2;
