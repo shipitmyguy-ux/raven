@@ -411,3 +411,6 @@ Final cover-letter acceptance: worker fresh hosted Raven load/full reload each r
 
 - [x] Implement Professional role-evidence planning, narrow false reviewer rejection, generic-summary check and local durable generation errors;47 core commands pass.
 - [ ] Publish v6 and independently compare actual per-job resume/cover outputs, exact linkage and reload; browser regression pending.
+
+- [x] Fix worker-reproduced Mercury data-analysis inference and generic-summary variant; keep numeric attribution checks. Correct Windows CI mock exit status; both engines and intentional assertion-failure probes verified.
+- [ ] Review cross-team execution responsibility inflation and retry only after its specific guard/prompt fix; Dutchie pair currently0 outputs.

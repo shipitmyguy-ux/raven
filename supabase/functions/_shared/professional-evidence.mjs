@@ -53,6 +53,6 @@ export function professionalSummaryIssue(draft,profile,target){
  const available=(profile.transferable_facts||[]).some(f=>/on[- ]time delivery|meetings with internal|internal[- ]team meetings/i.test(f.text));
  const summary=draft?.summary?.text||'',highlights=(draft?.additional||[]).map(c=>c.text||'').join(' ');
  const concrete=/on[- ]time|internal.{0,15}meetings?|meetings?.{0,15}internal|diagnos\w*|defin\w*.{0,15}workflows?|metadata|automation modules/i;
- return available&&/highly motivated|results[- ]driven|proven track record of delivering results|strong background/i.test(summary)&&!concrete.test(summary+' '+highlights)
+ return available&&/highly (?:motivated|experienced)|results[- ]driven|proven track record|strong background/i.test(summary)&&!concrete.test(summary+' '+highlights)
   ? 'Replace generic self-praise with concrete verified project delivery or internal-team coordination evidence. Connect its prospective relevance to this posting; keep general facts separate from employer bullets and do not invent industry experience.' : null;
 }

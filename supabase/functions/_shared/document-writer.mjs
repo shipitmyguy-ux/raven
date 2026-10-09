@@ -415,6 +415,10 @@ function passageChecks(kind,draft,profile,options){
   return slots.map(slot=>{
     try{
       const text=groundedText(slot.claim,profile,slot.options);
+      if(kind==="resume"&&slot.path[0]==="summary"){
+        const issue=professionalSummaryIssue(draft,profile,options.target);
+        if(issue)return {...slot,issue};
+      }
       if(kind==="coverLetter"&&slot.path[1]===0&&options.target?.track==="Professional"&&!/\b(?:environment art|game art|pbr|sculpting|texturing|world ?building)\b/i.test([options.target.title,options.target.description].join(" "))&&foregroundsGameIdentity(text,'summary'))
         return {...slot,issue:"Open with a supported capability connected to this target role, not art-career identity or tenure. Keep factual source-industry context concise and never imply unverified mathematical/software expertise."};
       if(kind==="resume"&&slot.path[0]==="experience"&&slot.path.at(-1)===0&&needsTransferableExample(draft.experience[slot.path[1]],profile,options.target))

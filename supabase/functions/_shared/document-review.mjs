@@ -7,6 +7,8 @@ const norm=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N
 function knownUnsupportedClaims(text,profile){
  const facts=[...(profile.experience||[]).flatMap(r=>r.facts||[]),...(profile.transferable_facts||[])].map(f=>String(f.text||''));
  const issues=[];
+ const dataAnalysis=/\bdata[- ]analy(?:sis|tics)\b/i;
+ if(text.split(/(?<=[.!?])\s+/).some(s=>dataAnalysis.test(s)&&!/\b(?:would|could|hope|learn|learning|interested|eager|seeking)\b/i.test(s))&&!facts.some(f=>dataAnalysis.test(f))&&!(profile.skills||[]).some(s=>dataAnalysis.test(s)))issues.push('Excel proficiency, database queries and reporting do not establish data-analysis expertise or responsibilities. Describe the verified skills without adding data analysis.');
  const partnerHistory=/\b(?:developed|built|managed|maintained|established|cultivated)\b[^.!?]{0,100}\brelationships?\b[^.!?]{0,80}\bexternal partners?\b/i;
  if(partnerHistory.test(text)&&!facts.some(f=>partnerHistory.test(f)))issues.push('Internal collaboration does not establish a history of external-partner relationships. Remove that history claim unless verified.');
  for(const match of text.matchAll(/\b(?:passion for|passionate about)\s+(healthcare|tech for good|technology|tech|the NHS)\b/gi)){

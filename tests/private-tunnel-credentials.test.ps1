@@ -112,3 +112,7 @@ try{
   foreach($file in @(Get-ChildItem -LiteralPath $directory -File)){Remove-Item -LiteralPath $file.FullName -Force}
   Remove-Item -LiteralPath $directory -Force
 }
+# The synthetic failing client sets LASTEXITCODE=1 intentionally. Reaching this
+# point means every assertion and cleanup succeeded; do not propagate that mock
+# native status into CI. Terminating assertion/cleanup errors skip this exit.
+exit 0

@@ -95,3 +95,25 @@ test('generic leadership furniture without any verified capability cannot bypass
  const result=await reviewFacts({kind:'resume',document,profile:artOnly,target:mercury,complete:async()=>({data:{issues:[{path:'headline',code:'unsupported_claim',quote:document.headline,reason:'There is no verified leadership capability in this profile.'}]}})});
  assert.equal(result.issues.length,1);
 });
+
+
+test('actual Mercury v6 generic-summary variant must request concrete source-backed delivery or meetings',()=>{
+ const actual={...resume,summary:claim('Highly experienced leader with a background in team leadership, project management, and cross-functional collaboration. Proven track record of driving process improvements, mentoring artists, and supporting onboarding and training. Skilled in workflow development, troubleshooting, and data analysis, with experience working with asset databases and scripting tasks.',['delivery','training']),additional:[]};
+ assert.match(professionalSummaryIssue(actual,profile,mercury),/concrete verified|internal-team/);
+ const fixed={...actual,summary:claim('Brings project-management experience and a track record of on-time delivery. Has led meetings with internal teams and would apply that coordination experience to support operations.',['delivery','meetings'])};
+ assert.equal(professionalSummaryIssue(fixed,profile,mercury),null);
+});
+
+test('actual Mercury data-analysis qualification is not established by Excel reporting or database queries',()=>{
+ const reporting={...profile,skills:[...profile.skills,'Excel (intermediate)','Database querying'],transferable_facts:[...profile.transferable_facts,{id:'reporting',text:'Has experience with asset database metadata, report generation, and database queries.'}]};
+ for(const text of ['Skilled in workflow development, troubleshooting, and data analysis, with experience working with asset databases and scripting tasks.','I have data-analysis expertise.','I performed data analysis to inform business decisions.']){
+  const result=reviewDocument('resume',{...assembled(),summary:text},{profile:reporting,target:mercury});
+  assert.equal(result.status,'blocked',text);
+  assert.ok(result.issues.some(i=>i.code==='unsupported_claim'));
+ }
+ for(const text of ['Experienced in asset metadata, report generation and database querying.','I would welcome the opportunity to learn data analysis.'])assert.equal(reviewDocument('resume',{...assembled(),summary:text},{profile:reporting,target:mercury}).status,'passed',text);
+ const verified={...reporting,transferable_facts:[...reporting.transferable_facts,{id:'analysis',text:'Performed data analysis to inform business decisions.'}]};
+ assert.equal(reviewDocument('resume',{...assembled(),summary:'I performed data analysis to inform business decisions.'},{profile:verified,target:mercury}).status,'passed');
+ const skill={...reporting,skills:[...reporting.skills,'Data analysis']};
+ assert.equal(reviewDocument('resume',{...assembled(),summary:'Skilled in data analysis.'},{profile:skill,target:mercury}).status,'passed');
+});
