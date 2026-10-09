@@ -20,3 +20,6 @@ User explicitly requested a subagent to document the project, upcoming features 
 
 ## Environment and preserved state
 Usage checked: 92% remaining. Sandbox shell/browser fail with setup refresh errors; approved shell works. No Auth-settings/secrets connector operation exists. Untracked Smile-Break JSON untouched. Published ready-fixes release evidence remains docs/qa/2026-10-08-ready-fixes-release.md; existing exports, closed-listing behavior and documents preserved. No paid provider activated.
+
+## Live consent follow-up (2026-10-09)
+User corrected and saved Authorization Path /raven/oauth-consent.html after the old /oauth/consent URL returned 404. User reports ChatGPT authentication succeeded. Direct database read confirms one active public dynamically registered OAuth client named ChatGPT. This verifies registration and user-reported authentication, not authenticated bridge access. Server owner/client/job grants, resource-audience hook and real tool read/save/reload acceptance remain pending. No tokens or private account identifiers are recorded.

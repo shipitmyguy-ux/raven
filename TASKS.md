@@ -9,7 +9,8 @@
 - [x] Implement sign-in/consent UI; test explicit email/approval, escaped metadata, callback validation, SDK integrity and mobile layout.
 - [x] Publish PR68; verify live consent page/metadata, authentication denials, final PR/main CI, Pages and both smoke runs.
 - [x] Owner sign-in through hosted page; confirm email-verified Auth account in database.
-- [ ] Finish authorization path/redirect verification (DCR enabled and verified); provision server owner/client/job grants and resource-audience token hook.
+- [x] Correct/save authorization path; user reports successful ChatGPT authentication and database confirms dynamic ChatGPT client registration. Full redirect/tool acceptance remains pending.
+- [ ] Provision server owner/client/job grants and resource-audience token hook.
 - [ ] Verify authenticated ChatGPT retrieval/generation/save and Raven reload, including production expired/revoked credentials.
 
 ## Ready fixes release (2026-10-08)

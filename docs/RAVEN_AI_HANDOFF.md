@@ -154,3 +154,6 @@ Before ending meaningful work, commit/push authorized changes, update status if 
 ## Suggested prompt for a replacement AI
 
 > Continue Raven from GitHub repository shipitmyguy-ux/raven. Read AGENTS.md, RAVEN_STATUS.md, TASKS.md, WORK_HANDOFF.md and docs/RAVEN_AI_HANDOFF.md before acting. Verify current main, PRs, Actions and live configuration; the dated handoff may be superseded. Finish the current authenticated ChatGPT integration priority through real retrieve/generate/save/full Raven reload acceptance while preserving user documents and exact-version approvals. Keep provider costs unchanged, credentials server-only, explicit job/client permissions, resource audience validation and manual employer submission. Report exactly what is verified and preserve durable project state in GitHub.
+
+## Live consent follow-up (2026-10-09)
+User corrected and saved Authorization Path /raven/oauth-consent.html after the old /oauth/consent URL returned 404. User reports ChatGPT authentication succeeded. Direct database read confirms one active public dynamically registered OAuth client named ChatGPT. This verifies registration and user-reported authentication, not authenticated bridge access. Server owner/client/job grants, resource-audience hook and real tool read/save/reload acceptance remain pending. No tokens or private account identifiers are recorded.

@@ -30,3 +30,6 @@ PR [68](https://github.com/shipitmyguy-ux/raven/pull/68) merged at a2936122841d6
 - User reports chat links do nothing but copy/paste in an external browser works. This is a navigation symptom, not a reproduced Raven defect.
 
 No saved user document/application changed, no document was approved, and no employer application was submitted.
+
+## Live consent follow-up (2026-10-09)
+User corrected and saved Authorization Path /raven/oauth-consent.html after the old /oauth/consent URL returned 404. User reports ChatGPT authentication succeeded. Direct database read confirms one active public dynamically registered OAuth client named ChatGPT. This verifies registration and user-reported authentication, not authenticated bridge access. Server owner/client/job grants, resource-audience hook and real tool read/save/reload acceptance remain pending. No tokens or private account identifiers are recorded.
