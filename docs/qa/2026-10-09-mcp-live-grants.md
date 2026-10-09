@@ -15,3 +15,6 @@ Browser automation remains blocked by Windows helper file-lock error32. Reset/re
 
 ## Publication state
 PR69 https://github.com/shipitmyguy-ux/raven/pull/69 contains implementation and QA at source head 31e5d69. Core CI37958843202 passed. Function v4 and migrations/grant are deployed. Merge request was rejected by automatic approval review: routine push/implementation authorization was not accepted as authorization for this exact main merge. User explicitly asked for approval; do not retry merge or bypass until granted. A second transactional grant-denial probe also returned expired requestState; no passing result. Subsequent direct read confirms active/unexpired grant and one authorized session. ChatGPT list_jobs result remains pending; no authenticated tool success or save has been claimed.
+
+## Merge authorization resolved (2026-10-09)
+User explicitly authorized PR69 merge and reaffirmed that routine pushes never require another approval. PR69 merged at b344c2b71d40ad766f30adbf082a36382480e879. Prior merge approval blocker is resolved. No source changes since the passing CI; final premerge commit only recorded QA/publication state. Real ChatGPT list/read/save/reload remains pending.
