@@ -131,3 +131,34 @@ test('actual Mercury cross-team execution cannot be promoted from gameplay work 
  const supported={...p,experience:[{...p.experience[0],facts:[...p.experience[0].facts,{id:'own-execution',text:'Drove execution across multiple teams.'}]},p.experience[1]]};
  assert.equal(reviewDocument('resume',d,{profile:supported,target:mercury}).status,'passed');
 });
+
+
+test('actual Mercury132 seven-bullet selection flags four art-production bullets with a precise repair path',()=>{
+ const d={...assembled(),experience:[{role:'Senior Environment Artist',company:'Synthetic Studio',dates:'2021–2025',bullets:[
+  'Collaborated with AI technology and design teams to diagnose environment and AI interaction issues and improve tools and workflows.',
+  'Provided mentorship to newer artists, promoting knowledge sharing and skill development.'
+ ]},{role:'Senior Environment Artist',company:'Other Studio',dates:'2011–2017',bullets:['Helped define workflows for new art processes, spearheading a transition to fully sculpted rocks.']},
+ {role:'Environment Artist',company:'Old Studio',dates:'2008–2010',bullets:['Modeled and textured environment assets, contributing to visual quality and atmosphere.','Built areas, vistas, and skyboxes, demonstrating ability to create immersive and engaging environments.']},
+ {role:'Senior Environment Artist',company:'Production Studio',dates:'2017–2018',bullets:['Created environment assets and contributed to world building, lighting, look development, post-processing, materials and shaders, and atmospheric effects.','Contributed environment art to a shipped game, ensuring high-quality visuals and consistency.']}]};
+ assert.equal(isArtDominatedDocument('resume',d,mercury),true);
+ const review=reviewDocument('resume',d,{profile,target:mercury});
+ assert.ok(review.issues.some(i=>i.code==='irrelevant_framing'&&i.path==='experience.2.bullets.0'));
+});
+
+test('actual Mercury achieved overall-efficiency outcome needs same-employer evidence while prospective purpose is allowed',()=>{
+ const p={...profile,experience:[{id:'workflow',role:'Senior Environment Artist',company:'Other Studio',dates:'2011–2017',facts:[{id:'process',text:'Helped define workflows for new art processes and spearheaded a transition to fully sculpted rocks.'}]},{id:'elsewhere',role:'Artist',company:'Elsewhere Studio',dates:'2010',facts:[{id:'else-efficiency',text:'Improved overall efficiency.'}]}],transferable_facts:[...profile.transferable_facts,{id:'general-efficiency',text:'Improved overall efficiency.'}]};
+ const row={role:'Senior Environment Artist',company:'Other Studio',dates:'2011–2017',bullets:['Helped define workflows for new art processes, spearheading a transition to fully sculpted rocks and improving overall efficiency.']};
+ const d={...assembled(),experience:[row]};
+ assert.ok(reviewDocument('resume',d,{profile:p,target:mercury}).issues.some(i=>i.code==='unsupported_claim'&&i.path==='experience.0.bullets.0'));
+ const purpose={...d,experience:[{...row,bullets:['Helped define workflows for new art processes to improve overall efficiency.']}]};
+ assert.equal(reviewDocument('resume',purpose,{profile:p,target:mercury}).status,'passed');
+ const supported={...p,experience:[{...p.experience[0],facts:[...p.experience[0].facts,{id:'own-efficiency',text:'Improved overall efficiency.'}]},p.experience[1]]};
+ assert.equal(reviewDocument('resume',d,{profile:supported,target:mercury}).status,'passed');
+});
+
+test('actual Mercury132 generic summary cannot be rescued by unrelated automation or database highlights',()=>{
+ const d={...resume,summary:claim('Results-driven professional with experience in team leadership, mentoring, and project management, seeking to use transferable skills in a governance role. Proven ability to collaborate with cross-functional teams, drive operational excellence, and deliver high-quality results.',['delivery','training']),additional:[claim('Has scripted tasks and built AI/automation modules.',['training']),claim('Has experience with asset databases, metadata markup and reporting.',['training'])]};
+ assert.match(professionalSummaryIssue(d,profile,mercury),/concrete verified|internal-team/);
+ const fixed={...d,additional:[...d.additional,claim('Has project-management experience and a track record of on-time delivery.',['delivery'])]};
+ assert.equal(professionalSummaryIssue(fixed,profile,mercury),null);
+});

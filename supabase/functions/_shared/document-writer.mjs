@@ -2,7 +2,7 @@ import {reviewDocument,reviewFacts,REVIEW_VERSION} from "./document-review.mjs";
 import {studioRelevance} from "./studio-context.mjs";
 import {buildRoleEvidencePlan,professionalSummaryIssue} from './professional-evidence.mjs';
 // One structured writer for initial drafts and revisions; layout stays in Raven.
-export const WRITER_VERSION="grounded-llm-v6";
+export const WRITER_VERSION="grounded-llm-v7";
 const str={type:"string"};
 const arr=(items,minItems=0,maxItems=20)=>({type:"array",items,minItems,maxItems});
 const obj=(properties)=>({type:"object",properties,required:Object.keys(properties),additionalProperties:false});
@@ -533,17 +533,21 @@ export async function writeDocument({kind,profile,target,instructions="",current
     return writeSummary({profile,target,instructions,currentDocument,complete,reviewComplete,onDiagnostic,onEvidenceTrace});
   }
   const schema=structuredClone(kind==="resume"?resumeSchema:coverSchema);
+  const roleEvidencePlan=buildRoleEvidencePlan(profile,target);
+  const relevantRoleIds=new Set((roleEvidencePlan?.employer_evidence||[]).filter(row=>row.priority_facts.length).map(row=>row.experience_id));
+  const historyChoices=kind==="resume"&&target?.track==="Professional"&&!String(instructions||'').trim()&&relevantRoleIds.size
+    ? profile.experience.filter(row=>relevantRoleIds.has(row.id)):profile.experience;
   if(kind==="resume"){
     const requiredCount=target?.track==="Games / 3D"&&Array.isArray(profile.resume_required_experience_ids)?profile.resume_required_experience_ids.filter(Boolean).length:0;
     schema.properties.experience.minItems=Math.max(1,requiredCount);
-    schema.properties.experience.maxItems=profile.experience.length;
-    schema.properties.experience.items={anyOf:profile.experience.map(row=>obj({
+    schema.properties.experience.maxItems=historyChoices.length;
+    schema.properties.experience.items={anyOf:historyChoices.map(row=>obj({
       experience_id:{type:"string",enum:[row.id]},
       bullets:arr(obj({text:str,fact_ids:{type:"array",items:{type:"string",enum:(row.facts||[]).map(f=>f.id)},minItems:1}}),1,6)
     }))};
     schema.properties.skills.items={type:"string",enum:[...new Set([...(profile.skills||[]),...verifiedKeywordEntries(profile).map(e=>e.keyword)])]};
   }
-  const context={studioTailoring:studioRelevance(target?.studioContext,profile),documentType:kind,verifiedBackground:profile,evidenceCatalog:evidenceCatalog(profile),target,revisionRequest:instructions,currentDraft:currentDocument,keywordGuidance:resumeKeywordGuidance(profile,target),roleEvidenceGuidance:buildRoleEvidencePlan(profile,target),roleEvidencePlan:buildRoleEvidencePlan(profile,target)};
+  const context={studioTailoring:studioRelevance(target?.studioContext,profile),documentType:kind,verifiedBackground:profile,evidenceCatalog:evidenceCatalog(profile),target,revisionRequest:instructions,currentDraft:currentDocument,keywordGuidance:resumeKeywordGuidance(profile,target),roleEvidenceGuidance:roleEvidencePlan,roleEvidencePlan,historySelection:historyChoices.map(row=>({experience_id:row.id,role:row.role,company:row.company,rule:'Select concrete verified examples serving this posting. Original titles and dates stay unchanged. Omit optional unrelated production history; never manufacture transferable responsibilities.'}))};
   let correction=null;
   const revisionRequested=Boolean(String(instructions||"").trim());
   // Match the router's two-provider-call ceiling: one draft and one repair.

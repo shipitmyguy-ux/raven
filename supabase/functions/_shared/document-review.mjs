@@ -1,5 +1,5 @@
 // Final document checks operate on assembled output, independently of writing.
-import {buildRoleEvidencePlan,reconcileReviewIssues} from './professional-evidence.mjs';
+import {buildRoleEvidencePlan,reconcileReviewIssues,isArtDominatedDocument,isArtProductionPassage} from './professional-evidence.mjs';
 export const REVIEW_VERSION='final-review-v1';
 const norm=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
 // Narrow deterministic backstops for claims missed in live factual review.
@@ -36,6 +36,8 @@ export function reviewDocument(kind,d,{profile,target}={}){
    const original=(profile.experience||[]).find(r=>r.role===row?.role&&r.company===row?.company&&r.dates===row?.dates);
    const execution=/\b(?:drive|drove|driving|led|lead|managed|coordinated) execution across (?:multiple|several|different) teams\b/i;
    if(execution.test(p.text)&&!original?.facts?.some(f=>execution.test(f.text)))issues.push({path:p.path,code:'unsupported_claim',reason:'Work with gameplay or backend features does not establish responsibility for driving execution across multiple teams at this employer. Describe the verified work without adding cross-team execution ownership.'});
+   const efficiency=/\b(?:improved|improving|increased|increasing) (?:overall )?(?:efficiency|productivity)\b/i;
+   if(efficiency.test(p.text)&&!/\b(?:to improve|would|could|intended|aimed)\b/i.test(p.text)&&!original?.facts?.some(f=>efficiency.test(f.text)))issues.push({path:p.path,code:'unsupported_claim',reason:'Defining or changing a workflow does not establish an achieved efficiency or productivity improvement at this employer. Describe the verified workflow action without inventing its outcome.'});
   }
   if(kind==='resume'&&profile&&target?.title&&['headline','summary'].includes(p.path)){
    const title=norm(target.title),opening=norm(p.text).replace(/^(?:(?:an?|experienced|seasoned|accomplished|results driven)\s+)*/,'');
@@ -43,6 +45,7 @@ export function reviewDocument(kind,d,{profile,target}={}){
   }
   if(/\[(?:insert|your|company|name|date|job title)\b|\b(?:as an ai|language model|lorem ipsum|TODO|TBD)\b/i.test(p.text))issues.push({path:p.path,code:'placeholder',reason:'Remove unfinished or AI instruction text.'});
  }
+ if(kind==='resume'&&isArtDominatedDocument(kind,d,target))for(const p of passages.filter(p=>/^experience\./.test(p.path)&&isArtProductionPassage(p.text)))issues.push({path:p.path,code:'irrelevant_framing',reason:'Unrelated art-production examples dominate this Professional resume. Select verified transferable examples from their original employers, and omit optional roles with no relevant evidence instead of inventing new responsibilities.'});
  for(let i=0;i<passages.length;i++)for(let j=0;j<i;j++){
   const a=norm(passages[i].text),b=norm(passages[j].text),words=a.split(' ');
   if(a===b&&words.length>=5)issues.push({path:passages[i].path,code:'duplicate',reason:'Repeats '+passages[j].path+'. Give this passage a distinct purpose or remove it.'});

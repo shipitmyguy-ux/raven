@@ -414,3 +414,7 @@ Final cover-letter acceptance: worker fresh hosted Raven load/full reload each r
 
 - [x] Fix worker-reproduced Mercury data-analysis inference and generic-summary variant; keep numeric attribution checks. Correct Windows CI mock exit status; both engines and intentional assertion-failure probes verified.
 - [ ] Review cross-team execution responsibility inflation and retry only after its specific guard/prompt fix; Dutchie pair currently0 outputs.
+
+- [x] Verify Mercury onebuttonpair savedboth and exacthostedreload; independentcoverqualitativepass/resumefail separated.
+- [x] Implement v7 relevant initialhistorychoice and deterministic artdominance/efficiency/generic-bypass checks;72targeted/47corepass.
+- [ ] Verify v7 actual pair on another eligible Professional job; independent tailoring review required.

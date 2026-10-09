@@ -1,6 +1,6 @@
 const normalize=value=>String(value||'').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
 const transferable=/\b(?:mentor\w*|train\w*|onboard\w*|collaborat\w*|cross[- ]functional|workflow development|workflow coordination|(?:define|defined|improve|improved) workflows?|project[- ]management|deliver\w*|meeting\w*|automat\w*|reporting|quer(?:y|ies|ying)|troubleshoot\w*)\b/i;
-const production=/\b(?:sculpt\w*|textur\w*|pbr|world ?building|lighting|materials? and shaders?|asset creation|terrain|look development|visual fidelity)\b/i;
+const production=/\b(?:sculpt\w*|textur\w*|pbr|world ?building|lighting|materials? and shaders?|asset creation|environment (?:art|assets?)|terrain|look development|visual fidelity|skyboxes|vistas)\b/i;
 const families=[/mentor|train|onboard|coach|enablement/i,/collaborat|coordinate|cross[- ]functional|stakeholder|meeting/i,/project|deliver|launch|timeline|schedule/i,/workflow|process|troubleshoot|issue|tool/i,/automat|script|module/i,/report|quer|metadata|database|excel/i];
 const domains=[['banking',/\b(?:bank\w*|underwriting|credit risk|cash flow|financial modeling)\b/i],['regulatory governance',/\b(?:regulatory|compliance|audit|governance)\b/i],['SaaS',/\bsaas\b/i],['SQL',/\bsql\b/i],['algorithms',/\b(?:algorithms?|optimization and estimation)\b/i],['customer ownership',/\b(?:customer retention|customer accounts?|pooled inbox|customer success experience)\b/i]];
 const factsOf=profile=>[...(profile.experience||[]).flatMap(role=>(role.facts||[]).map(f=>({...f,experience_id:role.id}))),...(profile.transferable_facts||[])];
@@ -27,6 +27,7 @@ export function isArtDominatedDocument(kind,document,target){
  const art=text.filter(s=>production.test(s)&&!transferable.test(s)).length;
  return art>=2&&art>text.length/2;
 }
+export function isArtProductionPassage(text){return production.test(text)&&!transferable.test(text);}
 // Reconcile only bare, already-verified general capability statements. A number,
 // domain, tool or employer-specific responsibility cannot enter this exception.
 export function isVerifiedCapabilityStatement(text,profile){
@@ -57,6 +58,7 @@ export function professionalSummaryIssue(draft,profile,target){
  const available=(profile.transferable_facts||[]).some(f=>/on[- ]time delivery|meetings with internal|internal[- ]team meetings/i.test(f.text));
  const summary=draft?.summary?.text||'',highlights=(draft?.additional||[]).map(c=>c.text||'').join(' ');
  const concrete=/on[- ]time|internal.{0,15}meetings?|meetings?.{0,15}internal|diagnos\w*|defin\w*.{0,15}workflows?|metadata|automation modules/i;
- return available&&/highly (?:motivated|experienced)|results[- ]driven|proven track record|strong background/i.test(summary)&&!concrete.test(summary+' '+highlights)
+ const delivery=/on[- ]time|internal.{0,15}meetings?|meetings?.{0,15}internal/i;
+ return available&&/highly (?:motivated|experienced)|results[- ]driven|proven track record|strong background/i.test(summary)&&!concrete.test(summary)&&!delivery.test(highlights)
   ? 'Replace generic self-praise with concrete verified project delivery or internal-team coordination evidence. Connect its prospective relevance to this posting; keep general facts separate from employer bullets and do not invent industry experience.' : null;
 }

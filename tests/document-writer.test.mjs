@@ -202,9 +202,9 @@ test("schema bounds guide document length; malformed draft can be repaired",asyn
  const result=await writeDocument({kind:"resume",profile,target,complete:sequence([bad,resume,accepted],requests)});
  assert.deepEqual(requests[0].input.verifiedBackground.skills,profile.skills);
  assert.equal(requests[0].schema.properties.experience.minItems,1);
- assert.equal(requests[0].schema.properties.experience.maxItems,2);
+ assert.equal(requests[0].schema.properties.experience.maxItems,1);
  const roleSchemas=requests[0].schema.properties.experience.items.anyOf;
- assert.deepEqual(roleSchemas.map(s=>s.properties.experience_id.enum[0]),['art','repair']);
+ assert.deepEqual(roleSchemas.map(s=>s.properties.experience_id.enum[0]),['art']);
  assert.equal(roleSchemas[0].properties.bullets.maxItems,6);
  assert.deepEqual(roleSchemas[0].properties.bullets.items.properties.fact_ids.items.enum,['f1','f2']);
  assert.ok(requests[1].input.factualCorrection);assert.equal(result.document.summary,resume.summary.text);
@@ -352,4 +352,19 @@ test('Mercury repair schema and allowed evidence scope each employer path withou
  assert.ok(evidenceAt('summary').some(f=>f.id==='x1'));
  assert.equal(result.document.summary,'Mentored newer artists.');
  assert.equal(result.document.experience[0].role,profile.experience[0].role);
+});
+
+
+test('initial Professional history schema prefers transferable employers while Games and revisions preserve all choices',async()=>{
+ const rowsFor=async t=>{const requests=[];await writeDocument({kind:'resume',profile,target:t,complete:sequence([resume],requests)});return requests[0];};
+ const professional=await rowsFor(target);
+ assert.deepEqual(professional.schema.properties.experience.items.anyOf.map(s=>s.properties.experience_id.enum[0]),['art']);
+ assert.deepEqual(professional.input.historySelection.map(e=>e.experience_id),['art']);
+ assert.equal(professional.input.historySelection[0].role,'Artist');
+ assert.equal(professional.input.verifiedBackground.experience.length,2); // full evidence never discarded
+ const games=await rowsFor({...target,track:'Games / 3D'});
+ assert.deepEqual(games.schema.properties.experience.items.anyOf.map(s=>s.properties.experience_id.enum[0]),['art','repair']);
+ const requests=[];await writeDocument({kind:'resume',profile,target,instructions:'Keep the full employment choices available.',currentDocument:'Existing saved resume',complete:sequence([resume],requests)});
+ assert.deepEqual(requests[0].schema.properties.experience.items.anyOf.map(s=>s.properties.experience_id.enum[0]),['art','repair']);
+ assert.deepEqual(requests[0].input.historySelection.map(e=>e.experience_id),['art','repair']);
 });
