@@ -1,4 +1,4 @@
-# Raven execution handoff
+# Live MCP grants QA - 2026-10-09
 
 ## Live grant deployment (2026-10-09)
 User authorized any Professional job. Provisioned one 30-day ChatGPT grant for DataHouse PROJECT MANAGER (JT-1789707628035): jobs:read, profile:read, documents:create; no revision permission. Existing resume/cover were empty and remain unchanged.
@@ -12,11 +12,3 @@ Verified: 21 bridge/OAuth tests; all 44 core workflow commands; syntax/secret/wh
 Pending: actual hook token issuance/refresh, authenticated ChatGPT tools, grounded generation/save and Raven reload, live revocation/expiry acceptance. Reconnect hit email rate exceeded. Avoid more sends; user asked to test existing Raven connection with list_jobs. No live document writes or employer submissions.
 
 Browser automation remains blocked by Windows helper file-lock error32. Reset/restart attempts did not repair it. MXC unavailable. TinyFish installed but user reports auth errors. No browser workaround was verified.
-
-## Next actions
-1. Read user result of ChatGPT list_jobs test. Stale pre-hook tokens may require refresh or fresh consent using the originally signed-in browser tab.
-2. Verify live hook issuance and tool discovery without collecting tokens in chat.
-3. Generate a fact-grounded document for granted DataHouse job, save through MCP and verify backend/Raven refresh. Preserve prior content; replacements require explicit revision scope/hash/version.
-4. Verify live grant/consent/session revocation and expiry.
-
-Standing routine push/deploy authorization applies. Paid pilot PR58 remains inactive. User d means do it. Usage92% remaining. Preserve Smile-Break-Senior-Environment-Artist.json and renderer line-ending-only change. Transfer documentation: docs/RAVEN_AI_HANDOFF.md.

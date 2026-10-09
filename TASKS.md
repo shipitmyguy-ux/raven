@@ -10,7 +10,8 @@
 - [x] Publish PR68; verify live consent page/metadata, authentication denials, final PR/main CI, Pages and both smoke runs.
 - [x] Owner sign-in through hosted page; confirm email-verified Auth account in database.
 - [x] Correct/save authorization path; user reports successful ChatGPT authentication and database confirms dynamic ChatGPT client registration. Full redirect/tool acceptance remains pending.
-- [ ] Provision server owner/client/job grants and resource-audience token hook.
+- [x] Apply private single-owner grants/hook; provision one Professional job; deploy v4. User reports hook saved.
+- [ ] Verify live hook token issuance/refresh and authenticated tool discovery; fresh email sign-in currently rate-limited.
 - [ ] Verify authenticated ChatGPT retrieval/generation/save and Raven reload, including production expired/revoked credentials.
 
 ## Ready fixes release (2026-10-08)

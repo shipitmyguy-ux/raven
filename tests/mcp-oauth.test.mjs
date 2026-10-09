@@ -58,3 +58,33 @@ test('public discovery and 401 challenge expose no jobs, profile or credentials'
  assert.equal(tools.some(t=>t.name==='save_generated_document'),false);assert.equal(reads,0);
  const invalid=await handler(f.request(await f.token({aud:'authenticated'})));assert.equal(invalid.status,401);assert.equal(reads,0);
 });
+
+test('database grants are loaded only after JWT verification and preserve explicit environment authority',async()=>{
+ const f=fixture(),grant=JSON.parse(f.env.RAVEN_MCP_OAUTH_GRANTS)[0];
+ delete f.env.RAVEN_MCP_OWNER_SUBJECT;delete f.env.RAVEN_MCP_OAUTH_GRANTS;
+ let calls=0,current=grant;
+ const authenticate=createOAuthAuthenticator({getEnv:f.getEnv,verifyJwt,now:()=>clock,
+  loadGrant:async payload=>{calls++;assert.equal(payload.sub,'owner');return current;}});
+ await assert.rejects(authenticate(f.request(await f.token({aud:'authenticated'}))),/UNAUTHORIZED/);
+ assert.equal(calls,0);
+ assert.equal((await authenticate(f.request(await f.token()))).job_ids[0],'JT-test');
+ current=null;await assert.rejects(authenticate(f.request(await f.token())),/UNAUTHORIZED/);
+ current={...grant,subject:'other'};await assert.rejects(authenticate(f.request(await f.token())),/UNAUTHORIZED/);
+ current=grant;f.env.RAVEN_MCP_OWNER_SUBJECT='owner';f.env.RAVEN_MCP_OAUTH_GRANTS='[]';
+ const before=calls;await assert.rejects(authenticate(f.request(await f.token())),/UNAUTHORIZED/);
+ assert.equal(calls,before);
+});
+
+test('bridge uses service-only RPC for signed JWT grant and denies database failures',async()=>{
+ const f=fixture(),grant=JSON.parse(f.env.RAVEN_MCP_OAUTH_GRANTS)[0];
+ delete f.env.RAVEN_MCP_OWNER_SUBJECT;delete f.env.RAVEN_MCP_OAUTH_GRANTS;
+ f.env.SUPABASE_SERVICE_ROLE_KEY='test-service-key';let fail=false;
+ const handler=createMcpHandler({getEnv:f.getEnv,verifyJwt,now:()=>clock,fetchImpl:async(url,init)=>{
+  assert.equal(url,'https://db.test/rest/v1/rpc/raven_mcp_oauth_grant');
+  assert.equal(init.headers.Authorization,'Bearer test-service-key');
+  assert.deepEqual(JSON.parse(init.body),{p_subject:'owner',p_client_id:'client',p_session_id:'session'});
+  return Response.json(fail?{}:grant,{status:fail?503:200});
+ }});
+ assert.equal((await handler(f.request(await f.token()))).status,200);
+ fail=true;assert.equal((await handler(f.request(await f.token()))).status,503);
+});

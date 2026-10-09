@@ -25,7 +25,7 @@ export function oauthMetadata(config) {
 export function oauthChallenge(config) {
   return `Bearer resource_metadata="${config.metadataUrl}", scope="email", error="invalid_token", error_description="Sign in and authorize Raven access"`;
 }
-export function createOAuthAuthenticator({getEnv, verifyJwt, now = () => Date.now()}) {
+export function createOAuthAuthenticator({getEnv, verifyJwt, loadGrant, now = () => Date.now()}) {
   return async req => {
     const config = oauthConfiguration(getEnv);
     check(config && verifyJwt, 'SERVER_NOT_CONFIGURED', 503);
@@ -40,18 +40,27 @@ export function createOAuthAuthenticator({getEnv, verifyJwt, now = () => Date.no
       }));
     } catch { throw new OAuthError('UNAUTHORIZED'); }
     check(payload.role === 'authenticated' && payload.is_anonymous !== true &&
-      typeof payload.sub === 'string' && payload.sub && payload.sub === getEnv('RAVEN_MCP_OWNER_SUBJECT') &&
+      typeof payload.sub === 'string' && payload.sub &&
       typeof payload.client_id === 'string' && payload.client_id &&
       typeof payload.session_id === 'string' && payload.session_id &&
       Number.isFinite(payload.iat) && payload.iat <= now() / 1000 &&
       Number.isFinite(payload.exp) && payload.exp > now() / 1000);
-    let grants;
-    try { grants = JSON.parse(getEnv('RAVEN_MCP_OAUTH_GRANTS') || '[]'); }
-    catch { throw new OAuthError('SERVER_NOT_CONFIGURED', 503); }
-    check(Array.isArray(grants), 'SERVER_NOT_CONFIGURED', 503);
-    const grant = grants.find(g => g && g.client_id === payload.client_id && g.subject === payload.sub);
+    let grant;
+    // Explicit environment configuration remains authoritative; never fall back on an invalid grant.
+    if (getEnv('RAVEN_MCP_OWNER_SUBJECT') || getEnv('RAVEN_MCP_OAUTH_GRANTS')) {
+      check(payload.sub === getEnv('RAVEN_MCP_OWNER_SUBJECT'));
+      let grants;
+      try { grants = JSON.parse(getEnv('RAVEN_MCP_OAUTH_GRANTS') || '[]'); }
+      catch { throw new OAuthError('SERVER_NOT_CONFIGURED', 503); }
+      check(Array.isArray(grants), 'SERVER_NOT_CONFIGURED', 503);
+      grant = grants.find(g => g && g.client_id === payload.client_id && g.subject === payload.sub);
+    } else if (loadGrant) {
+      try { grant = await loadGrant(payload); }
+      catch { throw new OAuthError('SERVER_NOT_CONFIGURED', 503); }
+    }
     const permissions = ['jobs:read', 'profile:read', 'documents:create', 'documents:revise'];
-    check(grant && Number.isFinite(Date.parse(grant.expires_at)) && Date.parse(grant.expires_at) > now() &&
+    check(grant && grant.subject === payload.sub && grant.client_id === payload.client_id &&
+      Number.isFinite(Date.parse(grant.expires_at)) && Date.parse(grant.expires_at) > now() &&
       Array.isArray(grant.job_ids) && grant.job_ids.length > 0 && grant.job_ids.length <= 200 &&
       grant.job_ids.every(id => typeof id === 'string' && /^[A-Za-z0-9_-]{1,160}$/.test(id)) &&
       Array.isArray(grant.scopes) && grant.scopes.length > 0 && grant.scopes.every(s => permissions.includes(s)));

@@ -21,7 +21,9 @@ function keys(args,allowed){requireValue(args&&typeof args==='object'&&!Array.is
 function jobId(value){requireValue(typeof value==='string'&&/^[A-Za-z0-9_-]{1,160}$/.test(value),'INVALID_JOB_ID');return value;}
 function sanitizedProfile(profile){const {skills,education,experience,transferable_facts,shipped_titles,resume_required_experience_ids}=profile;return {skills,education,experience,transferable_facts,shipped_titles,resume_required_experience_ids};}
 export function createMcpHandler({getEnv,fetchImpl=fetch,now=()=>Date.now(),verifyJwt}){
- const authenticateOAuth=createOAuthAuthenticator({getEnv,verifyJwt,now});
+ const authenticateOAuth=createOAuthAuthenticator({getEnv,verifyJwt,now,
+  loadGrant:payload=>rest('rpc/raven_mcp_oauth_grant',{method:'POST',body:JSON.stringify({
+   p_subject:payload.sub,p_client_id:payload.client_id,p_session_id:payload.session_id})})});
  async function rest(path,init={}){
   const url=getEnv('SUPABASE_URL'),key=getEnv('SUPABASE_SERVICE_ROLE_KEY');
   requireValue(url&&key,'SERVER_NOT_CONFIGURED',503);
