@@ -25,6 +25,9 @@ try{
     }finally{[Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer);$secure.Dispose()}
   }
   $env:RAVEN_PRIVATE_CONFIG=$config
+  # The tunnel client parses command strings using shell-style escaping; use forward slashes.
+  $node=$node.Replace('\','/')
+  $bridge=$bridge.Replace('\','/')
   $command='"'+$node+'" "'+$bridge+'"'
   & $client run --mcp.command $command --control-plane.tunnel-id $TunnelId --control-plane.api-key env:CONTROL_PLANE_API_KEY --health.listen-addr 127.0.0.1:0
   if($LASTEXITCODE -ne 0){throw 'Raven tunnel stopped with an error.'}

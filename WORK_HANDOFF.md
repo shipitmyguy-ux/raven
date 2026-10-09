@@ -8,3 +8,6 @@ User reports successful ChatGPT server_info and echo demo calls through the priv
 3. Grounded document creation, actual save and Raven full refresh acceptance remain mandatory. Preserve existing documents; revision scope is absent.
 
 No need to merge frontend or deploy an Edge Function for local testing. Push the adapter branch and PR; private runtime executes local checkout. Keep PR58 inactive. Preserve unrelated renderer line-ending change and Smile-Break-Senior-Environment-Artist.json. Tunnel ID only in ignored local launchers. Demo credentials remain in its process until the user closes it; never extract them.
+
+## Windows launch-path fix (2026-10-09)
+Live launch failed before database access because tunnel-client's shell-style command parser consumed Windows backslashes. Launcher now converts Node and adapter paths to quoted forward-slash paths. Verified with official tunnel-client v0.0.16 dev proxy, fake database credential, full initialize -> notifications/initialized -> tools/list handshake: raven-mcp-bridge 0.3.0 and all five Raven tools returned. No live database call made. This is stronger transport evidence than direct subprocess-only testing. Real credential launch/read/save remains pending.
