@@ -1,5 +1,8 @@
 # Raven Status
 
+## Live browser workflow limitation (2026-10-09)
+Actual hosted browser check: DataHouse search has no card under Professional/All jobs after sync and reload. Current displayed global location rule hides Honolulu hybrid jobs, including saved records. Prior persistence/hash checks passed but do not establish DataHouse card/review accessibility. Stone Kite saved resume/cover previews and both Word download controls pass; application approval gate retained. No approvals, revisions or submissions. PDF/native Word inspection remains untested here. See docs/qa/2026-10-09-live-browser-workflow.md. Resolve saved-record accessibility policy before claiming complete DataHouse browser workflow acceptance.
+
 ## Private cover-letter save acceptance (2026-10-09)
 User d authorized the recommended DataHouse cover-letter test. Actual Raven Private get_job/get_verified_profile succeeded; confirmed no existing letter before create-only save. Wrote a 199-word first-person letter grounded in canonical project-delivery, leadership, mentoring, cross-functional collaboration, internal meetings, workflow and technical evidence. No budget/certification/methodology/tool qualifications invented. Actual save returned saved=true/review_required=true; fresh get_document URL exactly matched.
 

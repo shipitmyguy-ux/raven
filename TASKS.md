@@ -1,5 +1,11 @@
 # Raven Tasks
 
+## Live browser workflow (2026-10-09)
+- [x] Check actual hosted sync/reload, job search, saved-document previews, Word downloads and approval gate using in-app browser.
+- [!] DataHouse card is hidden by existing global location policy (Honolulu hybrid). Decide saved-record accessibility before complete DataHouse UI acceptance.
+- [ ] Native Word and browser PDF/print-dialog acceptance remain separate.
+- Evidence: docs/qa/2026-10-09-live-browser-workflow.md.
+
 ## Private cover-letter save acceptance (2026-10-09)
 User d authorized the recommended DataHouse cover-letter test. Actual Raven Private get_job/get_verified_profile succeeded; confirmed no existing letter before create-only save. Wrote a 199-word first-person letter grounded in canonical project-delivery, leadership, mentoring, cross-functional collaboration, internal meetings, workflow and technical evidence. No budget/certification/methodology/tool qualifications invented. Actual save returned saved=true/review_required=true; fresh get_document URL exactly matched.
 
