@@ -1,16 +1,10 @@
 # Raven execution handoff
 
-## Active direction: private plugin through Secure MCP Tunnel (2026-10-09)
-User clarified they require plugin functionality without Raven OAuth; manual JSON transfer is not the intended replacement. User reports Platform tunnel creation access and supplied a tunnel ID, retained only in the ignored local launcher. No public MCP authentication was disabled.
+## Private Raven plugin adapter (2026-10-09)
+User reports successful ChatGPT server_info and echo demo calls through the private tunnel without Raven OAuth. Implemented scripts/private-mcp-stdio.mjs reusing the canonical MCP handler, plus scripts/start-private-raven.ps1 with masked in-memory runtime/server credential entry. No network listener or public auth change. Fixed allowed job IDs/expiry in ignored local configuration; read/profile/create only, no revision. Five adapter tests and all 47 workflow checks pass after synthetic scanner fixture correction. Actual Raven credentials/read/save/refresh remain pending. See docs/PRIVATE_RAVEN_TUNNEL.md.
+## Next actions
+1. Close existing demo tunnel and start private/Start-Raven-Private.cmd. Owner privately enters OpenAI tunnel runtime key and Supabase legacy service_role key. No credentials in chat, files or GitHub. Launcher refuses to start while another tunnel-client exists.
+2. Verify local health, refresh Raven Private tools in ChatGPT, call list_jobs then get_job/get_verified_profile. The adapter only permits the existing authorized DataHouse job; local expiry is fixed at November 1 UTC.
+3. Grounded document creation, actual save and Raven full refresh acceptance remain mandatory. Preserve existing documents; revision scope is absent.
 
-Official Windows tunnel-client v0.0.16 downloaded to ignored private/tunnel-client; SHA256 verified against official SHA256SUMS. scripts/start-private-tunnel-test.ps1 accepts a restricted runtime key using a masked prompt, passes it in process environment and restores it on exit; no key file or command-line secret. Launcher syntax verified. private/Start-Raven-Tunnel-Test.cmd supplies the user's tunnel ID locally.
-
-Next: user creates an OpenAI runtime key restricted to Tunnels Read + Use and enters it directly in the local launcher. Run harmless embedded stateless demo before granting Raven data access. Connect ChatGPT using Tunnel and No authentication, verify demo tool invocation and workspace association, then prepare the scoped Raven bridge. The demo is not running: runtime key entry is pending. Tunnel availability is user-reported; successful polling, no-auth discovery, Raven reads/saves and refresh persistence are unverified. No live data or credentials changed. PR58 remains inactive.
-
-References: https://developers.openai.com/api/docs/guides/secure-mcp-tunnels ; https://github.com/openai/tunnel-client/blob/main/docs/permissions.md .
-
-Preserve unrelated renderer line-ending change and Smile-Break-Senior-Environment-Artist.json. PR70 remains deployed; prior OAuth setup is not the active route. Routine pushes authorized. Usage 89% remaining at check.
-
-
-## Tunnel runtime verified (2026-10-09)
-User entered the restricted runtime key privately and started the demo. Read-only local health verified live=true, ready=true, control-plane status=ok/state=polling, recent successful poll and zero consecutive failures. Demo startup probe succeeded. No dispatched requests or response deliveries yet; ChatGPT tool discovery/calls remain unverified. No Raven data is attached. Keep the test window running; next connect a personal custom plugin using Tunnel + No authentication and test server_info/echo before implementing Raven access. Local launcher uses a process-only PowerShell execution-policy override because the host blocks script files; persistent policy unchanged.
+No need to merge frontend or deploy an Edge Function for local testing. Push the adapter branch and PR; private runtime executes local checkout. Keep PR58 inactive. Preserve unrelated renderer line-ending change and Smile-Break-Senior-Environment-Artist.json. Tunnel ID only in ignored local launchers. Demo credentials remain in its process until the user closes it; never extract them.

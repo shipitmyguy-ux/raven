@@ -61,6 +61,7 @@ jobs:
           node --check supabase/functions/_shared/mcp-bridge.mjs
           node --check supabase/functions/_shared/mcp-oauth.mjs
           node --check oauth-consent.mjs
+          node --check scripts/private-mcp-stdio.mjs
           node scripts/build-mcp-renderer.mjs --check
           node --check extension/src/assistant-core.js
           node --check extension/src/content.js
@@ -75,6 +76,7 @@ jobs:
         run: node scripts/check-secrets.mjs
       - name: Core regression tests
         run: |
+          node --test tests/private-mcp-stdio.test.mjs
           node --test tests/mcp-bridge.test.mjs tests/mcp-oauth.test.mjs tests/apply-resume.test.mjs
           node --test tests/chatgpt-handoff.test.mjs tests/resume-transfer.test.mjs tests/chatgpt-extension.test.mjs
           node tests/document-final-review.test.mjs
