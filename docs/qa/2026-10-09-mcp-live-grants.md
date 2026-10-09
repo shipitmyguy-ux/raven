@@ -1,4 +1,4 @@
-# Raven execution handoff
+# Live MCP grants QA - 2026-10-09
 
 ## Live grant deployment (2026-10-09)
 User authorized any Professional job. Provisioned one 30-day ChatGPT grant for DataHouse PROJECT MANAGER (JT-1789707628035): jobs:read, profile:read, documents:create; no revision permission. Existing resume/cover were empty and remain unchanged.
@@ -12,14 +12,6 @@ Verified: 21 bridge/OAuth tests; all 44 core workflow commands; syntax/secret/wh
 Pending: actual hook token issuance/refresh, authenticated ChatGPT tools, grounded generation/save and Raven reload, live revocation/expiry acceptance. Reconnect hit email rate exceeded. Avoid more sends; user asked to test existing Raven connection with list_jobs. No live document writes or employer submissions.
 
 Browser automation remains blocked by Windows helper file-lock error32. Reset/restart attempts did not repair it. MXC unavailable. TinyFish installed but user reports auth errors. No browser workaround was verified.
-
-## Next actions
-1. Read user result of ChatGPT list_jobs test. Stale pre-hook tokens may require refresh or fresh consent using the originally signed-in browser tab.
-2. Verify live hook issuance and tool discovery without collecting tokens in chat.
-3. Generate a fact-grounded document for granted DataHouse job, save through MCP and verify backend/Raven refresh. Preserve prior content; replacements require explicit revision scope/hash/version.
-4. Verify live grant/consent/session revocation and expiry.
-
-Standing routine push/deploy authorization applies. Paid pilot PR58 remains inactive. User d means do it. Usage92% remaining. Preserve Smile-Break-Senior-Environment-Artist.json and renderer line-ending-only change. Transfer documentation: docs/RAVEN_AI_HANDOFF.md.
 
 ## Publication state
 PR69 https://github.com/shipitmyguy-ux/raven/pull/69 contains implementation and QA at source head 31e5d69. Core CI37958843202 passed. Function v4 and migrations/grant are deployed. Merge request was rejected by automatic approval review: routine push/implementation authorization was not accepted as authorization for this exact main merge. User explicitly asked for approval; do not retry merge or bypass until granted. A second transactional grant-denial probe also returned expired requestState; no passing result. Subsequent direct read confirms active/unexpired grant and one authorized session. ChatGPT list_jobs result remains pending; no authenticated tool success or save has been claimed.
