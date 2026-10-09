@@ -1,11 +1,15 @@
 # Raven Tasks
 
+## Portable AI handoff (2026-10-09)
+- [x] Use a subagent to document project architecture, shipped capabilities, upcoming priorities, known defects versus verification gaps, continuation instructions and a replacement-AI prompt in docs/RAVEN_AI_HANDOFF.md; parent reviewed current-source links and live-state distinctions.
+
 ## OAuth connection follow-up (2026-10-09)
 - [x] Verify user-enabled OAuth discovery and ES256 signing key.
 - [x] Implement protected-resource discovery, challenge and signed OAuth JWT validation with explicit client/owner/job grants.
 - [x] Implement sign-in/consent UI; test explicit email/approval, escaped metadata, callback validation, SDK integrity and mobile layout.
-- [ ] Publish and verify live consent page/metadata.
-- [ ] Configure authorization path/redirects/DCR; owner sign-in; provision grants and resource-audience token hook.
+- [x] Publish PR68; verify live consent page/metadata, authentication denials, final PR/main CI, Pages and both smoke runs.
+- [x] Owner sign-in through hosted page; confirm email-verified Auth account in database.
+- [ ] Finish authorization path/redirect/DCR verification; provision server owner/client/job grants and resource-audience token hook.
 - [ ] Verify authenticated ChatGPT retrieval/generation/save and Raven reload, including production expired/revoked credentials.
 
 ## Ready fixes release (2026-10-08)
@@ -322,4 +326,4 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 - [ ] Automatic Drive copies with persisted success/failure and retry; cover-letter Drive acceptance.
 
 - [x] Apply on site starts resume-only source-grounded preparation; six focused checks pass.
-- [ ] Added browser cases and live saved output/reload acceptance (local Chromium download failed).
+- [~] Added browser cases pass in final PR68/main CI; live generated output/readback/reload remains pending. Earlier local Chromium download failure is superseded by CI browser acceptance.
