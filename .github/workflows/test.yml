@@ -127,3 +127,6 @@ jobs:
       - name: Protected tunnel credential and launcher tests
         shell: pwsh
         run: ./tests/private-tunnel-credentials.test.ps1
+      - name: Windows PowerShell 5.1 protected credential compatibility
+        shell: powershell
+        run: ./tests/private-tunnel-credentials.test.ps1
