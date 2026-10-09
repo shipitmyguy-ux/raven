@@ -44,7 +44,7 @@
     MASTER_RESUMES_KEY,APPLICATION_PROFILE_KEY,ANSWER_MEMORY_KEY,GENERATOR_PREFS_KEY,
     USER_SETTINGS_KEY,DOCUMENT_APPROVALS_KEY,VIEWED_JOBS_KEY
   ];
-  const RESUME_TEMPLATE_VERSION="modern-v16-final-review";
+  const RESUME_TEMPLATE_VERSION="modern-v17-job-evidence-final-review";
   const DEFAULT_FOLLOW_UP_DAYS=7;
   const activeGeneration=new Map();
   const GENERATION_ERRORS_KEY="ravenGenerationErrorsV1";

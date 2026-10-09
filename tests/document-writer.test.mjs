@@ -368,3 +368,40 @@ test('initial Professional history schema prefers transferable employers while G
  assert.deepEqual(requests[0].schema.properties.experience.items.anyOf.map(s=>s.properties.experience_id.enum[0]),['art','repair']);
  assert.deepEqual(requests[0].input.historySelection.map(e=>e.experience_id),['art','repair']);
 });
+
+
+test('Professional initial opening schema prefers relevant evidence and explicitly supplies general delivery/meetings',async()=>{
+ const p={...profile,transferable_facts:[...profile.transferable_facts,{id:'delivery',text:'Has project-management experience and a track record of on-time delivery.'},{id:'meetings',text:'Has led meetings with internal teams.'},{id:'art-tenure',text:'Has 17 years of environment-art experience.'}]};
+ const requests=[];await writeDocument({kind:'resume',profile:p,target,complete:sequence([resume],requests)});
+ const first=requests[0];
+ for(const section of ['headline','summary']){
+  const ids=first.schema.properties[section].properties.fact_ids.items.enum;
+  for(const id of ['f2','delivery','meetings','skill:0'])assert.ok(ids.includes(id),section+' '+id);
+  for(const id of ['f1','art-tenure','title:0'])assert.ok(!ids.includes(id),section+' must omit '+id);
+ }
+ const source=first.input.summaryEvidence;
+ assert.ok(source);
+ const facts=Array.isArray(source)?source:source.facts;
+ assert.ok(facts.some(f=>f.id==='delivery'));
+ assert.ok(facts.some(f=>f.id==='meetings'));
+ assert.ok(!facts.some(f=>f.id==='art-tenure'));
+});
+
+test('company-named cover repair enums exclude general facts while separate general paragraph permits catalog evidence',async()=>{
+ const bad={...cover,paragraphs:[claim('At Studio I mentored newer artists and have intermediate spreadsheet skills.',['f2','x1']),claim('I have 18 years of intermediate spreadsheet experience.',['x1'])]};
+ const fixed={...cover,paragraphs:[claim('At Studio I mentored newer artists.',['f2']),claim('I have intermediate spreadsheet skills.',['x1'])]};
+ const requests=[];const result=await writeDocument({kind:'coverLetter',profile,target,complete:sequence([bad,fixed],requests)});
+ assert.equal(requests.length,2);
+ const repair=requests[1];
+ assert.deepEqual(repair.input.factualCorrection.invalid_paths,['paragraphs.0','paragraphs.1']);
+ const branches=repair.schema.properties.repairs.items.anyOf;
+ const employer=branches.find(b=>b.properties.path.enum[0]==='paragraphs.0');
+ const general=branches.find(b=>b.properties.path.enum[0]==='paragraphs.1');
+ assert.deepEqual(employer.properties.claim.properties.fact_ids.items.enum,['f1','f2']);
+ for(const id of ['x1','f3','skill:0'])assert.ok(!employer.properties.claim.properties.fact_ids.items.enum.includes(id));
+ for(const id of ['x1','f3','skill:0'])assert.ok(general.properties.claim.properties.fact_ids.items.enum.includes(id));
+ const allowed=repair.input.factualCorrection.allowed_evidence;
+ assert.deepEqual(allowed.find(e=>e.path==='paragraphs.0').facts.map(f=>f.id),['f1','f2']);
+ assert.ok(allowed.find(e=>e.path==='paragraphs.1').facts.some(f=>f.id==='x1'));
+ assert.deepEqual(result.document.paragraphs,fixed.paragraphs.map(c=>c.text));
+});
