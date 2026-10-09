@@ -174,11 +174,7 @@ test("initial resume restores omitted mandatory history using only canonical fac
 });
 test("unrepaired employer attribution replaces the entire initial bullet with that employer source",async()=>{
  const bad={...resume,experience:[{experience_id:'art',bullets:[claim('Repaired coffee makers.',['f3'])]}]};
- const result=await writeDocument({kind:'resume',profile,target,complete:sequence([bad,bad])});
- assert.equal(result.document.summary,resume.summary.text);
- assert.equal(result.document.experience[0].bullets[0],'Built game environments.');
- assert.equal(result.source_fact_passages,1);
- assert.match(result.validation_details.join(' '),/another employer/);
+ await assert.rejects(writeDocument({kind:'resume',profile,target,complete:sequence([bad,bad])}),/only art-production/);
 });
 test("one repair includes non-game framing and attribution errors together",async()=>{
  const bad={...resume,summary:claim('Video game artist who mentored newer artists.',['f1','f2']),experience:[{experience_id:'art',bullets:[claim('Repaired coffee makers.',['f3'])]}]};
@@ -311,4 +307,22 @@ test("cover credit enumerations retain Six Days in Fallujah and every canonical 
 test("oversized salutations use standard letter furniture without rejecting good body prose",()=>{
  const result=validateDraft("coverLetter",{...cover,greeting:"Dear ".repeat(50),closing:"Thank you ".repeat(30)},profile);
  assert.equal(result.greeting,"Dear Hiring Manager,");assert.equal(result.closing,"Sincerely,");assert.deepEqual(result.paragraphs,cover.paragraphs.map(p=>p.text));
+});
+
+
+test('Anduril Professional regression rejects art-tenure opening and all-art employer selection',async()=>{
+ const p={...profile,experience:[{...profile.experience[0],facts:[{id:'f1',text:'Built game environments using PBR workflows.'},{id:'f2',text:'Mentored newer artists.'}]}],transferable_facts:[{id:'tenure',text:'17 years of professional environment-art experience in video game development.'},{id:'delivery',text:'Delivered projects on time.'}]};
+ const t={track:'Professional',title:'Sr Technical Program Manager Mathematical Software & Algorithms',company:'Anduril',description:'Coordinate technical projects and cross-functional teams.'};
+ const bad={...resume,summary:claim('Results-driven technical leader with 17 years of professional environment-art experience in video game development, offering expertise in mentoring.',['tenure','f2']),experience:[{experience_id:'art',bullets:[claim('Built game environments using PBR workflows.',['f1'])]}]};
+ assert.throws(()=>validateDraft('resume',bad,p,{target:t}),/only art-production/);
+ assert.throws(()=>validateDraft('resume',{...bad,experience:resume.experience},p,{target:t}),/foreground/);
+ assert.doesNotThrow(()=>validateDraft('resume',{...bad,experience:resume.experience,summary:claim('Mentored newer artists. My background includes 17 years of professional environment-art experience in video game development.',['f2','tenure'])},p,{target:t}));
+ const fixed={...bad,summary:claim('Mentored newer artists.',['f2']),experience:[{experience_id:'art',bullets:[claim('Mentored newer artists.',['f2']),bad.experience[0].bullets[0]]}],additional:[claim('Delivered projects on time.',['delivery'])]};
+ const requests=[];const result=await writeDocument({kind:'resume',profile:p,target:t,complete:sequence([bad,fixed],requests)});
+ assert.deepEqual(requests[1].input.factualCorrection.invalid_paths,['summary','experience.0.bullets.0']);
+ assert.equal(result.document.experience[0].role,'Artist');
+ assert.equal(result.document.additional.length,0); // repair preserves valid untouched sections
+ assert.deepEqual(requests[0].input.roleEvidenceGuidance.employer_evidence[0].priority_facts.map(f=>f.id),['f2']);
+ assert.deepEqual(requests[0].input.roleEvidenceGuidance.general_evidence.map(f=>f.id),['delivery']);
+ assert.doesNotThrow(()=>validateDraft('resume',{...bad,summary:resume.summary},p,{target:{...t,description:'Coordinate environment art and PBR production.'}}));
 });

@@ -1133,6 +1133,64 @@ test("generation errors stay beside the button and allow a successful retry",asy
   await expect(page.locator(".document-generation-error")).toHaveCount(0);
 });
 
+test("failed pair errors survive reload and retry clears only the successful document",async({page})=>{
+  await mockRaven(page,{generatorFails:true});
+  const openJob=async()=>{
+    await page.getByRole('tab',{name:'Professional',exact:true}).click();
+    await page.locator('.job-card-summary').first().click();
+  };
+  const errors=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('ravenGenerationErrorsV1')||'{}'));
+  await page.goto('/');await openJob();
+  await page.getByRole('button',{name:'Generate both',exact:true}).click();
+  await expect(page.locator('.document-generation-error')).toHaveCount(2);
+  await expect.poll(errors).toEqual({
+    'job-1|resume':'resume generation failed: Mock generator unavailable',
+    'job-1|coverLetter':'cover letter generation failed: Mock generator unavailable'
+  });
+  await page.reload();await openJob();
+  await expect(page.locator('.document-generation-error')).toHaveCount(2);
+  await page.route('**/functions/v1/raven-generate-v1**',route=>route.fulfill({json:{ok:true,final_review:{status:'passed',factual_review:{status:'passed'}},resume:generatedResume}}));
+  await page.locator('[data-generate="resume"]').click();
+  await expect(page.locator('#documentReviewDialog')).toBeVisible();
+  await expect.poll(errors).toEqual({'job-1|coverLetter':'cover letter generation failed: Mock generator unavailable'});
+  await page.reload();await openJob();
+  await expect(page.locator('[data-generate="resume"]')).toHaveText('Review');
+  await expect(page.locator('.document-generation-error')).toHaveCount(1);
+  await expect(page.locator('.document-generation-error')).toContainText('cover letter generation failed');
+});
+
+test("failed pair preserves its successful sibling across reload and retry",async({page})=>{
+  const api=await mockRaven(page);
+  const calls=[];let coverFails=true;
+  await page.route('**/functions/v1/raven-generate-v1**',route=>{
+    const body=JSON.parse(route.request().postData());calls.push(body.documentType);
+    if(body.documentType==='coverLetter'&&coverFails)return route.fulfill({status:503,json:{ok:false,error:'Cover reviewer unavailable'}});
+    return route.fulfill({json:{ok:true,final_review:{status:'passed',factual_review:{status:'passed'}},...(body.documentType==='resume'?{resume:generatedResume}:{coverLetter:generatedLetter})}});
+  });
+  const openJob=async()=>{
+    await page.getByRole('tab',{name:'Professional',exact:true}).click();
+    await page.locator('.job-card-summary').first().click();
+  };
+  await page.goto('/');await openJob();
+  await page.getByRole('button',{name:'Generate both',exact:true}).click();
+  await expect(page.locator('#documentReviewDialog')).toBeVisible();
+  const prior=api.getJob().resume;expect(prior).toContain('data:text/html');
+  await page.reload();await openJob();
+  await expect(page.locator('[data-generate="resume"]')).toHaveText('Review');
+  await expect(page.locator('.document-generation-error')).toContainText('Cover reviewer unavailable');
+  expect(api.getJob().resume).toBe(prior);
+  coverFails=false;
+  await page.getByRole('button',{name:'Finish documents',exact:true}).click();
+  await expect(page.locator('#documentReviewDialog')).toBeVisible();
+  expect(calls).toEqual(['resume','coverLetter','coverLetter']);
+  expect(api.getJob().resume).toBe(prior);
+  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('ravenGenerationErrorsV1')||'{}'))).toEqual({});
+  await page.reload();await openJob();
+  await expect(page.locator('[data-generate="resume"]')).toHaveText('Review');
+  await expect(page.locator('[data-generate="coverLetter"]')).toHaveText('Review');
+  await expect(page.locator('.document-generation-error')).toHaveCount(0);
+});
+
 for(const type of ["resume","coverLetter"]){
   test(`Regenerate bypasses cached ${type} with no device master`,async({page})=>{
     const api=await mockRaven(page);

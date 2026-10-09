@@ -130,3 +130,62 @@ test('revision requires scope, exact content hash and version, and rejects a rac
   assert.equal(r.isError,mode!=='success');if(mode!=='success')assert.equal(f.getJob().resume,'old resume');else assert.match(f.getJob().resume,/^data:text/);
  }
 });
+
+test('save discovery describes grounded resume and cover letter documents',async()=>{
+ const f=await fixture(),tools=(await f.send('tools/list')).body.result.tools;
+ const schema=tools.find(tool=>tool.name==='save_generated_document').inputSchema.properties.document;
+ const shapes=[];const collect=value=>{if(!value||typeof value!=='object')return;if(value.properties)shapes.push(value);for(const child of Object.values(value))if(Array.isArray(child))child.forEach(collect);else collect(child);};collect(schema);
+ const resume=shapes.find(shape=>shape.properties.summary&&shape.properties.experience);
+ const cover=shapes.find(shape=>shape.properties.greeting&&shape.properties.paragraphs);
+ assert.ok(resume,'Discovery must explain the inner resume format');assert.ok(cover,'Discovery must explain the inner cover letter format');
+ assert.ok(resume.required.includes('summary'));assert.ok(resume.required.includes('experience'));assert.ok(cover.required.includes('paragraphs'));assert.equal(cover.properties.paragraphs.items.properties.fact_ids.minItems??0,0,'Interest-only letter paragraphs may omit citations');
+ const claims=shapes.filter(shape=>shape.properties.text&&shape.properties.fact_ids);assert.ok(claims.length,'Generated claims must expose evidence IDs');
+ for(const shape of claims){assert.ok(shape.required.includes('text'));assert.ok(shape.required.includes('fact_ids'));assert.equal(shape.properties.fact_ids.type,'array');}
+ const wrapper=shapes.find(shape=>shape.properties.raven_format);assert.ok(wrapper,'Manual import envelope must be discoverable');assert.equal(wrapper.additionalProperties,false);
+ assert.ok(JSON.stringify(wrapper.properties.raven_format).includes('raven-chatgpt-v1'));assert.ok(wrapper.properties.resume);assert.ok(wrapper.properties.coverLetter);
+});
+
+test('canonical wrapped resume saves and reads back while preserving a cover letter',async()=>{
+ const f=await fixture({job:{cover_letter:'existing cover'}});
+ const r=(await f.call('save_generated_document',{job_id:'JT-test',expected_version:f.getJob().last_updated,document:{raven_format:'raven-chatgpt-v1',resume:draft}})).body.result;
+ assert.equal(r.isError,false);assert.equal(r.structuredContent.saved,true);assert.equal(f.getJob().cover_letter,'existing cover');
+ const read=(await f.call('get_document',{job_id:'JT-test',document_type:'resume'})).body.result.structuredContent;
+ assert.equal(read.document_url,f.getJob().resume);assert.equal(read.document_sha256,await sha256(f.getJob().resume));assert.equal(read.expected_version,r.structuredContent.expected_version);
+ assert.equal(f.requests.filter(request=>request.init.method==='PATCH').length,1);
+});
+
+test('canonical wrapped cover letter saves only the requested document',async()=>{
+ const f=await fixture({job:{resume:'existing resume'}}),letter={greeting:'Dear Hiring Manager,',paragraphs:[claim('I built game environments.'),claim('I mentored newer artists.',['f2'])],closing:'Sincerely,'};
+ const r=(await f.call('save_generated_document',{job_id:'JT-test',document_type:'coverLetter',expected_version:f.getJob().last_updated,document:{raven_format:'raven-chatgpt-v1',resume:draft,coverLetter:letter}})).body.result;
+ assert.equal(r.isError,false);assert.equal(f.getJob().resume,'existing resume');assert.equal(r.structuredContent.document_type,'coverLetter');
+ const read=(await f.call('get_document',{job_id:'JT-test',document_type:'coverLetter'})).body.result.structuredContent;
+ assert.equal(read.document_url,f.getJob().cover_letter);assert.equal(read.document_sha256,await sha256(f.getJob().cover_letter));assert.equal(f.requests.filter(request=>request.init.method==='PATCH').length,1);
+});
+
+test('malformed or ambiguous document wrappers never write storage',async()=>{
+ for(const document of [
+  {raven_format:'unknown',resume:draft},
+  {raven_format:'raven-chatgpt-v1',resume:draft,job_id:'JT-other'},
+  {raven_format:'raven-chatgpt-v1',resume:draft,summary:draft.summary},
+  {raven_format:'raven-chatgpt-v1',coverLetter:{}},
+  {raven_format:'raven-chatgpt-v1'},
+  {raven_format:'raven-chatgpt-v1',resume:null},
+  {raven_format:'raven-chatgpt-v1',resume:[]},
+  {raven_format:'raven-chatgpt-v1',resume:JSON.stringify(draft)},
+  {resume:draft}
+ ]){
+  const f=await fixture(),before=structuredClone(f.getJob());
+  const r=(await f.call('save_generated_document',{job_id:'JT-test',expected_version:f.getJob().last_updated,document})).body.result;
+  assert.equal(r.isError,true,JSON.stringify(document));assert.equal(f.requests.filter(request=>request.init.method==='PATCH'||request.url.includes('raven_mcp_replace_document')).length,0);assert.deepEqual(f.getJob(),before);
+ }
+ const f=await fixture();const r=(await f.call('save_generated_document',{job_id:'JT-test',document_type:'coverLetter',expected_version:f.getJob().last_updated,document:{raven_format:'raven-chatgpt-v1',resume:draft}})).body.result;
+ assert.equal(r.isError,true);assert.equal(f.requests.filter(request=>request.init.method==='PATCH').length,0);
+});
+
+test('wrapped drafts retain factual validation and create-only protection',async()=>{
+ const invalid={raven_format:'raven-chatgpt-v1',resume:{...draft,skills:['Python']}};
+ const f=await fixture();const rejected=(await f.call('save_generated_document',{job_id:'JT-test',expected_version:f.getJob().last_updated,document:invalid})).body.result;
+ assert.equal(rejected.isError,true);assert.equal(f.requests.filter(request=>request.init.method==='PATCH').length,0);
+ const existing=await fixture({job:{resume:'original resume'}});const blocked=(await existing.call('save_generated_document',{job_id:'JT-test',expected_version:existing.getJob().last_updated,document:{raven_format:'raven-chatgpt-v1',resume:draft}})).body.result;
+ assert.equal(blocked.content[0].text,'DOCUMENT_EXISTS');assert.equal(existing.getJob().resume,'original resume');assert.equal(existing.requests.filter(request=>request.init.method==='PATCH').length,0);
+});

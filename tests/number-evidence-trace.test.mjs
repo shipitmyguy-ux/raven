@@ -8,7 +8,7 @@ const profile={name:'Synthetic Candidate',contact:'private-contact@example.com',
  transferable_facts:[{id:'art-tenure',text:'Has 17 years of environment-art experience.'},{id:'different-number',text:'Created 117 assets.'}],shipped_titles:[]};
 const target={track:'Professional',title:'Implementation Analyst',company:'Synthetic Target',description:'Support implementations.'};
 const c=(text,ids=['art-work'])=>({text,fact_ids:ids});
-const draft={headline:c('Mentoring and production'),summary:c('Brings mentoring strengths from 17 years of environment-art experience.'),skills:['Mentoring'],
+const draft={headline:c('Mentoring and production'),summary:c('Brings mentoring strengths. Has 17 years of environment-art experience.'),skills:['Mentoring'],
  experience:[{experience_id:'art',bullets:[c('Built environments and mentored artists.')]}],additional:[]};
 async function run(summary,reviewIssues=[],trace=[]){
  return writeDocument({kind:'resume',profile,target,onEvidenceTrace:e=>trace.push(e),reviewComplete:async()=>({data:{issues:reviewIssues}}),

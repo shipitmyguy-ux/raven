@@ -1,5 +1,54 @@
 # Raven Tasks
 
+## Professional one-button tailoring (2026-10-09)
+- [x] Run random visible Professional Generate both test and verify both exact saved URLs after reload.
+- [x] Reproduce user-reported art-centered content, implement writer v5 evidence guidance and relevance checks, pass required core/targeted checks.
+- [x] Deploy writer v5 to resume129/cover99 and verify source; fresh Dutchie live test completes but saves0, so full-pair acceptance fails.
+- [x] Complete three bounded worker diagnostic samples (Ashby/Stripe browser, Mercury API because worker browser unavailable); compare actual returned output or explicitly record none, prepare prioritized plan. No approvals/submissions.
+- [!] Reliable grounded, tailored one-button creation remains unresolved: accepted generic Ashby output and false reviewer rejection of verified Mercury evidence.
+- [ ] Implement role-evidence planning and separate factuality/relevance/fit review; preserve exact titles/attribution and real domain gaps.
+- [ ] Persist actionable per-document failures after refresh; diagnose incomplete cover review before retrying.
+- Plan/evidence: docs/qa/2026-10-09-professional-random-audit.md.
+
+## Live browser workflow (2026-10-09)
+- [x] Check actual hosted sync/reload, job search, saved-document previews, Word downloads and approval gate using in-app browser.
+- [x] DataHouse remains hidden as intended: user explicitly rejects hybrid roles outside Fort Collins. Do not add a saved-record exception.
+- [ ] Tighten hybrid eligibility from nearby northern Colorado to Fort Collins only, retaining the requested remote/in-person scope separately.
+- [ ] Native Word and browser PDF/print-dialog acceptance remain separate.
+- Evidence: docs/qa/2026-10-09-live-browser-workflow.md.
+
+## Private cover-letter save acceptance (2026-10-09)
+User d authorized the recommended DataHouse cover-letter test. Actual Raven Private get_job/get_verified_profile succeeded; confirmed no existing letter before create-only save. Wrote a 199-word first-person letter grounded in canonical project-delivery, leadership, mentoring, cross-functional collaboration, internal meetings, workflow and technical evidence. No budget/certification/methodology/tool qualifications invented. Actual save returned saved=true/review_required=true; fresh get_document URL exactly matched.
+
+Independent Supabase read confirms cover URL length2699, SHA256 2db3c979af463869ff76aaf4b48aecd5b072922a63ba30ea7f7716a3d4b77948, version2026-10-09T19:28:09.501+00:00. Existing resume hash remains 5d7f835efac4e60ea92c379547861b9282f48ebbd484f3c7301e0c7a67981779. No replacement, approval or employer submission. Worker hosted reload/render verification is the final pending check. Personal output/evidence remains ignored private/. No source-code change needed for this successful save.
+
+## Protected-key ACL compatibility fix (2026-10-09)
+Initial real enrollment failed because Windows PowerShell could not autoload Microsoft.PowerShell.Security for Set-Acl. Cache was not saved; the launcher disposed entered credentials. Replaced Set-Acl with direct .NET Windows file ACL APIs, preserving DPAPI/current-user-only protection and avoiding module-path incompatibility. Synthetic credential/retry/environment tests pass in both bundled PowerShell7 and Windows PowerShell5.1; actual protected enrollment remains pending repeat local entry. Corrected ignored cmd launcher to forward options on the PowerShell invocation rather than pause. Saved DataHouse resume/full hosted reload acceptance remains verified; no documents changed.
+
+## Windows-protected tunnel reuse and saved-resume acceptance (2026-10-09)
+User explicitly requested eliminating two-key entry on every restart. Launcher now stores Windows-DPAPI-encrypted PSCredentials in ignored private/raven-tunnel.credentials.clixml with current-user-only ACL, reloads without prompts, and reconnects up to five times. Explicit -ResetSavedKeys rotates the cache; malformed/foreign-user caches fail closed. Windows-only; no plaintext keys or command-line credentials, no secrets committed. Synthetic protected-key tests pass; Windows CI job added. No login service or scheduled startup added.
+
+Actual saved DataHouse resume passed independent canonical audit/deterministic review and rendered HTML inspection. Fresh hosted Raven load and full reload each fetched the exact saved URL from real backend HTTP200 with Up to date sync; browser writes blocked and none attempted. Stored hash matches initial plugin save/readback; cover empty and user data preserved. Actual browser refresh acceptance is now verified.
+
+The previous memory-only credentials were cleared. Updated one-time masked setup window opened; initial protected enrollment and live tunnel restart remain pending. Once enrolled, no repeated entry is needed. Keep public auth and paid PR58 unchanged. Saved resume remains review-required; no application submitted.
+
+## Private tunnel document-save fix (2026-10-09)
+Raven Private discovery and real list_jobs/get_job/get_verified_profile now succeed. Failed DataHouse resume had two problems: the canonical manual-import wrapper was passed to a bridge expecting its inner resume, and its Professional summary foregrounded game-art identity. Independent validation against live canonical evidence identified the framing rejection; corrected private draft passes validateDraft and reviewDocument. Candidate drafts/evidence remain local and excluded from commits.
+
+Bridge now advertises grounded resume/cover JSON schemas and safely unwraps the exact raven-chatgpt-v1 envelope for the requested kind. Unknown wrapper keys/wrong format/missing requested kind are rejected. Existing factual, permission, version, create-only and replacement gates remain. Five new regressions bring bridge suite to 20 tests; all 46 local Node commands in test.yml pass, including secret scan and renderer checks. Prospective cover claims permit empty fact IDs as in the canonical writer.
+
+Running tunnel still uses prior bridge code; corrected raw resume is compatible and being tested through the actual plugin. New code requires next runtime restart and tool refresh; no live reload or public deployment is claimed. No need to terminate the healthy runtime to test the corrected draft. Worker owns one create-only DataHouse save and independent readback. A separately created ChatGPT chat is directed to read-only plugin verification to prevent competing writes. Browser reload acceptance pending.
+
+## Stale ChatGPT demo tool list (2026-10-09)
+User reports a new chat exposes only server_info, echo and uppercase. Read-only local inspection confirms one active tunnel-client running private-mcp-stdio (not the embedded demo); loopback health returned live=true, ready=true. This establishes current runtime health, not successful ChatGPT Raven discovery or database credentials. Most likely the installed plugin retains the demo descriptors; also check that its tunnel/workspace matches the local Raven connection.
+
+Next: keep the current Raven window running; open Raven Private plugin details and refresh tools/actions. Verify list_jobs, get_job, get_verified_profile, get_document and save_generated_document before opening a new chat and invoking list_jobs. If refresh is absent or still shows demo tools, create a fresh private plugin using the same intended tunnel and No authentication, verify the five tools, then install/select it. Do not restart the working runtime or retrieve in-memory credentials. No database call or document modification occurred in this investigation. Live read/save/full-refresh acceptance remains pending.
+
+Official refresh guidance: https://developers.openai.com/api/docs/guides/custom-mcp-server .
+
+## Private Raven plugin adapter (2026-10-09)
+User reports successful ChatGPT server_info and echo demo calls through the private tunnel without Raven OAuth. Implemented scripts/private-mcp-stdio.mjs reusing the canonical MCP handler, plus scripts/start-private-raven.ps1 with masked in-memory runtime/server credential entry. No network listener or public auth change. Fixed allowed job IDs/expiry in ignored local configuration; read/profile/create only, no revision. Five adapter tests and all 47 workflow checks pass after synthetic scanner fixture correction. Actual Raven credentials/read/save/refresh remain pending. See docs/PRIVATE_RAVEN_TUNNEL.md.
+
 ## Active direction: private plugin through Secure MCP Tunnel (2026-10-09)
 User clarified they require plugin functionality without Raven OAuth; manual JSON transfer is not the intended replacement. User reports Platform tunnel creation access and supplied a tunnel ID, retained only in the ignored local launcher. No public MCP authentication was disabled.
 
@@ -349,3 +398,19 @@ Current scope: narrow edits are enforced for resume summaries. Multi-section and
 
 - [x] Verify private tunnel demo runtime readiness and successful OpenAI polling (2026-10-09).
 - [ ] Connect no-auth private demo plugin and verify actual ChatGPT tool call before attaching Raven data.
+
+## Live verification result (2026-10-09)
+Created chat Test Raven plugin loaded all five Raven Private tools. Its initial authorized create-only run retrieved job/profile, saved a truthful transferable-first resume using the inner object, then get_document returned matching persisted HTML. No invalid-payload retries; no existing document replaced. Save version 2026-10-09T18:04:49.929+00:00. Parent independent Supabase read confirms resume length 6781 and SHA256 5d7f835efac4e60ea92c379547861b9282f48ebbd484f3c7301e0c7a67981779, matching chat readback. Cover remains empty. Local worker observed existing resume and correctly did not write another draft. Resume remains human-review-required; no approval or employer submission.
+
+Later plugin calls returned Session terminated. Local inspection found no tunnel-client process and prior loopback health port unavailable. Current tunnel is stopped; stopping it does not remove the saved document. Cause of shutdown unverified. Future connection requires restarting private/Start-Raven-Private.cmd and entering credentials privately. New schema/envelope code loads on that restart; refresh plugin tools afterward. No credentials extracted or persisted. Browser inventory exposed no apps/browsers, so full Raven UI refresh/visual acceptance remains unverified. Initial plugin save and fresh plugin readback plus independent database persistence are verified.
+
+## Protected enrollment and live reconnect verified (2026-10-09)
+Encrypted credential cache exists after owner's local enrollment. One tunnel-client is running; local health reports live=true/ready=true. Fresh actual Raven Private get_document succeeded after restart and returned the exact saved DataHouse hash 5d7f835efac4e60ea92c379547861b9282f48ebbd484f3c7301e0c7a67981779 and unchanged version 2026-10-09T18:04:49.929+00:00. No document writes. Previous initial-enrollment blocker is resolved. Prompt-free future starts are covered by synthetic tests; another real stop/start solely to test reuse was not performed. Hosted full reload/fact/render verification remains passed. Keep tunnel window running; future launcher starts use the saved encrypted cache. No approval or employer submission.
+
+Final cover-letter acceptance: worker fresh hosted Raven load/full reload each returned real backend HTTP200 with exact saved cover SHA2562db3c979af463869ff76aaf4b48aecd5b072922a63ba30ea7f7716a3d4b77948 and unchanged resume SHA2565d7f835efac4e60ea92c379547861b9282f48ebbd484f3c7301e0c7a67981779. Both sync Up to date and cover cache retained. Actual stored HTML screenshot visually clean with complete paragraphs and separated closing/signature. No browser writes attempted. Cover save/readback/database/reload/render acceptance passed; no further writes needed. Evidence private/cover-reload-verification.json and DataHouse-ACTUAL-SAVED-cover.* ignored. Native Word/print-dialog acceptance remains separate.
+
+- [x] Implement Professional role-evidence planning, narrow false reviewer rejection, generic-summary check and local durable generation errors;47 core commands pass.
+- [ ] Publish v6 and independently compare actual per-job resume/cover outputs, exact linkage and reload; browser regression pending.
+
+- [x] Fix worker-reproduced Mercury data-analysis inference and generic-summary variant; keep numeric attribution checks. Correct Windows CI mock exit status; both engines and intentional assertion-failure probes verified.
+- [ ] Review cross-team execution responsibility inflation and retry only after its specific guard/prompt fix; Dutchie pair currently0 outputs.

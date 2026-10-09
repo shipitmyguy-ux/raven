@@ -1,7 +1,8 @@
 import {reviewDocument,reviewFacts,REVIEW_VERSION} from "./document-review.mjs";
 import {studioRelevance} from "./studio-context.mjs";
+import {buildRoleEvidencePlan,professionalSummaryIssue} from './professional-evidence.mjs';
 // One structured writer for initial drafts and revisions; layout stays in Raven.
-export const WRITER_VERSION="grounded-llm-v4";
+export const WRITER_VERSION="grounded-llm-v6";
 const str={type:"string"};
 const arr=(items,minItems=0,maxItems=20)=>({type:"array",items,minItems,maxItems});
 const obj=(properties)=>({type:"object",properties,required:Object.keys(properties),additionalProperties:false});
@@ -46,7 +47,8 @@ function foregroundsGameIdentity(text,section){
  if(section==='headline')return /\b(?:environment artist|game development|video game|game art)\b/.test(normalized);
  // A transferable summary may honestly identify the industry where its skills
  // were developed. Reject only a game-identity opening, not that context.
- return /^(?:an? )?(?:(?:senior|seasoned|experienced|highly experienced|results driven)\s+)*(?:environment artist|game development|video game|game art)\b/.test(normalized);
+ return /^(?:as )?(?:an? )?(?:(?:senior|seasoned|experienced|highly experienced|results driven)\s+)*(?:environment artist|game development|video game|game art)\b/.test(normalized)
+   || /\b\d+ (?:years?|yrs?) (?:of )?(?:professional )?(?:environment art|game art|video game|game development)\b/.test(normalizedPhrase(String(text||"").split(/[.!?]/)[0]).split(/\b(?:offering|bringing)\b/)[0]);
 }
 const hasPhrase=(text,term)=>(" "+normalizedPhrase(text)+" ").includes(" "+normalizedPhrase(term)+" ");
 function verifiedKeywordEntries(profile){
@@ -80,6 +82,21 @@ function verifiedKeywordEntries(profile){
 export function resumeKeywordGuidance(profile,target){
   const posting=[target?.title,target?.description].join(" ");
   return {recommended:verifiedKeywordEntries(profile).filter(e=>hasPhrase(posting,e.keyword)),policy:"Advisory only. Use these supported posting terms naturally; missing terms never block generation. General evidence does not establish employer-specific use. Database queries do not establish SQL; automation does not establish Python or software engineering."};
+}
+// Ordering advice preserves original source text and employer attribution.
+export function roleEvidenceGuidance(profile,target){
+  if(target?.track!=="Professional")return null;
+  const posting=new Set(roots([target.title,target.description].join(" ")).filter(t=>!STOP_WORDS.has(t)));
+  const transferable=/\b(?:lead|leader|mentor|train|onboard|project|deliver|workflow (?:development|coordination)|troubleshoot|automat|database|metadata|report|query|cross[- ]functional|coordinate|collaborat|meeting|schedule|documentation)\w*\b/i;
+  const rank=facts=>facts.filter(f=>transferable.test(f.text)).map(f=>({id:f.id,text:f.text,score:roots(f.text).filter(t=>posting.has(t)).length})).sort((a,b)=>b.score-a.score).map(({score,...f})=>f);
+  return {employer_evidence:(profile.experience||[]).map(e=>({experience_id:e.id,priority_facts:rank(e.facts||[])})),general_evidence:rank(profile.transferable_facts||[]),policy:"Prioritize these employer-specific transferable facts over sculpting, textures or game credits for Professional roles. General evidence belongs in summary/skills/highlights or cover prose, never attributed to an employer. The posting is not evidence of software, algorithms, defense, budget, certifications or program-management tenure. Keep original job titles unchanged."};
+}
+function needsTransferableExample(row,profile,target){
+  if(target?.track!=="Professional"||/\b(?:environment art|game art|pbr|sculpting|texturing|world ?building)\b/i.test([target.title,target.description].join(" ")))return false;
+  const relevant=/\b(?:mentor|train|onboard|workflow (?:development|coordination)|coordinate|collaborat|cross[- ]functional|meeting|schedule|deliver|project management)\w*\b/i;
+  const role=profile.experience.find(e=>e.id===row.experience_id);
+  return (role?.facts||[]).some(f=>relevant.test(f.text)) && row.bullets?.length>0
+    && row.bullets.every(b=>/\b(?:environment|world ?building|pbr|sculpt|textur|shader|3d assets?)\w*\b/i.test(b.text)&&!relevant.test(b.text));
 }
 function oneEditApart(a,b){
   if(Math.abs(a.length-b.length)>1)return false;
@@ -264,6 +281,8 @@ export function validateDraft(kind,draft,profile,{target=null,instructions=""}={
     const greeting=typeof draft.greeting==="string"&&draft.greeting.trim()&&draft.greeting.length<=160?prose(draft.greeting,160):"Dear Hiring Manager,";
     const closingRaw=typeof draft.closing==="string"&&draft.closing.trim()&&draft.closing.length<=160?prose(draft.closing,160):"Sincerely,";
     const verifiedParagraphs=groundedList(paragraphs,profile,{min:2,max:6,cover:true,limit:2200,target,instructions});
+    if(target?.track==="Professional"&&!/\b(?:environment art|game art|pbr|sculpting|texturing|world ?building)\b/i.test([target.title,target.description].join(" "))&&foregroundsGameIdentity(verifiedParagraphs[0],'summary'))
+      fail("A Professional cover letter must open with supported capabilities serving the target role rather than game-art identity or tenure.");
     // Enumerated shipped credits are complete source data, not model selection.
     const titles=profile.shipped_titles||[],body=verifiedParagraphs.join(" ");
     const mentioned=titles.filter(title=>hasPhrase(body,title));
@@ -296,6 +315,8 @@ export function validateDraft(kind,draft,profile,{target=null,instructions=""}={
     seen.add(original.id);
     return {role:original.role,company:original.company,dates:original.dates,bullets:groundedList(row.bullets,profile,{min:1,max:6,roleId:original.id,limit:850,target,instructions})};
   });
+  if((draft.experience||[]).some(row=>needsTransferableExample(row,profile,target)))
+    fail("This Professional resume selects only art-production bullets for an employer with verified transferable evidence. Replace an art-only bullet with that employer's relevant mentoring, workflow or coordination evidence; preserve original titles and accurate source-industry context.");
   let experience=experienceAll;
   if(target?.track!=="Games / 3D"&&experienceAll.length>4){
     const targetText=[target?.title,target?.company,target?.description,instructions].filter(Boolean).join(" ");
@@ -328,6 +349,8 @@ export function validateDraft(kind,draft,profile,{target=null,instructions=""}={
   // Copy identity, employment metadata and education directly, never from model output.
   const headline=groundedText(draft.headline,profile,{max:160,target,instructions});
   const summary=groundedText(draft.summary,profile,{max:1600,target,instructions});
+  const summaryIssue=professionalSummaryIssue(draft,profile,target);
+  if(summaryIssue)fail(summaryIssue);
   if(target?.track!=="Games / 3D"){
     if(foregroundsGameIdentity(headline,'headline')||foregroundsGameIdentity(summary,'summary'))
       fail("A non-game resume must not foreground game-art identity in the headline or summary. Lead with transferable experience relevant to the target role.");
@@ -337,6 +360,8 @@ export function validateDraft(kind,draft,profile,{target=null,instructions=""}={
     education:structuredClone(profile.education||[]),additional:groundedList(draft.additional,profile,{min:0,max:7,limit:850,target,instructions})};
 }
 const writingInstructions=[
+  'Use roleEvidencePlan to connect the posting duties to specific verified evidence. Select concrete examples of troubleshooting, technical collaboration, workflow development, mentoring and project delivery as relevant. Write a tailored transition narrative, not a generic list of skills or an art-production resume. Use relevant general project delivery/internal meetings in the summary or separate highlights; never attribute them to a past employer without evidence. Explain how supported experience could serve the target duties without claiming missing domain tenure, regulatory ownership, algorithms, SaaS customer ownership or tools. Gaps are not instructions to invent qualifications. Avoid results-driven/highly-motivated/proven-track-record filler; describe the actual verified work. Prefer enough distinct relevant evidence to explain the transition over many short generic mentoring bullets.',
+  "For Professional roles use roleEvidenceGuidance to select concrete employer-specific examples serving the posting. A capabilities headline alone does not tailor an art-production resume. Prioritize verified mentoring, delivery, workflow or coordination in employer bullets and put general facts in separate highlights. In the cover opening connect a supported capability to the target role, without opening with art-career identity or tenure. Do not imply mathematical/software/domain expertise from game tools. Use a short conventional closing such as Sincerely, not a final body sentence.",
   "Write a resume or cover letter for this candidate and this job, as if the candidate simply asked you to write an excellent application for this job.",
   "Read the full verified background and the full posting. Choose the strongest relevant material and write finished, natural prose. You own the wording, emphasis and narrative; do not assemble a template or merely copy the source bullets.",
   "Keep the facts. The verified background is the only authority for candidate history, skills, qualifications and accomplishments. Do not invent numbers, credentials, duties, outcomes, personal motivations or company knowledge. Do not label games or career experience AAA unless the verified background explicitly supplies that classification. Keep experience attributed to the correct employer. General transferable facts are not evidence of work at a particular employer. A job requirement is not a candidate qualification. Do not invent a personal passion for the target industry, external-partner relationships from internal collaboration, data-analysis or process-optimization outcomes from Excel proficiency, or a past use of Excel for tracking progress or managing assets. Do not broaden asset database queries and reporting into database management/administration, or environment-art tenure into tenure in project management or implementation. Use capability headlines such as Training, Mentoring and Workflow Coordination rather than claiming an implementation profession. State verified skills and prospective relevance instead. Describe career transitions honestly.",
@@ -390,6 +415,14 @@ function passageChecks(kind,draft,profile,options){
   return slots.map(slot=>{
     try{
       const text=groundedText(slot.claim,profile,slot.options);
+      if(kind==="resume"&&slot.path[0]==="summary"){
+        const issue=professionalSummaryIssue(draft,profile,options.target);
+        if(issue)return {...slot,issue};
+      }
+      if(kind==="coverLetter"&&slot.path[1]===0&&options.target?.track==="Professional"&&!/\b(?:environment art|game art|pbr|sculpting|texturing|world ?building)\b/i.test([options.target.title,options.target.description].join(" "))&&foregroundsGameIdentity(text,'summary'))
+        return {...slot,issue:"Open with a supported capability connected to this target role, not art-career identity or tenure. Keep factual source-industry context concise and never imply unverified mathematical/software expertise."};
+      if(kind==="resume"&&slot.path[0]==="experience"&&slot.path.at(-1)===0&&needsTransferableExample(draft.experience[slot.path[1]],profile,options.target))
+        return {...slot,issue:"Replace this art-only example with verified transferable evidence from this same employer serving the posting. Keep general project-delivery facts separate; never invent mathematical/software expertise or change the original role title."};
       if(kind==="resume"&&options.target?.track!=="Games / 3D"&&["headline","summary"].includes(slot.path[0])&&foregroundsGameIdentity(text,slot.path[0]))
         return {...slot,issue:"Lead with verified transferable capabilities for this non-game role. A summary may mention truthful game-industry background as context; do not replace it with an unverified target profession."};
       return {...slot,issue:null};
@@ -510,7 +543,7 @@ export async function writeDocument({kind,profile,target,instructions="",current
     }))};
     schema.properties.skills.items={type:"string",enum:[...new Set([...(profile.skills||[]),...verifiedKeywordEntries(profile).map(e=>e.keyword)])]};
   }
-  const context={studioTailoring:studioRelevance(target?.studioContext,profile),documentType:kind,verifiedBackground:profile,evidenceCatalog:evidenceCatalog(profile),target,revisionRequest:instructions,currentDraft:currentDocument,keywordGuidance:resumeKeywordGuidance(profile,target)};
+  const context={studioTailoring:studioRelevance(target?.studioContext,profile),documentType:kind,verifiedBackground:profile,evidenceCatalog:evidenceCatalog(profile),target,revisionRequest:instructions,currentDraft:currentDocument,keywordGuidance:resumeKeywordGuidance(profile,target),roleEvidenceGuidance:buildRoleEvidencePlan(profile,target),roleEvidencePlan:buildRoleEvidencePlan(profile,target)};
   let correction=null;
   const revisionRequested=Boolean(String(instructions||"").trim());
   // Match the router's two-provider-call ceiling: one draft and one repair.

@@ -191,7 +191,7 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch,logEvidence=e
       // Initial drafts remain usable when the free service is down. Revisions
       // must succeed explicitly; a fallback must never masquerade as a rewrite.
       const initial=!instructions;
-      const fallback=(reason,detail="",error=null)=>json({ok:false,error:"Raven could not approve this draft. "+(validationDiagnostics.slice(-1)[0]||"Final factual review did not complete.")+" Your previous document is unchanged.",code:"FINAL_REVIEW_BLOCKED",cause:reason,provider_failures:(error?.providerFailures||[]).map(f=>({provider:f.provider,code:f.code,status:f.status,skipped:f.skipped})),final_review:{status:"blocked"},validation_details:validationDiagnostics,ai_used:false,fallback_used:false,retryable:true},503);
+      const fallback=(reason,detail="",error=null)=>json({ok:false,error:"Raven could not approve this draft. "+(reason==="FINAL_REVIEW_UNAVAILABLE"?"The factual review service did not complete. Retry this document later.":reason==="REQUEST_BUDGET_EXCEEDED"?"The generation request limit was reached. Retry later.":reason==="LLM_NOT_CONFIGURED"?"The generation service is not configured.":validationDiagnostics.slice(-1)[0]||"Final factual review did not complete.")+" Your previous document is unchanged.",code:"FINAL_REVIEW_BLOCKED",cause:reason,provider_failures:(error?.providerFailures||[]).map(f=>({provider:f.provider,code:f.code,status:f.status,skipped:f.skipped})),final_review:{status:"blocked"},validation_details:validationDiagnostics,ai_used:false,fallback_used:false,retryable:true},503);
 
       // Cloudflare requires a verified Free plan; OpenRouter caps price at zero.
       if(!primaryProvider&&initial)return fallback("LLM_NOT_CONFIGURED");
