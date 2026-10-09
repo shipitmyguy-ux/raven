@@ -1,8 +1,20 @@
 # Windows-only synthetic credential regression tests; never read private/ or launch a tunnel.
 $ErrorActionPreference='Stop'
+# Reproduce the launcher failure: Security cmdlets cannot autoload. Utility and
+# Management remain available for XML persistence and temporary-file operations.
+Import-Module Microsoft.PowerShell.Utility
+Import-Module Microsoft.PowerShell.Management
+Remove-Module Microsoft.PowerShell.Security -ErrorAction SilentlyContinue
+$PSModuleAutoLoadingPreference='None'
 . (Join-Path (Split-Path $PSScriptRoot -Parent) 'scripts/private-tunnel-credentials.ps1')
 function Assert-Test($Condition,$Message){if(-not $Condition){throw $Message}}
 function Assert-Throws($Action,$Message){$threw=$false;try{& $Action}catch{$threw=$true};Assert-Test $threw $Message}
+function New-TestSecureString([string]$Text){
+  $secure=[Security.SecureString]::new()
+  foreach($character in $Text.ToCharArray()){$secure.AppendChar($character)}
+  $secure.MakeReadOnly()
+  return $secure
+}
 $launcher=Join-Path (Split-Path $PSScriptRoot -Parent) 'scripts/start-private-raven.ps1'
 $tokens=$null;$parseErrors=$null
 $launcherAst=[Management.Automation.Language.Parser]::ParseFile($launcher,[ref]$tokens,[ref]$parseErrors)
@@ -13,7 +25,7 @@ Assert-Test ($helperErrors.Count -eq 0) 'Credential helper syntax errors.'
 function New-TestCredentials($Suffix){
   $map=@{}
   foreach($name in @('CONTROL_PLANE_API_KEY','SUPABASE_SERVICE_ROLE_KEY')){
-    $map[$name]=[Management.Automation.PSCredential]::new($name,(ConvertTo-SecureString ('synthetic-'+$name+'-'+$Suffix) -AsPlainText -Force))
+    $map[$name]=[Management.Automation.PSCredential]::new($name,(New-TestSecureString ('synthetic-'+$name+'-'+$Suffix)))
   }
   return $map
 }
@@ -26,14 +38,18 @@ function Read-Host {
   param($Prompt,[switch]$AsSecureString)
   Assert-Test $AsSecureString 'Credential prompt must be masked.'
   $script:promptCount++
-  ConvertTo-SecureString ('synthetic-prompt-'+$script:promptSuffix+'-'+$script:promptCount) -AsPlainText -Force
+  New-TestSecureString ('synthetic-prompt-'+$script:promptSuffix+'-'+$script:promptCount)
 }
 try{
   $first=Get-RavenTunnelCredentials -Path $path
   Assert-Test ($script:promptCount -eq 2) 'Initial setup should prompt exactly twice.'
   $xml=[IO.File]::ReadAllText($path)
   Assert-Test (-not $xml.Contains('synthetic-prompt-')) 'Plaintext credential persisted.'
-  $acl=Get-Acl -LiteralPath $path
+  if($PSVersionTable.PSEdition -eq 'Core'){
+    $acl=[IO.FileSystemAclExtensions]::GetAccessControl([IO.FileInfo]::new($path))
+  }else{
+    $acl=[IO.File]::GetAccessControl($path)
+  }
   Assert-Test $acl.AreAccessRulesProtected 'Credential ACL should disable inherited rules.'
   $rules=@($acl.Access)
   Assert-Test ($rules.Count -eq 1) 'Credential ACL should grant only its owner.'
@@ -54,7 +70,7 @@ try{
   $empty.CONTROL_PLANE_API_KEY=[Management.Automation.PSCredential]::new('CONTROL_PLANE_API_KEY',[Security.SecureString]::new())
   Assert-Throws {Save-RavenTunnelCredentials -Path $path -Credentials $empty} 'Empty credential should be rejected.'
   $wrong=New-TestCredentials 'wrong-user'
-  $wrong.CONTROL_PLANE_API_KEY=[Management.Automation.PSCredential]::new('wrong',(ConvertTo-SecureString 'synthetic-only' -AsPlainText -Force))
+  $wrong.CONTROL_PLANE_API_KEY=[Management.Automation.PSCredential]::new('wrong',(New-TestSecureString 'synthetic-only'))
   Assert-Throws {Save-RavenTunnelCredentials -Path $path -Credentials $wrong} 'Wrong credential username should be rejected.'
   [IO.File]::WriteAllText($path,'malformed synthetic XML')
   Assert-Throws {Get-RavenTunnelCredentials -Path $path} 'Malformed cache should fail closed.'
@@ -89,7 +105,8 @@ try{
   }finally{
     foreach($name in $originalEnvironment.Keys){[Environment]::SetEnvironmentVariable($name,$originalEnvironment[$name],'Process')}
   }
-  Write-Host 'PASS: masked one-time setup; Windows DPAPI/no plaintext; owner ACL; prompt-free reload; durable reset; invalid/malformed fail-closed; explicit recovery.'
+  Assert-Test (-not (Get-Module Microsoft.PowerShell.Security)) 'Security module must remain unloaded during regression.'
+  Write-Host 'PASS: Security autoload disabled; masked one-time setup; Windows DPAPI/no plaintext; owner ACL; prompt-free reload; durable reset; invalid/malformed fail-closed; explicit recovery.'
 }finally{
   # Delete only the uniquely created synthetic directory, never real private credentials.
   foreach($file in @(Get-ChildItem -LiteralPath $directory -File)){Remove-Item -LiteralPath $file.FullName -Force}

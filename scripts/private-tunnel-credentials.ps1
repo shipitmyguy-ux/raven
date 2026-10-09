@@ -18,7 +18,12 @@ function Save-RavenTunnelCredentials {
     $acl.SetOwner($identity)
     $acl.SetAccessRuleProtection($true,$false)
     $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new($identity,'FullControl','Allow'))
-    Set-Acl -LiteralPath $temporary -AclObject $acl
+    # Avoid Security-module autoload: Windows PowerShell can inherit incompatible PS7 module paths.
+    if($PSVersionTable.PSEdition -eq 'Core'){
+      [IO.FileSystemAclExtensions]::SetAccessControl([IO.FileInfo]::new($temporary),$acl)
+    }else{
+      [IO.FileInfo]::new($temporary).SetAccessControl($acl)
+    }
     Move-Item -LiteralPath $temporary -Destination $Path -Force
   }finally{
     if(Test-Path -LiteralPath $temporary){Remove-Item -LiteralPath $temporary -Force}
