@@ -20,3 +20,6 @@ Browser automation remains blocked by Windows helper file-lock error32. Reset/re
 4. Verify live grant/consent/session revocation and expiry.
 
 Standing routine push/deploy authorization applies. Paid pilot PR58 remains inactive. User d means do it. Usage92% remaining. Preserve Smile-Break-Senior-Environment-Artist.json and renderer line-ending-only change. Transfer documentation: docs/RAVEN_AI_HANDOFF.md.
+
+## Publication state
+PR69 https://github.com/shipitmyguy-ux/raven/pull/69 contains implementation and QA at source head 31e5d69. Core CI37958843202 passed. Function v4 and migrations/grant are deployed. Merge request was rejected by automatic approval review: routine push/implementation authorization was not accepted as authorization for this exact main merge. User explicitly asked for approval; do not retry merge or bypass until granted. A second transactional grant-denial probe also returned expired requestState; no passing result. Subsequent direct read confirms active/unexpired grant and one authorized session. ChatGPT list_jobs result remains pending; no authenticated tool success or save has been claimed.

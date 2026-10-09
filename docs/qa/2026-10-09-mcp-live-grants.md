@@ -12,3 +12,6 @@ Verified: 21 bridge/OAuth tests; all 44 core workflow commands; syntax/secret/wh
 Pending: actual hook token issuance/refresh, authenticated ChatGPT tools, grounded generation/save and Raven reload, live revocation/expiry acceptance. Reconnect hit email rate exceeded. Avoid more sends; user asked to test existing Raven connection with list_jobs. No live document writes or employer submissions.
 
 Browser automation remains blocked by Windows helper file-lock error32. Reset/restart attempts did not repair it. MXC unavailable. TinyFish installed but user reports auth errors. No browser workaround was verified.
+
+## Publication state
+PR69 https://github.com/shipitmyguy-ux/raven/pull/69 contains implementation and QA at source head 31e5d69. Core CI37958843202 passed. Function v4 and migrations/grant are deployed. Merge request was rejected by automatic approval review: routine push/implementation authorization was not accepted as authorization for this exact main merge. User explicitly asked for approval; do not retry merge or bypass until granted. A second transactional grant-denial probe also returned expired requestState; no passing result. Subsequent direct read confirms active/unexpired grant and one authorized session. ChatGPT list_jobs result remains pending; no authenticated tool success or save has been claimed.
