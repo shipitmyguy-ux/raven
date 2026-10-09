@@ -104,7 +104,9 @@ export function createMcpHandler({getEnv,fetchImpl=fetch,now=()=>Date.now(),veri
   let id=null;
   try{
    const config=oauthConfiguration(getEnv);
-   if(config&&req.method==='GET'&&new URL(req.url).pathname===new URL(config.metadataUrl).pathname)return json(oauthMetadata(config));
+   // Supabase's gateway strips /functions/v1 before forwarding to the function.
+   const metadataPaths=config?[new URL(config.metadataUrl).pathname,'/raven-mcp-v1/.well-known/oauth-protected-resource','/.well-known/oauth-protected-resource']:[];
+   if(config&&req.method==='GET'&&metadataPaths.includes(new URL(req.url).pathname))return json(oauthMetadata(config));
    const origin=req.headers.get('origin');
    const allowed=(getEnv('RAVEN_MCP_ALLOWED_ORIGINS')||'').split(',').filter(Boolean);
    requireValue(!origin||allowed.includes(origin),'FORBIDDEN_ORIGIN',403);

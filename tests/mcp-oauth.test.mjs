@@ -48,6 +48,8 @@ test('public discovery and 401 challenge expose no jobs, profile or credentials'
  const handler=createMcpHandler({getEnv:f.getEnv,verifyJwt,now:()=>clock,fetchImpl:async()=>{reads++;throw new Error('unexpected storage');}});
  const r=await handler(new Request(f.config.metadataUrl));assert.equal(r.status,200);
  assert.deepEqual((await r.json()).scopes_supported,['email']);assert.equal(reads,0);
+ for(const path of ['/raven-mcp-v1/.well-known/oauth-protected-resource','/.well-known/oauth-protected-resource'])
+  assert.equal((await handler(new Request('https://gateway.test'+path))).status,200);
  const denied=await handler(f.request('bad'));assert.equal(denied.status,401);
  assert.match(denied.headers.get('www-authenticate'),/resource_metadata="https:\/\/db.test\/functions\/v1\/raven-mcp-v1\//);
  assert.equal(reads,0);
