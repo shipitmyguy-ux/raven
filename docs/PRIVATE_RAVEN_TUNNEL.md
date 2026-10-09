@@ -21,3 +21,10 @@ User reported successful ChatGPT demo server_info and echo calls through Tunnel 
 
 ## Windows launch-path fix (2026-10-09)
 Live launch failed before database access because tunnel-client's shell-style command parser consumed Windows backslashes. Launcher now converts Node and adapter paths to quoted forward-slash paths. Verified with official tunnel-client v0.0.16 dev proxy, fake database credential, full initialize -> notifications/initialized -> tools/list handshake: raven-mcp-bridge 0.3.0 and all five Raven tools returned. No live database call made. This is stronger transport evidence than direct subprocess-only testing. Real credential launch/read/save remains pending.
+
+## Stale ChatGPT demo tool list (2026-10-09)
+User reports a new chat exposes only server_info, echo and uppercase. Read-only local inspection confirms one active tunnel-client running private-mcp-stdio (not the embedded demo); loopback health returned live=true, ready=true. This establishes current runtime health, not successful ChatGPT Raven discovery or database credentials. Most likely the installed plugin retains the demo descriptors; also check that its tunnel/workspace matches the local Raven connection.
+
+Next: keep the current Raven window running; open Raven Private plugin details and refresh tools/actions. Verify list_jobs, get_job, get_verified_profile, get_document and save_generated_document before opening a new chat and invoking list_jobs. If refresh is absent or still shows demo tools, create a fresh private plugin using the same intended tunnel and No authentication, verify the five tools, then install/select it. Do not restart the working runtime or retrieve in-memory credentials. No database call or document modification occurred in this investigation. Live read/save/full-refresh acceptance remains pending.
+
+Official refresh guidance: https://developers.openai.com/api/docs/guides/custom-mcp-server .
