@@ -3,8 +3,12 @@
 ## Professional one-button tailoring (2026-10-09)
 - [x] Run random visible Professional Generate both test and verify both exact saved URLs after reload.
 - [x] Reproduce user-reported art-centered content, implement writer v5 evidence guidance and relevance checks, pass required core/targeted checks.
-- [ ] Deploy correction and verify fresh live eligible-job output; do not count saved files alone as tailored acceptance.
-- [ ] After this fix, workers sample three random eligible Professional jobs, compare returned resumes to posting/facts and report a prioritized action plan. No approvals/submissions.
+- [x] Deploy writer v5 to resume129/cover99 and verify source; fresh Dutchie live test completes but saves0, so full-pair acceptance fails.
+- [x] Complete three bounded worker diagnostic samples (Ashby/Stripe browser, Mercury API because worker browser unavailable); compare actual returned output or explicitly record none, prepare prioritized plan. No approvals/submissions.
+- [!] Reliable grounded, tailored one-button creation remains unresolved: accepted generic Ashby output and false reviewer rejection of verified Mercury evidence.
+- [ ] Implement role-evidence planning and separate factuality/relevance/fit review; preserve exact titles/attribution and real domain gaps.
+- [ ] Persist actionable per-document failures after refresh; diagnose incomplete cover review before retrying.
+- Plan/evidence: docs/qa/2026-10-09-professional-random-audit.md.
 
 ## Live browser workflow (2026-10-09)
 - [x] Check actual hosted sync/reload, job search, saved-document previews, Word downloads and approval gate using in-app browser.
