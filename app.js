@@ -47,7 +47,9 @@
   const RESUME_TEMPLATE_VERSION="modern-v16-final-review";
   const DEFAULT_FOLLOW_UP_DAYS=7;
   const activeGeneration=new Map();
-  const generationErrors=new Map();
+  const GENERATION_ERRORS_KEY="ravenGenerationErrorsV1";
+  const generationErrors=new Map(Object.entries(readCache(GENERATION_ERRORS_KEY,{})).filter(([,value])=>typeof value==="string"));
+  const saveGenerationErrorState=()=>writeCache(GENERATION_ERRORS_KEY,Object.fromEntries([...generationErrors].slice(-100)));
   let editingMasterResumeId=null;
   let editingAnswerMemoryKey=null;
 
@@ -1738,14 +1740,14 @@
     try{
       for(const type of missing){
         session.type=type;
-        generationErrors.delete(documentApprovalKey(job,type));
+        generationErrors.delete(documentApprovalKey(job,type)); saveGenerationErrorState();
         render();
         try{
           const document=await generateDocumentForJob(job,type,"");
           completed.push({type,mode:document.generationMode});
         }catch(error){
           failed.push(type);
-          generationErrors.set(documentApprovalKey(job,type),documentLabel(type)+" generation failed: "+error.message);
+          generationErrors.set(documentApprovalKey(job,type),documentLabel(type)+" generation failed: "+error.message); saveGenerationErrorState();
         }
       }
     }finally{
@@ -1753,7 +1755,7 @@
       render();
     }
     const fallback=completed.some(item=>item.mode==="source-facts"||item.mode==="mixed");
-    setStatus(failed.length?"Saved "+completed.length+" document(s). Retry the remaining document below.":
+    setStatus(failed.length?(completed.length?"Saved "+completed.length+" document(s). Retry the remaining document below.":"No documents created. See the errors below."):
       "Both documents ready"+(fallback?" · includes verified source wording":"")+" · review required");
     if(completed.length&&session.autoOpen&&state.selectedId===job.id)openDocumentReview(job,completed[0].type);
   }
@@ -1765,7 +1767,7 @@
       activeGeneration.delete(generationKey(job));
     }
     try{
-      generationErrors.delete(documentApprovalKey(job,type));
+      generationErrors.delete(documentApprovalKey(job,type)); saveGenerationErrorState();
       if(job[type]&&!options.force) return openDocumentReview(job,type);
       const session={type,autoOpen:options.autoOpen!==false&&state.selectedId===job.id,startedAt:Date.now(),phase:"Writing with AI"};
       activeGeneration.set(generationKey(job),session);
@@ -1780,7 +1782,7 @@
     }catch(error){
       activeGeneration.delete(generationKey(job));
       const message=(type==="resume"?"Resume":"Cover letter")+" generation failed: "+error.message;
-      generationErrors.set(documentApprovalKey(job,type),message);
+      generationErrors.set(documentApprovalKey(job,type),message); saveGenerationErrorState();
       setStatus(message);
       console.error(documentLabel(type)+" generation failed",error);
       setGenerationButton(button,false);
@@ -2485,7 +2487,7 @@
     if(saved) saved[key]="";
     writeCache(CACHE_JOBS_KEY,state.jobs);
     setDocumentApproved(job,key,false);
-    generationErrors.delete(documentApprovalKey(job,key));
+    generationErrors.delete(documentApprovalKey(job,key)); saveGenerationErrorState();
     render();
 
     try{

@@ -110,15 +110,17 @@ test('final review has two separate bounded calls and cannot consume or inflate 
 });
 
 
-test('Professional reviewer receives posting and severe mistailoring triggers only identified passage repair',async()=>{
+test('Professional reviewer receives posting and severe art-dominance triggers only identified passage repair',async()=>{
  const t={track:'Professional',title:'Technical Program Manager',company:'Anduril',description:'Coordinate technical projects and teams.'};
+ const p={...profile,experience:[{...profile.experience[0],facts:[{id:'a',text:'Created environment assets using PBR and texture painting.'},{id:'art2',text:'Performed worldbuilding and terrain sculpting.'}]},profile.experience[1]]};
+ const bad={...good,paragraphs:[c('I created environment assets using PBR and texture painting.',['a']),c('I performed worldbuilding and terrain sculpting.',['art2']),good.paragraphs[1]]};
  const requests=[],reviews=[];
- const result=await writeDocument({kind:'coverLetter',profile,target:t,complete:async args=>{
-  requests.push(args);return {data:args.name==='raven_passage_repair'?{repairs:[{path:'paragraphs.0',claim:c('I would bring mentoring experience to technical team coordination.',['b'])}]}:good};
- },reviewComplete:async args=>{reviews.push(args);return {data:{issues:reviews.length===1?[{path:'paragraphs.0',code:'irrelevant_framing',quote:paragraph,reason:'Replace this art-only opening with verified mentoring relevant to team coordination.'}]:[]}};}});
+ const result=await writeDocument({kind:'coverLetter',profile:p,target:t,complete:async args=>{
+  requests.push(args);return {data:args.name==='raven_passage_repair'?{repairs:[{path:'paragraphs.0',claim:c('I would bring mentoring experience to technical team coordination.',['b'])}]}:bad};
+ },reviewComplete:async args=>{reviews.push(args);return {data:{issues:reviews.length===1?[{path:'paragraphs.0',code:'irrelevant_framing',quote:bad.paragraphs[0].text,reason:'Replace dominant art-production detail with verified mentoring relevant to team coordination.'}]:[]}};}});
  assert.equal(reviews[0].input.target.description,t.description);
  assert.deepEqual(requests[1].input.factualCorrection.invalid_paths,['paragraphs.0']);
- assert.equal(result.document.paragraphs[1],good.paragraphs[1].text);
+ assert.equal(result.document.paragraphs[1],bad.paragraphs[1].text);
  assert.equal(requests.length,2);assert.equal(reviews.length,2);
 });
 

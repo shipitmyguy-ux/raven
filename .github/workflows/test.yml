@@ -99,6 +99,7 @@ jobs:
           node tests/generator-consolidation-v2.test.mjs
           node tests/resume-quality-v3.test.mjs
           node tests/document-writer.test.mjs
+          node --test tests/professional-evidence-plan.test.mjs
           node tests/document-revision.test.mjs
           node tests/document-reliability.test.mjs
           node tests/cloudflare-free.test.mjs

@@ -1,7 +1,8 @@
 import {reviewDocument,reviewFacts,REVIEW_VERSION} from "./document-review.mjs";
 import {studioRelevance} from "./studio-context.mjs";
+import {buildRoleEvidencePlan,professionalSummaryIssue} from './professional-evidence.mjs';
 // One structured writer for initial drafts and revisions; layout stays in Raven.
-export const WRITER_VERSION="grounded-llm-v5";
+export const WRITER_VERSION="grounded-llm-v6";
 const str={type:"string"};
 const arr=(items,minItems=0,maxItems=20)=>({type:"array",items,minItems,maxItems});
 const obj=(properties)=>({type:"object",properties,required:Object.keys(properties),additionalProperties:false});
@@ -348,6 +349,8 @@ export function validateDraft(kind,draft,profile,{target=null,instructions=""}={
   // Copy identity, employment metadata and education directly, never from model output.
   const headline=groundedText(draft.headline,profile,{max:160,target,instructions});
   const summary=groundedText(draft.summary,profile,{max:1600,target,instructions});
+  const summaryIssue=professionalSummaryIssue(draft,profile,target);
+  if(summaryIssue)fail(summaryIssue);
   if(target?.track!=="Games / 3D"){
     if(foregroundsGameIdentity(headline,'headline')||foregroundsGameIdentity(summary,'summary'))
       fail("A non-game resume must not foreground game-art identity in the headline or summary. Lead with transferable experience relevant to the target role.");
@@ -357,6 +360,7 @@ export function validateDraft(kind,draft,profile,{target=null,instructions=""}={
     education:structuredClone(profile.education||[]),additional:groundedList(draft.additional,profile,{min:0,max:7,limit:850,target,instructions})};
 }
 const writingInstructions=[
+  'Use roleEvidencePlan to connect the posting duties to specific verified evidence. Select concrete examples of troubleshooting, technical collaboration, workflow development, mentoring and project delivery as relevant. Write a tailored transition narrative, not a generic list of skills or an art-production resume. Use relevant general project delivery/internal meetings in the summary or separate highlights; never attribute them to a past employer without evidence. Explain how supported experience could serve the target duties without claiming missing domain tenure, regulatory ownership, algorithms, SaaS customer ownership or tools. Gaps are not instructions to invent qualifications. Avoid results-driven/highly-motivated/proven-track-record filler; describe the actual verified work. Prefer enough distinct relevant evidence to explain the transition over many short generic mentoring bullets.',
   "For Professional roles use roleEvidenceGuidance to select concrete employer-specific examples serving the posting. A capabilities headline alone does not tailor an art-production resume. Prioritize verified mentoring, delivery, workflow or coordination in employer bullets and put general facts in separate highlights. In the cover opening connect a supported capability to the target role, without opening with art-career identity or tenure. Do not imply mathematical/software/domain expertise from game tools. Use a short conventional closing such as Sincerely, not a final body sentence.",
   "Write a resume or cover letter for this candidate and this job, as if the candidate simply asked you to write an excellent application for this job.",
   "Read the full verified background and the full posting. Choose the strongest relevant material and write finished, natural prose. You own the wording, emphasis and narrative; do not assemble a template or merely copy the source bullets.",
@@ -535,7 +539,7 @@ export async function writeDocument({kind,profile,target,instructions="",current
     }))};
     schema.properties.skills.items={type:"string",enum:[...new Set([...(profile.skills||[]),...verifiedKeywordEntries(profile).map(e=>e.keyword)])]};
   }
-  const context={studioTailoring:studioRelevance(target?.studioContext,profile),documentType:kind,verifiedBackground:profile,evidenceCatalog:evidenceCatalog(profile),target,revisionRequest:instructions,currentDraft:currentDocument,keywordGuidance:resumeKeywordGuidance(profile,target),roleEvidenceGuidance:roleEvidenceGuidance(profile,target)};
+  const context={studioTailoring:studioRelevance(target?.studioContext,profile),documentType:kind,verifiedBackground:profile,evidenceCatalog:evidenceCatalog(profile),target,revisionRequest:instructions,currentDraft:currentDocument,keywordGuidance:resumeKeywordGuidance(profile,target),roleEvidenceGuidance:buildRoleEvidencePlan(profile,target),roleEvidencePlan:buildRoleEvidencePlan(profile,target)};
   let correction=null;
   const revisionRequested=Boolean(String(instructions||"").trim());
   // Match the router's two-provider-call ceiling: one draft and one repair.
