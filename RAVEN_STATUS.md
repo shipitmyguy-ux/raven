@@ -1,5 +1,8 @@
 # Raven Status
 
+## Professional one-button tailoring correction (2026-10-09)
+Actual random Anduril Fort Collins job test: Generate both once created/saved both documents and exact URLs survived full hosted reload. User correctly rejected the resume as game-centered. Mechanical persistence passed; tailoring failed. Writer v5 adds employer-specific transferable evidence guidance, art-first tenure/cover and all-art employer checks, and severe-mistailoring semantic review using the full posting. Original titles/tenure and attribution safeguards retained. All 46 declared core commands pass after aligning valid numeric fixture with transferable-first framing; 56 targeted tests independently pass. Deployment/live retest pending. User rejects hybrid roles outside Fort Collins; DataHouse remains hidden intentionally, with no saved-record exception. See docs/qa/2026-10-09-professional-one-button.md.
+
 ## Live browser workflow limitation (2026-10-09)
 Actual hosted browser check: DataHouse search has no card under Professional/All jobs after sync and reload. Current displayed global location rule hides Honolulu hybrid jobs, including saved records. Prior persistence/hash checks passed but do not establish DataHouse card/review accessibility. Stone Kite saved resume/cover previews and both Word download controls pass; application approval gate retained. No approvals, revisions or submissions. PDF/native Word inspection remains untested here. See docs/qa/2026-10-09-live-browser-workflow.md. Resolve saved-record accessibility policy before claiming complete DataHouse browser workflow acceptance.
 

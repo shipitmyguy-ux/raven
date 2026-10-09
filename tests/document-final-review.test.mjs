@@ -108,3 +108,25 @@ test('final review has two separate bounded calls and cannot consume or inflate 
  await assert.rejects(complete({purpose:'final_review',input:{},schema:{}}),e=>e.code==='LLM_CALL_BUDGET_EXHAUSTED');
  assert.equal(calls,4);
 });
+
+
+test('Professional reviewer receives posting and severe mistailoring triggers only identified passage repair',async()=>{
+ const t={track:'Professional',title:'Technical Program Manager',company:'Anduril',description:'Coordinate technical projects and teams.'};
+ const requests=[],reviews=[];
+ const result=await writeDocument({kind:'coverLetter',profile,target:t,complete:async args=>{
+  requests.push(args);return {data:args.name==='raven_passage_repair'?{repairs:[{path:'paragraphs.0',claim:c('I would bring mentoring experience to technical team coordination.',['b'])}]}:good};
+ },reviewComplete:async args=>{reviews.push(args);return {data:{issues:reviews.length===1?[{path:'paragraphs.0',code:'irrelevant_framing',quote:paragraph,reason:'Replace this art-only opening with verified mentoring relevant to team coordination.'}]:[]}};}});
+ assert.equal(reviews[0].input.target.description,t.description);
+ assert.deepEqual(requests[1].input.factualCorrection.invalid_paths,['paragraphs.0']);
+ assert.equal(result.document.paragraphs[1],good.paragraphs[1].text);
+ assert.equal(requests.length,2);assert.equal(reviews.length,2);
+});
+
+test('Professional cover art-first tenure is blocked and accurate source context after capability is permitted',async()=>{
+ const p={...profile,transferable_facts:[{id:'years',text:'17 years of professional environment-art experience in video game development.'}]};
+ const t={track:'Professional',title:'Technical Program Manager',description:'Coordinate technical projects.'};
+ const bad={...good,paragraphs:[c('As a seasoned environment artist with 17 years of professional environment-art experience in video game development.',['years']),good.paragraphs[1]]};
+ const calls=[];const result=await writeDocument({kind:'coverLetter',profile:p,target:t,complete:async args=>{calls.push(args);return {data:args.name==='raven_passage_repair'?{repairs:[{path:'paragraphs.0',claim:c('I mentored newer artists in environment-art production.',['b'])}]}:bad};}});
+ assert.equal(calls.length,2);assert.deepEqual(calls[1].input.factualCorrection.invalid_paths,['paragraphs.0']);
+ assert.match(result.document.paragraphs[0],/^I mentored/);
+});

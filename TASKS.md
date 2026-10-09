@@ -1,8 +1,15 @@
 # Raven Tasks
 
+## Professional one-button tailoring (2026-10-09)
+- [x] Run random visible Professional Generate both test and verify both exact saved URLs after reload.
+- [x] Reproduce user-reported art-centered content, implement writer v5 evidence guidance and relevance checks, pass required core/targeted checks.
+- [ ] Deploy correction and verify fresh live eligible-job output; do not count saved files alone as tailored acceptance.
+- [ ] After this fix, workers sample three random eligible Professional jobs, compare returned resumes to posting/facts and report a prioritized action plan. No approvals/submissions.
+
 ## Live browser workflow (2026-10-09)
 - [x] Check actual hosted sync/reload, job search, saved-document previews, Word downloads and approval gate using in-app browser.
-- [!] DataHouse card is hidden by existing global location policy (Honolulu hybrid). Decide saved-record accessibility before complete DataHouse UI acceptance.
+- [x] DataHouse remains hidden as intended: user explicitly rejects hybrid roles outside Fort Collins. Do not add a saved-record exception.
+- [ ] Tighten hybrid eligibility from nearby northern Colorado to Fort Collins only, retaining the requested remote/in-person scope separately.
 - [ ] Native Word and browser PDF/print-dialog acceptance remain separate.
 - Evidence: docs/qa/2026-10-09-live-browser-workflow.md.
 

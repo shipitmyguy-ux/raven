@@ -9,4 +9,4 @@ Checked hosted Raven using the owner's in-app browser, October 9, 2026.
 - Open application with approved documents remains gated with Approve resume and cover letter first. No approval, revision, generation or employer submission performed.
 - Close displays a saved message, but source inspection of closeDocumentReview confirms this handler clears the preview and updates UI only; it does not save a new document.
 
-Prior plugin/database/hash and backend reload checks establish DataHouse persistence, not access through its job card. End-to-end DataHouse browser acceptance is blocked by the current location visibility policy. A product decision is needed about access to saved records outside eligibility; do not silently broaden location preferences.
+Prior plugin/database/hash and backend reload checks establish DataHouse persistence, not access through its job card. User subsequently confirmed hybrid roles outside Fort Collins are unwanted; DataHouse should remain hidden. Do not add a saved-record exception. Use an eligible Professional role for live generation acceptance. The existing nearby-community hybrid allowance needs tightening separately.
