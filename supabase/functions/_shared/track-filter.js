@@ -36,6 +36,11 @@
   }
   function jobLocationAllowed(job){
     const location=String(job?.location||'');
+    const hybrid=/\bhybrid\b/i.test([location,job?.title,job?.remote].join(' '));
+    if(hybrid){
+      const city=location.replace(/\bhybrid\b/gi,'').replace(/[()·]/g,' ').trim().replace(/^[\s,:;-]+|[\s,:;-]+$/g,'');
+      return (city.match(/\b\d{5}\b/g)||[]).length<=1&&/^Fort Collins\s*,?\s+(?:CO|Colorado)(?:\s+\d{5})?(?:\s*,?\s+(?:United States|USA|US))?(?:\s+\d{5})?\s*$/i.test(city);
+    }
     const inPerson=/\b(?:hybrid|on[- ]?site|in[- ]office)\b/i.test([location,job?.title].join(' '));
     const remote=job?.remote===true || /^(?:true|yes|remote)$/i.test(String(job?.remote||'')) || /\bremote\b/i.test(location);
     if(remote&&!inPerson)return true;

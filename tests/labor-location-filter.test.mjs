@@ -53,3 +53,43 @@ test('global policy permits remote work and gates all four tracks',()=>{
   assert.equal(candidateAllowedForTrack(track,{title,remote:true,location:'United States'}),true,track);
  }
 });
+
+test('hybrid work requires a sole Fort Collins Colorado location across all tracks',()=>{
+ const globalAllowed=globalThis.RavenTrackFilter.jobLocationAllowed;
+ for(const track of ['Professional','Labor','Wildcard','Games / 3D']){
+  const title=track==='Games / 3D'?'Environment Artist':'Operations Coordinator';
+  for(const location of ['Loveland, CO (Hybrid)','Windsor, CO (Hybrid)','Fort Collins, CO; Denver, CO (Hybrid)','Fort Collins / Denver, CO (Hybrid)','Fort Collins, CO and Loveland, CO (Hybrid)']){
+   assert.equal(candidateAllowedForTrack(track,{title,location,remote:true}),false,track+': '+location);
+  }
+  for(const location of ['Fort Collins, CO (Hybrid)','Fort Collins CO 80524','Fort Collins, Colorado, United States','Fort Collins, CO, USA 80525']){
+   assert.equal(candidateAllowedForTrack(track,{title:title+' (Hybrid)',location,remote:true}),true,track+': '+location);
+  }
+  for(const location of ['Loveland, CO','Windsor, CO']){
+   assert.equal(candidateAllowedForTrack(track,{title,location}),true,track+': nearby onsite remains eligible');
+   assert.equal(candidateAllowedForTrack(track,{title,location,remote:'Hybrid'}),false,track+': remote string hybrid');
+  }
+ }
+ for(const remote of [true,'true','Yes','Remote','Hybrid']){
+  assert.equal(globalAllowed({title:'Coordinator (Hybrid)',location:'Loveland, CO',remote}),false,String(remote));
+ }
+});
+
+test('browser hides saved and cached outside-city hybrid jobs without changing saved history',()=>{
+ const code=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
+ const start=code.indexOf('  function combinedJobs() {'),end=code.indexOf('  function filteredJobs()',start);
+ for(const activeTrack of ['Professional','Labor','Wildcard','Games / 3D']){
+  const title=activeTrack==='Games / 3D'?'Environment Artist':'Operations Coordinator';
+  const state={activeTrack,jobs:[
+   {id:'hybrid-outside',track:activeTrack,title,location:'Loveland, CO (Hybrid)',remote:true,status:'Applied',resume:'prior resume',coverLetter:'prior cover',appliedDate:'2026-10-01'},
+   {id:'hybrid-local',track:activeTrack,title,location:'Fort Collins, CO (Hybrid)',remote:true,status:'Saved'}
+  ],discovered:{[activeTrack]:[
+   {title,location:'Windsor, CO (Hybrid)',remote:true,url:'https://example.com/windsor'},
+   {title,location:'Loveland, CO',url:'https://example.com/onsite'}
+  ]}};
+  const before=JSON.stringify(state);
+  const context={state,window:{RavenTrackFilter:globalThis.RavenTrackFilter},normalizeComparableUrl:v=>v||'',parseBool:v=>Boolean(v),preferredDescription:(a,b)=>a||b};
+  vm.createContext(context);vm.runInContext(code.slice(start,end)+';result=combinedJobs();',context);
+  assert.deepEqual(Array.from(context.result,r=>r.location),['Fort Collins, CO (Hybrid)','Loveland, CO'],activeTrack);
+  assert.equal(JSON.stringify(state),before,activeTrack+': saved history preserved');
+ }
+});
