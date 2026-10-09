@@ -1,28 +1,17 @@
 # Raven execution handoff
+## Password sign-in follow-up (2026-10-09)
+Consent page now supports password sign-in alongside explicit email sign-in, plus a private Set password form for an authenticated account. Password fields are cleared after requests; no credentials are logged or persisted by Raven. OAuth approval, grant checks and token validation are unchanged.
 
-## Live grant deployment (2026-10-09)
-User authorized any Professional job. Provisioned one 30-day ChatGPT grant for DataHouse PROJECT MANAGER (JT-1789707628035): jobs:read, profile:read, documents:create; no revision permission. Existing resume/cover were empty and remain unchanged.
+User states they never defined a password. A read-only aggregate found one Auth account with a nonempty credential field; this does NOT prove the user knows a usable password. The owner must privately set their password in their existing signed-in consent tab, or complete one email sign-in after the rate limit clears. No password was set by the agent and no email was sent.
 
-raven-mcp-v1 v4 ACTIVE loads service-only database grants when no explicit environment owner/grant configuration exists. Explicit environment configuration remains authoritative. Signature/issuer/exact-resource-audience/expiry validation occurs before database access. RPC checks singleton owner, matching unexpired/unrevoked grant, nondeleted OAuth client, active consent and matching current unexpired session every request. Private runtime identifiers are not committed.
-
-Applied raven_mcp_oauth_grants and raven_mcp_oauth_hook_variable_fix migrations. Source: supabase/sql/raven-mcp-oauth-grants.sql. Direct hook testing found a PL/pgSQL variable ambiguity, fixed before user enablement. User reports public.raven_mcp_access_token_hook enabled/saved; configuration was not read directly through the connector.
-
-Verified: 21 bridge/OAuth tests; all 44 core workflow commands; syntax/secret/whitespace checks; one live authorized consent/session and active grant; direct hook exact audience and other-claim preservation. Anon/authenticated cannot read grant tables or call RPC; Auth-admin execute privilege present. Connector cannot SET ROLE supabase_auth_admin; actual hook execution as that role remains unverified. Live metadata200/anonymous401. Transactional revocation probe returned expired requestState; subsequent read confirmed grant active. Do not count that probe as passed.
-
-Pending: actual hook token issuance/refresh, authenticated ChatGPT tools, grounded generation/save and Raven reload, live revocation/expiry acceptance. Reconnect hit email rate exceeded. Avoid more sends; user asked to test existing Raven connection with list_jobs. No live document writes or employer submissions.
-
-Browser automation remains blocked by Windows helper file-lock error32. Reset/restart attempts did not repair it. MXC unavailable. TinyFish installed but user reports auth errors. No browser workaround was verified.
-
+Verified locally: seven installed-Edge consent tests (synthetic auth, real pinned SDK load, mobile layout), mobile screenshot inspected, all 45 syntax/core/secret commands in test.yml, and whitespace checks. Local Node v24.19.0; CI remains Node 22. Codex sandbox shell still fails setup; approved alternate execution works. Existing signed-in browser automation was not retried. Actual ChatGPT tools remain unavailable in this chat; token issuance, tool retrieval/save and Raven reload remain unverified. Paid pilot PR58 is inactive; user data untouched.
 ## Next actions
-1. Read user result of ChatGPT list_jobs test. Stale pre-hook tokens may require refresh or fresh consent using the originally signed-in browser tab.
-2. Verify live hook issuance and tool discovery without collecting tokens in chat.
-3. Generate a fact-grounded document for granted DataHouse job, save through MCP and verify backend/Raven refresh. Preserve prior content; replacements require explicit revision scope/hash/version.
-4. Verify live grant/consent/session revocation and expiry.
+1. Publish the password consent change after review/CI; source branch codex/oauth-password-signin, based on main 364093f (PR69 already merged).
+2. Owner privately sets a password using Set password in their already signed-in consent tab. If signed out, one successful email sign-in is needed after the limit clears. Never request credentials in chat or reset the owner through admin impersonation.
+3. Reconnect Raven in ChatGPT and verify actual list_jobs/get_job/get_verified_profile, grounded generation/save for the granted job, then Raven refresh persistence. These tools are unavailable in this chat.
+4. Verify live hook issuance, expiry/revocation. Keep strict resource audience, owner/client/session and grant validation.
 
-Standing routine push/deploy authorization applies. Paid pilot PR58 remains inactive. User d means do it. Usage92% remaining. Preserve Smile-Break-Senior-Environment-Artist.json and renderer line-ending-only change. Transfer documentation: docs/RAVEN_AI_HANDOFF.md.
+## Existing live state
+raven-mcp-v1 v4; single-owner 30-day grant for DataHouse PROJECT MANAGER JT-1789707628035, jobs:read/profile:read/documents:create only. No revision permission. User reports hook enabled. Existing docs preserved; no live writes made this session. See docs/qa/2026-10-09-mcp-live-grants.md for earlier evidence and limitations.
 
-## Publication state
-PR69 https://github.com/shipitmyguy-ux/raven/pull/69 contains implementation and QA at source head 31e5d69. Core CI37958843202 passed. Function v4 and migrations/grant are deployed. Merge request was rejected by automatic approval review: routine push/implementation authorization was not accepted as authorization for this exact main merge. User explicitly asked for approval; do not retry merge or bypass until granted. A second transactional grant-denial probe also returned expired requestState; no passing result. Subsequent direct read confirms active/unexpired grant and one authorized session. ChatGPT list_jobs result remains pending; no authenticated tool success or save has been claimed.
-
-## Merge authorization resolved (2026-10-09)
-User explicitly authorized PR69 merge and reaffirmed that routine pushes never require another approval. PR69 merged at b344c2b71d40ad766f30adbf082a36382480e879. Prior merge approval blocker is resolved. No source changes since the passing CI; final premerge commit only recorded QA/publication state. Real ChatGPT list/read/save/reload remains pending.
+Routine pushes authorized. User d means do it. Usage 91% remaining at session start. Preserve unrelated renderer line-ending change and Smile-Break-Senior-Environment-Artist.json. Paid-provider PR58 remains inactive.
