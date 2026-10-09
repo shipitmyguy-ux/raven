@@ -1144,19 +1144,19 @@ test("failed pair errors survive reload and retry clears only the successful doc
   await page.getByRole('button',{name:'Generate both',exact:true}).click();
   await expect(page.locator('.document-generation-error')).toHaveCount(2);
   await expect.poll(errors).toEqual({
-    'job-1|resume':'Resume generation failed: Mock generator unavailable',
-    'job-1|coverLetter':'Cover letter generation failed: Mock generator unavailable'
+    'job-1|resume':'resume generation failed: Mock generator unavailable',
+    'job-1|coverLetter':'cover letter generation failed: Mock generator unavailable'
   });
   await page.reload();await openJob();
   await expect(page.locator('.document-generation-error')).toHaveCount(2);
   await page.route('**/functions/v1/raven-generate-v1**',route=>route.fulfill({json:{ok:true,final_review:{status:'passed',factual_review:{status:'passed'}},resume:generatedResume}}));
   await page.locator('[data-generate="resume"]').click();
   await expect(page.locator('#documentReviewDialog')).toBeVisible();
-  await expect.poll(errors).toEqual({'job-1|coverLetter':'Cover letter generation failed: Mock generator unavailable'});
+  await expect.poll(errors).toEqual({'job-1|coverLetter':'cover letter generation failed: Mock generator unavailable'});
   await page.reload();await openJob();
   await expect(page.locator('[data-generate="resume"]')).toHaveText('Review');
   await expect(page.locator('.document-generation-error')).toHaveCount(1);
-  await expect(page.locator('.document-generation-error')).toContainText('Cover letter generation failed');
+  await expect(page.locator('.document-generation-error')).toContainText('cover letter generation failed');
 });
 
 test("failed pair preserves its successful sibling across reload and retry",async({page})=>{

@@ -1824,6 +1824,7 @@
       }catch{ rememberPendingDocument(job,type,dataUrl); }
     }
     setDocumentApproved(job,type,false);
+    generationErrors.delete(documentApprovalKey(job,type)); saveGenerationErrorState();
     return dataUrl;
   }
   async function refreshSavedResumeContact(job){
