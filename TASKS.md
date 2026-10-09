@@ -11,7 +11,7 @@
 - [x] Owner sign-in through hosted page; confirm email-verified Auth account in database.
 - [x] Correct/save authorization path; user reports successful ChatGPT authentication and database confirms dynamic ChatGPT client registration. Full redirect/tool acceptance remains pending.
 - [x] Apply private single-owner grants/hook; provision one Professional job; deploy v4. User reports hook saved.
-- [x] Implement password sign-in and authenticated private password setup; seven local browser checks and all 45 workflow checks pass. Publication and owner private setup pending.
+- [x] Implement password sign-in and authenticated private password setup; seven local browser checks and all 45 workflow checks pass. PR70 core/full-browser CI passed; explicit merge approval and owner private setup pending.
 - [ ] Verify live hook token issuance/refresh and authenticated tool discovery; fresh email sign-in currently rate-limited.
 - [ ] Verify authenticated ChatGPT retrieval/generation/save and Raven reload, including production expired/revoked credentials.
 

@@ -15,3 +15,8 @@ Verified locally: seven installed-Edge consent tests (synthetic auth, real pinne
 raven-mcp-v1 v4; single-owner 30-day grant for DataHouse PROJECT MANAGER JT-1789707628035, jobs:read/profile:read/documents:create only. No revision permission. User reports hook enabled. Existing docs preserved; no live writes made this session. See docs/qa/2026-10-09-mcp-live-grants.md for earlier evidence and limitations.
 
 Routine pushes authorized. User d means do it. Usage 91% remaining at session start. Preserve unrelated renderer line-ending change and Smile-Break-Senior-Environment-Artist.json. Paid-provider PR58 remains inactive.
+
+## Publication gate
+PR70: https://github.com/shipitmyguy-ux/raven/pull/70, implementation head 68e956fbc21dae1e0b7fb0d7b30dea82c2c98592. GitHub core run 37960978120 and full browser run 37960977991 passed. Live protected-resource metadata still returns 200. Auth log aggregates show historical OAuth token endpoint 200 responses and email OTP 429 responses; they do not prove post-hook token claims or tool access.
+
+Automatic approval review rejected merging PR70: standing branch-push authorization was not accepted as explicit authorization to publish this authentication change to main. Explicit user approval for PR70 has been requested. Do not bypass or retry without approval. Code and docs are pushed; the hosted page does not yet contain password support.
