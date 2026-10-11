@@ -9,7 +9,7 @@
     "restore:raven": "node scripts/restore-raven.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "1.63.0",
+    "@playwright/test": "1.64.0",
     "jose": "6.2.12"
   }
 }
