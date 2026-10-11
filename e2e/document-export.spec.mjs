@@ -14,6 +14,8 @@ test('Word export preserves cover-letter breaks and every resume block once',asy
   return {blocks,document};
  });
  expect(result.blocks).toHaveLength(6);
+ expect(result.blocks[2].keepNext).toBe(true);
+ expect(result.document).toContain('<w:keepLines/><w:keepNext/></w:pPr><w:r>');
  expect(result.blocks[2].text).toBe('Artist | Example Studio | 2020–2025');
  expect(result.blocks.at(-1).text).toBe('Sincerely,\nTest Candidate');
  expect(result.document).toContain('Sincerely,</w:t><w:br/><w:t xml:space="preserve">Test Candidate');

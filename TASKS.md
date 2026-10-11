@@ -1,5 +1,11 @@
 # Raven Tasks
 
+## 2026-10-11 offline improvements
+- [x] Add concrete wording and relevant-history guidance in writer v8 source.
+- [x] Add Word role-heading/paragraph pagination and PDF heading rules; inspect synthetic LibreOffice export.
+- [ ] Deploy writer v8 and verify actual new drafts.
+- [ ] Complete browser export and actual saved Word/PDF layout acceptance.
+
 ## Current verified fixes and follow-ups (2026-10-09)
 - [x] Deploy role-evidence planning, employer-scoped repair, art-dominance and unsupported-claim guards (writer v7).
 - [x] Persist document failure feedback through refresh and retain a successful sibling on partial failure.

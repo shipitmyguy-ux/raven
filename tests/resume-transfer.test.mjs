@@ -16,7 +16,7 @@ test('automatic import binds active identity and requires all requested document
  assert.throws(()=>matchRequest({...payload,raven_format:'other'},requests,2000),/Unsupported/);
 });
 test('Word download is an actual OOXML ZIP with escaped Unicode document text',async()=>{
- const blob=docxFromBlocks([{tag:'H1',text:'José & Candidate'},{tag:'LI',text:'Built <tools> with team.'}]);
+ const blob=docxFromBlocks([{tag:'H1',text:'José & Candidate'},{tag:'DIV',text:'Artist | Studio',keepNext:true},{tag:'LI',text:'Built <tools> with team.'}]);
  const bytes=new Uint8Array(await blob.arrayBuffer()),view=new DataView(bytes.buffer);let pos=0;const files={};
  while(view.getUint32(pos,true)===0x04034b50){
    const length=view.getUint32(pos+18,true),nameLength=view.getUint16(pos+26,true);
@@ -27,6 +27,7 @@ test('Word download is an actual OOXML ZIP with escaped Unicode document text',a
  assert.match(files['[Content_Types].xml'],/wordprocessingml.document.main/);
  assert.match(files['word/document.xml'],/José &amp; Candidate/);
  assert.match(files['word/document.xml'],/• Built &lt;tools&gt;/);
+ assert.match(files['word/document.xml'],/<w:keepLines\/><w:keepNext\/><\/w:pPr><w:r><w:rPr>.*?Artist \| Studio/);
  assert.match(files['_rels/.rels'],/word\/document.xml/);
 });
 
