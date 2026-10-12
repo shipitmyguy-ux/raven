@@ -17,4 +17,10 @@ assert.match(sources,/maxBytes=quick \? 2\*1024\*1024 : 4\*1024\*1024/,"ATS CSV 
 assert.match(sources,/const sources=quick \? ATS_SOURCES\.slice\(0,4\) : ATS_SOURCES/,"quick ATS refresh must use a bounded provider subset");
 assert.match(sources,/const maxRows=quick \? 100 : 240/,"quick ATS candidate volume must be bounded");
 
+assert.match(sources,/GAME_ASHBY_BOARDS=\["bulletfarm"\]/,"BulletFarm board must be configured for direct discovery");
+assert.match(sources,/posting-api\/job-board\//,"direct Ashby source must use the public posting API");
+assert.match(sources,/job\?\.jobUrl/,"direct Ashby source must preserve a posting-specific job URL");
+assert.match(search,/gameStudioAshby\(track\)/,"direct studio discovery must be included in search");
+assert.match(search,/\.\.\.ats,\.\.\.studio/,"studio results must enter ranking and filtering");
+
 console.log("search resilience tests passed");
