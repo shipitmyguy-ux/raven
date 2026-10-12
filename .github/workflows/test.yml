@@ -99,7 +99,7 @@ jobs:
           node tests/single-source.test.mjs
           node tests/search-resilience.test.mjs
           node tests/studio-directory.test.mjs
-          node --test tests/studio-providers.test.mjs tests/studio-scan-handler.test.mjs
+          node --test tests/studio-providers.test.mjs tests/studio-scan-handler.test.mjs tests/studio-detail.test.mjs
           node tests/final-closeout.test.mjs
           node tests/task-health-current.test.mjs
           node tests/generator-consolidation-v2.test.mjs

@@ -1,5 +1,9 @@
 # Raven Status
 
+## Studio descriptions and verified coverage — 2026-10-12 evening
+Implemented bounded SmartRecruiters/BambooHR description retrieval,24-hour cache refresh, exact shared-publisher scopes, automatic consecutive-failure/recovery flags and directory verification/description warnings. All50 formerly pending studios are being individually investigated in two evidence manifests. Local focused tests pass; core/browser/live rollout validation follows. Source authentication, eligibility and saved documents are preserved.
+
+
 ## Studio search expansion — 2026-10-12
 Published collector v4 and directory UI. Registry now has 67 studios: 17 configured sources with successful checks, 50 pending verification. Added nine officially linked providers: Naughty Dog, Digital Extremes, Housemarque, Blackbird Interactive, Crytek, Striking Distance Studios, People Can Fly, CD Projekt Red, Rebellion. Evidence and API counts live in docs/studio-source-verification.json; reproducible provider expansion and source migrations committed.
 

@@ -450,3 +450,10 @@ Limits: 50 unverified sources remain pending; publisher-wide shared boards requi
 - [x] Activate nine officially verified sources with reproducible evidence.
 - [ ] Verify the remaining 50 pending studios and add unsupported provider adapters with studio scoping.
 - [ ] Add bounded SmartRecruiters posting-description retrieval or verify existing enrichment acceptance.
+
+## Studio descriptions and verified coverage — 2026-10-12 evening
+Implemented bounded SmartRecruiters/BambooHR description retrieval,24-hour cache refresh, exact shared-publisher scopes, automatic consecutive-failure/recovery flags and directory verification/description warnings. All50 formerly pending studios are being individually investigated in two evidence manifests. Local focused tests pass; core/browser/live rollout validation follows. Source authentication, eligibility and saved documents are preserved.
+
+- [x] Implement description fetch/freshness, BambooHR and exact shared-board scopes.
+- [x] Implement source health flags and verification outcome UI.
+- [ ] Complete all50 source investigations, activate verified sources and validate deployment.

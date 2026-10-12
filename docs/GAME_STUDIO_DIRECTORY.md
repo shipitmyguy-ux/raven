@@ -4,14 +4,14 @@ The studio registry is a separate discovery pipeline from the interactive Raven 
 
 ## Live architecture
 - Database: `raven_studio_sources`, `raven_studio_checks`, and `raven_studio_cron_auth`.
-- Collector: Supabase Edge Function `raven-studio-scan`; deployments require the function source plus `functions/_shared/track-filter.js` and `functions/_shared/studio-providers.mjs`.
+- Collector: Supabase Edge Function `raven-studio-scan`; deployments require the function source plus `functions/_shared/track-filter.js` and `functions/_shared/studio-providers.mjs` and `functions/_shared/studio-collector.mjs`.
 - Scheduled invocation: Supabase pg_cron job `raven-studio-scan-15m`, using pg_net and a dedicated token kept in Supabase Vault. Never put this token in GitHub, client JS, issues or logs.
 - Public read-only directory: `studio-directory.html` calls the collector's public GET endpoint, which returns names, source state, check times and official careers URLs, not secrets.
 - Protected POST requires `x-raven-studio-secret`, verified against the SHA-256 hash held in the service-only database table.
 - Results are written to `raven_search_results`, preserving Raven's existing saved-job and resume workflows.
 
 ## How studios are checked
-Only provider-verified sources can be scanned. Ashby, Greenhouse, Lever, Workable and SmartRecruiters are supported; initial sources are seeded by `20261012_raven_studio_directory.sql`.
+Only provider-verified sources can be scanned. Ashby, Greenhouse, Lever, Workable, SmartRecruiters and BambooHR are supported; initial sources are seeded by `20261012_raven_studio_directory.sql`.
 Pending directory entries are *not* considered checked. They need a verified career-page URL and provider board identifier before being enabled. Do not guess IDs or declare zero jobs for pending or failed sources.
 
 Each cron tick scans up to six due sources in batches of two. Successful sources follow their interval; failed sources back off at least twelve hours. Health and errors are recorded in `raven_studio_checks`.
@@ -44,3 +44,11 @@ select jobname,schedule,active from cron.job where jobname='raven-studio-scan-15
 The collector accepts only fixed public ATS API hosts and validated board identifiers. Responses reject redirects, cap streamed bodies at 4 MB and fail explicitly above 1,000 jobs. SmartRecruiters pagination is bounded; incomplete pages produce a failed check rather than a false complete result. Workable uses its public widget endpoint. The directory supports provider, status and careers-site search, distinguishes successful zero matches from unverified/failed sources, and shows paused or scheduled checks.
 
 Deployment path filters include the directory page and collector. Normalizer and actual-handler fixtures verify all five providers, authentication, ingestion, title/location eligibility, pagination and failure records. Browser fixtures cover filtering, retry, malformed responses and narrow-screen containment.
+
+## Description coverage, publisher scoping and health
+
+SmartRecruiters and BambooHR descriptions are retrieved only for eligible jobs from fixed provider detail endpoints with validated board/job identities. Each source fetches at most twelve missing descriptions at concurrency two. Cache entries expire after24 hours and invalidate for a newer posting date; failed refreshes preserve previous text and report degraded coverage. Responses cap at4 MB; normalized descriptions cap at20,000 characters. Deferred entries advance as already-fetched entries become fresh cache hits. Source/tick deadlines bound work; unchecked due sources remain queued for the next cron tick.
+
+Publisher boards require `job_scope` with exact `field` and `values`; supported fields are department, company, title, organization. Organization matches only SmartRecruiters' Organizational Unit valueLabel. Filters apply before normalization/attribution. Unknown or malformed scopes fail closed; whole publisher feeds must never be attributed to an individual studio.
+
+`consecutive_failures` tracks list/persistence failures. First failures show failing; three consecutive failures show broken. Successful recovery resets the count. Missing/failed/deferred descriptions instead show degraded coverage without claiming a source outage or zero roles. Public directory displays warnings plus official verification outcomes; unsupported/blocked verification remains pending, never a false broken check.

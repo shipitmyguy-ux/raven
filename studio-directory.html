@@ -15,21 +15,32 @@ input{flex:1;min-width:180px}button{cursor:pointer}.card{min-width:0;overflow-wr
 .card{border:1px solid #384254;background:#1a202d;border-radius:12px;padding:16px}
 .card h2{font-size:1.05rem;margin:0 0 6px}.card p{font-size:.86rem;margin:6px 0}
 .state{color:#b9c0d0;font-size:.76rem}.good{color:#8ce6b3}.bad{color:#ffb5ad}
-.empty{padding:22px;background:#22293a;border-radius:12px}
+.warning{border:1px solid #865848;border-radius:12px;padding:14px 18px;background:#30221f;color:#ffd1bc}.warning p{color:inherit;margin:5px 0}.empty{padding:22px;background:#22293a;border-radius:12px}
 </style></head>
 <body>
 <header><h1>Raven Studio Directory</h1><a href="./index.html">← Back to Raven jobs</a></header>
 <p>Official game-studio careers directory. Verified integrations are checked on a schedule. Pending sources have not been checked and are not evidence of zero vacancies.</p>
 <div class="summary"><div class="metric"><strong id="total">—</strong><span>Studios registered</span></div><div class="metric"><strong id="connected">—</strong><span>Sources configured</span></div><div class="metric"><strong id="checked">—</strong><span>Checked successfully</span></div></div>
-<div class="controls"><input type="search" id="search" aria-label="Search studios" placeholder="Find a studio, provider or careers site…"><select id="filter" aria-label="Status filter"><option value="all">All studios</option><option value="connected">Configured providers</option><option value="working">Successfully checked</option><option value="pending">Awaiting first successful check</option><option value="failed">Checks failed</option></select><select id="provider" aria-label="Provider filter"><option value="all">All providers</option></select><button id="clear" type="button">Clear filters</button></div>
+<section id="health-summary" class="warning" aria-label="Source health warnings" hidden></section>
+<div class="controls"><input type="search" id="search" aria-label="Search studios" placeholder="Find a studio, provider or careers site…"><select id="filter" aria-label="Status filter"><option value="all">All studios</option><option value="connected">Configured providers</option><option value="working">Successfully checked</option><option value="pending">Awaiting first successful check</option><option value="failed">Checks failed</option><option value="attention">Needs attention</option></select><select id="provider" aria-label="Provider filter"><option value="all">All providers</option></select><button id="clear" type="button">Clear filters</button></div>
 <p id="notice" role="status">Loading directory…</p><button id="retry" type="button" hidden>Retry loading directory</button><section id="results" aria-live="polite"></section>
 <script>
 const endpoint="https://umvmilulnqnmeqvfoxxc.supabase.co/functions/v1/raven-studio-scan";
 let studios=[],loaded=false;
-const providerNames={ashby:"Ashby",greenhouse:"Greenhouse",lever:"Lever",workable:"Workable",smartrecruiters:"SmartRecruiters",pending:"Pending verification"};
+const providerNames={ashby:"Ashby",greenhouse:"Greenhouse",lever:"Lever",workable:"Workable",smartrecruiters:"SmartRecruiters",bamboohr:"BambooHR",pending:"Pending verification"};
 function providerLabel(s){return providerNames[s.provider]||s.provider||"Unconfigured";}
 function configured(s){return Boolean(s.provider&&s.provider!=="pending");}
 function dateLabel(value){const date=new Date(value);return value&&!Number.isNaN(date.getTime())?date.toLocaleString():"Time unavailable";}
+function sourceFailure(s){return s.last_status==="failed"||Number(s.consecutive_failures)>0||["degraded","failing","broken","failed"].includes(s.health_status);}
+function detailFailure(s){return Boolean(s.detail_error)||["incomplete","degraded","failed","partial"].includes(s.detail_health_status);}
+function attention(s){return sourceFailure(s)||detailFailure(s);}
+function scopeLabel(s){
+ const scope=s.job_scope;
+ if(!scope||typeof scope!=="object"||!Object.keys(scope).length)return "";
+ if(typeof scope.field==="string"&&Array.isArray(scope.values))return "Shared hiring board — studio scope ("+scope.field+"): "+scope.values.join(", ");
+ const labels=Object.entries(scope).filter(([,v])=>v!==null&&v!==false&&v!=="").map(([k,v])=>k.replaceAll("_"," ")+": "+(Array.isArray(v)?v.join(", "):typeof v==="object"?JSON.stringify(v):String(v)));
+ return labels.length?"Shared hiring board — studio scope: "+labels.join("; "):"";
+}
 function render(){
  if(!loaded)return;
  const needle=document.getElementById("search").value.trim().toLowerCase();
@@ -38,21 +49,29 @@ function render(){
  const list=studios.filter(s=>[s.studio_name,providerLabel(s),s.careers_url].join(" ").toLowerCase().includes(needle)&&
  (provider==="all"||s.provider===provider)&&(
  choice==="all"||(choice==="connected"&&configured(s))||
- (choice==="working"&&s.last_status==="ok")||
+ (choice==="working"&&s.last_status==="ok"&&!sourceFailure(s))||
  (choice==="pending"&&s.last_status!=="ok"&&s.last_status!=="failed")||
- (choice==="failed"&&s.last_status==="failed")));
+ (choice==="failed"&&sourceFailure(s))||(choice==="attention"&&attention(s))));
+ const summary=document.getElementById("health-summary");summary.replaceChildren();
+ const sourceWarnings=studios.filter(sourceFailure).length,detailWarnings=studios.filter(detailFailure).length;
+ summary.hidden=!sourceWarnings&&!detailWarnings;
+ if(!summary.hidden){const heading=document.createElement("strong");const attentionCount=studios.filter(attention).length;heading.textContent=attentionCount+(attentionCount===1?" source needs attention":" sources need attention");summary.append(heading);const message=document.createElement("p");message.textContent=sourceWarnings+(sourceWarnings===1?" source has failed checks; ":" sources have failed checks; ")+detailWarnings+(detailWarnings===1?" source has incomplete job descriptions.":" sources have incomplete job descriptions.")+" Scheduled retries continue for enabled sources. Use Needs attention to review them.";summary.append(message);}
  const area=document.getElementById("results");area.replaceChildren();
  for(const s of list){
   const card=document.createElement("article");card.className="card";
   const title=document.createElement("h2");title.textContent=s.studio_name;card.append(title);
   const info=document.createElement("p");info.textContent=configured(s)?"Provider: "+providerLabel(s):"Careers source not yet verified";card.append(info);
+  if(s.verification_status||s.verification_note){const verification=document.createElement("p");verification.className="state";const labels={verified:"Official source verified",pending:"Source verification pending",unsupported:"Hiring system not yet supported",blocked:"Official source verification blocked",unavailable:"Official source unavailable"};const label=labels[s.verification_status]||(s.verification_status?"Source verification: "+String(s.verification_status).replaceAll("_"," "):"Source verification note");verification.textContent=label+(s.verification_note?" — "+s.verification_note:"");card.append(verification);}
   const status=document.createElement("p");status.className="state "+(s.last_status==="ok"?"good":s.last_status==="failed"?"bad":"");
-  status.textContent=s.last_status==="ok"?"Last successful check: "+dateLabel(s.last_success_at||s.last_checked_at):s.last_status==="failed"?"Last check failed: "+dateLabel(s.last_checked_at)+" — source requires review":configured(s)?"Configured — awaiting first successful check":"Pending source verification — not checked";
+  status.textContent=s.last_status==="ok"?"Last successful check: "+dateLabel(s.last_success_at||s.last_checked_at):s.last_status==="failed"?"Last check failed: "+dateLabel(s.last_checked_at):configured(s)?"Configured — awaiting first successful check":"Pending source verification — not checked";
   card.append(status);
+  if(sourceFailure(s)){const warning=document.createElement("p");warning.className="state bad";const failures=Number(s.consecutive_failures)||1;warning.textContent=failures>1?"Repeated source failures: "+failures+" consecutive checks — source needs review":"First failed check — a scheduled retry may recover the source";if(s.health_status==="broken")warning.textContent+=". Source marked broken";card.append(warning);}
+  if(detailFailure(s)){const warning=document.createElement("p");warning.className="state bad";warning.textContent="Job descriptions incomplete — some roles need description retrieval before tailoring. "+(s.detail_error||"Description retrieval will retry on the next check.");card.append(warning);}
+  const scope=scopeLabel(s);if(scope){const scopeInfo=document.createElement("p");scopeInfo.className="state";scopeInfo.textContent=scope;card.append(scopeInfo);}
   if(s.last_status==="failed"&&s.last_success_at){const previous=document.createElement("p");previous.className="state";previous.textContent="Previous successful check: "+dateLabel(s.last_success_at);card.append(previous);}
   if(s.enabled!==false&&configured(s)&&s.next_check_at){const next=document.createElement("p");next.className="state";next.textContent="Next scheduled check: "+dateLabel(s.next_check_at);card.append(next);}
   if(s.enabled===false&&configured(s)){const paused=document.createElement("p");paused.className="state";paused.textContent="Scheduled checks paused";card.append(paused);}
-  if(s.last_status==="ok"&&Number.isFinite(s.last_job_count)){const count=document.createElement("p");count.textContent="Eligible art roles in last check: "+s.last_job_count;card.append(count);}
+  if(s.last_status==="ok"&&!sourceFailure(s)&&Number.isFinite(s.last_job_count)){const count=document.createElement("p");count.textContent="Eligible art roles in last check: "+s.last_job_count+(detailFailure(s)?" (job list checked; descriptions incomplete)":"");card.append(count);}
   if(s.careers_url){try{const url=new URL(s.careers_url);if(url.protocol==="https:"){const link=document.createElement("a");link.href=url.href;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Official careers page ↗";card.append(link);}}catch{}}
   area.append(card);
  }
