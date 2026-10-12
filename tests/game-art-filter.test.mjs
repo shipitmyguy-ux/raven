@@ -8,7 +8,7 @@ test('substring collisions cannot qualify community or Burlingame jobs',()=>{
  for(const title of ['Assistant Manager - Burlingame Avenue','Join our Senior / Lead Biotechnologist Talent Community','Community Participation Supports Lead DSP','Math Tutor 4-8 - Bancroft Community School','Join Our Talent Community: Enterprise Account Executive','Manager, Social and Community Marketing','Game Designer (Systems)'])assert.equal(allowed({title,snippet:'Unity Unreal video game environment artist collaboration'}),false,title);
 });
 test('actual art roles remain eligible even when descriptions are missing',()=>{
- for(const title of ['Senior Environment Artist','Lead Level Artist','Environment Artist – StarCraft','3D Artist 2','Sr 3D Artist / Art Director','Real-Time 3D Visualization Artist | Unreal Engine','Unreal Generalist','World Builder','Game Artist (Mobile)'])assert.equal(allowed({title}),true,title);
+ for(const title of ['Environment Art Lead','Environment Art Director','Senior Environment Artist','Lead Level Artist','Environment Artist – StarCraft','3D Artist 2','Sr 3D Artist / Art Director','Real-Time 3D Visualization Artist | Unreal Engine','Unreal Generalist','World Builder','Game Artist (Mobile)'])assert.equal(allowed({title}),true,title);
 });
 test('excluded specialties stay excluded regardless of studio and description',()=>{
  for(const title of ['Technical Artist','Senior Technical Designer','Environment Art Engineer','Character Artist','Community Manager','VFX Artist','Gameplay Programmer'])assert.equal(allowed({title,company:'Epic Games',snippet:'3D art and environment art'}),false,title);
