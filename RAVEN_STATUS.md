@@ -1,5 +1,11 @@
 # Raven Status
 
+## Official portal adapters and studio visibility — 2026-10-12
+Implemented bounded ZeniMax iCIMS, EA Avature and Remedy Jobylon adapters, exact company/studio verification, remote eligibility revealed by details, cache-before-fetch and rotating detail cursors. Fixed official studio result starvation: Games/3D preserves top100 aggregate results and merges up to50 fresh Studio sources with URL deduplication and existing eligibility. Full posting-to-prompt fixtures added; no candidate generation or saved records written.
+
+Local49 workflow commands pass. New source candidates MachineGames, Motive, DICE, Remedy, Techland and Avalanche have official evidence. Source activation, CI and live rollout validation follow. id/Bethesda exact taxonomy, Respawn studio filter ID and other source-specific blockers remain unresolved.
+
+
 ## Studio descriptions and verified coverage — 2026-10-12 evening
 Deployed raven-studio-scan v5 and directory health/verification UI. All50 previously pending studios were investigated;9 additional feeds activated. Registry67, configured26, all26 checked successfully, pending41 (23 unsupported systems,3 blocked sources,15 unresolved linkage/scoping). Evidence: docs/studio-source-verification-next-a.json, next-b.json and studio-source-audit-summary.json.
 

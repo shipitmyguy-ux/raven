@@ -1,6 +1,9 @@
 import "../_shared/track-filter.js";
 import {MAX_STUDIO_JOBS, providerEndpoint, providerRecords, normalizeStudioJobs, deduplicateStudioJobs} from "../_shared/studio-providers.mjs";
-import {fetchStudioJson, enrichStudioDetails, reuseFreshStudioDescriptions} from "../_shared/studio-collector.mjs";
+import {fetchStudioJson, fetchStudioText, enrichStudioDetails, reuseFreshStudioDescriptions} from "../_shared/studio-collector.mjs";
+import {collectIcims} from "../_shared/studio-icims.mjs";
+import {collectAvature} from "../_shared/studio-avature.mjs";
+import {collectJobylon} from "../_shared/studio-jobylon.mjs";
 const {gameArtRoleAllowed,jobLocationAllowed}=(globalThis as any).RavenTrackFilter;
 const base=Deno.env.get("SUPABASE_URL")||"",key=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
 const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"content-type,x-raven-studio-secret","Access-Control-Allow-Methods":"GET,POST,OPTIONS"};
@@ -21,7 +24,19 @@ async function auth(request:Request){
  let diff=0;for(let i=0;i<hash.length;i++)diff|=hash.charCodeAt(i)^expected.charCodeAt(i);
  return diff===0;
 }
+async function preparePortalDetails(jobs:any[],deadline:number){
+ for(let i=0;i<jobs.length;i+=20){
+  if(Date.now()+8000>deadline)throw Error("Source description cache budget exhausted");
+  const batch=jobs.slice(i,i+20),urls=batch.map((j:any)=>'"'+j.url.replace(/"/g,'\\"')+'"').join(',');
+  const existing=await db("raven_search_results?select=url,snippet,studio_description_updated_at&url=in."+encodeURIComponent('('+urls+')'));
+  reuseFreshStudioDescriptions(batch,existing);
+ }
+}
 async function sourceJobs(s:any,deadline:number){
+ const portalOptions={fetchJson:fetchStudioJson,fetchText:fetchStudioText,deadline,jobAllowed:(j:any)=>gameArtRoleAllowed(j)&&jobLocationAllowed(j),detailAllowed:(j:any)=>gameArtRoleAllowed(j),prepareDetails:(jobs:any[])=>preparePortalDetails(jobs,deadline)};
+ if(s.provider==="icims")return collectIcims(s,portalOptions);
+ if(s.provider==="avature")return collectAvature(s,portalOptions);
+ if(s.provider==="jobylon")return collectJobylon(s,portalOptions);
  const all:any[]=[];let fetched=0;
  for(let page=0;page<10;page++){
   if(Date.now()+6000>deadline)throw Error("Source scan time budget exceeded");
@@ -45,18 +60,14 @@ async function sourceJobs(s:any,deadline:number){
  throw Error("Provider page limit exceeded");
 }
 async function check(s:any,tickDeadline:number){
- const start=Date.now(),deadline=Math.min(tickDeadline,start+75000);let status="ok",error="",total=0,eligible=0,details:any={status:"not_checked",error:null};
+ const start=Date.now(),deadline=Math.min(tickDeadline,start+75000);let cursorNext:any;let status="ok",error="",total=0,eligible=0,details:any={status:"not_checked",error:null};
  try{
-  const collected=await sourceJobs(s,deadline);const jobs=collected.jobs;total=collected.fetched;
+  const collected=await sourceJobs(s,deadline);const jobs=collected.jobs;total=collected.fetched;cursorNext=collected.detail_cursor_next;
   const selected=jobs.filter((j:any)=>gameArtRoleAllowed(j)&&jobLocationAllowed(j));
   eligible=selected.length;
-  // Reuse stored descriptions so later scans fill the next missing batch.
-  for(let i=0;i<selected.length;i+=20){
-   const batch=selected.slice(i,i+20),urls=batch.map((j:any)=>'"'+j.url.replace(/"/g,'\\"')+'"').join(',');
-   const existing=await db("raven_search_results?select=url,snippet,studio_description_updated_at&url=in."+encodeURIComponent('('+urls+')'));
-   reuseFreshStudioDescriptions(batch,existing);
-  }
-  details=await enrichStudioDetails(s,selected,{deadline});
+  // Cache lookups are only needed for descriptions missing from this feed.
+  await preparePortalDetails(selected.filter((j:any)=>!j.snippet),deadline);
+  details=collected.details||await enrichStudioDetails(s,selected,{deadline});
   const seen=new Date().toISOString();
   for(const group of [selected.filter((j:any)=>!!j.snippet),selected.filter((j:any)=>!j.snippet)])for(let i=0;i<group.length;i+=35)await db("raven_search_results?on_conflict=url","POST",group.slice(i,i+35).map((j:any)=>({
    track:"Games / 3D",title:j.title,company:j.company,location:j.location,remote:j.remote,
@@ -67,7 +78,7 @@ async function check(s:any,tickDeadline:number){
  await db("raven_studio_sources?id=eq."+s.id,"PATCH",{
   last_checked_at:checked,...(status==="ok"?{last_success_at:checked}:{}),
   next_check_at:new Date(Date.now()+Math.max(status==="ok"?6:12,s.interval_hours)*3600000).toISOString(),
-  last_status:status,last_error:error||null,...(status==="ok"?{last_job_count:eligible}:{}),updated_at:checked,
+  last_status:status,last_error:error||null,...(Number.isInteger(cursorNext)&&cursorNext>=0?{detail_cursor:cursorNext}:{}),...(status==="ok"?{last_job_count:eligible}:{}),updated_at:checked,
   consecutive_failures:status==="ok"?0:Number(s.consecutive_failures||0)+1,
   health_status:status==="ok"?(details.status==="partial"||details.status==="failed"?"degraded":"healthy"):(Number(s.consecutive_failures||0)+1>=3?"broken":"failing"),
   detail_health_status:details.status,detail_error:details.error
@@ -85,7 +96,7 @@ Deno.serve(async request=>{
   }
   if(request.method!=="POST")return json({error:"Method not allowed"},405);
   if(!await auth(request))return json({error:"Unauthorized"},401);
-  const due=await db("raven_studio_sources?select=id,studio_name,slug,provider,board_key,interval_hours,job_scope,consecutive_failures&enabled=eq.true&provider=neq.pending&next_check_at=lte."+encodeURIComponent(new Date().toISOString())+"&order=priority.desc,next_check_at.asc&limit=6");
+  const due=await db("raven_studio_sources?select=id,studio_name,slug,provider,board_key,interval_hours,job_scope,consecutive_failures,detail_cursor&enabled=eq.true&provider=neq.pending&next_check_at=lte."+encodeURIComponent(new Date().toISOString())+"&order=priority.desc,next_check_at.asc&limit=6");
   const results=[],tickDeadline=Date.now()+140000;for(let i=0;i<due.length;i+=2){if(Date.now()+8000>tickDeadline)break;results.push(...await Promise.all(due.slice(i,i+2).map((s:any)=>check(s,tickDeadline))));}
   return json({ok:true,checked:results.length,results});
  }catch(e){return json({error:String(e instanceof Error?e.message:e)},500);}

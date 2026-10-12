@@ -1,0 +1,71 @@
+{
+  "verified_at": "2026-10-12T23:41:24.686Z",
+  "studio_name": "Remedy Entertainment",
+  "slug": "remedy-entertainment",
+  "provider": "jobylon",
+  "board_key": "2986",
+  "official_page": "https://www.remedygames.com/careers",
+  "linkage": "Official careers HTML has jbl_company_id=2986, jbl_version=v2 and cdn.jobylon.com/embedder.js. Public embedder constructs fixed company widget endpoint. Widget records company_id=2986 and company=Remedy Entertainment; details JobPosting hiringOrganization matches.",
+  "feed_url": "https://cdn.jobylon.com/jobs/companies/2986/embed/v2/?target=jobylon-jobs-widget&page_size=1000",
+  "api": "No private API or token used; public widget literal jobs data and public posting JSON-LD.",
+  "pagination": "All public jobs embedded server-side; page_size affects client pagination. Bounded 1000 jobs and 4 MB HTML; no script executed.",
+  "jobs": [
+    {
+      "provider_job_id": "382966",
+      "title": "Senior Development Manager",
+      "company": "Remedy Entertainment",
+      "location": "Helsinki",
+      "remote": false,
+      "url": "https://emp.jobylon.com/jobs/382966-remedy-entertainment-senior-development-manager/",
+      "posted_at": "2026-09-24T15:14:03.000Z",
+      "studio_description_updated_at": "2026-10-12T23:41:24.191Z",
+      "snippet_length": 5111
+    },
+    {
+      "provider_job_id": "382381",
+      "title": "(Senior) Technical Music Designer",
+      "company": "Remedy Entertainment",
+      "location": "Helsinki; Stockholm",
+      "remote": false,
+      "url": "https://emp.jobylon.com/jobs/382381-remedy-entertainment-senior-technical-music-designer/",
+      "posted_at": "2026-09-14T14:53:15.000Z",
+      "studio_description_updated_at": "2026-10-12T23:41:24.152Z",
+      "snippet_length": 4450
+    },
+    {
+      "provider_job_id": "377032",
+      "title": "Senior Performance Capture Artist",
+      "company": "Remedy Entertainment",
+      "location": "Helsinki",
+      "remote": false,
+      "url": "https://emp.jobylon.com/jobs/377032-remedy-entertainment-senior-performance-capture-artist/",
+      "posted_at": "2026-08-20T09:08:00.000Z",
+      "studio_description_updated_at": "2026-10-12T23:41:24.412Z",
+      "snippet_length": 4627
+    },
+    {
+      "provider_job_id": "360550",
+      "title": "Creative Operations Lead (Marketing)",
+      "company": "Remedy Entertainment",
+      "location": "Helsinki",
+      "remote": false,
+      "url": "https://emp.jobylon.com/jobs/360550-remedy-entertainment-creative-operations-lead-marketing/",
+      "posted_at": "2026-05-19T07:36:42.000Z",
+      "studio_description_updated_at": "2026-10-12T23:41:24.686Z",
+      "snippet_length": 5388
+    }
+  ],
+  "fetched": 4,
+  "details": {
+    "status": "complete",
+    "attempted": 4,
+    "completed": 4,
+    "deferred": 0,
+    "error": null
+  },
+  "eligibility_note": "All four vacancies Helsinki/Stockholm hybrid or onsite, not remote; do not infer remote from work-from-home benefit prose.",
+  "validation": "node tests/studio-jobylon.test.mjs passed; live transport redirect:error timeout 6 seconds. All four public detail pages returned full descriptions.",
+  "integration_contract": "detailAllowed separately selects role candidates before location eligibility; prepareDetails reuses fresh stored descriptions before missing-detail selection; detail_cursor rotates missing candidates at maximum 12 and concurrency 2; returned detail_cursor_next resumes next scan.",
+  "remote_evidence": "Only explicit workspace Remote/Fully remote or authoritative JobPosting jobLocationType TELECOMMUTE sets remote=true. Hybrid prose mentioning home-working is not evidence of remote eligibility.",
+  "additional_validation": "Synthetic tests pass for remote detail discovery before location filtering, fresh-cache detail skip, cursor rotation across more than 12 vacancies and invalid cursor fallback."
+}

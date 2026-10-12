@@ -466,3 +466,12 @@ Remaining:41 source-specific adapter/linkage tasks in the manifests. Local Chrom
 - [x] Investigate all50 formerly pending studios and activate9 verified feeds.
 - [x] Verify final local/CI/Pages and real scheduled ingestion, scoped attribution and description persistence.
 - [ ] Add supported adapters/confirm linkage for41 remaining sources using each recorded blocker; do not guess identifiers.
+
+## Official portal adapters and studio visibility — 2026-10-12
+Implemented bounded ZeniMax iCIMS, EA Avature and Remedy Jobylon adapters, exact company/studio verification, remote eligibility revealed by details, cache-before-fetch and rotating detail cursors. Fixed official studio result starvation: Games/3D preserves top100 aggregate results and merges up to50 fresh Studio sources with URL deduplication and existing eligibility. Full posting-to-prompt fixtures added; no candidate generation or saved records written.
+
+Local49 workflow commands pass. New source candidates MachineGames, Motive, DICE, Remedy, Techland and Avalanche have official evidence. Source activation, CI and live rollout validation follow. id/Bethesda exact taxonomy, Respawn studio filter ID and other source-specific blockers remain unresolved.
+
+- [x] Implement three verified portal adapters and fix result-window starvation.
+- [x] Pass49 local workflow commands including parser/dispatch/window/full prompt tests.
+- [ ] Deploy collector and backend, activate verified sources, verify live result/prompt browser acceptance.

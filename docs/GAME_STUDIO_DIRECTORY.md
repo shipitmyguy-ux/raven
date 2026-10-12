@@ -52,3 +52,11 @@ SmartRecruiters and BambooHR descriptions are retrieved only for eligible jobs f
 Publisher boards require `job_scope` with exact `field` and `values`; supported fields are department, company, title, organization. Organization matches only SmartRecruiters' Organizational Unit valueLabel. Filters apply before normalization/attribution. Unknown or malformed scopes fail closed; whole publisher feeds must never be attributed to an individual studio.
 
 `consecutive_failures` tracks list/persistence failures. First failures show failing; three consecutive failures show broken. Successful recovery resets the count. Missing/failed/deferred descriptions instead show degraded coverage without claiming a source outage or zero roles. Public directory displays warnings plus official verification outcomes; unsupported/blocked verification remains pending, never a false broken check.
+
+## Official career portal support and result visibility
+
+ZeniMax iCIMS uses the first-party ZeniMax embedded directory and iCIMS public JobPosting details, requiring exact company scope. EA Avature validates the official numeric studio filter, result department and detail department plus explicit Work Model. Remedy Jobylon reads literal public widget data without executing script and validates company and JobPosting identity. Fixed host URLs, body limits and deadlines apply. Unknown portal templates, unrecognized job links, explicit count mismatch, unverified pagination, or blocker pages fail rather than report a successful empty source.
+
+Portal details evaluate art title eligibility before location because explicit remote metadata can appear only in details. Existing global location policy applies after enrichment. Fresh cached descriptions skip requests; detail_cursor rotates missing candidates beyond the twelve-detail scan budget. Partial detail outcomes remain visible and saved descriptions are preserved on refresh failure.
+
+Games/3D read results preserve the existing aggregate top100 and merge up to50 most recently seen official studio results, deduplicating by URL and applying existing role/location eligibility. This prevents valid official-board jobs at score12 being absent from the browser results window. Other tracks keep their original window.

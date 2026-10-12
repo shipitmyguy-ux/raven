@@ -1,7 +1,7 @@
 // Bounded official-provider reads. Detail failures do not masquerade as list failures.
 import {providerDetailEndpoint, providerDetailRecord, normalizeStudioJobs} from './studio-providers.mjs';
-export async function fetchStudioJson(url, fetcher=fetch) {
- const res=await fetcher(url,{headers:{Accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(6000)});
+export async function fetchStudioText(url, fetcher=fetch) {
+ const res=await fetcher(url,{headers:{Accept:'application/json,text/html;q=0.9'},redirect:'error',signal:AbortSignal.timeout(6000)});
  if(!res.ok)throw Error('Provider HTTP '+res.status);
  if(Number(res.headers.get('content-length')||0)>4000000)throw Error('Provider response too large');
  if(!res.body)throw Error('Provider response empty');
@@ -9,8 +9,9 @@ export async function fetchStudioJson(url, fetcher=fetch) {
  try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>4000000)throw Error('Provider response too large');chunks.push(value);}}
  finally{await reader.cancel();}
  const bytes=new Uint8Array(size);let position=0;for(const chunk of chunks){bytes.set(chunk,position);position+=chunk.length;}
- return JSON.parse(new TextDecoder().decode(bytes));
+ return new TextDecoder().decode(bytes);
 }
+export async function fetchStudioJson(url,fetcher=fetch){return JSON.parse(await fetchStudioText(url,fetcher));}
 export function reuseFreshStudioDescriptions(jobs,existing,now=Date.now()) {
  const byUrl=new Map(existing.map(row=>[row.url,row]));
  for(const job of jobs){

@@ -27,7 +27,7 @@ input{flex:1;min-width:180px}button{cursor:pointer}.card{min-width:0;overflow-wr
 <script>
 const endpoint="https://umvmilulnqnmeqvfoxxc.supabase.co/functions/v1/raven-studio-scan";
 let studios=[],loaded=false;
-const providerNames={ashby:"Ashby",greenhouse:"Greenhouse",lever:"Lever",workable:"Workable",smartrecruiters:"SmartRecruiters",bamboohr:"BambooHR",pending:"Pending verification"};
+const providerNames={ashby:"Ashby",greenhouse:"Greenhouse",lever:"Lever",workable:"Workable",smartrecruiters:"SmartRecruiters",bamboohr:"BambooHR",icims:"iCIMS · ZeniMax",avature:"Avature · EA",jobylon:"Jobylon",pending:"Pending verification"};
 function providerLabel(s){return providerNames[s.provider]||s.provider||"Unconfigured";}
 function configured(s){return Boolean(s.provider&&s.provider!=="pending");}
 function dateLabel(value){const date=new Date(value);return value&&!Number.isNaN(date.getTime())?date.toLocaleString():"Time unavailable";}
