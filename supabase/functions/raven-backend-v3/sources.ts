@@ -283,3 +283,39 @@ export async function atsDiagnosticOne(source:string, track:Track){
   }catch(e){error=e instanceof Error?e.message:String(e);}
   return {run_id:runId,source,status,http_status,jobs_parsed,elapsed_ms:Date.now()-start,error};
 }
+
+/**
+ * Direct employer-board discovery complements the bounded ATS snapshot.
+ * Only public, explicitly configured boards are queried; failures leave the
+ * existing providers untouched. Add new verified studio board slugs here.
+ */
+const GAME_ASHBY_BOARDS=["bulletfarm"] as const;
+export async function gameStudioAshby(track:Track):Promise<Candidate[]>{
+  if(track!=="Games / 3D") return [];
+  const batches=await Promise.all(GAME_ASHBY_BOARDS.map(async board=>{
+    try{
+      const endpoint="https://api.ashbyhq.com/posting-api/job-board/"+encodeURIComponent(board);
+      const response=await fetch(endpoint,{headers:{"User-Agent":"RavenJobSearch/3.6","Accept":"application/json"},signal:AbortSignal.timeout(5500)});
+      if(!response.ok) return [] as Candidate[];
+      const data=await response.json();
+      if(!Array.isArray(data?.jobs)) return [] as Candidate[];
+      return data.jobs.slice(0,150).flatMap((job:any)=>{
+        const title=String(job?.title||"").trim();
+        const url=normalizeUrl(String(job?.jobUrl||""));
+        if(!title||!/^https:\/\/jobs\.ashbyhq\.com\//i.test(url)) return [];
+        const location=String(job?.location||"").trim();
+        const secondary=Array.isArray(job?.secondaryLocations)?job.secondaryLocations.map((x:any)=>String(x?.location||"")).filter(Boolean):[];
+        const remote=job?.isRemote===true||String(job?.workplaceType||"").toLowerCase()==="remote";
+        const displayLocation=remote?[location,...secondary,"Remote"].filter(Boolean).join("; "):[location,...secondary].filter(Boolean).join("; ");
+        return [{
+          track,title,company:board==="bulletfarm"?"BulletFarm":board,
+          location:displayLocation,remote,
+          url,source:"ATS:ashby-direct",
+          snippet:decodeHtml(String(job?.descriptionPlain||job?.descriptionHtml||"")).slice(0,6000),
+          posted_at:String(job?.publishedAt||"")
+        } as Candidate];
+      });
+    }catch{return [] as Candidate[];}
+  }));
+  return batches.flat();
+}
