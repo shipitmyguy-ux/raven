@@ -452,8 +452,17 @@ Limits: 50 unverified sources remain pending; publisher-wide shared boards requi
 - [ ] Add bounded SmartRecruiters posting-description retrieval or verify existing enrichment acceptance.
 
 ## Studio descriptions and verified coverage — 2026-10-12 evening
-Implemented bounded SmartRecruiters/BambooHR description retrieval,24-hour cache refresh, exact shared-publisher scopes, automatic consecutive-failure/recovery flags and directory verification/description warnings. All50 formerly pending studios are being individually investigated in two evidence manifests. Local focused tests pass; core/browser/live rollout validation follows. Source authentication, eligibility and saved documents are preserved.
+Deployed raven-studio-scan v5 and directory health/verification UI. All50 previously pending studios were investigated;9 additional feeds activated. Registry67, configured26, all26 checked successfully, pending41 (23 unsupported systems,3 blocked sources,15 unresolved linkage/scoping). Evidence: docs/studio-source-verification-next-a.json, next-b.json and studio-source-audit-summary.json.
 
-- [x] Implement description fetch/freshness, BambooHR and exact shared-board scopes.
-- [x] Implement source health flags and verification outcome UI.
-- [ ] Complete all50 source investigations, activate verified sources and validate deployment.
+New sources: Insomniac, Epic Games English board, Bend, Santa Monica, Ubisoft Massive, Crystal Dynamics, Studio Wildcard, inXile, Compulsion. Sony boards require exact department and Ubisoft exact Organizational Unit scopes; no whole publisher feed attributed to studios. These9 current checks yielded zero eligible roles under existing art/location rules; successful checks are not evidence of no public vacancies. inXile's sole feed entry is a scam warning, not a vacancy.
+
+SmartRecruiters/BambooHR descriptions fetch from fixed validated provider endpoints, at most12 eligible missing details at concurrency2 per source;24-hour cache expiry/newer posting invalidation; failed refresh preserves prior good text. Descriptions capped20,000 characters. Actual People Can Fly persisted description length10,300 and timestamp2026-10-12T23:30:29.894Z; source detail health complete. BambooHR adapter real Wildcard detail responses verified independently; actual current Wildcard art listing is Bellevue onsite and excluded correctly. Health flags separate partial descriptions from list failures, mark third consecutive failure broken, and reset recovery. Directory shows alerts, scopes and verification outcomes.
+
+Validation:49 final local workflow commands pass, including scoped-provider contamination, malformed configuration, actual-handler auth/persistence/mixed-key bulk writes, description identities/cache expiry/deferred coverage and failure/recovery fixtures. All CI runs for9499a1d pass: core +8 directory browser fixtures, full Browser regression, Pages and2 production smoke runs. Hosted health/verification UI and GET fields confirmed, unauthenticated POST401. Authenticated Vault-scheduled live scans pass and all9 new sources are healthy. Saved jobs/resumes/applications untouched. Source migration tool returned internal error before applying data; same committed idempotent SQL applied successfully as five10-row batches and readback confirmed all50 verification outcomes.
+
+Remaining:41 source-specific adapter/linkage tasks in the manifests. Local Chromium unavailable, browser acceptance performed in GitHub CI. Preexisting unrelated security advisor notices unchanged. Prior writer/export deployment follow-up remains separate.
+
+- [x] Implement and deploy fresh descriptions, BambooHR, exact Sony/Ubisoft scopes and source health.
+- [x] Investigate all50 formerly pending studios and activate9 verified feeds.
+- [x] Verify final local/CI/Pages and real scheduled ingestion, scoped attribution and description persistence.
+- [ ] Add supported adapters/confirm linkage for41 remaining sources using each recorded blocker; do not guess identifiers.
