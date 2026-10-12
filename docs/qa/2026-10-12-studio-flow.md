@@ -17,3 +17,9 @@ The local Playwright invocation was **blocked before page execution** because th
 ## Follow-up live check
 
 After backend deployment, repeat the public `listResults` GET and confirm the persisted People Can Fly role and full description appear in its output. Node acceptance establishes transport through the prompt request; no actual resume output is claimed, because producing/saving candidate documents is outside this read-only acceptance task.
+
+## Final hosted acceptance
+
+raven-backend-v3 v60 public Games/3D listResults returned7 eligible results, including6 Studio rows. People Can Fly role744000151377560 is now present with the complete persisted10,300-character description. Before rollout it was omitted by both top100 result starvation and the simplistic foreign-title rejection. The bounded recent-studio pool fixes visibility; narrow bilingual qualification-block recognition accepts full English role content while preserving foreign-only exclusions. Exact actual public snapshot regression passes.
+
+GitHub core/safety workflow38324014657 passed the new browser fixture alongside directory tests; full browser38324014629, Pages38324014612 and smoke38324014616/38324044925 passed. Final bilingual/source commitb1ba57bf core38324400351 and smoke38324400322 pass. Actual candidate resumes and saved user jobs were not created or modified. This is end-to-end request/persistence fixture acceptance plus real read-only hosted discovery acceptance, not generated resume content acceptance.
