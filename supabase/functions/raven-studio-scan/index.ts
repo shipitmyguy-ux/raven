@@ -6,7 +6,7 @@ const json=(v:unknown,status=200)=>new Response(JSON.stringify(v),{status,header
 async function db(path:string,method="GET",body?:unknown){
  const r=await fetch(base+"/rest/v1/"+path,{method,headers:{"apikey":key,"Authorization":"Bearer "+key,"Content-Type":"application/json","Prefer":method==="GET"?"return=representation":"resolution=merge-duplicates,return=minimal"},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(8000)});
  if(!r.ok)throw new Error("DB "+r.status+" "+(await r.text()).slice(0,200));
- return r.status===204?[]:await r.json();
+ const text=await r.text();return text?JSON.parse(text):[];
 }
 const clean=(s:any)=>String(s||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,5000);
 function uri(raw:any){try{const u=new URL(raw);if(u.protocol!=="https:")return "";u.hash="";for(const k of [...u.searchParams.keys()])if(/^utm_/.test(k))u.searchParams.delete(k);return u.toString();}catch{return "";}}
