@@ -437,9 +437,16 @@ Final cover-letter acceptance: worker fresh hosted Raven load/full reload each r
 
 
 ## Studio search expansion — 2026-10-12
-Workable and SmartRecruiters collector adapters, bounded response/pagination handling and directory provider/status/search/retry UI implemented. Existing auth and shared art/location eligibility remain. All 49 local workflow commands pass, including actual mocked collector auth/ingestion/failure and all-five-provider normalization. Local Chromium installation failed (empty/truncated archive); browser fixtures are wired into CI, not yet verified. Verified-source manifest, schema deployment, Edge rollout and live checks follow in this session. Prior writer/export deployment tasks remain separate.
+Published collector v4 and directory UI. Registry now has 67 studios: 17 configured sources with successful checks, 50 pending verification. Added nine officially linked providers: Naughty Dog, Digital Extremes, Housemarque, Blackbird Interactive, Crytek, Striking Distance Studios, People Can Fly, CD Projekt Red, Rebellion. Evidence and API counts live in docs/studio-source-verification.json; reproducible provider expansion and source migrations committed.
+
+Supports Ashby, Greenhouse, Lever, Workable and SmartRecruiters. Workable multi-location duplicates merge by canonical URL, preventing duplicate upsert errors; SmartRecruiters preserves full location names and bounded pagination. Fixed-host requests reject redirects and cap body/job counts. Directory adds provider/status/site search, clear filters, honest pending/failed/zero-match distinctions, schedules and load retry. Directory-only edits now trigger Pages deployment.
+
+Verified: all 49 local workflow commands pass; Reusable core tests (including four new directory browser fixtures), full Browser regression, Pages deployment and both production smoke runs passed for 7dd509b. Hosted directory controls and public GET schedule fields verified. Anonymous POST returns401. Existing Vault-authenticated scheduled command returned HTTP200; all nine additions have successful live check records. Actual matching jobs persisted for Blackbird and People Can Fly; HyperHug's initial check adds two more. Collector cron remains active every15 minutes, individual studios follow6–24 hour intervals. Saved jobs, resumes and applications were not modified.
+
+Limits: 50 unverified sources remain pending; publisher-wide shared boards require studio scoping. SmartRecruiters list API has no description, so its discovered snippets remain empty and existing enrichment must fetch the posting before document generation. Local Chromium download failed; GitHub browser CI passed. Prior writer/export deployment follow-up remains separate.
 
 - [x] Add Workable/SmartRecruiters support and accurate searchable directory UI.
-- [x] Verify 49 local workflow commands.
-- [ ] Verify studio browser CI and live collector rollout.
-- [ ] Activate official-page-verified sources with reproducible evidence.
+- [x] Verify local checks, browser CI, Pages and live collector rollout.
+- [x] Activate nine officially verified sources with reproducible evidence.
+- [ ] Verify the remaining 50 pending studios and add unsupported provider adapters with studio scoping.
+- [ ] Add bounded SmartRecruiters posting-description retrieval or verify existing enrichment acceptance.
