@@ -10,8 +10,8 @@ h1{font-size:1.65rem;margin:10px 0}p{color:#b0b6c7;line-height:1.45}
 .metric{padding:14px 20px;border:1px solid #383f51;border-radius:12px;background:#1a1f2b}
 .metric strong{font-size:1.6rem;display:block}.metric span{color:#b0b6c7;font-size:.84rem}
 .controls{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0}
-input,select{background:#1e2532;border:1px solid #455066;color:white;border-radius:9px;padding:12px;font:inherit}
-input{flex:1;min-width:180px}section#results{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px}
+input,select,button{background:#1e2532;border:1px solid #455066;color:white;border-radius:9px;padding:12px;font:inherit}
+input{flex:1;min-width:180px}button{cursor:pointer}.card{min-width:0;overflow-wrap:anywhere}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #bca9ff;outline-offset:3px}@media(max-width:480px){body{padding:16px 12px 40px}.controls>*{width:100%;min-width:0}.metric{flex:1;padding:12px}header a{margin-left:0}}section#results{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px}
 .card{border:1px solid #384254;background:#1a202d;border-radius:12px;padding:16px}
 .card h2{font-size:1.05rem;margin:0 0 6px}.card p{font-size:.86rem;margin:6px 0}
 .state{color:#b9c0d0;font-size:.76rem}.good{color:#8ce6b3}.bad{color:#ffb5ad}
@@ -20,45 +20,64 @@ input{flex:1;min-width:180px}section#results{display:grid;grid-template-columns:
 <body>
 <header><h1>Raven Studio Directory</h1><a href="./index.html">← Back to Raven jobs</a></header>
 <p>Official game-studio careers directory. Verified integrations are checked on a schedule. Pending sources have not been checked and are not evidence of zero vacancies.</p>
-<div class="summary"><div class="metric"><strong id="total">—</strong><span>Studios registered</span></div><div class="metric"><strong id="connected">—</strong><span>API integrations configured</span></div><div class="metric"><strong id="checked">—</strong><span>Checked successfully</span></div></div>
-<div class="controls"><input type="search" id="search" aria-label="Search studios" placeholder="Find a studio…"><select id="filter" aria-label="Status filter"><option value="all">All studios</option><option value="connected">Configured providers</option><option value="working">Successfully checked</option><option value="pending">Pending verification</option><option value="failed">Checks failed</option></select></div>
-<p id="notice" role="status">Loading directory…</p><section id="results" aria-live="polite"></section>
+<div class="summary"><div class="metric"><strong id="total">—</strong><span>Studios registered</span></div><div class="metric"><strong id="connected">—</strong><span>Sources configured</span></div><div class="metric"><strong id="checked">—</strong><span>Checked successfully</span></div></div>
+<div class="controls"><input type="search" id="search" aria-label="Search studios" placeholder="Find a studio, provider or careers site…"><select id="filter" aria-label="Status filter"><option value="all">All studios</option><option value="connected">Configured providers</option><option value="working">Successfully checked</option><option value="pending">Awaiting first successful check</option><option value="failed">Checks failed</option></select><select id="provider" aria-label="Provider filter"><option value="all">All providers</option></select><button id="clear" type="button">Clear filters</button></div>
+<p id="notice" role="status">Loading directory…</p><button id="retry" type="button" hidden>Retry loading directory</button><section id="results" aria-live="polite"></section>
 <script>
 const endpoint="https://umvmilulnqnmeqvfoxxc.supabase.co/functions/v1/raven-studio-scan";
-let studios=[];
+let studios=[],loaded=false;
+const providerNames={ashby:"Ashby",greenhouse:"Greenhouse",lever:"Lever",workable:"Workable",smartrecruiters:"SmartRecruiters",pending:"Pending verification"};
+function providerLabel(s){return providerNames[s.provider]||s.provider||"Unconfigured";}
+function configured(s){return Boolean(s.provider&&s.provider!=="pending");}
+function dateLabel(value){const date=new Date(value);return value&&!Number.isNaN(date.getTime())?date.toLocaleString():"Time unavailable";}
 function render(){
+ if(!loaded)return;
  const needle=document.getElementById("search").value.trim().toLowerCase();
  const choice=document.getElementById("filter").value;
- const list=studios.filter(s=>s.studio_name.toLowerCase().includes(needle)&&(
- choice==="all"||(choice==="connected"&&s.provider!=="pending")||
+ const provider=document.getElementById("provider").value;
+ const list=studios.filter(s=>[s.studio_name,providerLabel(s),s.careers_url].join(" ").toLowerCase().includes(needle)&&
+ (provider==="all"||s.provider===provider)&&(
+ choice==="all"||(choice==="connected"&&configured(s))||
  (choice==="working"&&s.last_status==="ok")||
- (choice==="pending"&&s.provider==="pending")||
+ (choice==="pending"&&s.last_status!=="ok"&&s.last_status!=="failed")||
  (choice==="failed"&&s.last_status==="failed")));
  const area=document.getElementById("results");area.replaceChildren();
  for(const s of list){
   const card=document.createElement("article");card.className="card";
   const title=document.createElement("h2");title.textContent=s.studio_name;card.append(title);
-  const info=document.createElement("p");info.textContent=s.provider==="pending"?"Careers source not yet verified":"Provider: "+s.provider;card.append(info);
+  const info=document.createElement("p");info.textContent=configured(s)?"Provider: "+providerLabel(s):"Careers source not yet verified";card.append(info);
   const status=document.createElement("p");status.className="state "+(s.last_status==="ok"?"good":s.last_status==="failed"?"bad":"");
-  status.textContent=s.last_status==="ok"?"Last successful check: "+new Date(s.last_success_at||s.last_checked_at).toLocaleString():s.last_status==="failed"?"Last check failed — source requires review":"Not yet successfully checked";
+  status.textContent=s.last_status==="ok"?"Last successful check: "+dateLabel(s.last_success_at||s.last_checked_at):s.last_status==="failed"?"Last check failed: "+dateLabel(s.last_checked_at)+" — source requires review":configured(s)?"Configured — awaiting first successful check":"Pending source verification — not checked";
   card.append(status);
-  if(s.last_status==="ok"){const count=document.createElement("p");count.textContent="Relevant roles in last check: "+s.last_job_count;card.append(count);}
-  if(s.careers_url){const link=document.createElement("a");link.href=s.careers_url;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Official careers page ↗";card.append(link);}
+  if(s.last_status==="failed"&&s.last_success_at){const previous=document.createElement("p");previous.className="state";previous.textContent="Previous successful check: "+dateLabel(s.last_success_at);card.append(previous);}
+  if(s.enabled!==false&&configured(s)&&s.next_check_at){const next=document.createElement("p");next.className="state";next.textContent="Next scheduled check: "+dateLabel(s.next_check_at);card.append(next);}
+  if(s.enabled===false&&configured(s)){const paused=document.createElement("p");paused.className="state";paused.textContent="Scheduled checks paused";card.append(paused);}
+  if(s.last_status==="ok"&&Number.isFinite(s.last_job_count)){const count=document.createElement("p");count.textContent="Eligible art roles in last check: "+s.last_job_count;card.append(count);}
+  if(s.careers_url){try{const url=new URL(s.careers_url);if(url.protocol==="https:"){const link=document.createElement("a");link.href=url.href;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Official careers page ↗";card.append(link);}}catch{}}
   area.append(card);
  }
- document.getElementById("notice").textContent=list.length+" studios shown";
+ if(!list.length){const empty=document.createElement("p");empty.className="empty";empty.textContent=studios.length?"No studios match these filters. Clear filters to see the directory.":"No studios are registered yet.";area.append(empty);}
+ document.getElementById("notice").textContent=list.length+" of "+studios.length+" studios shown. Counts include only roles eligible for Raven’s art and location filters.";
 }
 document.getElementById("search").addEventListener("input",render);
 document.getElementById("filter").addEventListener("change",render);
-(async()=>{
+document.getElementById("provider").addEventListener("change",render);
+document.getElementById("clear").addEventListener("click",()=>{document.getElementById("search").value="";document.getElementById("filter").value="all";document.getElementById("provider").value="all";render();document.getElementById("search").focus();});
+async function load(){
+ document.getElementById("retry").hidden=true;
+ document.getElementById("notice").textContent="Loading directory…";
  try{
-  const response=await fetch(endpoint,{cache:"no-store"});if(!response.ok)throw Error("HTTP "+response.status);
+  const response=await fetch(endpoint,{cache:"no-store",signal:AbortSignal.timeout(15000)});if(!response.ok)throw Error("HTTP "+response.status);
   const data=await response.json();if(!Array.isArray(data.studios))throw Error("Unexpected response");
-  studios=data.studios;
+  studios=data.studios;loaded=true;
+  document.getElementById("provider").replaceChildren(new Option("All providers","all"));
+  for(const provider of [...new Set(studios.map(s=>s.provider).filter(Boolean))].sort()){const option=document.createElement("option");option.value=provider;option.textContent=providerLabel({provider});document.getElementById("provider").append(option);}
   document.getElementById("total").textContent=studios.length;
-  document.getElementById("connected").textContent=studios.filter(s=>s.provider!=="pending").length;
+  document.getElementById("connected").textContent=studios.filter(configured).length;
   document.getElementById("checked").textContent=studios.filter(s=>s.last_status==="ok").length;
   render();
- }catch(e){document.getElementById("notice").textContent="Directory temporarily unavailable: "+String(e.message||e);}
-})();
+ }catch(e){document.getElementById("notice").textContent="Directory temporarily unavailable: "+String(e.message||e);document.getElementById("retry").hidden=false;}
+}
+document.getElementById("retry").addEventListener("click",load);
+load();
 </script></body></html>

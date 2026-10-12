@@ -435,3 +435,11 @@ Final cover-letter acceptance: worker fresh hosted Raven load/full reload each r
 - [x] Implement v7 relevant initialhistorychoice and deterministic artdominance/efficiency/generic-bypass checks;72targeted/47corepass.
 - [ ] Verify v7 actual pair on another eligible Professional job; independent tailoring review required.
 
+
+## Studio search expansion — 2026-10-12
+Workable and SmartRecruiters collector adapters, bounded response/pagination handling and directory provider/status/search/retry UI implemented. Existing auth and shared art/location eligibility remain. All 49 local workflow commands pass, including actual mocked collector auth/ingestion/failure and all-five-provider normalization. Local Chromium installation failed (empty/truncated archive); browser fixtures are wired into CI, not yet verified. Verified-source manifest, schema deployment, Edge rollout and live checks follow in this session. Prior writer/export deployment tasks remain separate.
+
+- [x] Add Workable/SmartRecruiters support and accurate searchable directory UI.
+- [x] Verify 49 local workflow commands.
+- [ ] Verify studio browser CI and live collector rollout.
+- [ ] Activate official-page-verified sources with reproducible evidence.

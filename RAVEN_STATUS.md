@@ -1,5 +1,9 @@
 # Raven Status
 
+## Studio search expansion — 2026-10-12
+Workable and SmartRecruiters collector adapters, bounded response/pagination handling and directory provider/status/search/retry UI implemented. Existing auth and shared art/location eligibility remain. All 49 local workflow commands pass, including actual mocked collector auth/ingestion/failure and all-five-provider normalization. Local Chromium installation failed (empty/truncated archive); browser fixtures are wired into CI, not yet verified. Verified-source manifest, schema deployment, Edge rollout and live checks follow in this session. Prior writer/export deployment tasks remain separate.
+
+
 ## Offline wording and export improvements — 2026-10-11
 Writer v8 adds concrete-opening, nonrepetitive-bullet and relevant-history guidance, preserving existing factual gates. This is source implementation; live generation and backend deployment remain unverified. Word exports keep role headings with the following paragraph and keep paragraph lines together. HTML/PDF section headings avoid breaks after the heading. Frontend cache versions advance to app84/export3.
 

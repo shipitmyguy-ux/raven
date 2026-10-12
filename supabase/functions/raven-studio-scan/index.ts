@@ -1,4 +1,5 @@
 import "../_shared/track-filter.js";
+import {MAX_STUDIO_JOBS, providerEndpoint, providerRecords, normalizeStudioJobs, deduplicateStudioJobs} from "../_shared/studio-providers.mjs";
 const {gameArtRoleAllowed,jobLocationAllowed}=(globalThis as any).RavenTrackFilter;
 const base=Deno.env.get("SUPABASE_URL")||"",key=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
 const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"content-type,x-raven-studio-secret","Access-Control-Allow-Methods":"GET,POST,OPTIONS"};
@@ -8,8 +9,6 @@ async function db(path:string,method="GET",body?:unknown){
  if(!r.ok)throw new Error("DB "+r.status+" "+(await r.text()).slice(0,200));
  const text=await r.text();return text?JSON.parse(text):[];
 }
-const clean=(s:any)=>String(s||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,5000);
-function uri(raw:any){try{const u=new URL(raw);if(u.protocol!=="https:")return "";u.hash="";for(const k of [...u.searchParams.keys()])if(/^utm_/.test(k))u.searchParams.delete(k);return u.toString();}catch{return "";}}
 async function auth(request:Request){
  const secret=request.headers.get("x-raven-studio-secret")||"";
  if(!/^[0-9a-f]{64}$/.test(secret))return false;
@@ -22,25 +21,34 @@ async function auth(request:Request){
  return diff===0;
 }
 async function sourceJobs(s:any){
- const k=String(s.board_key||"");
- if(!/^[a-zA-Z0-9_-]{2,90}$/.test(k))throw Error("Bad board ID");
- let url="";
- if(s.provider==="ashby")url="https://api.ashbyhq.com/posting-api/job-board/"+k;
- if(s.provider==="greenhouse")url="https://boards-api.greenhouse.io/v1/boards/"+k+"/jobs?content=true";
- if(s.provider==="lever")url="https://api.lever.co/v0/postings/"+k+"?mode=json";
- if(!url)throw Error("Unsupported provider");
- const res=await fetch(url,{headers:{"Accept":"application/json"},signal:AbortSignal.timeout(6000)});
- if(!res.ok)throw Error("Provider HTTP "+res.status);
- const data=await res.json();
- let jobs:any[]=s.provider==="lever"?data:data.jobs;
- if(!Array.isArray(jobs))throw Error("Unexpected provider response");
- return jobs.slice(0,250).map((x:any)=>{
-  const title=String(x.title||x.text||"");
-  const location=String(typeof x.location==="string"?x.location:x.location?.name||x.categories?.location||"");
-  const remote=x.isRemote===true||/remote/i.test(String(x.workplaceType||""))||/\bremote\b/i.test(location);
-  const url=uri(x.jobUrl||x.absolute_url||x.hostedUrl);
-  return {title,company:s.studio_name,location,remote,url,snippet:clean(x.descriptionPlain||x.descriptionHtml||x.content||x.description),posted_at:String(x.publishedAt||x.updated_at||"")};
- }).filter((j:any)=>j.title&&j.url);
+ const all:any[]=[];
+ for(let page=0;page<10;page++){
+  const url=providerEndpoint(s.provider,s.board_key,page*100);
+  const res=await fetch(url,{headers:{"Accept":"application/json"},redirect:"error",signal:AbortSignal.timeout(6000)});
+  if(!res.ok)throw Error("Provider HTTP "+res.status);
+  const length=Number(res.headers.get("content-length")||0);
+  if(length>4000000)throw Error("Provider response too large");
+  // Stream with a hard cap, including chunked responses without Content-Length.
+  if(!res.body)throw Error("Provider response empty");
+  const reader=res.body.getReader();const chunks:Uint8Array[]=[];let size=0;
+  try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>4000000)throw Error("Provider response too large");chunks.push(value);}}
+  finally{await reader.cancel();}
+  const bytes=new Uint8Array(size);let position=0;for(const chunk of chunks){bytes.set(chunk,position);position+=chunk.length;}
+  const data=JSON.parse(new TextDecoder().decode(bytes));
+  const records=providerRecords(s.provider,data);
+  all.push(...normalizeStudioJobs(s,data));
+  if(all.length>MAX_STUDIO_JOBS)throw Error("Provider job limit exceeded");
+  if(s.provider!=="smartrecruiters"){
+   if(records.length>MAX_STUDIO_JOBS)throw Error("Provider job limit exceeded");
+   return deduplicateStudioJobs(all);
+  }
+  const total=Number(data.totalFound);
+  if(!Number.isInteger(total)||total<0)throw Error("Unexpected provider pagination");
+  if(total>MAX_STUDIO_JOBS)throw Error("Provider job limit exceeded");
+  if((page*100)+records.length>=total)return deduplicateStudioJobs(all);
+  if(records.length!==100)throw Error("Incomplete provider page");
+ }
+ throw Error("Provider page limit exceeded");
 }
 async function check(s:any){
  const start=Date.now();let status="ok",error="",total=0,eligible=0;
@@ -68,7 +76,7 @@ Deno.serve(async request=>{
  try{
   if(!base||!key)return json({error:"Backend credentials missing"},503);
   if(request.method==="GET"){
-   const studios=await db("raven_studio_sources?select=studio_name,slug,provider,careers_url,priority,last_status,last_checked_at,last_success_at,last_job_count,last_error&order=priority.desc,studio_name.asc&limit=500");
+   const studios=await db("raven_studio_sources?select=studio_name,slug,provider,careers_url,priority,enabled,next_check_at,interval_hours,last_status,last_checked_at,last_success_at,last_job_count,last_error&order=priority.desc,studio_name.asc&limit=500");
    return json({ok:true,count:studios.length,studios});
   }
   if(request.method!=="POST")return json({error:"Method not allowed"},405);
