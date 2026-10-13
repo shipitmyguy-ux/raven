@@ -1,0 +1,192 @@
+{
+  "verified_at": "2026-10-13T00:58:24.791Z",
+  "existing_coverage": "No ArtStation references in Raven repository before this addition.",
+  "source": {
+    "provider": "artstation",
+    "board_key": "artstation",
+    "studio_name": "ArtStation Jobs",
+    "source_kind": "job_board",
+    "studio_class": "unknown",
+    "careers_url": "https://www.artstation.com/jobs"
+  },
+  "endpoint": "https://www.artstation.com/api/v2/jobs/public/jobs.json?page=1&per_page=50",
+  "endpoint_evidence": "Official site /jobs/assets/343.8f83f6ed36ef1f38.js calls /api/v2/jobs/public/jobs.json and public/jobs/{hash}.json. No login/captcha or bypass used for public response.",
+  "pages": [
+    {
+      "page": 1,
+      "count": 50
+    },
+    {
+      "page": 2,
+      "count": 50
+    },
+    {
+      "page": 3,
+      "count": 9
+    }
+  ],
+  "total": 109,
+  "normalized": 109,
+  "matching_remote_environment_or_3d": 5,
+  "canonical_example": {
+    "url": "https://www.artstation.com/jobs/QKn9",
+    "http_status": 200
+  },
+  "notes": "Approved must also be undisplaced, not deleted, unexpired, posted in past. All descriptions include API skills/requirements, about and application text, bounded20k. Company IDs/name validated. Source includes large studios and indie/boutique teams; does not establish ownership. Remote API flags do not override explicit hybrid onsite descriptions. Geographic metadata and explicit restriction sentences retained. No outbound applications fetched.",
+  "roles": [
+    {
+      "provider_job_id": "e22a",
+      "title": "Senior Environment Concept Artist",
+      "company": "Omnilojo Pte Ltd",
+      "url": "https://www.artstation.com/jobs/e22a",
+      "location": "Singapore, Singapore; Architecture, Terrain & Vehicle Design Please note: This is an on-site position based in Singapore.; Location This is an on-site role based in Singapore.",
+      "remote": false,
+      "posted_at": "2026-10-05T02:50:37.000Z",
+      "studio_description_updated_at": "2026-10-13T00:58:24.777Z",
+      "description_chars": 6662
+    },
+    {
+      "provider_job_id": "K887",
+      "title": "Senior 3D Environment Artist",
+      "company": "Omnilojo Pte Ltd",
+      "url": "https://www.artstation.com/jobs/K887",
+      "location": "Singapore, Singapore; Realistic Western-Style Unity Mobile Game Please note: This is an on-site position based in Singapore.; Location This is an on-site role based in Singapore.",
+      "remote": false,
+      "posted_at": "2026-10-05T02:50:37.000Z",
+      "studio_description_updated_at": "2026-10-13T00:58:24.778Z",
+      "description_chars": 6911
+    },
+    {
+      "provider_job_id": "qXrK",
+      "title": "Senior AI-Driven Environment / Level Artist",
+      "company": "Omnilojo Pte Ltd",
+      "url": "https://www.artstation.com/jobs/qXrK",
+      "location": "Singapore, Singapore; AI-Driven Environment / Level Artist Realistic Western-Style Mobile Game | Unity About the Role This is an on-site role based in Singapore.",
+      "remote": false,
+      "posted_at": "2026-10-05T02:50:37.000Z",
+      "studio_description_updated_at": "2026-10-13T00:58:24.778Z",
+      "description_chars": 8261
+    },
+    {
+      "provider_job_id": "gblQ",
+      "title": "Senior Environment Artist (Star Wars Jedi)",
+      "company": "Respawn Entertainment",
+      "url": "https://www.artstation.com/jobs/gblQ",
+      "location": "Chatsworth, CA, USA; Job Title: Senior Environment Artist Location: Los Angeles, CA · Vancouver, BC · Kirkland, WA Work Model: Hybrid Respawn Entertainment Founded in 2010 by the original creators of the Call of Duty Franchise, Respawn was created with the philosophy that when talented people have creative freedom, they’ll make extraordinary games that achieve the unexpected.; Hybrid / onsite attendance stated in description",
+      "remote": false,
+      "posted_at": "2026-10-03T00:00:13.000Z",
+      "studio_description_updated_at": "2026-10-13T00:58:24.779Z",
+      "description_chars": 4558
+    },
+    {
+      "provider_job_id": "QKn9",
+      "title": "Senior Environment Artist",
+      "company": "Smile Break",
+      "url": "https://www.artstation.com/jobs/QKn9",
+      "location": "Asia; Europe; North America",
+      "remote": true,
+      "posted_at": "2026-09-29T15:47:04.000Z",
+      "studio_description_updated_at": "2026-10-13T00:58:24.783Z",
+      "description_chars": 5428
+    },
+    {
+      "provider_job_id": "23Pg",
+      "title": "[Disney Dreamlight Valley] - Lead 3D Artist Props",
+      "company": "Gameloft Montréal",
+      "url": "https://www.artstation.com/jobs/23Pg",
+      "location": "Montreal, QC, Canada; Hybrid / onsite attendance stated in description",
+      "remote": false,
+      "posted_at": "2026-09-26T00:00:12.000Z",
+      "studio_description_updated_at": "2026-10-13T00:58:24.784Z",
+      "description_chars": 6060
+    },
+    {
+      "provider_job_id": "qX3X",
+      "title": "Unreal Engine 5 Environment Artist - Tears of Libya",
+      "company": "Voices of the Forgotten",
+      "url": "https://www.artstation.com/jobs/qX3X",
+      "location": "Anaheim, CA, USA; Los Angeles, CA, USA; What you'll do Model, texture, and light realistic 3D environments period buildings, interiors, streets, terrain, set dressing, and hero props Assemble and optimize those assets into playable levels in Unreal Engine 5 (Nanite, Lumen, World Partition) Build and maintain gameplay and interaction systems in Blueprints Set up and work with MetaHuman characters: importing, grooming, LODs, clothing, fac; Hybrid / onsite attendance stated in description",
+      "remote": false,
+      "posted_at": "2026-09-22T19:58:48.000Z",
+      "studio_description_updated_at": "2026-10-13T00:58:24.786Z",
+      "description_chars": 2817
+    },
+    {
+      "provider_job_id": "z9n1",
+      "title": "Principal Environment Artist",
+      "company": "Epic Games",
+      "url": "https://www.artstation.com/jobs/z9n1",
+      "location": "Cary, NC, USA",
+      "remote": true,
+      "posted_at": "2026-09-18T16:29:01.000Z",
+      "studio_description_updated_at": "2026-10-13T00:58:24.787Z",
+      "description_chars": 4078
+    },
+    {
+      "provider_job_id": "nGwy",
+      "title": "Roblox 3D Artist",
+      "company": "Entelechy Entertainment",
+      "url": "https://www.artstation.com/jobs/nGwy",
+      "location": "Fayetteville, AR, USA",
+      "remote": true,
+      "posted_at": "2026-09-17T16:21:37.000Z",
+      "studio_description_updated_at": "2026-10-13T00:58:24.787Z",
+      "description_chars": 3458
+    },
+    {
+      "provider_job_id": "6yYE",
+      "title": "Junior 3D Artist - Vehicle specialist",
+      "company": "GIANTS Software",
+      "url": "https://www.artstation.com/jobs/6yYE",
+      "location": "Brno, South Moravian, Czechia",
+      "remote": false,
+      "posted_at": "2026-09-16T08:20:43.000Z",
+      "studio_description_updated_at": "2026-10-13T00:58:24.787Z",
+      "description_chars": 1473
+    },
+    {
+      "provider_job_id": "pNGd",
+      "title": "3D Environment Artist",
+      "company": "Streamline Studios",
+      "url": "https://www.artstation.com/jobs/pNGd",
+      "location": "Kuala Lumpur, Kuala Lumpur, Malaysia",
+      "remote": true,
+      "posted_at": "2026-09-14T03:27:54.000Z",
+      "studio_description_updated_at": "2026-10-13T00:58:24.789Z",
+      "description_chars": 2590
+    },
+    {
+      "provider_job_id": "5yNG",
+      "title": "Lead Environment Artist",
+      "company": "Streamline Studios",
+      "url": "https://www.artstation.com/jobs/5yNG",
+      "location": "Remote; geographic scope not specified",
+      "remote": true,
+      "posted_at": "2026-09-14T03:27:54.000Z",
+      "studio_description_updated_at": "2026-10-13T00:58:24.789Z",
+      "description_chars": 4457
+    },
+    {
+      "provider_job_id": "MO9z",
+      "title": "3D Environment Artist",
+      "company": "Playdead",
+      "url": "https://www.artstation.com/jobs/MO9z",
+      "location": "Copenhagen, Capital Region, Denmark",
+      "remote": false,
+      "posted_at": "2026-09-10T12:51:17.000Z",
+      "studio_description_updated_at": "2026-10-13T00:58:24.790Z",
+      "description_chars": 3053
+    },
+    {
+      "provider_job_id": "pNov",
+      "title": "Lead 3D Environment Artist (m/f/d)",
+      "company": "Sandbox Interactive GmbH",
+      "url": "https://www.artstation.com/jobs/pNov",
+      "location": "Berlin, BE, Germany; Experience improving environment art pipelines and collaborating with Production, Level Design and Technical Art Our Offer BVG corporate ticket: Receive a free company ticket for Germany's public transportation system Personal Development: Have a high degree of autonomy and ownership from the start Develop your skills through company-sponsored training and language courses Enjoy company-sponsored ; Hybrid / onsite attendance stated in description",
+      "remote": false,
+      "posted_at": "2026-09-08T14:33:55.000Z",
+      "studio_description_updated_at": "2026-10-13T00:58:24.790Z",
+      "description_chars": 5361
+    }
+  ]
+}

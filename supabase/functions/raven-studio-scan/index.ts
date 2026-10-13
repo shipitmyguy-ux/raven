@@ -3,6 +3,9 @@ import {MAX_STUDIO_JOBS, providerEndpoint, providerRecords, normalizeStudioJobs,
 import {fetchStudioJson, fetchStudioText, enrichStudioDetails, reuseFreshStudioDescriptions} from "../_shared/studio-collector.mjs";
 import {collectIcims} from "../_shared/studio-icims.mjs";
 import {collectAvature} from "../_shared/studio-avature.mjs";
+import {collectArtStation} from "../_shared/studio-artstation.mjs";
+import {collectEpicForum} from "../_shared/studio-epic-forum.mjs";
+import {collectBlenderArtists} from "../_shared/studio-blenderartists.mjs";
 import {collectBreezy} from "../_shared/studio-breezy.mjs";
 import {collectRecruitee} from "../_shared/studio-recruitee.mjs";
 import {collectRemoteGameJobs} from "../_shared/studio-remote-game-jobs.mjs";
@@ -40,6 +43,9 @@ async function preparePortalDetails(jobs:any[],deadline:number,restoreMetadata=f
 }
 async function sourceJobs(s:any,deadline:number){
  const portalOptions={fetchJson:fetchStudioJson,fetchText:fetchStudioText,deadline,jobAllowed:(j:any)=>gameArtRoleAllowed(j)&&jobLocationAllowed(j),detailAllowed:(j:any)=>gameArtRoleAllowed(j),prepareDetails:(jobs:any[])=>preparePortalDetails(jobs,deadline,true)};
+ if(s.provider==="artstation")return collectArtStation(s,portalOptions);
+ if(s.provider==="epicforum")return collectEpicForum(s,portalOptions);
+ if(s.provider==="blenderartists")return collectBlenderArtists(s,portalOptions);
  if(s.provider==="breezy")return collectBreezy(s,portalOptions);
  if(s.provider==="recruitee")return collectRecruitee(s,portalOptions);
  if(s.provider==="remotegamejobs")return collectRemoteGameJobs(s,portalOptions);
