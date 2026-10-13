@@ -1923,7 +1923,38 @@
     return String(payload.prompt);
   }
 
+  const activeOneClickJobs=new Set();
+  let oneClickClient;
+  async function generateOneClick(job,type,button){
+    const key=String(job.id||job.url);
+    if(activeOneClickJobs.has(key))return;
+    activeOneClickJobs.add(key);
+    try{
+      setGenerationButton(button,true,"Preparing…");
+      setStatus("Preparing your job for one-click generation…");
+      await prepareJobForGeneration(job);
+      if(!oneClickClient){
+        const {createOneClickClient}=await import("./oneclick-client.mjs?v=1");
+        oneClickClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
+      }
+      const labels={queued:"Waiting for writer…",writing:"Writing from verified facts…",saving:"Saving in Raven…",pdf:"Creating PDF…",uploading:"Saving PDF to Drive…",recording:"Confirming saved links…",complete:"Verifying saved documents…"};
+      const result=await oneClickClient.run({job_id:String(job.id),document_type:type},stage=>{
+        setGenerationButton(button,true,labels[stage]||"Generating…");setStatus(labels[stage]||"Generating…");
+      });
+      // Read the canonical data directly: loadJobs deliberately tolerates offline
+      // cache, which cannot establish that this run actually saved its outputs.
+      const [jobsPayload,eventsPayload]=await Promise.all([window.RavenAPI.listJobs(),window.RavenAPI.listJobEvents(String(job.id))]);
+      const freshJobs=normalizeJobs(jobsPayload),saved=freshJobs.find(item=>String(item.id)===String(job.id));
+      if(!saved||!result.documents.every(doc=>saved[doc.document_type]===doc.document_url&&(eventsPayload.events||[]).some(event=>event.event_type==="document_drive_export"&&event.metadata?.document_type===doc.document_type&&event.metadata?.document_sha256===doc.document_sha256&&event.metadata?.file_id===doc.file_id&&event.metadata?.drive_url===doc.drive_url)))throw Error("Generation finished, but Raven could not confirm the saved document and Drive link. Refresh before retrying.");
+      state.jobs=mergePendingDocuments(freshJobs);writeCache(CACHE_JOBS_KEY,state.jobs);
+      await loadJobActivity(saved,true);render();
+      setStatus(result.documents.some(doc=>doc.reused_existing)?"Existing Raven document preserved and copied to Drive · review required":"Saved in Raven and copied to Drive · review required");
+      if(!document.querySelector("dialog[open]"))await openDocumentReview(saved,type==="both"?"resume":type);
+    }catch(error){setStatus("One-click generation: "+error.message);}
+    finally{activeOneClickJobs.delete(key);setGenerationButton(button,false);}
+  }
   async function launchChatGptPrompt(job,type,button=null){
+    if(state.runtime.settings["chatgpt-one-click"]===true)return generateOneClick(job,type,button);
     let chatTab=null;
     try{
       chatTab=window.open("about:blank","_blank");
@@ -2019,6 +2050,7 @@
 
   async function saveDocumentToDrive(job=state.generatorJob,type=state.generatorType){
     if(!job?.[type]){setStatus("Save a document in Raven before exporting to Drive.");return;}
+    if(state.runtime.settings["chatgpt-one-click"]===true)return generateOneClick(job,type,null);
     const tab=window.open("about:blank","_blank");
     try{
       const {directPrompt}=await import("./chatgpt-direct.mjs?v=1");
@@ -2559,7 +2591,7 @@
     if(!value){
       return '<span class="document-control is-empty">'+
         '<button class="document-primary" type="button" data-generate="'+escapeAttr(key)+'">Generate</button>'+
-        '<button class="document-secondary chatgpt-action" type="button" data-chatgpt-prompt="'+escapeAttr(key)+'">ChatGPT</button>'+
+        '<button class="document-secondary chatgpt-action" type="button" title="'+(state.runtime.settings["chatgpt-one-click"]===true?'Create from verified facts, save in Raven and copy the PDF to Drive':'Open a prepared ChatGPT request')+'" data-chatgpt-prompt="'+escapeAttr(key)+'">ChatGPT</button>'+
         '<button class="document-secondary" type="button" data-chatgpt-import="'+escapeAttr(key)+'">Import</button>'+feedback+
       '</span>';
     }
@@ -2571,7 +2603,7 @@
           (key==="resume"?'<button type="button" role="menuitem" data-document-download="resume" title="Download resume as Word (.docx)">Download resume</button>':"")+
           '<button type="button" role="menuitem" data-document-revise="'+escapeAttr(key)+'">Request changes</button>'+
           '<button type="button" role="menuitem" data-document-regenerate="'+escapeAttr(key)+'">Regenerate</button>'+
-          '<button type="button" role="menuitem" data-chatgpt-prompt="'+escapeAttr(key)+'">Create ChatGPT prompt</button>'+
+          '<button type="button" role="menuitem" data-chatgpt-prompt="'+escapeAttr(key)+'">'+(state.runtime.settings["chatgpt-one-click"]===true?'Save PDF to Drive':'Create ChatGPT prompt')+'</button>'+
           '<button type="button" role="menuitem" data-chatgpt-import="'+escapeAttr(key)+'">Import ChatGPT result</button>'+
           '<button class="danger-action" type="button" role="menuitem" data-document-delete="'+escapeAttr(key)+'">Delete</button>'+
         '</span>'+

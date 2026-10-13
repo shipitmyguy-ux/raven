@@ -16,7 +16,7 @@ for(const direct of [false,true])test(`studio discovery preserves complete publi
   localStorage.clear();
   localStorage.setItem('ravenMasterResumesV1',JSON.stringify([{id:'fixture-master',name:'Fixture master',sourceType:'drive',url:'https://drive.google.com/file/d/fixture/view',tracks:['Games / 3D']}]));
  });
- await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-direct-save']=direct;await route.fulfill({json:config});});
+ await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-direct-save']=direct;config.settings['chatgpt-one-click']=false;await route.fulfill({json:config});});
  await page.route('**/functions/v1/**',async route=>{
   const req=route.request(),url=new URL(req.url());
   const body=req.method()==='POST'?JSON.parse(req.postData()||'{}'):{};

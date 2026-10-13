@@ -6,6 +6,7 @@ on:
       - "raven-core.js"
       - "document-revision.mjs"
       - "chatgpt-direct.mjs"
+      - "oneclick-client.mjs"
       - "raven-api.js"
       - "app.js"
       - "index.html"
@@ -31,6 +32,7 @@ on:
       - "raven-core.js"
       - "document-revision.mjs"
       - "chatgpt-direct.mjs"
+      - "oneclick-client.mjs"
       - "raven-api.js"
       - "app.js"
       - "index.html"
@@ -65,6 +67,10 @@ jobs:
           node --check raven-api.js
           node --check app.js
           node --check chatgpt-direct.mjs
+          node --check oneclick-client.mjs
+          node --check scripts/oneclick-codex.mjs
+          node --check scripts/oneclick-server.mjs
+          node --check scripts/oneclick-workflow.mjs
           node --check scripts/private-document-workflow.mjs
           node --check supabase/functions/_shared/mcp-bridge.mjs
           node --check supabase/functions/_shared/mcp-oauth.mjs
@@ -84,6 +90,7 @@ jobs:
         run: node scripts/check-secrets.mjs
       - name: Core regression tests
         run: |
+          node --test tests/oneclick-client.test.mjs tests/oneclick-workflow.test.mjs tests/oneclick-server.test.mjs tests/oneclick-security.test.mjs
           node --test tests/private-mcp-stdio.test.mjs
           node --test tests/mcp-bridge.test.mjs tests/mcp-oauth.test.mjs tests/apply-resume.test.mjs
           node --test tests/chatgpt-direct.test.mjs tests/chatgpt-handoff.test.mjs tests/resume-transfer.test.mjs tests/chatgpt-extension.test.mjs

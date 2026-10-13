@@ -669,7 +669,7 @@ test("completion event with host mismatch is ignored",async({page})=>{
 
 test("document pills keep busy labels and adjacent controls contained",async({page})=>{
   await mockRaven(page);
-  await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-direct-save']=false;await route.fulfill({json:config});});
+  await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-direct-save']=false;config.settings['chatgpt-one-click']=false;await route.fulfill({json:config});});
   await page.addInitScript(()=>window.open=()=>null);
   await page.route("**/functions/v1/raven-generate-v1**",()=>{});
   for(const width of [320,375,715,768,1024,1440]){
@@ -699,6 +699,7 @@ test("document pills keep busy labels and adjacent controls contained",async({pa
 
 test('ChatGPT button sends a direct job-bound save request without the JSON prompt service',async({page})=>{
   const api=await mockRaven(page);
+  await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=false;await route.fulfill({json:config});});
   await page.addInitScript(()=>{
     window.open=()=>({closed:false,document:{title:'',body:{}},location:{replace:url=>{window.lastChatGptUrl=url;}},close(){}});
     Object.defineProperty(navigator,'clipboard',{value:{writeText:async()=>{}},configurable:true});
@@ -713,7 +714,46 @@ test('ChatGPT button sends a direct job-bound save request without the JSON prom
   expect(api.getGenerationCalls()).toBe(0);
 });
 
+test('one-click button creates a durable resume and Drive PDF without opening ChatGPT',async({page})=>{
+  const api=await mockRaven(page);
+  const resume='data:text/html;charset=utf-8,'+encodeURIComponent('<!doctype html><html><body><h1>Test Candidate</h1><p>Verified resume.</p></body></html>');
+  const runId='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+  const doc={document_type:'resume',document_url:resume,document_sha256:'a'.repeat(64),file_id:'file1234567890',drive_url:'https://drive.google.com/file/d/file1234567890/view'};
+  let starts=0,polls=0;
+  await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=true;await route.fulfill({json:config});});
+  await page.route('http://127.0.0.1:8766/**',async route=>{
+    const path=new URL(route.request().url()).pathname;
+    if(path==='/session')return route.fulfill({json:{token:'fixture-token'}});
+    expect(route.request().headers().authorization).toBe('Bearer fixture-token');
+    if(path==='/runs'){
+      starts++;expect(route.request().postDataJSON()).toEqual({job_id:'job-1',document_type:'resume'});
+      return route.fulfill({json:{run_id:runId,stage:'writing'}});
+    }
+    polls++;api.getJob().resume=resume;
+    await page.evaluate(async metadata=>window.RavenAPI.addJobEvent('job-1',{eventType:'document_drive_export',metadata}),doc);
+    return route.fulfill({json:{run_id:runId,job_id:'job-1',stage:'complete',documents:[doc]}});
+  });
+  await page.addInitScript(()=>{window.chatWindows=0;window.open=()=>{window.chatWindows++;return null;};});
+  await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+  await page.locator('[data-chatgpt-prompt="resume"]').click();
+  await expect(page.locator('#syncStatus')).toContainText('copied to Drive');
+  expect(starts).toBe(1);expect(polls).toBe(1);expect(await page.evaluate(()=>window.chatWindows)).toBe(0);expect(api.getJob().status).toBe('Saved');
+  await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+  await expect(page.getByRole('link',{name:'Open PDF in Drive'})).toBeVisible();expect(api.getJob().resume).toBe(resume);
+});
+
+test('one-click stopped helper reports recovery action without opening ChatGPT or claiming success',async({page})=>{
+  await mockRaven(page);
+  await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=true;await route.fulfill({json:config});});
+  await page.route('http://127.0.0.1:8766/**',route=>route.abort());
+  await page.addInitScript(()=>{window.chatWindows=0;window.open=()=>{window.chatWindows++;return null;};});
+  await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();await page.locator('[data-chatgpt-prompt="resume"]').click();
+  await expect(page.locator('#syncStatus')).toContainText('Start the Raven one-click helper');expect(await page.evaluate(()=>window.chatWindows)).toBe(0);
+  await expect(page.locator('[data-chatgpt-prompt="resume"]')).not.toHaveAttribute('aria-busy','true');
+});
+
 test('saved resume Drive action requests exact PDF export to configured folder and preserves resume',async({page})=>{
+  await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=false;await route.fulfill({json:config});});
   const resume='data:text/html;charset=utf-8,'+encodeURIComponent('<!doctype html><html><body><h1>Test Candidate</h1><p>Saved verified resume.</p></body></html>');
   const api=await mockRaven(page,{initialJob:{resume}});
   await page.addInitScript(()=>{

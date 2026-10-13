@@ -7,6 +7,7 @@ on:
       - "index.html"
       - "studio-directory.html"
       - "app.js"
+      - "oneclick-client.mjs"
       - "document-revision.mjs"
       - "document-download.mjs"
       - "resume-transfer.mjs"
