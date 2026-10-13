@@ -1,5 +1,5 @@
 {
-  "verified_at": "2026-10-13T01:45:32.355085+00:00",
+  "verified_at": "2026-10-13T01:55:13.546755+00:00",
   "verification_policy": "Read anonymous official board HTML/public API payloads only. Redirects inspected on RemoteGameJobs own /goto endpoints with automatic redirects disabled; never fetched external application/employer URLs or submitted forms. Exact canonical employer posting identity, not title/location similarity, establishes each alias.",
   "aliases": [
     {
@@ -93,6 +93,51 @@
       ],
       "safe_to_alias": true,
       "note": "Current RemoteGameJobs redirect matches earlier successfully verified official ArtStation target; fresh ArtStation API requests403, so do not claim fresh API access succeeded."
+    },
+    {
+      "employer": "HyperHug",
+      "title": "3D Artist (weapon skins)",
+      "canonical_application_url": "https://jobs.ashbyhq.com/hyperhug/5470c42c-1502-42aa-a3de-3ce213fb62d8",
+      "canonical_employer_id": "hyperhug",
+      "canonical_role_id": "5470c42c-1502-42aa-a3de-3ce213fb62d8",
+      "board_urls": [
+        "https://hitmarker.net/jobs/hyperhug-3d-artist-weapon-skins-4737280",
+        "https://jobs.ashbyhq.com/hyperhug/5470c42c-1502-42aa-a3de-3ce213fb62d8"
+      ],
+      "proof": [
+        {
+          "board": "hitmarker",
+          "url": "https://hitmarker.net/jobs/hyperhug-3d-artist-weapon-skins-4737280",
+          "http_status": 200,
+          "sha256": "106e8aff0cc3121fa6554569b33eff781434c5a1ac49fb5bf19ddb1baf5259ae",
+          "retrieval": "Standard anonymous Node fetch succeeded; earlier Pythonurllib GET403 recorded. No credentials or special browser headers supplied.",
+          "field": "Two public Sprig primary application URL component fields, rail and bar; component value contains exact canonical URL",
+          "observed_value": "https://jobs.ashbyhq.com/hyperhug/5470c42c-1502-42aa-a3de-3ce213fb62d8",
+          "matching_primary_components": [
+            {
+              "field": "public Sprig apply component sprig:variables[url]",
+              "observed_value": "https://jobs.ashbyhq.com/hyperhug/5470c42c-1502-42aa-a3de-3ce213fb62d8",
+              "variant": "rail"
+            },
+            {
+              "field": "public Sprig apply component sprig:variables[url]",
+              "observed_value": "https://jobs.ashbyhq.com/hyperhug/5470c42c-1502-42aa-a3de-3ce213fb62d8",
+              "variant": "bar"
+            }
+          ]
+        },
+        {
+          "board": "ashby",
+          "url": "https://jobs.ashbyhq.com/hyperhug/5470c42c-1502-42aa-a3de-3ce213fb62d8",
+          "field": "Verified existing studio source binding",
+          "source_file": "supabase/migrations/20261012_raven_studio_directory.sql",
+          "source_provider": "ashby",
+          "source_board_key": "hyperhug",
+          "employer_binding": "HyperHug"
+        }
+      ],
+      "safe_to_alias": true,
+      "note": "Same exact primary application role UUID across Hitmarker and official Ashby listing. Retain chosen record geographic and language requirements. No outbound application or Sprig component fetched."
     }
   ],
   "fresh_artstation_api_retry": {

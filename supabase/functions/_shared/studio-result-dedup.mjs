@@ -69,6 +69,24 @@ const VERIFIED_POSTINGS = new Map([
       "title": "senior environment artist",
       "provider": "remotegamejobs"
     }
+  ],
+  [
+    "https://hitmarker.net/jobs/hyperhug-3d-artist-weapon-skins-4737280",
+    {
+      "posting": "https://jobs.ashbyhq.com/hyperhug/5470c42c-1502-42aa-a3de-3ce213fb62d8",
+      "company": "hyperhug",
+      "title": "3d artist (weapon skins)",
+      "provider": "hitmarker"
+    }
+  ],
+  [
+    "https://jobs.ashbyhq.com/hyperhug/5470c42c-1502-42aa-a3de-3ce213fb62d8",
+    {
+      "posting": "https://jobs.ashbyhq.com/hyperhug/5470c42c-1502-42aa-a3de-3ce213fb62d8",
+      "company": "hyperhug",
+      "title": "3d artist (weapon skins)",
+      "provider": "ashby"
+    }
   ]
 ]);
 function identity(row) {

@@ -27,3 +27,8 @@ for(const pair of verifiedPairs){
 assert.equal(deduplicateStudioResults(verifiedPairs.flat()).length,3,'senior and nonsenior exact posting identities stay distinct');
 assert.equal(deduplicateStudioResults([verifiedPairs[0][0],{...verifiedPairs[0][0],url:verifiedPairs[0][1].url,source:'Studio:workwithindies'}]).length,2,'source/URL bindings cannot be spoofed');
 console.log('studio presentation dedup exact posting aliases, geographic constraints and distinct vacancy guards passed');
+
+const hyperHit={source:'Studio:hitmarker',company:'HyperHug',title:'3D Artist (weapon skins)',location:'Remote; geographic scope not specified',remote:true,url:'https://hitmarker.net/jobs/hyperhug-3d-artist-weapon-skins-4737280',snippet:'Russian C1 required'};
+const hyperAts={...hyperHit,source:'Studio:ashby',location:'Remote',url:'https://jobs.ashbyhq.com/hyperhug/5470c42c-1502-42aa-a3de-3ce213fb62d8',snippet:'Official full description; Russian C1 required'};
+for(const rows of [[hyperHit,hyperAts],[hyperAts,hyperHit]])assert.deepEqual(deduplicateStudioResults(rows),[hyperAts]);
+assert.equal(deduplicateStudioResults([hyperHit,{...hyperAts,url:'https://jobs.ashbyhq.com/hyperhug/different-role'}]).length,2);
