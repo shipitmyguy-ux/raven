@@ -1,5 +1,13 @@
 # Raven Tasks
 
+## Indie expansion — 2026-10-13 UTC
+- [x] Add24 verified active hiring sources;156 registry/73active/83pending, all73 successfully checked.
+- [x] Deploy bounded Breezy/Recruitee/RemoteGameJobs adapters; preserve employer, full descriptions and remote restrictions; verify cached repeat scan.
+- [x] Verify3 additional environment-art opportunities (EleventhHourGames,Smile-Break,MadLabs), plus2 cross-board HalfMermaid copies.
+- [ ] Add bounded first-party careers adapter, beginning with verified Funovus remote freelance/environment pages.
+- [ ] Resolve cross-board employer aliases for HalfMermaid and deduplicate matching role identity without merging distinct vacancies.
+- [ ] Verify remaining83 sources, including Tactile EU and CompanionGroup official outbound linkage.
+
 ## 2026-10-11 offline improvements
 - [x] Add concrete wording and relevant-history guidance in writer v8 source.
 - [x] Add Word role-heading/paragraph pagination and PDF heading rules; inspect synthetic LibreOffice export.
