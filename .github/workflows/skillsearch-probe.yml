@@ -1,0 +1,45 @@
+name: Skillsearch public access probe
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 10 * * *'
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/skillsearch-probe.yml
+      - scripts/probe-skillsearch.mjs
+      - scripts/publish-skillsearch.mjs
+      - supabase/functions/_shared/studio-skillsearch.mjs
+      - supabase/functions/_shared/studio-collector.mjs
+      - supabase/functions/_shared/track-filter.js
+permissions:
+  contents: read
+concurrency:
+  group: skillsearch-public-probe
+  cancel-in-progress: false
+jobs:
+  probe:
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Probe ordinary public access with the production adapter
+        run: node scripts/probe-skillsearch.mjs
+      - name: Publish validated snapshot to the dedicated feed branch
+        run: node scripts/publish-skillsearch.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Preserve access and parsing evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: skillsearch-public-access-evidence
+          path: artifacts/skillsearch-probe.json
+          if-no-files-found: error
+          retention-days: 14

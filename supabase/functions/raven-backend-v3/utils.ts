@@ -115,6 +115,18 @@ export function looksEnglishPosting(c:Candidate){
   const title=String(c?.title||"");
   const snippet=String(c?.snippet||"").slice(0,2400);
   const sample=(title+" "+snippet).trim();
+  // Some official boards publish a translated title and a complete English
+  // qualifications block. Require actual English role content, not just branding.
+  if(title.includes("/")&&title.split("/").some(part=>!FOREIGN_SCRIPT.test(part)&&!FOREIGN_TITLE_TERMS.test(part)&&gameArtRoleAllowed({title:part}))){
+    const sections=String(c?.snippet||"").slice(0,20000).split(/-{8,}/);
+    const englishRole=sections.some(section=>{
+      const text=section.trim();
+      if(text.length<400||FOREIGN_SCRIPT.test(text)||!/\b(?:must have qualifications|qualifications|requirements|responsibilities|what you will do)\b/i.test(text))return false;
+      const anchors=(text.match(/\b(?:the|and|with|ability|skills|you|we|your|our|work|required|knowledge|understanding)\b/gi)||[]).length;
+      return anchors>=8&&foreignLanguageDensity(text,GERMAN_WORDS)<0.055&&foreignLanguageDensity(text,SPANISH_WORDS)<0.075&&foreignLanguageDensity(text,FRENCH_WORDS)<0.075;
+    });
+    if(englishRole)return true;
+  }
   if(FOREIGN_SCRIPT.test(title)||FOREIGN_SCRIPT.test(snippet)) return false;
   if(FOREIGN_TITLE_TERMS.test(title)) return false;
   // Reject postings whose body is substantially written in a foreign language,

@@ -1,0 +1,123 @@
+{
+  "verified_at": "2026-10-13T00:52:51.616973+00:00",
+  "source_name": "Polycount paid hiring forums",
+  "status": "blocked_direct_fetch",
+  "collector_implemented": false,
+  "automated_activation_recommended": false,
+  "categories": [
+    {
+      "url": "https://polycount.com/categories/c45?sort=new",
+      "name": "Full time/Part time work",
+      "scope": "Established employers hiring paid staff with benefits"
+    },
+    {
+      "url": "https://polycount.com/categories/freelance-job-postings?sort=new",
+      "name": "Freelance Job Postings",
+      "scope": "Paid contracts offered by employers or individuals"
+    }
+  ],
+  "fetch_attempts": [
+    {
+      "url": "https://polycount.com/categories/c45?sort=new",
+      "status": 403,
+      "fixture": null
+    },
+    {
+      "url": "https://polycount.com/categories/freelance-job-postings?sort=new",
+      "status": 403,
+      "fixture": null
+    },
+    {
+      "url": "https://polycount.com/discussion/239149/terrain-artist-full-time-job-opportunity-kenshi-2",
+      "status": 403,
+      "fixture": null
+    },
+    {
+      "url": "https://polycount.com/categories/freelance-job-postings/feed.rss",
+      "status": 403,
+      "fixture": null
+    },
+    {
+      "url": "https://polycount.com/api/v2/discussions?categoryID=45",
+      "status": 403,
+      "fixture": null
+    },
+    {
+      "url": "https://www.lofigames.com/terrainartist",
+      "status": 403,
+      "fixture": null
+    }
+  ],
+  "retrieval_note": "Public search/open retrieval exposed rendered forum content, but direct runtime urllib HTML/RSS/API requests returned 403. Search cache is not an automated collector or proof of live vacancy. No access workaround attempted. No response HTML fixtures available from denied requests.",
+  "policy": [
+    "Allow paid hiring categories only; exclude artists and outsource studios offering services, unpaid collaboration and royalties/postlaunch payment categories.",
+    "Check original discussion date, not last comment or bump; maximum age 90 days.",
+    "Reject closed, filled, expired application deadline and rev-share compensation.",
+    "Only explicit remote wording establishes remote=true; region scope remains verbatim.",
+    "Forum author username is not verified studio identity; use Undisclosed employer (Polycount) when employer not named in body.",
+    "Every candidate carries Forum job lead; employer identity not independently verified."
+  ],
+  "candidates": [
+    {
+      "url": "https://polycount.com/discussion/239296/3d-hard-surface-starship-modeler-tactical-sci-fi-game",
+      "title": "3D Hard Surface Starship Modeler - Tactical Sci Fi Game",
+      "company": "Stormseeker Games",
+      "employer_basis": "Company explicitly named in post body; contact art@stormseekergames.com",
+      "original_posted_at": "2026-10-11",
+      "remote": false,
+      "remote_scope": "Not stated; do not infer",
+      "paid": true,
+      "pay_note": "Initial asset conversion budget USD 200; possible later starship/interior tasks.",
+      "status": "forum_lead_remote_unconfirmed",
+      "evidence_ref": "turn54view0",
+      "description_summary": "Paid Unity-ready starship and interior modeling contract seeking hard-surface topology, UV/baking and PBR skills. Forum job lead; employer identity not independently verified."
+    },
+    {
+      "url": "https://polycount.com/discussion/239236/paid-work-3d-environment-artist-needed-hand-painted",
+      "title": "Paid Work: 3D Environment Artist Needed (Hand Painted)",
+      "company": "Undisclosed employer (Polycount)",
+      "author": "FreelanceArtAssets",
+      "original_posted_at": "2026-09-30",
+      "remote": true,
+      "remote_scope": "Remote freelance; countries not specified, applicants asked for country",
+      "paid": true,
+      "status": "forum_lead",
+      "evidence_ref": "turn54view1",
+      "description_summary": "Unity environment contract combining existing assets and new hand-painted stylized 3D assets. Portfolio and applicant country requested by forum DM. Forum job lead; employer identity not independently verified."
+    },
+    {
+      "url": "https://polycount.com/discussion/239037/paid-freelance-stylized-game-artist-s-characters-animation-environment-art",
+      "title": "[PAID] Freelance Stylized Game Artist(s) \u2014 Characters, Animation, Environment Art",
+      "company": "Undisclosed employer (Polycount)",
+      "author": "VRD",
+      "original_posted_at": "2026-08-22",
+      "remote": false,
+      "remote_scope": "USA-based only; remote not explicitly stated",
+      "paid": true,
+      "status": "forum_lead_remote_unconfirmed",
+      "evidence_ref": "turn54view2",
+      "description_summary": "Paid US-only freelance Unreal project. Primary need is low-poly characters, with possible environment/prop and modular kit contracts. Forum job lead; employer identity not independently verified."
+    }
+  ],
+  "rejected": [
+    {
+      "url": "https://polycount.com/discussion/239149/terrain-artist-full-time-job-opportunity-kenshi-2",
+      "title": "Terrain Artist - Full Time - Job Opportunity - Kenshi 2",
+      "company": "Lo-Fi Games",
+      "original_posted_at": "2026-09-11",
+      "remote": true,
+      "remote_scope": "Applications anywhere; onsite/hybrid/fully remote options",
+      "closing_date": "2026-10-04",
+      "reason": "Application deadline already passed; reject as expired despite unclosed title and recent original date.",
+      "evidence_ref": "turn51view1 line 80"
+    },
+    {
+      "title": "[PAID / REV SHARE] 3D Artist Needed for Rigging and Animation Unity Game",
+      "reason": "Rev-share compensation present; exclude."
+    },
+    {
+      "title": "[CLOSED] UE5 Environment Artist \u2013 Position filled",
+      "reason": "Explicitly filled; exclude."
+    }
+  ]
+}

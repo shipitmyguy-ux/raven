@@ -1,5 +1,51 @@
 # Raven Tasks
 
+## Skillsearch runner — 2026-10-12 evening
+
+- [x] Verify hosted anonymous public access and publish daily bounded snapshots on a dedicated branch.
+- [x] Deploy collector v13 snapshot validation; real check five listings/five descriptions/zero eligible, complete health.
+- [x] Verify stale/expiry/identity/remote protections and matching producer-consumer rotation windows.
+- [ ] Monitor first scheduled daily refresh; GitHub schedules can be delayed.
+
+## Recruiter boards — 2026-10-12 evening
+
+- [x] Implement and independently review 8Bit, Skillsearch and Games Jobs Direct adapters.
+- [x] Deploy collector v12/backend v64; verify live 8Bit and Games Jobs Direct scans and four regional full-description listings.
+- [x] Mark Skillsearch blocked after deployed HTTP 403; disable scans and preserve tested adapter.
+- [x] Establish ordinary GitHub-hosted collector access; verify snapshot publication and real Supabase consumption before reactivation.
+- [ ] Inspect Games Jobs Direct single unverified description; retain honest partial health.
+
+## Board coverage and deduplication — 2026-10-12 evening
+- [x] Deploy public Hitmarker sitemap/detail scan;77 active sources/163registry/86pending.
+- [x] Verify two rotating live checks and3full-description listings; Mob/StoryToys new, HyperHug overlap recorded.
+- [x] Collapse4exact verified HalfMermaid/SmileBreak/HyperHug duplicate pairs without database or saved-record mutations.
+- [x] Record GameJobs403 and Grackle redirects/nohosteddescriptions; reject stale Singularity6 role.
+- [ ] Continue bounded174candidate Hitmarker rotation;150notexamined ininitial24page acceptance.
+- [x] Verify HyperHug exact primary application alias; prefer official Ashby row and retain Russian C1 requirement.
+- [ ] Expand Hitmarker slug prefilter to remaining allowed art-title forms and improve cumulative coverage bookkeeping/newest priority.
+
+## Forums and ArtStation — 2026-10-12 evening
+- [x] Audit ArtStation existing coverage; add bounded current official feed and verify5 full-description art listings live.
+- [x] Add daily Blender Artists Paid Work53 and Epic Job Offerings76 scans; zero eligible current results verified honestly.
+- [x] Audit Polycount plus7 other3D communities; record manual leads, expired Kenshi2 deadline and access/scope blockers.
+- [x] Add original-post freshness, mutable firstpost revalidation, paid/closed/deadline/remote checks and honest employer/source labels.
+- [x] Resolve exact verified cross-board aliases for HalfMermaid and SmileBreak; preserve distinct roles/locations and all saved records.
+- [ ] Revisit supported Polycount automated access; blocked/manual only currently.
+
+## Indie expansion — 2026-10-13 UTC
+- [x] Add24 verified active hiring sources;156 registry/73active/83pending, all73 successfully checked.
+- [x] Deploy bounded Breezy/Recruitee/RemoteGameJobs adapters; preserve employer, full descriptions and remote restrictions; verify cached repeat scan.
+- [x] Verify3 additional environment-art opportunities (EleventhHourGames,Smile-Break,MadLabs), plus2 cross-board HalfMermaid copies.
+- [ ] Add bounded first-party careers adapter, beginning with verified Funovus remote freelance/environment pages.
+- [ ] Resolve cross-board employer aliases for HalfMermaid and deduplicate matching role identity without merging distinct vacancies.
+- [ ] Verify remaining83 sources, including Tactile EU and CompanionGroup official outbound linkage.
+
+## 2026-10-11 offline improvements
+- [x] Add concrete wording and relevant-history guidance in writer v8 source.
+- [x] Add Word role-heading/paragraph pagination and PDF heading rules; inspect synthetic LibreOffice export.
+- [ ] Deploy writer v8 and verify actual new drafts.
+- [ ] Complete browser export and actual saved Word/PDF layout acceptance.
+
 ## Current verified fixes and follow-ups (2026-10-09)
 - [x] Deploy role-evidence planning, employer-scoped repair, art-dominance and unsupported-claim guards (writer v7).
 - [x] Persist document failure feedback through refresh and retain a successful sibling on partial failure.
@@ -429,3 +475,70 @@ Final cover-letter acceptance: worker fresh hosted Raven load/full reload each r
 - [x] Implement v7 relevant initialhistorychoice and deterministic artdominance/efficiency/generic-bypass checks;72targeted/47corepass.
 - [ ] Verify v7 actual pair on another eligible Professional job; independent tailoring review required.
 
+
+## Studio search expansion — 2026-10-12
+Published collector v4 and directory UI. Registry now has 67 studios: 17 configured sources with successful checks, 50 pending verification. Added nine officially linked providers: Naughty Dog, Digital Extremes, Housemarque, Blackbird Interactive, Crytek, Striking Distance Studios, People Can Fly, CD Projekt Red, Rebellion. Evidence and API counts live in docs/studio-source-verification.json; reproducible provider expansion and source migrations committed.
+
+Supports Ashby, Greenhouse, Lever, Workable and SmartRecruiters. Workable multi-location duplicates merge by canonical URL, preventing duplicate upsert errors; SmartRecruiters preserves full location names and bounded pagination. Fixed-host requests reject redirects and cap body/job counts. Directory adds provider/status/site search, clear filters, honest pending/failed/zero-match distinctions, schedules and load retry. Directory-only edits now trigger Pages deployment.
+
+Verified: all 49 local workflow commands pass; Reusable core tests (including four new directory browser fixtures), full Browser regression, Pages deployment and both production smoke runs passed for 7dd509b. Hosted directory controls and public GET schedule fields verified. Anonymous POST returns401. Existing Vault-authenticated scheduled command returned HTTP200; all nine additions have successful live check records. Actual matching jobs persisted for Blackbird and People Can Fly; HyperHug's initial check adds two more. Collector cron remains active every15 minutes, individual studios follow6–24 hour intervals. Saved jobs, resumes and applications were not modified.
+
+Limits: 50 unverified sources remain pending; publisher-wide shared boards require studio scoping. SmartRecruiters list API has no description, so its discovered snippets remain empty and existing enrichment must fetch the posting before document generation. Local Chromium download failed; GitHub browser CI passed. Prior writer/export deployment follow-up remains separate.
+
+- [x] Add Workable/SmartRecruiters support and accurate searchable directory UI.
+- [x] Verify local checks, browser CI, Pages and live collector rollout.
+- [x] Activate nine officially verified sources with reproducible evidence.
+- [ ] Verify the remaining 50 pending studios and add unsupported provider adapters with studio scoping.
+- [ ] Add bounded SmartRecruiters posting-description retrieval or verify existing enrichment acceptance.
+
+## Studio descriptions and verified coverage — 2026-10-12 evening
+Deployed raven-studio-scan v5 and directory health/verification UI. All50 previously pending studios were investigated;9 additional feeds activated. Registry67, configured26, all26 checked successfully, pending41 (23 unsupported systems,3 blocked sources,15 unresolved linkage/scoping). Evidence: docs/studio-source-verification-next-a.json, next-b.json and studio-source-audit-summary.json.
+
+New sources: Insomniac, Epic Games English board, Bend, Santa Monica, Ubisoft Massive, Crystal Dynamics, Studio Wildcard, inXile, Compulsion. Sony boards require exact department and Ubisoft exact Organizational Unit scopes; no whole publisher feed attributed to studios. These9 current checks yielded zero eligible roles under existing art/location rules; successful checks are not evidence of no public vacancies. inXile's sole feed entry is a scam warning, not a vacancy.
+
+SmartRecruiters/BambooHR descriptions fetch from fixed validated provider endpoints, at most12 eligible missing details at concurrency2 per source;24-hour cache expiry/newer posting invalidation; failed refresh preserves prior good text. Descriptions capped20,000 characters. Actual People Can Fly persisted description length10,300 and timestamp2026-10-12T23:30:29.894Z; source detail health complete. BambooHR adapter real Wildcard detail responses verified independently; actual current Wildcard art listing is Bellevue onsite and excluded correctly. Health flags separate partial descriptions from list failures, mark third consecutive failure broken, and reset recovery. Directory shows alerts, scopes and verification outcomes.
+
+Validation:49 final local workflow commands pass, including scoped-provider contamination, malformed configuration, actual-handler auth/persistence/mixed-key bulk writes, description identities/cache expiry/deferred coverage and failure/recovery fixtures. All CI runs for9499a1d pass: core +8 directory browser fixtures, full Browser regression, Pages and2 production smoke runs. Hosted health/verification UI and GET fields confirmed, unauthenticated POST401. Authenticated Vault-scheduled live scans pass and all9 new sources are healthy. Saved jobs/resumes/applications untouched. Source migration tool returned internal error before applying data; same committed idempotent SQL applied successfully as five10-row batches and readback confirmed all50 verification outcomes.
+
+Remaining:41 source-specific adapter/linkage tasks in the manifests. Local Chromium unavailable, browser acceptance performed in GitHub CI. Preexisting unrelated security advisor notices unchanged. Prior writer/export deployment follow-up remains separate.
+
+- [x] Implement and deploy fresh descriptions, BambooHR, exact Sony/Ubisoft scopes and source health.
+- [x] Investigate all50 formerly pending studios and activate9 verified feeds.
+- [x] Verify final local/CI/Pages and real scheduled ingestion, scoped attribution and description persistence.
+- [ ] Add supported adapters/confirm linkage for41 remaining sources using each recorded blocker; do not guess identifiers.
+
+## Official portal adapters and studio visibility — 2026-10-12
+Deployed studio collector v6 and backend v60. Registry67;32 active integrations all successfully checked,35 remaining pending (24 unsupported systems,3 blocked sites,8 unconfirmed scopes/linkages). Activated MachineGames, Motive Studio, DICE, Remedy, Techland and Avalanche. Real public portal source evidence is under docs/studio-{icims,ea,jobylon}-verification.json; all18 unconfirmed/blocked sources rechecked in docs/studio-source-resolution.json; activation batch in studio-portal-activation.json. Bethesda/id exact ZeniMax company taxonomy is currently unobserved; Respawn official EA job/studio linkage found but numeric filterID remains unverified. Do not imply these studios are checking.
+
+Fixed studio result-window starvation: preserve aggregate top100 + latest50 Studio results, URL dedup and existing eligibility. Narrow bilingual title support requires substantial English qualification/role content; foreign-only title/body tests remain excluded. Live public Games/3D results now7 rows including6 Studio jobs; People Can Fly full10,300-character description returns, whereas it was previously omitted. Canada geography is retained under current remote-anywhere policy; no residency eligibility claim.
+
+Portal adapters use fixed official hosts, exact company/department/selected-filter/detail identity, streaming4MB/6second transport and deadlines. Art-title candidates retrieve detail before location filter so Work Model Remote is not lost. Cache-before-fetch plus rotating cursor prevents first12-only starvation. EA parser requires official count/result-container integrity; changed markup or incomplete/full20-result pagination fails rather than healthy falsezero. Current EA5/7 complete feeds pass. Detail metrics match scanner; MachineGames real scheduled check fetched2, attempted1/completed1, eligible0. Current six additions all have0 eligible roles under existing title/location preferences, not0 public vacancies.
+
+Validation:49 final local workflow commands pass; independently reviewed security/scoping/parser/remote/cache/cursor defects fixed. Core/safety7e7ac8b passed8 directory +1 source-to-prompt browser fixture; full browser/Pages and2 smoke runs pass. Finalb1ba57bf core/safety and smoke pass. Actual public discovery card data/full description readback, Node/browser adoption/reload/promptOnly full-text transport fixtures passed. Collector anonymousPOST401, live Vault scheduled collection and all six healthy source checks verified. No actual candidate generator, saved user jobs, resumes, cover letters or applications were written by acceptance tests. Existing discovered results and registry were updated by collector.
+
+Remaining:35 provider/scoping/linkage tasks, plus generic EA pagination beyond20 currently fails explicitly until verified. Existing legacy nonempty shortened notes still skip description refresh during generation preparation; fresh studio descriptions pass complete. No native resume output acceptance was claimed. Prior writer/export deployment follow-up remains separate.
+
+- [x] Deploy three portals, activate six verified feeds, recheck18 source blockers.
+- [x] Fix official-studio result visibility and English bilingual-content false exclusion.
+- [x] Verify49 local commands, browser/core/Pages/smoke and actual full-description discovery readback.
+- [ ] Resolve35 remaining source-specific blockers with official evidence; verify EA pagination before expanding that adapter.
+- [ ] Audit legacy nonempty shortened-description generation preparation separately.
+
+## Indie discovery rollout — 2026-10-12 evening
+Deployed collector v7 and backend v61; Pages indie/boutique/source-kind filters and paginated directory live. Registry139 entries,49 verified integrations all checked,90 pending/unverified entries. Verified indie/boutique batch18 source records includes one previously active Believer,16 new registered feeds and activation of previously pending IO; net17 added integrations. Source evidence in docs/indie-studios-verified-a.json, -b.json, indie-teamtailor-verification.json, indie-board-verification.json and indie-catalog-summary.json. Added56 sourced pending candidates without pretending they were checked.
+
+Actual live Games/3D listResults now15 rows, up from7: seven paid-active WWI listings plus Homa Senior3DGameplay Artist Generalist. US remote makRP Game Artist(Concept+3D) description2395chars; others retain Australia,UK,EU/timezone,Canada restrictions rather than claiming globally unrestricted. Current shared policy remains remote-anywhere/local-onsiteFC, so surfaced role is not a personal residency/work-authorization claim. WWI second real scan preserves all7 remote jobs using fresh authoritative cached metadata. Work With Indies checked87 cards; one listing remains unreadable and is honestly flagged degraded description coverage, no empty/malformed description ingested.
+
+Teamtailor verified feeds: Embark19,CoffeeStain group2,IO7,GhostShip0. Job-board taxonomy labels CoffeeStain group and WorkWithIndies rather than falsely attributing vacancies to one studio. Indie-origin/publisher-owned UnknownWorlds and other ownership caveats retained; boutique category does not assert independent ownership. New generalist title recognition accepts3DGameplay Artist/3DArtGeneralist and retains character,technical,animation,VFX exclusions. Lever normalizer now includes role lists/additional text; live Blackbird environment/prop description refresh expands522 to2531chars.
+
+Scheduling: oldestdue fair selection,12source tick,6provider/host cap,2fetch/check concurrency and140sec deadline. Explicit6–168h intervals respected, known quiet sources weekly; failure exponential12–168h backoff. GET exact count limit/offset max500, initialUI2000+Loadmore, explicitpartial/retry. Fresh portal cache exact title+employer validation restores remote/location metadata, preventing cached board roles disappearing on next check.
+
+Validation:49 local workflow commands and independent review pass. Core CI38326027174 includes12 directory browser fixtures+source-to-prompt fixture; fullBrowser38326027081,Pages38326027099 andsmoke38326027098/38326060533 allpass. Hosted filters/pagination, real two-pass WWI ingestion, current full-description Games/3D result readback, all49 checked source states and anonymousPOST401 verified. Catalog source SQL applied in bounded batches from committed migration; no secrets read/output. Saved jobs,resumes,cover letters and employer applications untouched.
+
+Remaining:90 catalog entries still unverified or unsupported; one WWI listing detail unreadable; bounded candidatewindow120 canunderfill mixedprovider selection when >120 overdue fromoneprovider; documented future scaling task. First usable indie batch delivered,250–500 verified indies remains expansion target rather than completed count. Older shortened saved-description generation and unrelated writer/export tasks remain separate.
+
+- [x] Deploy indie board and Teamtailor, activate17 additional integrations and register56 honest candidates.
+- [x] Verify8 new surfaced art roles, real cached repeat collection,full descriptions and allCI.
+- [x] Deploy catalog taxonomy/pagination and fair bounded scheduling.
+- [ ] Expand verified indie coverage toward250–500 using90 recorded source blockers/candidates.
+- [ ] Investigate one unreadable WWI detail and future candidate-window underfill.

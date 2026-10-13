@@ -5,6 +5,7 @@ on:
     branches: ["main"]
     paths:
       - "index.html"
+      - "studio-directory.html"
       - "app.js"
       - "document-revision.mjs"
       - "document-download.mjs"

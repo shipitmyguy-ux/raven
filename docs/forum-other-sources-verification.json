@@ -1,0 +1,526 @@
+{
+  "verified_at": "2026-10-13T00:55:47.298097+00:00",
+  "scope": "Bounded read-only official forum category/API/RSS and original first-post verification. No contact, login, private APIs, code or DB writes.",
+  "freshness_policy": "Originaltopiccreatedwithin30days; replybump isnotnew vacancy. PAID label isnot enough if jobseeker, unfunded, revenue-share-only or closed. Allemployeridentityuserreported untilcorporateverified.",
+  "sources": [
+    {
+      "name": "Epic Developer Community Job Offerings",
+      "category_id": 76,
+      "category_url": "https://forums.unrealengine.com/c/community/got-skills-looking-for-talent/job-offerings/76",
+      "list_json": "https://forums.unrealengine.com/c/community/got-skills-looking-for-talent/job-offerings/76.json",
+      "rss": "https://forums.unrealengine.com/c/community/got-skills-looking-for-talent/job-offerings/76.rss",
+      "status": "public_json_rss_verified",
+      "recommendation": "Implement bounded adapter; firstpost only, originalcreated freshness, explicitpaid employeropportunity, noLFW/closed/revshare/notfunded. Manualidentity flag anonymous employer. Two listpages verified."
+    },
+    {
+      "name": "Blender Artists Paid Work",
+      "category_id": 53,
+      "category_url": "https://blenderartists.org/c/jobs/paid-work/53",
+      "list_json": "https://blenderartists.org/c/jobs/paid-work/53.json",
+      "rss": "https://blenderartists.org/c/jobs/paid-work/53.rss",
+      "status": "public_json_rss_verified",
+      "recommendation": "Implement paid category53, not parentJobs14 containing unpaid. Verifyfirstpostcategory/role/payment/created/closed; keep budget restrictions."
+    },
+    {
+      "name": "ZBrushCentral Community",
+      "category_id": 9,
+      "category_url": "https://www.zbrushcentral.com/c/community/9",
+      "list_json": "https://www.zbrushcentral.com/c/community/9.json",
+      "rss": "https://www.zbrushcentral.com/c/community/9.rss",
+      "status": "public_json_rss_verified_no_fresh_paid_target",
+      "recommendation": "Manual/discovery only; categories.json has no dedicated hiring category. RecentjobpostAug11 lacks secured funds and isstale; never fabricate supported hiring-feed activation."
+    },
+    {
+      "name": "CGSociety / CGTalk",
+      "category_url": "https://forums.cgsociety.org/",
+      "status": "blocked_502",
+      "recommendation": "Record blocked; main cgsociety.org andcategories.json also502. Noverifiedfreshlead/feed."
+    },
+    {
+      "name": "GameDev.net",
+      "category_url": "https://gamedev.net/forums/forum/29-hobby-project-classifieds/",
+      "status": "public_html_verified_feed_not_hiring_scoped",
+      "recommendation": "Discovery/manual review only. Correctofficialhobbycategory29; guessedoldhelpwantedID8 returnsMultiplayerNetworking. ?rss=1 returnsHTML; /rss/forums/29 redirects generic /feed. LFT mostlyjobseekers/hobby/revshare. FreshSKYLIGHTNINGenvrole lacks payment evidence."
+    },
+    {
+      "name": "3DTotal",
+      "category_url": "https://3dtotal.com/jobs",
+      "status": "404_no_hiring_feed_verified",
+      "recommendation": "Noadapter; /jobs and/about-us/job-opportunities404. Search resultsprimarilycareerresources; noverifiedcurrenthiringcategory."
+    },
+    {
+      "name": "3DCoat",
+      "category_url": "https://3dcoat.com/forum/",
+      "status": "public_html_no_hiring_category_verified",
+      "recommendation": "Technicalcommunitynotverifiedhiringfeed; homepage200 containsnojob/hiringcategory; guessedofftopicID8=404. Noeligiblefreshlead."
+    }
+  ],
+  "verified_recent_paid_opportunities": [
+    {
+      "url": "https://forums.unrealengine.com/t/2834113",
+      "json_url": "https://forums.unrealengine.com/t/2834113.json",
+      "topic_id": 2834113,
+      "title": "[PAID] Unreal Engine Generalists & Specialists \u2014 Remote, Flexible Hours",
+      "original_created_at": "2026-09-25T00:24:54.113Z",
+      "closed": false,
+      "category_id": 76,
+      "requester": "MatthewNitrode",
+      "first_post_chars": 943,
+      "sha256": "a1b053b67b2b182758eb0c14aaea4a1cd62ffa22e6a82183ff3023a947556507",
+      "company": "Quarrybuild",
+      "kind": "paid_unreal_generalist_platform",
+      "payment_evidence": "$25 USD/hr junior to $70+ expert; paid remote months",
+      "location_scope": "Fully remote/flexible hours; external corporate site403",
+      "decision": "Paid first-post and employer reported by requester verified. Strong remote generalist lead, not asserted indie studio or environment-specialist match."
+    },
+    {
+      "url": "https://forums.unrealengine.com/t/2833354",
+      "json_url": "https://forums.unrealengine.com/t/2833354.json",
+      "topic_id": 2833354,
+      "title": "[PAID/CONTRACT] Recherche \u00e9quipe compl\u00e8te \u2013 Jeu PC stylis\u00e9 sur Unreal Engine 5 (FR)",
+      "original_created_at": "2026-09-22T15:48:08.590Z",
+      "closed": false,
+      "category_id": 76,
+      "requester": "Coquietteeeeee",
+      "first_post_chars": 2746,
+      "sha256": "9f0e7718f9e3f89329e0f756bdd104e9b9312b592de767c7521b852d61c9344e",
+      "company": null,
+      "kind": "anonymous_paid_3d_environment_team_request",
+      "payment_evidence": "Compensation discussed by profile/task; freelance or task payment",
+      "location_scope": "French language recruitment; remote country eligibility unspecified",
+      "decision": "Manual employer identity verification required before employer-specific ingestion; paid title alone insufficient."
+    },
+    {
+      "url": "https://blenderartists.org/t/1652865",
+      "json_url": "https://blenderartists.org/t/1652865.json",
+      "topic_id": 1652865,
+      "title": "[PAID] Blender Environment Artist Wanted \u2014 Exalted Sandbox / Babylon.js",
+      "original_created_at": "2026-09-15T20:18:24.508Z",
+      "closed": false,
+      "category_id": 53,
+      "requester": "Diesel8",
+      "first_post_chars": 2229,
+      "sha256": "3932844531c8ae16186f21cdc0446fe493c2d78bd07f310a24e054f79477262b",
+      "company": "Exalted Gaming",
+      "kind": "paid_environment_small_gig",
+      "payment_evidence": "Maximum about$1000; generally below$25/hr unless completion under20hours",
+      "location_scope": "Browser Babylon.js environment; no explicit location restriction observed",
+      "decision": "Paid indie-project environment lead; preserve low budget and unknown remote-location eligibility. Not a salary role."
+    },
+    {
+      "url": "https://blenderartists.org/t/1654857",
+      "json_url": "https://blenderartists.org/t/1654857.json",
+      "topic_id": 1654857,
+      "title": "Texture painter wanted \u2013 Paid Test",
+      "original_created_at": "2026-10-12T15:25:49.719Z",
+      "closed": false,
+      "category_id": 53,
+      "requester": "goulchen",
+      "first_post_chars": 312,
+      "sha256": "0fcca45c0624a29f82369bcbc8f1d758dd1ea09c38919ff5b3ee95219c356ace",
+      "company": null,
+      "kind": "paid_texture_shader_test",
+      "payment_evidence": "200EUR for painterly10second modeled/animated scene",
+      "location_scope": "Remote eligibility not explicitly stated; independent requester",
+      "decision": "Small paid gig with unknown employer; review-only rather than indie-studio employment claim."
+    }
+  ],
+  "excluded_examples": [
+    {
+      "url": "https://www.zbrushcentral.com/t/485044",
+      "json_url": "https://www.zbrushcentral.com/t/485044.json",
+      "topic_id": 485044,
+      "title": "ZBrush Job Posting",
+      "original_created_at": "2026-08-11T08:30:24.283Z",
+      "closed": false,
+      "category_id": 9,
+      "requester": "Libracentricart",
+      "first_post_chars": 523,
+      "sha256": "9785f37d95e00de0c9a39c40906e0933d4bc30ced52bfe71e35147e61ac82e53",
+      "excluded_reason": "OriginalAug11 older30day fresh-window; firstpost explicitly no project funds secured. Exclude paid hiring despite Job Posting title."
+    },
+    {
+      "url": "https://forums.unrealengine.com/t/2837479",
+      "json_url": "https://forums.unrealengine.com/t/2837479.json",
+      "topic_id": 2837479,
+      "title": "Lead Artist / Character Animator - Confidential Original 3D Action-Adventure Project Remote (UK)| Freelance / Contractor | Part-time initially, with potential to grow ",
+      "original_created_at": "2026-10-05T18:08:47.854Z",
+      "closed": false,
+      "category_id": 76,
+      "requester": "FinalQuail3103",
+      "first_post_chars": 2895,
+      "sha256": "ffdeed0cbc562300252c48c3c12d3d226fa6ce1b07e72cfcb53a733ac78c97b4",
+      "excluded_reason": "Primary lead-character/animator responsibilities; UK remote restriction. Environment/props secondary, excluded by current art-role policy."
+    },
+    {
+      "url": "https://blenderartists.org/t/1653589",
+      "json_url": "https://blenderartists.org/t/1653589.json",
+      "topic_id": 1653589,
+      "title": "[PAID] animator and/or generalist opportunity",
+      "original_created_at": "2026-09-25T13:26:46.747Z",
+      "closed": false,
+      "category_id": 53,
+      "requester": "JosiahBout",
+      "first_post_chars": 1018,
+      "sha256": "c7041f7976f1a5302fb413323f010c23e880639f65c7f6b801f2b0551ea4a74c",
+      "excluded_reason": "Primary stylized short-form character-animation creator; not game environment/generalist work within current policy."
+    }
+  ],
+  "additional_review_only": [
+    {
+      "company": "SKYLIGHTNING X STUDIOS",
+      "url": "https://gamedev.net/forums/topic/720513-recruiting-3d-environment-prop-artist-the-last-frame-for-skylightning-x-studios/",
+      "original_created_at": "2026-10-04",
+      "reason": "Freshfirstpostenv/propUnityrole andstructuredOpenbadge verified, but noexplicitpayment terms. Do notingest aspaid."
+    }
+  ],
+  "http_observations": [
+    {
+      "url": "https://forums.unrealengine.com/categories.json",
+      "status": 200,
+      "final": "https://forums.unrealengine.com/categories.json",
+      "content_type": "application/json; charset=utf-8",
+      "bytes": 542311,
+      "keys": [
+        "category_list"
+      ]
+    },
+    {
+      "url": "https://forums.unrealengine.com/c/community/got-skills-looking-for-talent/job-offerings/76.json",
+      "status": 200,
+      "final": "https://forums.unrealengine.com/c/community/got-skills-looking-for-talent/job-offerings/76.json",
+      "content_type": "application/json; charset=utf-8",
+      "bytes": 73808,
+      "keys": [
+        "users",
+        "primary_groups",
+        "flair_groups",
+        "topic_list"
+      ]
+    },
+    {
+      "url": "https://forums.unrealengine.com/c/community/got-skills-looking-for-talent/job-offerings/76.rss",
+      "status": 200,
+      "final": "https://forums.unrealengine.com/c/community/got-skills-looking-for-talent/job-offerings/76.rss",
+      "content_type": "application/rss+xml; charset=utf-8",
+      "bytes": 124071
+    },
+    {
+      "url": "https://forums.unrealengine.com/t/2833354.json",
+      "status": 200,
+      "final": "https://forums.unrealengine.com/t/2833354.json",
+      "content_type": "application/json; charset=utf-8",
+      "bytes": 96595,
+      "keys": [
+        "post_stream",
+        "timeline_lookup",
+        "suggested_topics",
+        "tags",
+        "tags_descriptions",
+        "fancy_title",
+        "id",
+        "title",
+        "posts_count",
+        "created_at"
+      ]
+    },
+    {
+      "url": "https://www.zbrushcentral.com/categories.json",
+      "status": 200,
+      "final": "https://www.zbrushcentral.com/categories.json",
+      "content_type": "application/json; charset=utf-8",
+      "bytes": 13414,
+      "keys": [
+        "category_list"
+      ]
+    },
+    {
+      "url": "https://www.zbrushcentral.com/latest.json",
+      "status": 200,
+      "final": "https://www.zbrushcentral.com/latest.json",
+      "content_type": "application/json; charset=utf-8",
+      "bytes": 125710,
+      "keys": [
+        "users",
+        "primary_groups",
+        "flair_groups",
+        "topic_list"
+      ]
+    },
+    {
+      "url": "https://www.zbrushcentral.com/latest.rss",
+      "status": 200,
+      "final": "https://www.zbrushcentral.com/latest.rss",
+      "content_type": "application/rss+xml; charset=utf-8",
+      "bytes": 261527
+    },
+    {
+      "url": "https://forums.cgsociety.org/",
+      "error": "HTTP Error 502: Bad Gateway"
+    },
+    {
+      "url": "https://forums.cgsociety.org/categories.json",
+      "error": "HTTP Error 502: Bad Gateway"
+    },
+    {
+      "url": "https://gamedev.net/forums/forum/8-help-wanted/",
+      "status": 200,
+      "final": "https://gamedev.net/forums/forum/8-help-wanted/",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 229008
+    },
+    {
+      "url": "https://gamedev.net/forums/forum/8-help-wanted/?rss=1",
+      "status": 200,
+      "final": "https://gamedev.net/forums/forum/8-help-wanted/?rss=1",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 229014
+    },
+    {
+      "url": "https://gamedev.net/lft/",
+      "status": 200,
+      "final": "https://gamedev.net/lft/",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 173270
+    },
+    {
+      "url": "https://3dtotal.com/jobs",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://3dcoat.com/forum/index.php?/forum/8-off-topic/",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://blenderartists.org/categories.json",
+      "status": 200,
+      "final": "https://blenderartists.org/categories.json",
+      "content_type": "application/json; charset=utf-8",
+      "bytes": 57887,
+      "keys": [
+        "category_list"
+      ]
+    },
+    {
+      "url": "https://blenderartists.org/c/jobs/14.rss",
+      "status": 200,
+      "final": "https://blenderartists.org/c/jobs/14.rss",
+      "content_type": "application/rss+xml; charset=utf-8",
+      "bytes": 93485
+    },
+    {
+      "url": "https://forums.unrealengine.com/t/2834113.json",
+      "status": 200,
+      "final": "https://forums.unrealengine.com/t/2834113.json",
+      "content_type": "application/json; charset=utf-8",
+      "bytes": 19809,
+      "keys": [
+        "post_stream",
+        "timeline_lookup",
+        "suggested_topics",
+        "tags",
+        "tags_descriptions",
+        "fancy_title",
+        "id",
+        "title",
+        "posts_count",
+        "created_at"
+      ]
+    },
+    {
+      "url": "https://forums.unrealengine.com/c/community/got-skills-looking-for-talent/job-offerings/76.json?page=1",
+      "status": 200,
+      "final": "https://forums.unrealengine.com/c/community/got-skills-looking-for-talent/job-offerings/76.json?page=1",
+      "content_type": "application/json; charset=utf-8",
+      "bytes": 65031,
+      "keys": [
+        "users",
+        "primary_groups",
+        "flair_groups",
+        "topic_list"
+      ]
+    },
+    {
+      "url": "https://blenderartists.org/c/jobs/paid-work/53.json",
+      "status": 200,
+      "final": "https://blenderartists.org/c/jobs/paid-work/53.json",
+      "content_type": "application/json; charset=utf-8",
+      "bytes": 49791,
+      "keys": [
+        "users",
+        "primary_groups",
+        "flair_groups",
+        "topic_list"
+      ]
+    },
+    {
+      "url": "https://blenderartists.org/c/jobs/paid-work/53.rss",
+      "status": 200,
+      "final": "https://blenderartists.org/c/jobs/paid-work/53.rss",
+      "content_type": "application/rss+xml; charset=utf-8",
+      "bytes": 71787
+    },
+    {
+      "url": "https://blenderartists.org/t/1652865.json",
+      "status": 200,
+      "final": "https://blenderartists.org/t/1652865.json",
+      "content_type": "application/json; charset=utf-8",
+      "bytes": 18393,
+      "keys": [
+        "post_stream",
+        "timeline_lookup",
+        "user_badges",
+        "suggested_topics",
+        "tags",
+        "tags_descriptions",
+        "fancy_title",
+        "id",
+        "title",
+        "posts_count"
+      ]
+    },
+    {
+      "url": "https://www.zbrushcentral.com/c/community/9.json",
+      "status": 200,
+      "final": "https://www.zbrushcentral.com/c/community/9.json",
+      "content_type": "application/json; charset=utf-8",
+      "bytes": 78960,
+      "keys": [
+        "users",
+        "primary_groups",
+        "flair_groups",
+        "topic_list"
+      ]
+    },
+    {
+      "url": "https://www.zbrushcentral.com/c/community/9.rss",
+      "status": 200,
+      "final": "https://www.zbrushcentral.com/c/community/9.rss",
+      "content_type": "application/rss+xml; charset=utf-8",
+      "bytes": 43069
+    },
+    {
+      "url": "https://3dcoat.com/forum/",
+      "status": 200,
+      "final": "https://3dcoat.com/forum/",
+      "content_type": "text/html;charset=UTF-8",
+      "bytes": 159676
+    },
+    {
+      "url": "https://gamedev.net/forums/",
+      "status": 200,
+      "final": "https://gamedev.net/forums/",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 153425
+    },
+    {
+      "url": "https://cgsociety.org/",
+      "error": "HTTP Error 502: Bad Gateway"
+    },
+    {
+      "url": "https://3dtotal.com/about-us/job-opportunities",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://forums.unrealengine.com/t/2837479.json",
+      "status": 200,
+      "final": "https://forums.unrealengine.com/t/2837479.json",
+      "content_type": "application/json; charset=utf-8",
+      "bytes": 31113,
+      "keys": [
+        "post_stream",
+        "timeline_lookup",
+        "suggested_topics",
+        "tags",
+        "tags_descriptions",
+        "fancy_title",
+        "id",
+        "title",
+        "posts_count",
+        "created_at"
+      ]
+    },
+    {
+      "url": "https://blenderartists.org/t/1653589.json",
+      "status": 200,
+      "final": "https://blenderartists.org/t/1653589.json",
+      "content_type": "application/json; charset=utf-8",
+      "bytes": 16763,
+      "keys": [
+        "post_stream",
+        "timeline_lookup",
+        "user_badges",
+        "suggested_topics",
+        "tags",
+        "tags_descriptions",
+        "fancy_title",
+        "id",
+        "title",
+        "posts_count"
+      ]
+    },
+    {
+      "url": "https://blenderartists.org/t/1654857.json",
+      "status": 200,
+      "final": "https://blenderartists.org/t/1654857.json",
+      "content_type": "application/json; charset=utf-8",
+      "bytes": 21780,
+      "keys": [
+        "post_stream",
+        "timeline_lookup",
+        "user_badges",
+        "suggested_topics",
+        "tags",
+        "tags_descriptions",
+        "fancy_title",
+        "id",
+        "title",
+        "posts_count"
+      ]
+    },
+    {
+      "url": "https://www.zbrushcentral.com/t/485044.json",
+      "status": 200,
+      "final": "https://www.zbrushcentral.com/t/485044.json",
+      "content_type": "application/json; charset=utf-8",
+      "bytes": 7147,
+      "keys": [
+        "post_stream",
+        "timeline_lookup",
+        "suggested_topics",
+        "tags",
+        "id",
+        "title",
+        "fancy_title",
+        "posts_count",
+        "created_at",
+        "views"
+      ]
+    },
+    {
+      "url": "https://gamedev.net/forums/forum/29-hobby-project-classifieds",
+      "status": 200,
+      "final": "https://gamedev.net/forums/forum/29-hobby-project-classifieds/",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 216023
+    },
+    {
+      "url": "https://gamedev.net/forums/forum/29-hobby-project-classifieds/?rss=1",
+      "status": 200,
+      "final": "https://gamedev.net/forums/forum/29-hobby-project-classifieds/?rss=1",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 216029
+    },
+    {
+      "url": "https://gamedev.net/rss/forums/29/",
+      "status": 200,
+      "final": "https://gamedev.net/feed/",
+      "content_type": "application/rss+xml; charset=utf-8",
+      "bytes": 32339
+    },
+    {
+      "url": "https://quarrybuild.com/",
+      "error": "HTTP Error 403: Forbidden"
+    }
+  ]
+}

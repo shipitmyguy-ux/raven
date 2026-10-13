@@ -1,5 +1,6 @@
 import {candidateAllowedForTrack} from "./utils.ts";
 import type { Candidate, Track } from "./types.ts";
+import {deduplicateStudioResults} from "../_shared/studio-result-dedup.mjs";
 import { validAtsRow } from "./csv-records.mjs";
 
 function isPersistableCandidate(c:Candidate){
@@ -66,10 +67,16 @@ export async function listResults(track:Track){
   // never removed by this freshness filter.
   const cutoff=new Date(Date.now()-30*86400000).toISOString();
   const q="raven_search_results?select=id,track,title,company,location,remote,salary_text,url,source,snippet,score,status,created_at,last_seen&track=eq."+encodeURIComponent(track)+"&status=eq.Discovered&last_seen=gte."+encodeURIComponent(cutoff)+"&order=score.desc,last_seen.desc&limit=100";
-  const r=await rest(q,{method:"GET"});
-  if(!r.ok) throw new Error("Database read failed ("+r.status+")");
-  const rows=await r.json();
-  return rows.filter((row:Candidate)=>candidateAllowedForTrack(track,row));
+  // Keep recent official studio discoveries visible even when aggregate scores
+  // fill the normal top100 window. Preserve that window and merge up to50 more.
+  const queries=track==="Games / 3D"?[q,q.replace("&order=score.desc,last_seen.desc&limit=100","&source=like."+encodeURIComponent("Studio:%")+"&order=last_seen.desc&limit=50")]:[q];
+  const responses=await Promise.all(queries.map(path=>rest(path,{method:"GET"})));
+  for(const response of responses)if(!response.ok)throw new Error("Database read failed ("+response.status+")");
+  const groups=await Promise.all(responses.map(response=>response.json()));
+  const unique=new Map<string,Candidate>();
+  for(const row of groups.flat())if(candidateAllowedForTrack(track,row)&&row.url)unique.set(row.url,row);
+  const visible=track==="Games / 3D"?deduplicateStudioResults([...unique.values()]):[...unique.values()];
+  return visible.sort((a:any,b:any)=>Number(b.score||0)-Number(a.score||0)||String(b.last_seen||"").localeCompare(String(a.last_seen||"")));
 }
 
 export async function updateDescription(url:string,c:Candidate){

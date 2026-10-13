@@ -1,7 +1,7 @@
 import type { Candidate, Track } from "./types.ts";
 import { TRACKS } from "./config.ts";
 import { rankCandidates, score, within } from "./utils.ts";
-import { linkedinQuick, linkedinDeep, remotive, remoteOk, arbeitnow, jobicy, himalayas, atsWide } from "./sources.ts";
+import { linkedinQuick, linkedinDeep, remotive, remoteOk, arbeitnow, jobicy, himalayas, atsWide, gameStudioAshby } from "./sources.ts";
 import { upsertResults, listResults, createRun, finishRun, deepSearchRunning, deepSearchCooldown } from "./db.ts";
 
 export async function quickSearch(track:Track){
@@ -17,8 +17,8 @@ export async function quickSearch(track:Track){
     within(jobicy(track,3),6500,[] as Candidate[]),
     within(himalayas(track,3),6500,[] as Candidate[])
   ]);
-  const ats=await within(atsWide(track,true),6500,[] as Candidate[]);
-  const rows=rankCandidates(track,[...li,...rem,...rok,...arb,...jcy,...him,...ats],40);
+  const [ats,studio]=await Promise.all([within(atsWide(track,true),6500,[] as Candidate[]),within(gameStudioAshby(track),6000,[] as Candidate[])]);
+  const rows=rankCandidates(track,[...li,...rem,...rok,...arb,...jcy,...him,...ats,...studio],40);
   if(!rows.length){
     // A transient provider drought must not wipe a tab that already has valid
     // persisted discovery results. Return the current cache and let deep search
@@ -44,8 +44,8 @@ export async function deepSearch(track:Track){
       jobicy(track,3),
       himalayas(track,3)
     ]);
-    const ats=await atsWide(track);
-    const ranked=rankCandidates(track,[...li,...rem,...rok,...arb,...jcy,...him,...ats],100);
+    const [ats,studio]=await Promise.all([atsWide(track),gameStudioAshby(track)]);
+    const ranked=rankCandidates(track,[...li,...rem,...rok,...arb,...jcy,...him,...ats,...studio],100);
     const rows=ranked
       .map(c=>({...c,score:score(track,c)}))
       .sort((a,b)=>(b.score||0)-(a.score||0));

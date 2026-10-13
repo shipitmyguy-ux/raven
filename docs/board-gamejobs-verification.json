@@ -1,0 +1,49 @@
+{
+  "source": "GameJobs.co",
+  "official_url": "https://gamejobs.co/",
+  "source_kind": "job_board",
+  "segment": "mixed",
+  "provider_candidate": "gamejobs",
+  "board_key_candidate": "gamejobs",
+  "verification_status": "blocked",
+  "verified_at": "2026-10-13T01:40:46.578746+00:00",
+  "probes": [
+    {
+      "url": "https://gamejobs.co/",
+      "http_status": 403,
+      "body": "Forbidden"
+    },
+    {
+      "url": "https://www.gamejobs.co/",
+      "http_status": 403,
+      "body": "Forbidden"
+    },
+    {
+      "url": "https://gamejobs.co/Senior-Environment-Artist-at-BulletFarm",
+      "http_status": 403,
+      "body": "Forbidden"
+    }
+  ],
+  "indexed_discovery": {
+    "available": true,
+    "root_indexed_results": 7641,
+    "note": "Public web retrieval exposes parsed root and job text, but not actual collector HTML/API responses. This cannot validate HTML selectors, canonical structured identity, complete pagination or scheduled runtime access."
+  },
+  "indexed_candidates": [
+    {
+      "url": "https://gamejobs.co/Senior-Environment-Artist-at-BulletFarm",
+      "company": "BulletFarm",
+      "title": "Senior Environment Artist",
+      "location": "United States \u00b7 Remote",
+      "note": "Indexed board includes source description but no direct fetch verification. Do not mark monitored or ingest from unverified parser."
+    },
+    {
+      "url": "https://gamejobs.co/Environment-Artist-Temporary-Assignment-at-Singularity-6",
+      "company": "Singularity 6",
+      "title": "Environment Artist (Temporary Assignment)",
+      "location": "US supported states including Colorado; core PT hours",
+      "note": "Indexed explicit $78\u201383/hour temporary 3-month assignment. Verify official source before ingestion."
+    }
+  ],
+  "decision": "No speculative adapter or tests generated. Register blocked discovery source only if root chooses; no access bypass attempted. Retry ordinary official public transport later; indexed results can support manual official ATS discovery."
+}

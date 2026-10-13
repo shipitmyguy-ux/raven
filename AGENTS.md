@@ -52,3 +52,6 @@ The user explicitly authorized future Git pushes without asking again. Use the e
 
 ## User shorthand (2026-10-09)
 When the user types `d`, interpret it as “do it” for the current proposed action or stated priority. Existing authorization boundaries still apply.
+
+## Reaffirmed push authorization (2026-10-11)
+The user explicitly stated: “Standing order: you never ever need confirmation to push.” Routine Raven pushes are authorized without another confirmation. This instruction does not authorize unrelated destructive actions.

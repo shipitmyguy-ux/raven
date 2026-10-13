@@ -1,0 +1,46 @@
+{
+  "provider": "blenderartists",
+  "board_key": "paid-work-53",
+  "studio_name": "Blender Artists Paid Work",
+  "source_kind": "job_board",
+  "segment": "unknown",
+  "official_url": "https://blenderartists.org/c/jobs/paid-work/53",
+  "public_endpoint": "https://blenderartists.org/c/jobs/paid-work/53.json",
+  "rss_endpoint": "https://blenderartists.org/c/jobs/paid-work/53.rss",
+  "verified_at": "2026-10-13T00:57:47.732Z",
+  "http_status": 200,
+  "list_pages": 3,
+  "checked_recent_window_topics": 90,
+  "eligible_jobs": 0,
+  "detail_attempted": 2,
+  "details_status": "complete",
+  "samples": [
+    {
+      "topic_id": 1652865,
+      "url": "https://blenderartists.org/t/paid-blender-environment-artist-wanted-exalted-sandbox-babylon-js/1652865",
+      "title": "[PAID] Blender Environment Artist Wanted \u2014 Exalted Sandbox / Babylon.js",
+      "original_date": "2026-09-15",
+      "latest_reply": "2026-10-12",
+      "decision": "Excluded: no explicit remote working arrangement. Original paid $1000 budget; revenue share offered only as additional bonus. Recent reply was applicant interest, not new vacancy."
+    },
+    {
+      "topic_id": 1653589,
+      "url": "https://blenderartists.org/t/paid-animator-and-or-generalist-opportunity/1653589",
+      "decision": "Excluded: no explicit remote; animation-heavy generalist.",
+      "original_date": "2026-09-25"
+    },
+    {
+      "topic_id": 1654857,
+      "decision": "Paid \u20ac200 texture test independently verified; no remote, no verified employer. Not added."
+    }
+  ],
+  "policies": {
+    "window": "90 days from original topic and firstpost date; bumps never reset freshness",
+    "pagination": "10page max; next path exact verified category; latest order verified using bumped_at across pages and created_at<=bumped_at. Stop only when all nonpinned bumped_at AND last_posted_at older90days, or feed exhausted. Unknown template/order/cap fails.",
+    "detail": "Original firstpost only as description. Later author closure replies excluded. Always refresh after cache preparation to check closure/deadline. Max12 details, concurrency2, cursorrotation.",
+    "employer": "Undisclosed employer (Blender Artists); forum usernames never asserted employers. Snippet begins forum hiring lead disclaimer.",
+    "paid": "No unpaid/volunteer/zero-budget/equity-only/pure revenue share. Fixed cash plus optional bonus allowed.",
+    "remote": "Contextual explicit remote-work wording, explicit country scope preserved.",
+    "deadlines": "ISO and monthname dates checked; unparseable explicit deadline fails detail."
+  }
+}
