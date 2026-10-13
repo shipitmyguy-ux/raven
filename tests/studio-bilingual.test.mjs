@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import {stripTypeScriptTypes} from 'node:module';
 import '../supabase/functions/_shared/track-filter.js';
 import {normalizeStudioJobs} from '../supabase/functions/_shared/studio-providers.mjs';
-const load=path=>stripTypeScriptTypes(fs.readFileSync(path,'utf8').replace(/^import .*;\n/gm,'').replace(/\bexport /g,''));
+const load=path=>stripTypeScriptTypes(fs.readFileSync(path,'utf8').replace(/^import .*;\r?\n/gm,'').replace(/\bexport /g,''));
 const context={globalThis:{RavenTrackFilter:globalThis.RavenTrackFilter},URL,Response};
 vm.runInNewContext(load('supabase/functions/raven-backend-v3/config.ts')+'\n'+load('supabase/functions/raven-backend-v3/utils.ts')+';globalThis.testApi={looksEnglishPosting,candidateAllowedForTrack};',context);
 const api=context.globalThis.testApi;
@@ -21,6 +21,6 @@ assert.equal(api.looksEnglishPosting({...bilingual,title:'Artista/Character Arti
 console.log('bilingual English-role content and foreign-only exclusions passed');
 
 const fixtureSource=fs.readFileSync('tests/studio-to-resume.test.mjs','utf8');
-const publicPosting=JSON.parse(fixtureSource.match(/const posting=(.+);\nconst source=/)[1]);
+const publicPosting=JSON.parse(fixtureSource.match(/const posting=(.+);\r?\nconst source=/)[1]);
 const [actual]=normalizeStudioJobs({studio_name:'People Can Fly',provider:'smartrecruiters',board_key:'PeopleCanFly'},{content:[publicPosting]});
 assert.equal(api.candidateAllowedForTrack('Games / 3D',actual),true,'verified bilingual PCF public posting is readable in English');

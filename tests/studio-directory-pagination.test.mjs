@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import {stripTypeScriptTypes} from 'node:module';
 import '../supabase/functions/_shared/track-filter.js';
-const source=stripTypeScriptTypes(fs.readFileSync('supabase/functions/raven-studio-scan/index.ts','utf8').replace(/^import .*;\n/gm,''));
+const source=stripTypeScriptTypes(fs.readFileSync('supabase/functions/raven-studio-scan/index.ts','utf8').replace(/^import .*;\r?\n/gm,''));
 let handler,calls=0,noCount=false;
 const fakeFetch=async(url,options)=>{
  calls++;assert.equal(options.headers.Prefer,'count=exact');

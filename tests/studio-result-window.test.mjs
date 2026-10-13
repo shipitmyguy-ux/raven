@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import {stripTypeScriptTypes} from 'node:module';
 import '../supabase/functions/_shared/track-filter.js';
 import {deduplicateStudioResults} from '../supabase/functions/_shared/studio-result-dedup.mjs';
-const source=stripTypeScriptTypes(fs.readFileSync('supabase/functions/raven-backend-v3/db.ts','utf8').replace(/^import .*;\n/gm,'').replace(/\bexport /g,''));
+const source=stripTypeScriptTypes(fs.readFileSync('supabase/functions/raven-backend-v3/db.ts','utf8').replace(/^import .*;\r?\n/gm,'').replace(/\bexport /g,''));
 const calls=[];
 const normal=Array.from({length:100},(_,i)=>({title:'Environment Artist',url:'https://example.com/'+i,location:'Remote',remote:true,score:50,last_seen:'2026-10-12'}));
 const studio={title:'Senior Level Artist',url:'https://jobs.smartrecruiters.com/PeopleCanFly/744000151377560',location:'Remote Canada',remote:true,score:12,source:'Studio:smartrecruiters',snippet:'FULL POSTING '+ 'x'.repeat(10300),last_seen:'2026-10-13'};

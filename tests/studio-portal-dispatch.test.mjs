@@ -6,7 +6,7 @@ import * as providers from '../supabase/functions/_shared/studio-providers.mjs';
 import * as collector from '../supabase/functions/_shared/studio-collector.mjs';
 import * as schedule from '../supabase/functions/_shared/studio-schedule.mjs';
 import '../supabase/functions/_shared/track-filter.js';
-const code=stripTypeScriptTypes(fs.readFileSync('supabase/functions/raven-studio-scan/index.ts','utf8').replace(/^import .*;\n/gm,''));
+const code=stripTypeScriptTypes(fs.readFileSync('supabase/functions/raven-studio-scan/index.ts','utf8').replace(/^import .*;\r?\n/gm,''));
 const token='c'.repeat(64),digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(token));
 const hash=[...new Uint8Array(digest)].map(n=>n.toString(16).padStart(2,'0')).join('');
 const due=['icims','avature','jobylon','breezy','recruitee','remotegamejobs','blenderartists','epicforum','artstation','hitmarker','eightbit','skillsearch','gamesjobsdirect'].map((provider,i)=>({id:String(i),provider,studio_name:'Studio '+provider,board_key:provider==='avature'?'8370':provider==='jobylon'?'2986':'zenimax',interval_hours:24,enabled:true,verification_status:'verified',next_check_at:'2026-10-01T00:00:00Z',priority:2,detail_cursor:2}));
