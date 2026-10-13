@@ -1,5 +1,13 @@
 # Raven Tasks
 
+## Forums and ArtStation — 2026-10-12 evening
+- [x] Audit ArtStation existing coverage; add bounded current official feed and verify5 full-description art listings live.
+- [x] Add daily Blender Artists Paid Work53 and Epic Job Offerings76 scans; zero eligible current results verified honestly.
+- [x] Audit Polycount plus7 other3D communities; record manual leads, expired Kenshi2 deadline and access/scope blockers.
+- [x] Add original-post freshness, mutable firstpost revalidation, paid/closed/deadline/remote checks and honest employer/source labels.
+- [ ] Resolve cross-board aliases including HalfMermaid and SmileBreak without merging distinct vacancies.
+- [ ] Revisit supported Polycount automated access; blocked/manual only currently.
+
 ## Indie expansion — 2026-10-13 UTC
 - [x] Add24 verified active hiring sources;156 registry/73active/83pending, all73 successfully checked.
 - [x] Deploy bounded Breezy/Recruitee/RemoteGameJobs adapters; preserve employer, full descriptions and remote restrictions; verify cached repeat scan.
