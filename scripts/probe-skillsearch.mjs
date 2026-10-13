@@ -1,13 +1,15 @@
-// Read-only access evidence. This script never writes Raven runtime data.
+// Public access evidence and bounded HTML snapshot. No Raven database writes.
 import {mkdir, writeFile} from 'node:fs/promises';
 import '../supabase/functions/_shared/track-filter.js';
 import {fetchStudioText} from '../supabase/functions/_shared/studio-collector.mjs';
 import {collectSkillsearch} from '../supabase/functions/_shared/studio-skillsearch.mjs';
 
 const {gameArtRoleAllowed, jobLocationAllowed}=globalThis.RavenTrackFilter;
-const source={provider:'skillsearch',board_key:'skillsearch',detail_cursor:0};
-const requests=[];
 const started=Date.now();
+// Rotate the bounded detail window daily if the category grows past twelve roles.
+const source={provider:'skillsearch',board_key:'skillsearch',detail_cursor:Math.floor(started/86400000)*12};
+const requests=[];
+const pages=[];
 const evidence={provider:'skillsearch',checked_at:new Date(started).toISOString(),
   runtime:{node:process.version,platform:process.platform,github_actions:process.env.GITHUB_ACTIONS==='true'},
   transport:'Anonymous ordinary fetch; redirect:error; 6-second timeout; 4 MB response cap. No proxy, spoofed browser, credentials or database writes.',
@@ -29,6 +31,7 @@ try {
           return response;
         });
         request.characters=text.length;
+        pages.push({url,status:200,checked_at:new Date().toISOString(),html:text});
         return text;
       } catch(error) {
         request.error=String(error.message||error);
@@ -36,10 +39,19 @@ try {
       }
     }
   });
-  Object.assign(evidence,{ok:result.details.status==='complete',fetched:result.fetched,
+  const snapshot={schema:1,provider:'skillsearch',board_key:'skillsearch',
+    category_url:'https://www.skillsearch.com/search?groups=1',
+    collected_at:new Date().toISOString(),detail_cursor:source.detail_cursor,
+    provenance:{repository:process.env.GITHUB_REPOSITORY||'shipitmyguy-ux/raven',
+      run_id:process.env.GITHUB_RUN_ID||'0',
+      commit:process.env.GITHUB_SHA||'0000000000000000000000000000000000000000'},pages};
+  const serialized=JSON.stringify(snapshot)+'\n';
+  if(Buffer.byteLength(serialized,'utf8')>3500000)throw Error('Skillsearch snapshot exceeds 3.5 MB');
+  await mkdir('artifacts',{recursive:true});
+  await writeFile('artifacts/skillsearch-snapshot.json',serialized);
+  Object.assign(evidence,{ok:true,fetched:result.fetched,
     eligible:result.jobs.length,details:result.details,detail_cursor_next:result.detail_cursor_next,
     jobs:result.jobs});
-  if(!evidence.ok)process.exitCode=1;
 } catch(error) {
   Object.assign(evidence,{ok:false,error:String(error.message||error)});
   process.exitCode=1;

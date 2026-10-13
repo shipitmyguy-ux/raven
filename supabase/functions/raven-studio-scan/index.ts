@@ -5,7 +5,7 @@ import {collectIcims} from "../_shared/studio-icims.mjs";
 import {collectAvature} from "../_shared/studio-avature.mjs";
 import {collectGamesJobsDirect} from "../_shared/studio-gamesjobsdirect.mjs";
 import {collectEightBit} from "../_shared/studio-eightbit.mjs";
-import {collectSkillsearch} from "../_shared/studio-skillsearch.mjs";
+import {collectSkillsearchSnapshot} from "../_shared/studio-skillsearch-snapshot.mjs";
 import {collectHitmarker} from "../_shared/studio-hitmarker.mjs";
 import {collectArtStation} from "../_shared/studio-artstation.mjs";
 import {collectEpicForum} from "../_shared/studio-epic-forum.mjs";
@@ -49,7 +49,7 @@ async function sourceJobs(s:any,deadline:number){
  const portalOptions={fetchJson:fetchStudioJson,fetchText:fetchStudioText,deadline,jobAllowed:(j:any)=>gameArtRoleAllowed(j)&&jobLocationAllowed(j),detailAllowed:(j:any)=>gameArtRoleAllowed(j),prepareDetails:(jobs:any[])=>preparePortalDetails(jobs,deadline,true)};
  if(s.provider==="gamesjobsdirect")return collectGamesJobsDirect(s,portalOptions);
  if(s.provider==="eightbit")return collectEightBit(s,portalOptions);
- if(s.provider==="skillsearch")return collectSkillsearch(s,portalOptions);
+ if(s.provider==="skillsearch")return collectSkillsearchSnapshot(s,portalOptions);
  if(s.provider==="hitmarker")return collectHitmarker(s,portalOptions);
  if(s.provider==="artstation")return collectArtStation(s,portalOptions);
  if(s.provider==="epicforum")return collectEpicForum(s,portalOptions);
