@@ -485,8 +485,20 @@ Remaining:35 provider/scoping/linkage tasks, plus generic EA pagination beyond20
 - [ ] Audit legacy nonempty shortened-description generation preparation separately.
 
 ## Indie discovery rollout — 2026-10-12 evening
-Implemented Work With Indies public paid-active listing collector and verified Teamtailor feeds, indie/boutique/catalog taxonomy, paginated directory and fair bounded scheduling. Eighteen verified feed records (including existing identities) plus56 honest pending candidates prepared in indie-catalog-summary.json. Root game art rule now includes 3D Gameplay Artist /3D Art Generalist while excluded specialties remain rejected. Fixed cached portal remote/location metadata and Lever omitted responsibility lists. All49 local workflow commands pass. GitHub CI and live deployment/ingestion acceptance follow.
+Deployed collector v7 and backend v61; Pages indie/boutique/source-kind filters and paginated directory live. Registry139 entries,49 verified integrations all checked,90 pending/unverified entries. Verified indie/boutique batch18 source records includes one previously active Believer,16 new registered feeds and activation of previously pending IO; net17 added integrations. Source evidence in docs/indie-studios-verified-a.json, -b.json, indie-teamtailor-verification.json, indie-board-verification.json and indie-catalog-summary.json. Added56 sourced pending candidates without pretending they were checked.
 
-- [x] Implement indie board/feed integration, catalog filters/pagination, bounded fair scheduling.
-- [x] Verify49 local workflow commands and independent review.
-- [ ] Deploy, activate catalog and verify real indie jobs in hosted Raven.
+Actual live Games/3D listResults now15 rows, up from7: seven paid-active WWI listings plus Homa Senior3DGameplay Artist Generalist. US remote makRP Game Artist(Concept+3D) description2395chars; others retain Australia,UK,EU/timezone,Canada restrictions rather than claiming globally unrestricted. Current shared policy remains remote-anywhere/local-onsiteFC, so surfaced role is not a personal residency/work-authorization claim. WWI second real scan preserves all7 remote jobs using fresh authoritative cached metadata. Work With Indies checked87 cards; one listing remains unreadable and is honestly flagged degraded description coverage, no empty/malformed description ingested.
+
+Teamtailor verified feeds: Embark19,CoffeeStain group2,IO7,GhostShip0. Job-board taxonomy labels CoffeeStain group and WorkWithIndies rather than falsely attributing vacancies to one studio. Indie-origin/publisher-owned UnknownWorlds and other ownership caveats retained; boutique category does not assert independent ownership. New generalist title recognition accepts3DGameplay Artist/3DArtGeneralist and retains character,technical,animation,VFX exclusions. Lever normalizer now includes role lists/additional text; live Blackbird environment/prop description refresh expands522 to2531chars.
+
+Scheduling: oldestdue fair selection,12source tick,6provider/host cap,2fetch/check concurrency and140sec deadline. Explicit6–168h intervals respected, known quiet sources weekly; failure exponential12–168h backoff. GET exact count limit/offset max500, initialUI2000+Loadmore, explicitpartial/retry. Fresh portal cache exact title+employer validation restores remote/location metadata, preventing cached board roles disappearing on next check.
+
+Validation:49 local workflow commands and independent review pass. Core CI38326027174 includes12 directory browser fixtures+source-to-prompt fixture; fullBrowser38326027081,Pages38326027099 andsmoke38326027098/38326060533 allpass. Hosted filters/pagination, real two-pass WWI ingestion, current full-description Games/3D result readback, all49 checked source states and anonymousPOST401 verified. Catalog source SQL applied in bounded batches from committed migration; no secrets read/output. Saved jobs,resumes,cover letters and employer applications untouched.
+
+Remaining:90 catalog entries still unverified or unsupported; one WWI listing detail unreadable; bounded candidatewindow120 canunderfill mixedprovider selection when >120 overdue fromoneprovider; documented future scaling task. First usable indie batch delivered,250–500 verified indies remains expansion target rather than completed count. Older shortened saved-description generation and unrelated writer/export tasks remain separate.
+
+- [x] Deploy indie board and Teamtailor, activate17 additional integrations and register56 honest candidates.
+- [x] Verify8 new surfaced art roles, real cached repeat collection,full descriptions and allCI.
+- [x] Deploy catalog taxonomy/pagination and fair bounded scheduling.
+- [ ] Expand verified indie coverage toward250–500 using90 recorded source blockers/candidates.
+- [ ] Investigate one unreadable WWI detail and future candidate-window underfill.
