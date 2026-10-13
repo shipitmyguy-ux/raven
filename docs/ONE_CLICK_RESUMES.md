@@ -23,3 +23,5 @@ PR74 merged/published at 144ac07eb08a0c0861e2a4772e8dfd7a34349ba8. PR core/Windo
 ## Document controls
 
 With one-click enabled, Generate both, Finish documents and individual empty-document Generate/ChatGPT buttons all use the same helper. A running resume reserves only resume; a cover-letter request can be accepted and shown queued while it waits for the helper. Generate both reserves both kinds and suppresses overlapping duplicates. Busy labels survive job-card rerenders. Helper execution stays serialized to protect canonical save versions; accepted requests are not simultaneous model calls. Existing documents/exports are reused; explicit revisions retain the existing revision route. Background completion does not open review over another selected job.
+
+Activity keeps the latest valid export per document visible alongside recent progress. Published app89 read-only acceptance confirmed two links survive reload without helper calls or changes to existing documents/Drive files/approval/application state. Export visibility remains bounded by the existing200-event activity fetch.
