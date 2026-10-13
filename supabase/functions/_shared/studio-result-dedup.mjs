@@ -1,12 +1,12 @@
 // Presentation-only deduplication; original database rows remain untouched.
 const OFFICIAL = new Set(['ashby','greenhouse','lever','workable','smartrecruiters','bamboohr','icims','avature','jobylon','teamtailor','breezy','recruitee']);
-const BOARDS = new Set(['workwithindies','remotegamejobs','artstation','blenderartists','epicforum','hitmarker']);
+const BOARDS = new Set(['workwithindies','remotegamejobs','artstation','blenderartists','epicforum','hitmarker','eightbit','skillsearch','gamesjobsdirect']);
 const normalize = value => String(value || '').normalize('NFKC').toLowerCase().replace(/\s+/g,' ').trim();
 function employer(value) {
   const name=normalize(value), alias=name.replace(/[\s-]/g,'');
   if (['halfmermaid','halfmermaidproductions'].includes(alias)) return 'half mermaid';
   if (alias==='smilebreak') return 'smile break';
-  if (!name || /^(?:undisclosed|unknown)\b/.test(name) || /^(?:unknown(?: employer)?|unspecified|confidential|anonymous|indie studio|studio|company|n\/a)$/.test(name)) return '';
+  if (!name || /\b(?:undisclosed|unknown)\s+client\b/.test(name) || /^(?:undisclosed|unknown)\b/.test(name) || /^(?:unknown(?: employer)?|unspecified|confidential|anonymous|indie studio|studio|company|n\/a)$/.test(name)) return '';
   return name;
 }
 function provider(row) {

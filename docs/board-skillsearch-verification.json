@@ -1,0 +1,110 @@
+{
+  "verified_at": "2026-10-13T04:24:53.408Z",
+  "provider": "skillsearch",
+  "board_key": "skillsearch",
+  "source_kind": "job_board",
+  "studio_class": "unknown",
+  "recruiter": true,
+  "canonical_company_label": "Skillsearch (undisclosed client)",
+  "category_url": "https://www.skillsearch.com/search?groups=1",
+  "category_evidence": "Official /jobsingames Art Jobs link points to /search?groups=1; public category count5 matches5cards.",
+  "transport": "Actual Node fetch redirect:error with6sec AbortSignal, anonymous accept:text/html; all6requests HTTP200; no login/captcha bypass, no credentials or outbound applications.",
+  "requests": [
+    {
+      "url": "https://www.skillsearch.com/search?groups=1",
+      "status": 200
+    },
+    {
+      "url": "https://www.skillsearch.com/vacancy/character-artist-10616",
+      "status": 200
+    },
+    {
+      "url": "https://www.skillsearch.com/vacancy/game-artist-10667",
+      "status": 200
+    },
+    {
+      "url": "https://www.skillsearch.com/vacancy/video-editor-10665",
+      "status": 200
+    },
+    {
+      "url": "https://www.skillsearch.com/vacancy/video-artist-10584",
+      "status": 200
+    },
+    {
+      "url": "https://www.skillsearch.com/vacancy/senior-concept--ui-artist-10635",
+      "status": 200
+    }
+  ],
+  "fetched": 5,
+  "details": {
+    "status": "complete",
+    "attempted": 5,
+    "completed": 5,
+    "deferred": 0,
+    "error": null
+  },
+  "matching_remote_environment_or_3d": 0,
+  "roles": [
+    {
+      "provider_job_id": "10616",
+      "title": "Character Artist",
+      "company": "Skillsearch (undisclosed client)",
+      "url": "https://www.skillsearch.com/vacancy/character-artist-10616",
+      "location": "Remote; UK\u2011based location.; Flexible remote or hybrid working options.",
+      "remote": false,
+      "posted_at": "2026-07-23T13:09:40.000Z",
+      "studio_description_updated_at": "2026-10-13T04:24:14.250Z",
+      "description_chars": 3829
+    },
+    {
+      "provider_job_id": "10667",
+      "title": "Game Artist",
+      "company": "Skillsearch (undisclosed client)",
+      "url": "https://www.skillsearch.com/vacancy/game-artist-10667",
+      "location": "City of London",
+      "remote": false,
+      "posted_at": "2026-10-02T12:50:48.000Z",
+      "studio_description_updated_at": "2026-10-13T04:24:18.012Z",
+      "description_chars": 4831
+    },
+    {
+      "provider_job_id": "10665",
+      "title": "Video Editor",
+      "company": "Skillsearch (undisclosed client)",
+      "url": "https://www.skillsearch.com/vacancy/video-editor-10665",
+      "location": "Leamington Spa; Location: Royal Leamington Spa, UK (Hybrid) Salary: Up to &pound;45,000 GBP per annum.",
+      "remote": false,
+      "posted_at": "2026-10-02T11:21:55.000Z",
+      "studio_description_updated_at": "2026-10-13T04:24:18.532Z",
+      "description_chars": 5643
+    },
+    {
+      "provider_job_id": "10584",
+      "title": "Video Artist",
+      "company": "Skillsearch (undisclosed client)",
+      "url": "https://www.skillsearch.com/vacancy/video-artist-10584",
+      "location": "Stockholm",
+      "remote": false,
+      "posted_at": "2026-05-14T11:50:19.000Z",
+      "studio_description_updated_at": "2026-10-13T04:24:18.686Z",
+      "description_chars": 3161
+    },
+    {
+      "provider_job_id": "10635",
+      "title": "Senior Concept / UI Artist",
+      "company": "Skillsearch (undisclosed client)",
+      "url": "https://www.skillsearch.com/vacancy/senior-concept--ui-artist-10635",
+      "location": "Brighton and Hove; Location: Brighton, UK (Hybrid &ndash; 3 days in office, 2 days remote) Employment Type: Full-time, Fixed-Term Contract, or Freelance Contract Salary: Up to &pound;50,000 GBP per annum.",
+      "remote": false,
+      "posted_at": "2026-08-25T08:12:04.000Z",
+      "studio_description_updated_at": "2026-10-13T04:24:19.160Z",
+      "description_chars": 4893
+    }
+  ],
+  "limits": "20pages/max1000advertised results bounded exactcount pagination;12freshdetails2parallel cursor; mutable recruitertext alwaysrevalidated and no staleprepareDetails. Explicitremote metadata plus mandatoryhybrid/onsite negatives; geo restrictions retained. Excludes talentpools,unpaid,2D-onlytitles; sharedtitle policyfurthernarrowsGames/3D.",
+  "notes": "Current public artcategory5contains no confirmed eligible remoteenvironment/3Djobs; zeroimports is truthful,not feedfailure. CharacterArtist advertises remote but description includes UK-based/remote-or-hybrid and sharedpolicy excludescharacter. Skillsearch is recruiter, undisclosed studio identity never invented. Jobs have canonical,title,reference,hiringOrganization,expiry and visibleApplyNow validated.",
+  "regression_tests_passed": 11,
+  "remote_override_guards": "Initial/temporary remote plus required/expected relocation, mandatory office/onsite and hybrid descriptions disable remote and append explicit Hybrid/onsite condition to location so textual fallback cannot re-admit.",
+  "pipeline_and_pay_guards": "Conservative body talentpool/future vacancy/interest registration and no-budget/uncompensated exclusions included.",
+  "shared_policy_guard": "Meaningful actual RavenTrackFilter test confirms location Remote would otherwise override false metadata; collector rejects unconfirmed remote-location metadata and contradicting future office/relocation before sharedfilter. Confirmed remote positive retained. Closed/filled/expired title markers rejected despite stale ApplyNow."
+}

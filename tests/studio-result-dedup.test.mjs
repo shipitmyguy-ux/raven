@@ -32,3 +32,5 @@ const hyperHit={source:'Studio:hitmarker',company:'HyperHug',title:'3D Artist (w
 const hyperAts={...hyperHit,source:'Studio:ashby',location:'Remote',url:'https://jobs.ashbyhq.com/hyperhug/5470c42c-1502-42aa-a3de-3ce213fb62d8',snippet:'Official full description; Russian C1 required'};
 for(const rows of [[hyperHit,hyperAts],[hyperAts,hyperHit]])assert.deepEqual(deduplicateStudioResults(rows),[hyperAts]);
 assert.equal(deduplicateStudioResults([hyperHit,{...hyperAts,url:'https://jobs.ashbyhq.com/hyperhug/different-role'}]).length,2);
+assert.equal(deduplicateStudioResults([row('eightbit',{company:'8Bit (undisclosed client)'}),row('skillsearch',{company:'8Bit (undisclosed client)'})]).length,2,'recruiter unknown-client labels cannot identify employer vacancies');
+assert.equal(deduplicateStudioResults([row('eightbit',{company:'Actual Named Studio'}),row('skillsearch',{company:'Actual Named Studio'})]).length,1,'explicit named employers use strict existing title/geography dedup');

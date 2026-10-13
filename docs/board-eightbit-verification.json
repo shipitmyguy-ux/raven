@@ -1,0 +1,156 @@
+{
+  "provider": "eightbit",
+  "board_key": "eightbit",
+  "source_kind": "job_board",
+  "segment": "mixed",
+  "studio_name": "8Bit Recruitment",
+  "official_url": "https://8bitplay.com/jobs/",
+  "verified_at": "2026-10-13T04:27:20.284Z",
+  "status": "verified_public_html",
+  "public_fetches": [
+    {
+      "url": "https://8bitplay.com/jobs/",
+      "status": 200,
+      "redirect_followed": false,
+      "elapsed_ms": 4934,
+      "chars": 156690
+    },
+    {
+      "url": "https://8bitplay.com/jobs/?paged=2",
+      "status": 200,
+      "redirect_followed": false,
+      "elapsed_ms": 652,
+      "chars": 156472
+    },
+    {
+      "url": "https://8bitplay.com/jobs/?paged=3",
+      "status": 200,
+      "redirect_followed": false,
+      "elapsed_ms": 682,
+      "chars": 156203
+    },
+    {
+      "url": "https://8bitplay.com/jobs/?paged=4",
+      "status": 200,
+      "redirect_followed": false,
+      "elapsed_ms": 733,
+      "chars": 156402
+    },
+    {
+      "url": "https://8bitplay.com/jobs/?paged=5",
+      "status": 200,
+      "redirect_followed": false,
+      "elapsed_ms": 652,
+      "chars": 156220
+    },
+    {
+      "url": "https://8bitplay.com/jobs/?paged=6",
+      "status": 200,
+      "redirect_followed": false,
+      "elapsed_ms": 592,
+      "chars": 156255
+    },
+    {
+      "url": "https://8bitplay.com/jobs/?paged=7",
+      "status": 200,
+      "redirect_followed": false,
+      "elapsed_ms": 697,
+      "chars": 155076
+    },
+    {
+      "url": "https://8bitplay.com/jobs/senior-3d-artist/",
+      "status": 200,
+      "redirect_followed": false,
+      "elapsed_ms": 515,
+      "chars": 70630
+    },
+    {
+      "url": "https://8bitplay.com/job/senior-environment-artist/",
+      "status": 200,
+      "redirect_followed": false,
+      "elapsed_ms": 3874,
+      "chars": 56585
+    },
+    {
+      "url": "https://8bitplay.com/job/senior-level-artist/",
+      "status": 200,
+      "redirect_followed": false,
+      "elapsed_ms": 541,
+      "chars": 58907
+    }
+  ],
+  "source_rows": 69,
+  "details": {
+    "status": "complete",
+    "attempted": 3,
+    "completed": 3,
+    "deferred": 0,
+    "error": null
+  },
+  "verified_jobs": [
+    {
+      "provider_job_id": "jobs/senior-3d-artist",
+      "title": "Senior 3D Artist",
+      "company": "8Bit (undisclosed client)",
+      "location": "Europe",
+      "remote": true,
+      "url": "https://8bitplay.com/jobs/senior-3d-artist/",
+      "posted_at": "2026-07-19T10:54:06.000Z",
+      "studio_description_updated_at": "2026-10-13T04:28:35.499Z",
+      "description_chars": 2502,
+      "shared_location_allowed": true
+    },
+    {
+      "provider_job_id": "job/senior-environment-artist",
+      "title": "Senior Environment Artist",
+      "company": "8Bit (undisclosed client)",
+      "location": "Hybrid / onsite arrangement; verify remote eligibility; United States; nce-based Bonus Time Off – Unlimited PTO; Paid Holidays; Paid Sick Leave; Parental Leave Work Flexibility – Remote/hybrid flexibility; Flexible Working Hours / Core Hours Model Professional Growth – Learning & Development budget (conferences, courses, GDC tickets); Game Industry event passes (GDC, PAX, etc; ) Wellness & Lifestyle – Wellness Stipend (gym, fitness apps); Free snacks/meals (for on-site days once you go hybrid); Home office stipend (for the remote period); Free copy of the game + industry game budget/stipend Relocation – Relocation assistance or stipend (relevant once you transiti; on to hybrid on-site) Perks & Tools (Hardware) Studio access to premium texture libraries: GameTextures, Quixel Megascans, and Poliigon MOVE AI markerless motion capture + Z CAM E2",
+      "remote": false,
+      "url": "https://8bitplay.com/job/senior-environment-artist/",
+      "posted_at": "2026-09-08T06:28:13.000Z",
+      "studio_description_updated_at": "2026-10-13T04:28:35.503Z",
+      "description_chars": 4878,
+      "shared_location_allowed": false
+    },
+    {
+      "provider_job_id": "job/senior-level-artist",
+      "title": "Senior Level Artist",
+      "company": "8Bit (undisclosed client)",
+      "location": "Hybrid / onsite arrangement; verify remote eligibility; Remote; United Kingdom",
+      "remote": false,
+      "url": "https://8bitplay.com/job/senior-level-artist/",
+      "posted_at": "2026-10-01T06:54:11.000Z",
+      "studio_description_updated_at": "2026-10-13T04:28:35.506Z",
+      "description_chars": 4991,
+      "shared_location_allowed": false
+    }
+  ],
+  "remote_matches": [
+    {
+      "provider_job_id": "jobs/senior-3d-artist",
+      "title": "Senior 3D Artist",
+      "company": "8Bit (undisclosed client)",
+      "location": "Europe",
+      "remote": true,
+      "url": "https://8bitplay.com/jobs/senior-3d-artist/",
+      "posted_at": "2026-07-19T10:54:06.000Z",
+      "studio_description_updated_at": "2026-10-13T04:28:35.499Z",
+      "description_chars": 2502,
+      "shared_location_allowed": true
+    }
+  ],
+  "scope": "Public 69-row placement table over7pages using paged=N. Separate job-board-paged syndicated board intentionally outside this initial adapter.",
+  "employer_policy": "All jobs labelled 8Bit (undisclosed client), not inferred client studio; complete source descriptions retained with recruiter-placement qualifier.",
+  "limits": {
+    "pages": 10,
+    "list_rows_per_page": 10,
+    "details": 12,
+    "detail_concurrency": 2,
+    "response_chars": 4000000,
+    "transport_timeout_ms": 6000,
+    "description_chars": 20000
+  },
+  "activity": "Placement must appear in current full table, exact canonical/title/WebPage publication identity, full description and visible current application template. No external application fetches. Body/title closure/expiry/pipeline/unpaid exclusions plus explicit remote metadata; future mandatory office attendance blocks shared location eligibility.",
+  "cache_policy": "prepareDetails invoked, but descriptions always revalidated due closure/client uncertainty; cursor rotates after12 details.",
+  "ownership_note": "Recruiter covers multiple clients and jobs, category mixed does not assert independent ownership."
+}
