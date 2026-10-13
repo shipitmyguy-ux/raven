@@ -74,3 +74,5 @@ Portal cache restoration validates unchanged title/employer and24-hour stamp, re
 ## Gamesmith and InGameJob
 
 InGameJob reads only its English Art and Animation category (currently37listings), not the whole board. It validates advertised count/page completeness, fixed hosts/canonical title/company and active Apply UI, including archived-state rejection. This is current source-advertised availability, not a guarantee employer stillhiring. It retrieves at most12fresh rotating descriptions, serially spaced5seconds, and retains fulltext/recruiter uncertainty/geographic conditions; no speculative expirydate or cachefreshness claim. Eligible roles enter the existing Games/3D discovery cache and dedup. Gamesmith is registered disabled with blocked status because its public DNS returnsSERVFAIL; no successful scan or permanent businessclosure is claimed.
+
+Publication status: both directory records exist inactive. InGameJob scanner implementation is tested and published, but live activation was rejected by automatic approval review pending explicit production approval. Gamesmith is blocked by DNS independently. Neither new source currently performs scheduled scans.
