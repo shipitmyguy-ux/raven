@@ -34,3 +34,5 @@ for(const rows of [[hyperHit,hyperAts],[hyperAts,hyperHit]])assert.deepEqual(ded
 assert.equal(deduplicateStudioResults([hyperHit,{...hyperAts,url:'https://jobs.ashbyhq.com/hyperhug/different-role'}]).length,2);
 assert.equal(deduplicateStudioResults([row('eightbit',{company:'8Bit (undisclosed client)'}),row('skillsearch',{company:'8Bit (undisclosed client)'})]).length,2,'recruiter unknown-client labels cannot identify employer vacancies');
 assert.equal(deduplicateStudioResults([row('eightbit',{company:'Actual Named Studio'}),row('skillsearch',{company:'Actual Named Studio'})]).length,1,'explicit named employers use strict existing title/geography dedup');
+
+assert.deepEqual(deduplicateStudioResults([row('ingamejob'),official]),[official],'InGameJob uses existing verified employer/title/location dedup');
