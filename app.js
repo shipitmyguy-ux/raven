@@ -1736,7 +1736,7 @@
   }
 
   async function generateBothForJob(job){
-    if(state.runtime.settings["chatgpt-one-click"]===true)return generateOneClick(job,"both",null);
+    if(state.runtime?.settings?.["chatgpt-one-click"]===true)return generateOneClick(job,"both",null);
     if(generationSession(job))return;
     const missing=["resume","coverLetter"].filter(type=>!job[type]);
     if(!missing.length)return openDocumentReview(job,"resume");
@@ -1767,7 +1767,7 @@
   }
 
   async function generateForJob(job,type,button=null,options={}) {
-    if(state.runtime.settings["chatgpt-one-click"]===true&&!options.force){
+    if(state.runtime?.settings?.["chatgpt-one-click"]===true&&!options.force){
       if(job[type])return openDocumentReview(job,type);
       return generateOneClick(job,type,button,{autoOpen:options.autoOpen!==false});
     }
