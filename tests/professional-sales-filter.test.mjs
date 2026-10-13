@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import '../supabase/functions/_shared/track-filter.js';
+import '../supabase/functions/_shared/job-dedup.js';
 import {candidateAllowedForTrack,rankCandidates} from '../supabase/functions/raven-backend-v3/utils.ts';
 const allowed=globalThis.RavenTrackFilter.professionalRoleAllowed;
 test('selling titles cannot qualify through operations or training keywords',()=>{
@@ -34,7 +35,7 @@ test('browser hides saved and discovered sales without modifying records',()=>{
  assert.ok(start>=0&&end>start);
  const state={activeTrack:'Professional',jobs:[{id:'saved-sales',track:'Professional',title:'Account Executive',url:'https://example.com/saved',status:'Saved'},{id:'applied-sales',track:'Professional',title:'Sales Manager',url:'https://example.com/applied',status:'Applied'}],discovered:{Professional:[{title:'Business Development Manager',url:'https://example.com/discovered'},{title:'Implementation Manager',remote:true,url:'https://example.com/allowed'}]}};
  const before=JSON.stringify(state);
- const context={state,window:{RavenTrackFilter:globalThis.RavenTrackFilter},normalizeComparableUrl:v=>v||'',parseBool:v=>Boolean(v),preferredDescription:(a,b)=>a||b};
+ const context={state,window:{RavenTrackFilter:globalThis.RavenTrackFilter,RavenJobDedup:globalThis.RavenJobDedup},normalizeComparableUrl:v=>v||'',parseBool:v=>Boolean(v),preferredDescription:(a,b)=>a||b};
  vm.createContext(context);
  vm.runInContext(code.slice(start,end)+';result=combinedJobs();',context);
  assert.deepEqual(Array.from(context.result,r=>r.title),['Implementation Manager']);

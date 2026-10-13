@@ -95,6 +95,7 @@ jobs:
           node tests/studio-context.test.mjs
           node --test tests/listing-availability.test.mjs tests/listing-persistence.test.mjs
           node tests/raven-core.test.mjs
+          node tests/job-dedup.test.mjs
           node tests/assistant-core.test.mjs
           node tests/ats-csv.test.mjs
           node tests/drive-source.test.mjs
@@ -130,7 +131,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Targeted browser regression tests
         run: |
-          npx playwright test e2e/studio-directory.spec.mjs e2e/studio-job-flow.spec.mjs
+          npx playwright test e2e/studio-directory.spec.mjs e2e/studio-job-flow.spec.mjs e2e/job-dedup.spec.mjs
           npx playwright test --grep "Apply on site|summary-only revision|listing and direct application remain available|generators save discovery jobs|application requires approval of both exact documents|review preserves approved document and revision invalidates approval|failed revision keeps the saved document and its approval|local master resume and track assignments persist through reload|offline resume fallback creates a local draft without network generation|generation cache prevents a duplicate resume model call|iPhone SE viewport keeps Raven usable without page overflow|refresh updates every job track and tabs are filter-only"
 
   private-tunnel-windows:

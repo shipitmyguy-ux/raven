@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import '../supabase/functions/_shared/track-filter.js';
+import '../supabase/functions/_shared/job-dedup.js';
 import {candidateAllowedForTrack,rankCandidates} from '../supabase/functions/raven-backend-v3/utils.ts';
 const allowed=globalThis.RavenTrackFilter.localLocationAllowed;
 test('explicit nearby Colorado work locations qualify',()=>{
@@ -31,7 +32,7 @@ test('browser filters saved and cached Labor without mutating history',()=>{
  const start=code.indexOf('  function combinedJobs() {'),end=code.indexOf('  function filteredJobs()',start);
  const state={activeTrack:'Labor',jobs:[{id:'distant',track:'Labor',title:'Painter',location:'Denver, CO',url:'https://example.com/distant',status:'Applied'},{id:'local',track:'Labor',title:'Painter',location:'Fort Collins, CO',url:'https://example.com/local',status:'Saved'}],discovered:{Labor:[{title:'Maintenance Technician',location:'Loveland, CO',url:'https://example.com/loveland'},{title:'Custodian',location:'Colorado',url:'https://example.com/unknown'}]}};
  const before=JSON.stringify(state);
- const context={state,window:{RavenTrackFilter:globalThis.RavenTrackFilter},normalizeComparableUrl:v=>v||'',parseBool:v=>Boolean(v),preferredDescription:(a,b)=>a||b};
+ const context={state,window:{RavenTrackFilter:globalThis.RavenTrackFilter,RavenJobDedup:globalThis.RavenJobDedup},normalizeComparableUrl:v=>v||'',parseBool:v=>Boolean(v),preferredDescription:(a,b)=>a||b};
  vm.createContext(context);vm.runInContext(code.slice(start,end)+';result=combinedJobs();',context);
  assert.deepEqual(Array.from(context.result,r=>r.location),['Fort Collins, CO','Loveland, CO']);
  assert.equal(JSON.stringify(state),before);
@@ -87,7 +88,7 @@ test('browser hides saved and cached outside-city hybrid jobs without changing s
    {title,location:'Loveland, CO',url:'https://example.com/onsite'}
   ]}};
   const before=JSON.stringify(state);
-  const context={state,window:{RavenTrackFilter:globalThis.RavenTrackFilter},normalizeComparableUrl:v=>v||'',parseBool:v=>Boolean(v),preferredDescription:(a,b)=>a||b};
+  const context={state,window:{RavenTrackFilter:globalThis.RavenTrackFilter,RavenJobDedup:globalThis.RavenJobDedup},normalizeComparableUrl:v=>v||'',parseBool:v=>Boolean(v),preferredDescription:(a,b)=>a||b};
   vm.createContext(context);vm.runInContext(code.slice(start,end)+';result=combinedJobs();',context);
   assert.deepEqual(Array.from(context.result,r=>r.location),['Fort Collins, CO (Hybrid)','Loveland, CO'],activeTrack);
   assert.equal(JSON.stringify(state),before,activeTrack+': saved history preserved');

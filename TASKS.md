@@ -1,5 +1,13 @@
 # Raven Tasks
 
+## Saved/discovered duplicate prevention - 2026-10-13
+
+Implemented shared browser/backend vacancy identity and saved-record aware discovery suppression. Fixes the Smile Break ArtStation repost appearing alongside the existing Applied Remote Game Jobs record. Imports now return the existing job ID/status/documents for exact matches. Supported ATS identifiers and explicitly labelled application links cover future cross-source copies; verified aliases remain shared with studio result dedup. Canonical tracking URL normalization, distinct requisition/title/track checks, exact-description/geography fallback and unknown-employer guards retain separate vacancies. Saved lookup paginates and fails at its bound rather than silently missing old records.
+
+Validation before publication: all 50 core workflow commands pass after updating two VM test contexts for the shared module; focused import/discovery/UI combination tests and existing studio dedup/result-window checks pass. Secret scan and diff checks pass. Added browser reload/document-preservation fixture to both full browser coverage and targeted safety CI; local Chromium is unavailable, so browser acceptance is pending CI/live verification. Publication and runtime acceptance still pending. Cleanup SQL is guarded and reversible; original application/documents/snapshots remain unchanged. Docs: docs/JOB_DEDUPLICATION.md and docs/qa/2026-10-13-smilebreak-cleanup.sql.
+
+Limit: unsupported aliases and simultaneous first imports of previously unseen different URLs are not guaranteed by a database unique identity constraint. Do not claim every possible duplicate is detected. No destructive cleanup.
+
 ## Direct ChatGPT / Drive workflow — 2026-10-13
 
 - [x] Launch protected private tunnel and verify actual saved-document read.

@@ -758,7 +758,8 @@
         return true;
       })
       .map((job)=>{
-        const extra=discoveredByUrl.get(normalizeComparableUrl(job.url));
+        const extra=discoveredByUrl.get(normalizeComparableUrl(job.url))
+          || discovered.find(row=>window.RavenJobDedup.sameJob(job,row));
         if(!extra) return job;
         return {
           ...job,
@@ -773,7 +774,7 @@
       });
     const savedUrls = new Set(saved.map((job)=>normalizeComparableUrl(job.url)).filter(Boolean));
     const unsaved = discovered.filter((job)=>!savedUrls.has(normalizeComparableUrl(job.url)));
-    return [...saved, ...unsaved].filter(job=>job.listing_state==="closed" || (
+    return window.RavenJobDedup.deduplicateJobs([...saved, ...unsaved]).filter(job=>job.listing_state==="closed" || (
       (state.activeTrack!=="Games / 3D"||window.RavenTrackFilter.gameArtRoleAllowed(job))
       && (state.activeTrack!=="Professional"||window.RavenTrackFilter.professionalRoleAllowed(job))
       && window.RavenTrackFilter.jobLocationAllowed(job)));

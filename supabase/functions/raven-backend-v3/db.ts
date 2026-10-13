@@ -1,6 +1,6 @@
 import {candidateAllowedForTrack} from "./utils.ts";
 import type { Candidate, Track } from "./types.ts";
-import {deduplicateStudioResults} from "../_shared/studio-result-dedup.mjs";
+import {deduplicateStudioResults,deduplicateJobs,findExistingJob} from "../_shared/studio-result-dedup.mjs";
 import { validAtsRow } from "./csv-records.mjs";
 
 function isPersistableCandidate(c:Candidate){
@@ -75,7 +75,11 @@ export async function listResults(track:Track){
   const groups=await Promise.all(responses.map(response=>response.json()));
   const unique=new Map<string,Candidate>();
   for(const row of groups.flat())if(candidateAllowedForTrack(track,row)&&row.url)unique.set(row.url,row);
-  const visible=track==="Games / 3D"?deduplicateStudioResults([...unique.values()]):[...unique.values()];
+  const discovery=track==="Games / 3D"?deduplicateStudioResults([...unique.values()]):[...unique.values()];
+  // Include saved/application identities without rewriting their records.
+  const saved=track==="Games / 3D"?(await listJobs()).filter((row:any)=>row.track===track):[];
+  const discoveryRows=new Set(discovery);
+  const visible=deduplicateJobs([...saved,...discovery]).filter((row:any)=>discoveryRows.has(row));
   return visible.sort((a:any,b:any)=>Number(b.score||0)-Number(a.score||0)||String(b.last_seen||"").localeCompare(String(a.last_seen||"")));
 }
 
@@ -165,9 +169,14 @@ export type RavenJob = {
 };
 
 export async function listJobs(){
-  const r=await rest("raven_jobs?select=*&order=last_updated.desc&limit=1000",{method:"GET"});
-  if(!r.ok) throw new Error("Jobs read failed ("+r.status+")");
-  return await r.json();
+  const jobs=[];
+  for(let offset=0;offset<10000;offset+=1000){
+    const r=await rest("raven_jobs?select=*&order=last_updated.desc,id.asc&limit=1000&offset="+offset,{method:"GET"});
+    if(!r.ok) throw new Error("Jobs read failed ("+r.status+")");
+    const page=await r.json();jobs.push(...page);
+    if(page.length<1000)return jobs;
+  }
+  throw new Error("Saved job list exceeds safe read limit; refusing incomplete identity lookup");
 }
 export async function getJobByUrl(url:string){
   const r=await rest("raven_jobs?select=*&url=eq."+encodeURIComponent(url)+"&limit=1",{method:"GET"});
@@ -177,7 +186,7 @@ export async function getJobByUrl(url:string){
 }
 export async function addJob(input:any){
   const url=String(input.url||"").trim();
-  const existing=await getJobByUrl(url);
+  const existing=await getJobByUrl(url)||findExistingJob({...input,url},await listJobs());
   if(existing) return {...existing,duplicate:true,ok:true};
   const now=new Date().toISOString();
   const row={
