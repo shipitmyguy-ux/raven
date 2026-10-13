@@ -10,7 +10,8 @@ $config=Join-Path $root 'private/raven-tunnel.json'
 $credentialPath=Join-Path $root 'private/raven-tunnel.credentials.clixml'
 . (Join-Path $PSScriptRoot 'private-tunnel-credentials.ps1')
 $nodeCommand=Get-Command node -ErrorAction SilentlyContinue
-$node=if($nodeCommand){$nodeCommand.Source}else{Join-Path $env:USERPROFILE '.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe'}
+$bundledNode=Join-Path $env:USERPROFILE '.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe'
+$node=if(Test-Path -LiteralPath $bundledNode){$bundledNode}else{if($nodeCommand){$nodeCommand.Source}else{$bundledNode}}
 if(-not(Test-Path -LiteralPath $node)){throw 'Node.js is required; install Node 22 or pass it through PATH.'}
 $bridge=Join-Path $PSScriptRoot 'private-mcp-stdio.mjs'
 if(-not(Test-Path -LiteralPath $client)-or -not(Test-Path -LiteralPath $config)){throw 'Local tunnel client/configuration is missing.'}

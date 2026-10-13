@@ -963,8 +963,10 @@
       const suggestion=suggested&&!autoApplied&&suggested!==String(job.status||"")
         ? '<button type="button" class="activity-suggestion" data-apply-suggested-status="'+escapeAttr(suggested)+'">Move to '+escapeHtml(suggested)+'</button>'
         : '';
+      const drive=event.event_type==='document_drive_export'&&/^https:\/\/drive\.google\.com\/file\/d\/[A-Za-z0-9_-]{10,160}\/view$/.test(event.metadata?.drive_url||'')
+        ? '<a href="'+escapeAttr(event.metadata.drive_url)+'" target="_blank" rel="noopener noreferrer">Open PDF in Drive</a>' : '';
       return '<li><div><strong>'+escapeHtml(activityLabel(event.event_type))+'</strong>'+
-        (event.summary?'<span>'+escapeHtml(event.summary)+'</span>':'')+suggestion+'</div>'+
+        (event.summary?'<span>'+escapeHtml(event.summary)+'</span>':'')+drive+suggestion+'</div>'+
         '<time>'+escapeHtml(formatActivityDate(event.occurred_at))+'</time></li>';
     }).join("");
     const loading=!activity.loaded
@@ -1932,6 +1934,17 @@
       }
       setGenerationButton(button,true,"Preparing ChatGPT…");
       setStatus("Building a grounded ChatGPT prompt…");
+      const direct=state.runtime.settings["chatgpt-direct-save"]===true;
+      if(direct){
+        await prepareJobForGeneration(job);
+        const {directPrompt}=await import("./chatgpt-direct.mjs?v=1");
+        const prompt=directPrompt(job,type);
+        const copied=await copyTextToClipboard(prompt);
+        if(chatTab&&!chatTab.closed)chatTab.location.replace("https://chatgpt.com/?q="+encodeURIComponent(prompt));
+        setStatus(chatTab&&!chatTab.closed?"Send the prepared request in ChatGPT with Raven Private selected · your draft saves directly to this job":"ChatGPT pop-up blocked · allow pop-ups or paste the copied request");
+        if(!copied)window.prompt("Copy this Raven request into ChatGPT:",prompt);
+        return;
+      }
       const basePrompt=await requestChatGptPrompt(job,type);
       const {filePrompt,REQUEST_KEY}=await import("./resume-transfer.mjs?v=1");
       const requestId=crypto.randomUUID();
@@ -2000,6 +2013,21 @@
       render();setStatus("ChatGPT file imported and fact-checked · review required");
       if(!document.querySelector("dialog[open]"))await openDocumentReview(job,types[0]);
     }finally{activeChatImports.delete(parsed.request_id);}
+  }
+
+  async function saveDocumentToDrive(job=state.generatorJob,type=state.generatorType){
+    if(!job?.[type]){setStatus("Save a document in Raven before exporting to Drive.");return;}
+    const tab=window.open("about:blank","_blank");
+    try{
+      const {directPrompt}=await import("./chatgpt-direct.mjs?v=1");
+      const folderId=state.runtime.settings["resume-drive-folder-id"];
+      if(!folderId)throw new Error("Your resume Drive folder is not configured.");
+      const prompt=directPrompt(job,type,{folderId,exportOnly:true});
+      const copied=await copyTextToClipboard(prompt);
+      if(tab&&!tab.closed){tab.opener=null;tab.location.replace("https://chatgpt.com/?q="+encodeURIComponent(prompt));}
+      setStatus(tab&&!tab.closed?"Send the PDF save request in ChatGPT with Raven Private and Google Drive selected · wait for the verified Drive link":"ChatGPT pop-up blocked · allow pop-ups or paste the copied PDF save request");
+      if(!copied)window.prompt("Copy this PDF save request into ChatGPT:",prompt);
+    }catch(error){tab?.close();setStatus("Could not prepare Drive save: "+error.message);}
   }
 
   async function downloadReviewedDocument(format,job=state.generatorJob,type=state.generatorType){
@@ -2769,6 +2797,7 @@
     document.getElementById("documentReviewForm").addEventListener("submit",submitDocumentRevision);
     document.getElementById("chatGptImportForm")?.addEventListener("submit",submitChatGptImport);
     document.getElementById("reviewDownloadWord")?.addEventListener("click",()=>downloadReviewedDocument("docx"));
+    document.getElementById("reviewSaveDrive")?.addEventListener("click",()=>saveDocumentToDrive());
     document.getElementById("reviewDownloadPdf")?.addEventListener("click",()=>downloadReviewedDocument("pdf"));
     document.getElementById("chatGptImportFile")?.addEventListener("change",async(event)=>{
       const file=event.target.files?.[0];if(!file)return;
@@ -2873,7 +2902,7 @@
 
     let lastRefresh=Date.now();
     document.addEventListener("visibilitychange",()=>{
-      if(!document.hidden && Date.now()-lastRefresh>60000){
+      if(!document.hidden && (state.runtime.settings["chatgpt-direct-save"]===true||Date.now()-lastRefresh>60000)){
         lastRefresh=Date.now();
         refreshAllJobs({includeDiscovered:true});
       }

@@ -9,6 +9,19 @@ import {createPrivateDispatcher,serveStdio,MAX_LINE} from '../scripts/private-mc
 const config={supabaseUrl:'https://umvmilulnqnmeqvfoxxc.supabase.co',jobIds:['JT-fixture'],expiresAt:'2026-11-01T00:00:00Z'};
 const clock=Date.parse('2026-10-09T00:00:00Z');
 const rpc=(method,params={})=>JSON.stringify({jsonrpc:'2.0',id:1,method,params});
+test('owner opt-in allows saved job lookup, bounded bulk listing and workflow discovery; expiry still blocks',async()=>{
+ let time=clock,calls=0;
+ const dispatch=await createPrivateDispatcher({config:{...config,allowSavedJobs:true,documentWorkflow:true},serviceKey:'fixture',now:()=>time,fetchImpl:async url=>{calls++;if(url.includes("raven_canonical_profiles"))return Response.json([{profile:{skills:[],education:[],experience:[],transferable_facts:[],shipped_titles:[]}}]);return Response.json([{id:'JT-other',title:'Artist',company:'Example',track:'Games / 3D',notes:'Stored art job description. '.repeat(15),last_updated:'v1',resume:''}]);}});
+ assert.equal(JSON.parse(await dispatch(rpc('tools/list'))).result.tools.length,7);
+ const list=JSON.parse(await dispatch(rpc('tools/call',{name:'list_jobs',arguments:{query:'Artist'}}))).result;
+ assert.equal(list.structuredContent.jobs[0].id,'JT-other');assert.equal(calls,1);
+ const job=JSON.parse(await dispatch(rpc('tools/call',{name:'get_job',arguments:{job_id:'JT-other'}}))).result;
+ assert.equal(job.structuredContent.job.id,'JT-other');
+ time=Date.parse(config.expiresAt);
+ assert.equal(JSON.parse(await dispatch(rpc('tools/list'))).error.message,'UNAUTHORIZED');
+ const expired=JSON.parse(await dispatch(rpc('tools/call',{name:'export_document_pdf',arguments:{job_id:'JT-other',document_type:'resume',document_sha256:'a'.repeat(64)}}))).result;
+ assert.equal(expired.isError,true);
+});
 test('private discovery is noauth, needs no database, and honors fixed expiry',async()=>{
  let time=clock;
  const dispatch=await createPrivateDispatcher({config,serviceKey:'fixture-key',now:()=>time,fetchImpl:()=>{throw Error('unexpected database call');}});
