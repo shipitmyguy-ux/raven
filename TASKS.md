@@ -1,11 +1,18 @@
 # Raven Tasks
 
+## Skillsearch runner — 2026-10-12 evening
+
+- [x] Verify hosted anonymous public access and publish daily bounded snapshots on a dedicated branch.
+- [x] Deploy collector v13 snapshot validation; real check five listings/five descriptions/zero eligible, complete health.
+- [x] Verify stale/expiry/identity/remote protections and matching producer-consumer rotation windows.
+- [ ] Monitor first scheduled daily refresh; GitHub schedules can be delayed.
+
 ## Recruiter boards — 2026-10-12 evening
 
 - [x] Implement and independently review 8Bit, Skillsearch and Games Jobs Direct adapters.
 - [x] Deploy collector v12/backend v64; verify live 8Bit and Games Jobs Direct scans and four regional full-description listings.
 - [x] Mark Skillsearch blocked after deployed HTTP 403; disable scans and preserve tested adapter.
-- [ ] Establish supported Skillsearch collector access before reactivation.
+- [x] Establish ordinary GitHub-hosted collector access; verify snapshot publication and real Supabase consumption before reactivation.
 - [ ] Inspect Games Jobs Direct single unverified description; retain honest partial health.
 
 ## Board coverage and deduplication — 2026-10-12 evening

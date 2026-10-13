@@ -106,5 +106,24 @@
   "regression_tests_passed": 11,
   "remote_override_guards": "Initial/temporary remote plus required/expected relocation, mandatory office/onsite and hybrid descriptions disable remote and append explicit Hybrid/onsite condition to location so textual fallback cannot re-admit.",
   "pipeline_and_pay_guards": "Conservative body talentpool/future vacancy/interest registration and no-budget/uncompensated exclusions included.",
-  "shared_policy_guard": "Meaningful actual RavenTrackFilter test confirms location Remote would otherwise override false metadata; collector rejects unconfirmed remote-location metadata and contradicting future office/relocation before sharedfilter. Confirmed remote positive retained. Closed/filled/expired title markers rejected despite stale ApplyNow."
+  "shared_policy_guard": "Meaningful actual RavenTrackFilter test confirms location Remote would otherwise override false metadata; collector rejects unconfirmed remote-location metadata and contradicting future office/relocation before sharedfilter. Confirmed remote positive retained. Closed/filled/expired title markers rejected despite stale ApplyNow.",
+  "runtime_rollout": {
+    "source_commit": "558887d805b3fbe7da5f6cd414bd73c815800878",
+    "collector_version": 13,
+    "direct_supabase_access": "HTTP 403; not used",
+    "runner_access": "Six ordinary anonymous HTTP 200 requests; complete five descriptions",
+    "publisher_run_id": 38349118808,
+    "snapshot_bytes": 352845,
+    "snapshot_branch": "skillsearch-feed",
+    "schedule_utc": "17 10 * * *",
+    "max_snapshot_age_hours": 36,
+    "real_check_at": "2026-10-13T04:59:49.528323Z",
+    "fetched": 5,
+    "detail_completed": 5,
+    "eligible": 0,
+    "detail_health": "complete",
+    "registry_total": 166,
+    "active": 80,
+    "notes": "No current eligible role for nonzero live import. Existing matching role fixtures prove parser/import shape. Failed listing snapshots are not published; missing detail and stale snapshots remain explicit."
+  }
 }

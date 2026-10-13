@@ -1,5 +1,17 @@
 # Raven Status
 
+## Skillsearch scheduled runner — 2026-10-12 evening MDT / 2026-10-13 UTC
+
+Skillsearch is operational again through an ordinary anonymous GitHub-hosted collector. Source 558887d805b3fbe7da5f6cd414bd73c815800878 is published; studio collector v13 deployed, backend remains v64. Registry 166 entries / 80 verified enabled / 86 pending, blocked or unsupported. Direct Supabase requests still return 403; the collector consumes the dedicated skillsearch-feed branch snapshot instead.
+
+Hosted runner 38348798014 first verified category plus all five current descriptions HTTP 200. Daily publisher run 38349118808 repeated all six successful requests and published a 352,845-byte snapshot. Raven's real scheduled check at 2026-10-13T04:59:49Z fetched five jobs, attempted/completed all five descriptions, deferred zero, eligible zero, detail health complete. Public directory readback verifies enabled/verified/ok/complete; anonymous collector POST remains 401. Current zero matching jobs is a filter outcome, not a failed scan.
+
+Workflow runs daily at 10:17 UTC (04:17 MDT, 03:17 MST), with main-only scoped GitHub token publication to the separate feed branch. No Supabase credentials or browser impersonation. Complete pagination and fresh source HTML are bounded; daily rotating twelve-description windows keep producer/consumer population aligned. Supabase reparses canonical identity, expiry, recruiter labeling and remote restrictions with the existing adapter. Snapshots older than 36 hours fail; page capture timestamps remain unchanged. Missing details remain partial; failed listing collection does not overwrite a good snapshot. GitHub schedules may be delayed; stale data is not silently renewed.
+
+Validation: all core regression workflow commands passed locally, final eight snapshot tests and eleven existing Skillsearch tests passed, provider dispatch passed, secret scan and diff checks passed. Independent review fixed a future-growth detail-window mismatch. GitHub core 38349118834 and smoke 38349118832 passed; hosted daily publisher passed. Positive matching-role snapshot fixtures verify full-description import behavior, but there is no current eligible Skillsearch role to demonstrate a nonzero live import. Saved jobs, resumes, covers and applications untouched.
+
+Next: monitor first scheduled daily refresh and preserve honest partial coverage if category grows. Prior Games Jobs Direct single-description failure, Hitmarker rotation and remaining 86 catalog entries remain follow-ups. Evidence in docs/board-skillsearch-verification.json. No complete indie-market coverage claim.
+
 ## Recruiter board rollout — 2026-10-12 evening MDT / 2026-10-13 UTC
 
 Source commit 89114c6cb8a8407134c5577ffe70c629adb0285c is published. Collector v12 and backend v64 are deployed. Registry: 166 entries, 79 verified enabled sources, 87 pending/blocked/unsupported. 8Bit and Games Jobs Direct have successful live checks. Skillsearch's adapter is implemented and tested, but its deployed collector request returned HTTP 403; the follow-up migration marks it blocked and disables automatic scans. Research access alone is not operational verification.
