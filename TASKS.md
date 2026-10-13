@@ -1,11 +1,20 @@
 # Raven Tasks
 
+## Board coverage and deduplication — 2026-10-12 evening
+- [x] Deploy public Hitmarker sitemap/detail scan;77 active sources/163registry/86pending.
+- [x] Verify two rotating live checks and3full-description listings; Mob/StoryToys new, HyperHug overlap recorded.
+- [x] Collapse4exact verified HalfMermaid/SmileBreak/HyperHug duplicate pairs without database or saved-record mutations.
+- [x] Record GameJobs403 and Grackle redirects/nohosteddescriptions; reject stale Singularity6 role.
+- [ ] Continue bounded174candidate Hitmarker rotation;150notexamined ininitial24page acceptance.
+- [x] Verify HyperHug exact primary application alias; prefer official Ashby row and retain Russian C1 requirement.
+- [ ] Expand Hitmarker slug prefilter to remaining allowed art-title forms and improve cumulative coverage bookkeeping/newest priority.
+
 ## Forums and ArtStation — 2026-10-12 evening
 - [x] Audit ArtStation existing coverage; add bounded current official feed and verify5 full-description art listings live.
 - [x] Add daily Blender Artists Paid Work53 and Epic Job Offerings76 scans; zero eligible current results verified honestly.
 - [x] Audit Polycount plus7 other3D communities; record manual leads, expired Kenshi2 deadline and access/scope blockers.
 - [x] Add original-post freshness, mutable firstpost revalidation, paid/closed/deadline/remote checks and honest employer/source labels.
-- [ ] Resolve cross-board aliases including HalfMermaid and SmileBreak without merging distinct vacancies.
+- [x] Resolve exact verified cross-board aliases for HalfMermaid and SmileBreak; preserve distinct roles/locations and all saved records.
 - [ ] Revisit supported Polycount automated access; blocked/manual only currently.
 
 ## Indie expansion — 2026-10-13 UTC
