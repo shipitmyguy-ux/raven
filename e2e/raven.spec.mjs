@@ -6,6 +6,9 @@ const generatedResume={name:"Test Candidate",headline:"Project & Implementation 
 const generatedLetter={greeting:"Dear Hiring Manager,",paragraphs:["I am applying for the Implementation Project Manager role.","My background includes project delivery and internal team leadership."],closing:"Sincerely,",signature:"Test Candidate"};
 
 async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJob=null,dataDelayMs=0,discoveredJob=null,availabilityResponse=null}={}){
+  // These fixtures exercise the remote-provider workflow. One-click cases
+  // explicitly override this route and install their own helper fixtures.
+  await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=false;await route.fulfill({json:config});});
   let job={...savedJob,...(initialJob||{})};
   let persisted=!discoveredJob;
   let generationCalls=0;
@@ -740,6 +743,72 @@ test('one-click button creates a durable resume and Drive PDF without opening Ch
   expect(starts).toBe(1);expect(polls).toBe(1);expect(await page.evaluate(()=>window.chatWindows)).toBe(0);expect(api.getJob().status).toBe('Saved');
   await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
   await expect(page.getByRole('link',{name:'Open PDF in Drive'})).toBeVisible();expect(api.getJob().resume).toBe(resume);
+});
+
+async function mockOneClickQueue(page,api,{delayResume=false}={}){
+ const requests=[],runs=new Map();let released=!delayResume,releaseCover=false;
+ const resume='data:text/html;charset=utf-8,'+encodeURIComponent('<html><body><h1>Verified resume</h1></body></html>');
+ const cover='data:text/html;charset=utf-8,'+encodeURIComponent('<html><body><p>Verified cover letter</p></body></html>');
+ await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=true;await route.fulfill({json:config});});
+ await page.route('http://127.0.0.1:8766/**',async route=>{
+  const path=new URL(route.request().url()).pathname;
+  if(path==='/session')return route.fulfill({json:{token:'fixture-token'}});
+  if(path==='/runs'){
+   const body=route.request().postDataJSON();requests.push(body);const id=`aaaaaaaa-aaaa-aaaa-aaaa-${String(requests.length).padStart(12,'0')}`;runs.set(id,body);
+   return route.fulfill({json:{run_id:id,job_id:body.job_id,stage:body.document_type==='coverLetter'&&delayResume?'queued':'writing'}});
+  }
+  const runId=path.split('/').pop(),input=runs.get(runId);
+  if(!released||(input.document_type==='coverLetter'&&delayResume&&!releaseCover))return route.fulfill({json:{run_id:runId,job_id:input.job_id,stage:input.document_type==='coverLetter'?'queued':'writing'}});
+  const kinds=input.document_type==='both'?['resume','coverLetter']:[input.document_type];const documents=[];
+  for(const kind of kinds){
+   const url=kind==='resume'?resume:cover;api.getJob()[kind==='resume'?'resume':'cover_letter']=url;
+   const doc={document_type:kind,document_url:url,document_sha256:(kind==='resume'?'a':'b').repeat(64),file_id:kind==='resume'?'resume1234567890':'cover1234567890',drive_url:`https://drive.google.com/file/d/${kind==='resume'?'resume1234567890':'cover1234567890'}/view`};documents.push(doc);
+   await page.evaluate(async data=>window.RavenAPI.addJobEvent('job-1',{eventType:'document_drive_export',metadata:data}),doc);
+  }
+  await route.fulfill({json:{run_id:runId,job_id:input.job_id,stage:'complete',documents}});
+ });
+ await page.addInitScript(()=>{window.chatWindows=0;window.open=()=>{window.chatWindows++;return null;};});
+ return {requests,release:()=>{released=true;},releaseCover:()=>{releaseCover=true;},resume,cover};
+}
+
+test('Generate both uses one-click helper for both saved PDFs and survives refresh',async({page})=>{
+ const api=await mockRaven(page),helper=await mockOneClickQueue(page,api);
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+ await page.locator('[data-generate-both]').click();await expect(page.locator('#syncStatus')).toContainText('copied to Drive');
+ expect(helper.requests).toEqual([{job_id:'job-1',document_type:'both'}]);expect(api.getGenerationCalls()).toBe(0);expect(api.getJob().resume).toBe(helper.resume);expect(api.getJob().cover_letter).toBe(helper.cover);
+ expect(await page.evaluate(()=>window.chatWindows)).toBe(0);await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+ await expect(page.getByRole('link',{name:'Open PDF in Drive'})).toHaveCount(2);expect(api.getJob().status).toBe('Saved');
+});
+
+test('cover can queue while resume writes and reservations remain busy through rerender',async({page})=>{
+ const api=await mockRaven(page),helper=await mockOneClickQueue(page,api,{delayResume:true});
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+ await page.locator('[data-generate="resume"]').click();await expect(page.locator('[data-generate="resume"]')).toHaveAttribute('aria-busy','true');
+ await page.locator('[data-generate="coverLetter"]').click();await expect(page.locator('[data-generate="coverLetter"]')).toContainText('Queued');
+ await expect(page.locator('[data-generate="resume"]')).toHaveAttribute('aria-busy','true');await expect(page.locator('[data-generate-both]')).toBeDisabled();
+ expect(helper.requests.map(x=>x.document_type)).toEqual(['resume','coverLetter']);expect(api.getGenerationCalls()).toBe(0);
+ // Collapsing and re-opening re-renders the controls without losing reservations.
+ await page.locator('.job-card-summary').first().click();await page.locator('.job-card-summary').first().click();await expect(page.locator('[data-generate="coverLetter"]')).toHaveAttribute('aria-busy','true');
+ helper.release();await expect.poll(()=>api.getJob().resume).toBe(helper.resume);helper.releaseCover();await expect.poll(()=>api.getJob().cover_letter).toBe(helper.cover);
+ await expect(page.locator('#syncStatus')).toContainText('copied to Drive');expect(helper.requests).toHaveLength(2);
+});
+
+test('both reserves each document and overlapping duplicate requests show visible feedback',async({page})=>{
+ const api=await mockRaven(page),helper=await mockOneClickQueue(page,api,{delayResume:true});
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+ await page.evaluate(()=>{window.staleResume=document.querySelector('[data-generate="resume"]');window.staleBoth=document.querySelector('[data-chatgpt-prompt="both"]');});
+ await page.locator('[data-generate-both]').click();await expect(page.locator('[data-generate="resume"]')).toBeDisabled();await expect(page.locator('[data-generate="coverLetter"]')).toBeDisabled();
+ // A stale control event cannot bypass the reservation, even if delivered after re-render.
+ await page.evaluate(()=>{window.staleResume.click();window.staleBoth.click();});
+ await expect(page.locator('#syncStatus')).toContainText('already queued or being generated');
+ expect(helper.requests).toHaveLength(1);helper.release();await expect(page.locator('#syncStatus')).toContainText('copied to Drive');expect(helper.requests).toHaveLength(1);
+});
+
+test('one-click completion does not open review after the user leaves the job',async({page})=>{
+ const api=await mockRaven(page),helper=await mockOneClickQueue(page,api,{delayResume:true});
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();await page.locator('[data-generate="resume"]').click();
+ await page.locator('.job-card-summary').first().click();helper.release();await expect(page.locator('#syncStatus')).toContainText('copied to Drive');
+ await expect(page.locator('dialog[open]')).toHaveCount(0);expect(api.getJob().resume).toBe(helper.resume);
 });
 
 test('one-click stopped helper reports recovery action without opening ChatGPT or claiming success',async({page})=>{
