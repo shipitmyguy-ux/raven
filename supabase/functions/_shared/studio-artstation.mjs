@@ -16,6 +16,9 @@ export function normalizeArtStationJob(row,now=Date.now()){
  if(!row||!Number.isInteger(row.id)||row.id<1||typeof row.hash_id!=='string'||!/^[A-Za-z0-9]{4,20}$/.test(row.hash_id))throw Error('ArtStation listing identity invalid');
  const title=clean(row.title,5000),company=clean(row.company_name,1000);
  if(!title||!company||!Number.isInteger(row.recruitment_company_id)||row.recruitment_company_id<1||!row.recruitment_company||clean(row.recruitment_company.name,1000)!==company||row.recruitment_company.id!==row.recruitment_company_id)throw Error('ArtStation employer identity mismatch');
+ // This source feeds Raven's Games/3D lane; explicitly 2D-only titles cannot
+ // inherit the shared broad game-artist matcher. Mixed 2D+3D roles remain eligible.
+ if(/\b2[ -]?d\b/i.test(title)&&!/\b3[ -]?d\b/i.test(title))return null;
  const placement=row.listing_placement;
  if(row.job_state!=='approved'||row.deleted_at||placement?.displaced_at)return null;
  if(!Number.isFinite(Date.parse(placement?.expired_at)))throw Error('ArtStation expiry missing');

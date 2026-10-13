@@ -26,7 +26,6 @@
     }
   ],
   "total": 109,
-  "normalized": 109,
   "matching_remote_environment_or_3d": 5,
   "canonical_example": {
     "url": "https://www.artstation.com/jobs/QKn9",
@@ -188,5 +187,23 @@
       "studio_description_updated_at": "2026-10-13T00:58:24.790Z",
       "description_chars": 5361
     }
-  ]
+  ],
+  "artstation_2d_exclusions": {
+    "policy": "Exclude explicit 2D-only titles from Games/3D source; mixed 2D+3D retained.",
+    "observed_examples": [
+      {
+        "hash_id": "BRYw",
+        "title": "2D Game Artist",
+        "company": "PAW Gaming"
+      },
+      {
+        "hash_id": "lkGJ",
+        "title": "2D Slot Game Artist",
+        "company": "PAW Gaming"
+      }
+    ],
+    "remote_environment_or_3d_matches_retained": 5
+  },
+  "normalized_before_2d_title_exclusion": 109,
+  "normalized_after_2d_title_exclusion": 103
 }
