@@ -71,26 +71,36 @@
     "error": null
   },
   "detail_cursor_next": 0,
-  "matching_remote_environment_or_3d": 3,
+  "matching_remote_environment_or_3d": 6,
   "roles": [
     {
       "provider_job_id": "level-artist-31",
       "url": "https://ingamejob.com/en/job/level-artist-31",
       "title": "Level Artist",
       "company": "Values Value (undisclosed client)",
-      "location": "Remote;  Real creative ownership – shape a distinctive fictional world from blockout to final polish;  Fully remote work with B2B type of employment or officially employed in Kazakhstan;  Relocation support to Kazakhstan if it’s needed: legal / work-permit assistance is available; the financial part of a relocation package is considered individually",
+      "location": "Remote;  Fully remote work with B2B type of employment or officially employed in Kazakhstan;  Relocation support to Kazakhstan if it’s needed: legal / work-permit assistance is available; the financial part of a relocation package is considered individually",
       "remote": true,
-      "studio_description_updated_at": "2026-10-13T22:10:39.658Z",
+      "studio_description_updated_at": "2026-10-13T22:15:58.069Z",
       "description_chars": 3267
+    },
+    {
+      "provider_job_id": "lead-level-artist-2",
+      "url": "https://ingamejob.com/en/job/lead-level-artist-2",
+      "title": "Lead Level Artist",
+      "company": "Values Value (undisclosed client)",
+      "location": "Remote; Fully remote, or optional workplace for Kyiv-based specialists",
+      "remote": true,
+      "studio_description_updated_at": "2026-10-13T22:15:58.073Z",
+      "description_chars": 4639
     },
     {
       "provider_job_id": "3d-generalist-81",
       "url": "https://ingamejob.com/en/job/3d-generalist-81",
       "title": "3D Generalist",
       "company": "HyperVR Games",
-      "location": "Remote; HyperVR Games is a VR gaming studio and publisher, founded in 2021, based in Riga, Latvia.;  B2 English (spoken and written);;  Ability to own and drive the visual quality of an environment, not only execute existing concepts;",
+      "location": "Remote",
       "remote": true,
-      "studio_description_updated_at": "2026-10-13T22:10:49.866Z",
+      "studio_description_updated_at": "2026-10-13T22:15:58.076Z",
       "description_chars": 2907
     },
     {
@@ -98,10 +108,30 @@
       "url": "https://ingamejob.com/en/job/junior-middle-3d-artist-1",
       "title": "Senior 3D Artist (Low Poly & Stylized)",
       "company": "JustCreate",
-      "location": "Remote; We are looking for an experienced Senior 3D Artist who can create high-quality assets based on concept art and help coordinate a small team of 2–3 artists.;  – Contract-based remote work – Flexible working schedule – A combination of hands-on asset production and light team coordination – Long-term cooperation for the right candidate;  To consider your application, we require you to send the full version of your CV in English on email  hr@justcreate3d.studio Your email should include a CV, portfolio link and salary expectation.",
+      "location": "Remote",
       "remote": true,
-      "studio_description_updated_at": "2026-10-13T22:10:59.758Z",
+      "studio_description_updated_at": "2026-10-13T22:15:58.078Z",
       "description_chars": 1730
+    },
+    {
+      "provider_job_id": "3d-environment-artist-stylized",
+      "url": "https://ingamejob.com/en/job/3d-environment-artist-stylized",
+      "title": "3D Environment Artist (Stylized)",
+      "company": "Asterman",
+      "location": "Remote (explicit description)",
+      "remote": true,
+      "studio_description_updated_at": "2026-10-13T22:15:58.079Z",
+      "description_chars": 1549
+    },
+    {
+      "provider_job_id": "3d-generalistenvironment-artist-unity",
+      "url": "https://ingamejob.com/en/job/3d-generalistenvironment-artist-unity",
+      "title": "3D Generalist/Environment Artist (Unity)",
+      "company": "Hypercell Games",
+      "location": "Remote",
+      "remote": true,
+      "studio_description_updated_at": "2026-10-13T22:15:58.080Z",
+      "description_chars": 2259
     }
   ],
   "limits": [
@@ -111,8 +141,8 @@
     "Descriptions refreshed serially with at most12 target candidates each scan and rotating cursor; partial/deferred coverage remains explicit.",
     "Node reachability is verified; deployed Supabase runtime reachability still requires root integration acceptance."
   ],
-  "final_parser_rechecked_at": "2026-10-13T22:12:49.228Z",
-  "final_parser_recheck": "All captured public pages reprocessed after exact company-origin and balanced description fixes; same3 eligible roles, same full description lengths, details complete.",
+  "final_parser_rechecked_at": "2026-10-13T22:15:58.084Z",
+  "final_parser_recheck": "All actual captured anonymous public pages reprocessed after exact company-origin, balanced nested descriptions, hybrid-casual genre, optional remote-choice and explicit description-remote fixes. Six eligible roles with complete descriptions; original raw source capture timestamps retained in requests.",
   "request_timestamps": "requests[].at is response body completion time; adapter serializes request starts with minimum5000ms spacing.",
   "active_detail_outcomes": {
     "attempted": 7,
@@ -121,14 +151,14 @@
     "failed": 0,
     "deferred": 0
   },
-  "safety_tests": 10,
+  "safety_tests": 11,
   "target_detail_outcomes": [
     {
       "url": "https://ingamejob.com/en/job/level-artist-31",
       "title": "Level Artist",
       "excluded": false,
       "remote": true,
-      "location": "Remote;  Real creative ownership – shape a distinctive fictional world from blockout to final polish;  Fully remote work with B2B type of employment or officially employed in Kazakhstan;  Relocation support to Kazakhstan if it’s needed: legal / work-permit assistance is available; the financial part of a relocation package is considered individually",
+      "location": "Remote;  Fully remote work with B2B type of employment or officially employed in Kazakhstan;  Relocation support to Kazakhstan if it’s needed: legal / work-permit assistance is available; the financial part of a relocation package is considered individually",
       "eligible": true,
       "description_chars": 3267
     },
@@ -136,9 +166,9 @@
       "url": "https://ingamejob.com/en/job/lead-level-artist-2",
       "title": "Lead Level Artist",
       "excluded": false,
-      "remote": false,
-      "location": "Remote;  Own the visual quality of game locations from blockout to final polish, ensuring they support gameplay, atmosphere and narrative;  Upper-Intermediate English or higher: documentation and official communication in the company are in English;  Fully remote, or on-site / hybrid for Kyiv-based specialists; Hybrid / onsite condition stated in description",
-      "eligible": false,
+      "remote": true,
+      "location": "Remote; Fully remote, or optional workplace for Kyiv-based specialists",
+      "eligible": true,
       "description_chars": 4639
     },
     {
@@ -146,7 +176,7 @@
       "title": "3D Generalist",
       "excluded": false,
       "remote": true,
-      "location": "Remote; HyperVR Games is a VR gaming studio and publisher, founded in 2021, based in Riga, Latvia.;  B2 English (spoken and written);;  Ability to own and drive the visual quality of an environment, not only execute existing concepts;",
+      "location": "Remote",
       "eligible": true,
       "description_chars": 2907
     },
@@ -164,7 +194,7 @@
       "title": "Senior 3D Artist (Low Poly & Stylized)",
       "excluded": false,
       "remote": true,
-      "location": "Remote; We are looking for an experienced Senior 3D Artist who can create high-quality assets based on concept art and help coordinate a small team of 2–3 artists.;  – Contract-based remote work – Flexible working schedule – A combination of hands-on asset production and light team coordination – Long-term cooperation for the right candidate;  To consider your application, we require you to send the full version of your CV in English on email  hr@justcreate3d.studio Your email should include a CV, portfolio link and salary expectation.",
+      "location": "Remote",
       "eligible": true,
       "description_chars": 1730
     },
@@ -172,18 +202,18 @@
       "url": "https://ingamejob.com/en/job/3d-environment-artist-stylized",
       "title": "3D Environment Artist (Stylized)",
       "excluded": false,
-      "remote": false,
-      "location": "; Asterman is looking for a 3D Environment Artist for project-based collaboration on a stylized game art project.;  Create stylized 3D environment assets based on provided 2D concepts and references;  Project-based work",
-      "eligible": false,
+      "remote": true,
+      "location": "Remote (explicit description)",
+      "eligible": true,
       "description_chars": 1549
     },
     {
       "url": "https://ingamejob.com/en/job/3d-generalistenvironment-artist-unity",
       "title": "3D Generalist/Environment Artist (Unity)",
       "excluded": false,
-      "remote": false,
-      "location": "Remote; Hypercell Games  is a mobile game studio behind some of the most downloaded hybrid-casual and puzzle titles on the market.;  Improve, polish, and iterate on existing locations;; Hybrid / onsite condition stated in description",
-      "eligible": false,
+      "remote": true,
+      "location": "Remote",
+      "eligible": true,
       "description_chars": 2259
     }
   ]

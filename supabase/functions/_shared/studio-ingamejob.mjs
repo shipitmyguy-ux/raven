@@ -48,13 +48,14 @@ export function parseIngamejobDetail(source,job,html,now=Date.now()){
  const snippet=sections.map(clean).filter(Boolean).join('\n');if(snippet.length<100||snippet.length>20000||!sections.some(s=>/responsibilities|professional are we looking for/i.test(clean(s))))throw Error('InGameJob description incomplete');
  if(/\b(?:talent[ -]?(?:pool|pipeline)|open application|general application|speculative application|evergreen|closed|expired|filled)\b/i.test(title)||/\b(?:unpaid|volunteer|rev(?:enue)?[ -]?share|equity[ -]only|no (?:pay|compensation)|zero compensation)\b/i.test(snippet))return {excluded:true};
  if(/\b2[ -]?d\b/i.test(title)&&!/\b3[ -]?d\b/i.test(title))return {excluded:true};
- const workConditions=snippet.replace(/\bhybrid[ -]casual\b/gi,'').replace(/\bfully remote(?: work)?[,; ]+(?:or|with optional)[^.\n]{0,140}\b(?:on[ -]?site|hybrid)\b[^.\n]*/gi,'');
+ const optionalWorkplaces=[];
+ const workConditions=snippet.replace(/\bhybrid[ -]casual\b/gi,'').replace(/\bfully remote(?: work)?[,; ]+(?:or|with optional)[^.\n]{0,140}\b(?:on[ -]?site|hybrid)\b[^.\n]*/gi,choice=>{if(/\b(?:must|required|mandatory|expected)\b/i.test(choice))return choice;optionalWorkplaces.push(choice.replace(/\bon[ -]?site\b(?:\s*\/\s*hybrid)?|\bhybrid\b/gi,'optional workplace'));return '';});
  const onsite=/\bhybrid\b|must work (?:from|in|at) (?:our |the )?(?:office|studio)|\b(?:initially remote|remote (?:initially|until))\b|\b(?:must|required|expected|mandatory)[^.\n]{0,100}\b(?:relocat|office|on[ -]?site)|\b(?:relocat|office|on[ -]?site)[^.\n]{0,100}\b(?:required|mandatory)\b/i.test(workConditions);
  const descriptionRemote=/\bfully remote (?:collaboration|work|role|position|opportunity)\b/i.test(snippet);
  const remote=(/\bRemote\b/.test(location)||descriptionRemote)&&!onsite;
- const restrictions=snippet.split(/\n|(?<=[.!?])\s+/).filter(s=>/\b(?:only|based|timezone|time zone|core hours|B2B|Kazakhstan|English|Russian|Ukrainian|Polish|relocat\w*|hybrid|on[ -]?site)\b/i.test(s)).slice(0,5).map(s=>s.slice(0,350));
+ const restrictions=workConditions.split(/\n|(?<=[.!?])\s+/).filter(s=>/\b(?:must be based|must reside|only (?:candidates|applicants)|timezone|time zone|core hours|B2B|Kazakhstan|relocat\w*|hybrid|on[ -]?site)\b/i.test(s)).slice(0,5).map(s=>s.slice(0,350));
  const recruiting=/Company type:\s*Recruiting/i.test(clean(html.slice(html.indexOf('<div class="col-md-4">'))));
- return {snippet,company:recruiting?job.company+' (undisclosed client)':job.company,remote,location:[location||descriptionRemote&&'Remote (explicit description)'||'',...restrictions,...(onsite?['Hybrid / onsite condition stated in description']:[])].filter(Boolean).join('; '),studio_description_updated_at:new Date(now).toISOString()};
+ return {snippet,company:recruiting?job.company+' (undisclosed client)':job.company,remote,location:[location||descriptionRemote&&'Remote (explicit description)'||'',...restrictions,...optionalWorkplaces,...(onsite?['Hybrid / onsite condition stated in description']:[])].filter(Boolean).join('; '),studio_description_updated_at:new Date(now).toISOString()};
 }
 export async function collectIngamejob(source,{fetchText,deadline=Date.now()+110000,jobAllowed=()=>true,detailAllowed=jobAllowed,wait=ms=>new Promise(resolve=>setTimeout(resolve,ms))}={}){
  const jobs=[],seen=new Set();let total=null,page=1,lastRequest=0;

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {ingamejobEndpoint,parseIngamejobPage,parseIngamejobDetail,collectIngamejob} from '../supabase/functions/_shared/studio-ingamejob.mjs';
+import '../supabase/functions/_shared/track-filter.js';
 const source={provider:'ingamejob',board_key:'ingamejob'},category='https://ingamejob.com/en/jobs/art-and-animation';
 const card=(id=1,{title='3D Environment Artist',company='Example Studio',location='Remote'}={})=>`<div class="employer-job-listing-single shadow-sm"><h5><a href="https://ingamejob.com/en/job/environment-artist-${id}">${title}</a></h5><strong><i class="la la-building-o"></i> ${company}</strong><p><i class="la la-map-marker"></i> ${location}</p></div>`;
 const page=(cards=card(),total=1,current=1)=>`<link rel="canonical" href="${category}">Found <strong>${total}</strong> jobs<div class="employer-job-listing my-4">${total>30?`<ul class="pagination"><li aria-current="page"><span class="page-link">${current}</span></li><a href="${category}?page=${current===1?2:1}" ${current===1?'rel="next"':''}>Next</a></ul>`:''}${cards}</div>`;
@@ -42,9 +43,10 @@ test('unpaid pools closed titles and 2D-only rejected, unknown location not inve
  const noLocation=parseIngamejobPage(source,page(card(1,{location:''}))).jobs[0];assert.equal(noLocation.location,'');assert.equal(parseIngamejobDetail(source,noLocation,detail(noLocation)).remote,false);
 });
 test('hybrid game genre and explicit remote alternatives are not mandatory office conditions',()=>{
- for(const condition of ['The studio makes hybrid-casual games.','Fully remote, or on-site / hybrid for Kyiv-based specialists.'])assert.equal(parseIngamejobDetail(source,job(),detail(job(),{description:text+' '+condition})).remote,true);
+ for(const condition of ['The studio makes hybrid-casual games.','Fully remote, or on-site / hybrid for Kyiv-based specialists.']){const d=parseIngamejobDetail(source,job(),detail(job(),{description:text+' '+condition}));assert.equal(d.remote,true);assert.equal(globalThis.RavenTrackFilter.jobLocationAllowed({...job(),...d}),true);assert.match(d.snippet,new RegExp(condition.startsWith('Fully')?'Kyiv':'hybrid-casual'));}
  const j={...job(),location:''},d=parseIngamejobDetail(source,j,detail(j,{description:text+' Fully remote collaboration.'}));assert.equal(d.remote,true);assert.match(d.location,/explicit description/);
  assert.equal(parseIngamejobDetail(source,job(),detail(job(),{description:text+' Fully remote, or on-site / hybrid for Kyiv-based specialists. Later office attendance is mandatory.'})).remote,false);
+ for(const condition of ['Fully remote, or hybrid; must work from our office weekly.','Fully remote, or hybrid but relocation to Kyiv is required.','Fully remote with optional onsite, mandatory weekly office attendance.']){const d=parseIngamejobDetail(source,job(),detail(job(),{description:text+' '+condition}));assert.equal(d.remote,false);assert.match(d.location,/Hybrid \/ onsite/);assert.match(d.snippet,/weekly|required|mandatory/);}
 });
 test('bounded serial fresh details, robots spacing and rotating cursor',async()=>{
  let active=0,peak=0,details=0;const waits=[];
