@@ -8,12 +8,15 @@ import {normalizeStudioJobs} from '../supabase/functions/_shared/studio-provider
 const [publicRow]=normalizeStudioJobs({studio_name:'People Can Fly',provider:'smartrecruiters',board_key:'PeopleCanFly'},{content:[fixture]});
 const discovered={...publicRow,id:'pcf-fixture',track:'Games / 3D',source:'Studio:smartrecruiters',last_seen:new Date().toISOString()};
 
-test('studio discovery displays complete public description and sends it to prompt-only endpoint',async({page})=>{
+for(const direct of [false,true])test(`studio discovery preserves complete public description through ${direct?'direct ChatGPT job handoff':'fallback prompt-only endpoint'}`,async({page})=>{
  let adopted=null;const requests=[];
  await page.addInitScript(()=>{
+  window.open=()=>({closed:false,document:{title:'',body:{}},location:{replace:url=>{window.lastChatGptUrl=url;}},close(){}});
+  Object.defineProperty(navigator,'clipboard',{value:{writeText:async()=>{}},configurable:true});
   localStorage.clear();
   localStorage.setItem('ravenMasterResumesV1',JSON.stringify([{id:'fixture-master',name:'Fixture master',sourceType:'drive',url:'https://drive.google.com/file/d/fixture/view',tracks:['Games / 3D']}]));
  });
+ await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-direct-save']=direct;await route.fulfill({json:config});});
  await page.route('**/functions/v1/**',async route=>{
   const req=route.request(),url=new URL(req.url());
   const body=req.method()==='POST'?JSON.parse(req.postData()||'{}'):{};
@@ -37,11 +40,18 @@ test('studio discovery displays complete public description and sends it to prom
  await page.locator('[data-description-toggle]').click();
  await expect(page.locator('[data-description-full]')).toContainText(discovered.snippet);
  await page.locator('[data-chatgpt-prompt="both"]').click();
- await expect.poll(()=>requests.length).toBe(1);
+ await expect.poll(()=>page.evaluate(()=>window.lastChatGptUrl||'')).toContain('chatgpt.com');
  expect(adopted.notes).toBe(discovered.snippet);
- expect(requests[0].jobDescription).toBe(discovered.snippet);
- expect(requests[0].jobId).toBe('fixture-saved-pcf');
- expect(requests[0].sourceUrl).toBe(discovered.url);
+ if(direct){
+  expect(requests).toHaveLength(0);
+  const prompt=await page.evaluate(()=>new URL(window.lastChatGptUrl).searchParams.get('q'));
+  expect(prompt).toContain('fixture-saved-pcf');expect(prompt).toContain('save_generated_document');
+ }else{
+  expect(requests).toHaveLength(1);
+  expect(requests[0].jobDescription).toBe(discovered.snippet);
+  expect(requests[0].jobId).toBe('fixture-saved-pcf');
+  expect(requests[0].sourceUrl).toBe(discovered.url);
+ }
  expect(adopted.resume||'').toBe('');expect(adopted.cover_letter||'').toBe('');
  await page.reload();await page.locator('[data-track="Games / 3D"]').click();
  await page.locator('.job-card-summary').filter({hasText:fixture.name}).click();

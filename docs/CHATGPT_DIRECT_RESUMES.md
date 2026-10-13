@@ -15,7 +15,7 @@ Run `npm ci` before PDF export. Windows Edge must be installed. The launcher pre
 - Existing DataHouse resume read through the actual Raven Private plugin after tunnel restart, with unchanged SHA256 `5d7f835efac4e60ea92c379547861b9282f48ebbd484f3c7301e0c7a67981779`.
 - Actual local private dispatcher rendered a 63,789-byte, one-page PDF. Extracted text length 2,015; page image inspected with complete sections and clean layout.
 - Actual Google Drive upload and fresh metadata readback confirmed a PDF in the user-selected `1resumecoverletter` folder. Actual export event write/readback confirmed; saved resume URL and version unchanged.
-- Core workflow checks, new direct/workflow tests and three focused Edge browser cases passed, including direct job binding without the legacy prompt API, Drive request/folder, resume reload preservation and responsive busy labels. Windows credential/launcher synthetic checks passed.
+- Core workflow checks, new direct/workflow tests and five focused Edge browser cases passed, including direct job binding without the legacy prompt API, Drive request/folder, resume reload preservation and responsive busy labels. Windows credential/launcher synthetic checks passed.
 - Windows fixture readers now accept CRLF; generated-renderer validation normalizes line endings without changing rendered content.
 
 These checks verify the renderer, connector-assisted upload, durable event and mocked frontend interactions. The exact signed-in ChatGPT button → new resume generation → private save → PDF tool → Drive chain has not been exercised. New tools require a ChatGPT plugin refresh. Frontend publication and CI status are recorded in WORK_HANDOFF.md; implementation is not equivalent to a verified live release.
