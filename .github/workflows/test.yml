@@ -99,7 +99,7 @@ jobs:
           node tests/single-source.test.mjs
           node tests/search-resilience.test.mjs
           node tests/studio-directory.test.mjs
-          node --test tests/studio-providers.test.mjs tests/studio-scan-handler.test.mjs tests/studio-detail.test.mjs tests/studio-icims.test.mjs tests/studio-avature.test.mjs tests/studio-jobylon.test.mjs tests/studio-result-window.test.mjs tests/studio-bilingual.test.mjs tests/studio-portal-dispatch.test.mjs tests/studio-to-resume.test.mjs tests/studio-indie-board.test.mjs tests/studio-schedule.test.mjs tests/studio-teamtailor.test.mjs tests/studio-directory-pagination.test.mjs tests/studio-breezy.test.mjs tests/studio-recruitee.test.mjs tests/studio-remote-game-jobs.test.mjs tests/studio-blenderartists.test.mjs tests/studio-epic-forum.test.mjs tests/studio-artstation.test.mjs
+          node --test tests/studio-providers.test.mjs tests/studio-scan-handler.test.mjs tests/studio-detail.test.mjs tests/studio-icims.test.mjs tests/studio-avature.test.mjs tests/studio-jobylon.test.mjs tests/studio-result-window.test.mjs tests/studio-bilingual.test.mjs tests/studio-portal-dispatch.test.mjs tests/studio-to-resume.test.mjs tests/studio-indie-board.test.mjs tests/studio-schedule.test.mjs tests/studio-teamtailor.test.mjs tests/studio-directory-pagination.test.mjs tests/studio-breezy.test.mjs tests/studio-recruitee.test.mjs tests/studio-remote-game-jobs.test.mjs tests/studio-blenderartists.test.mjs tests/studio-epic-forum.test.mjs tests/studio-artstation.test.mjs tests/studio-hitmarker.test.mjs tests/studio-result-dedup.test.mjs
           node tests/final-closeout.test.mjs
           node tests/task-health-current.test.mjs
           node tests/generator-consolidation-v2.test.mjs

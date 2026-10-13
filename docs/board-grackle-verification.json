@@ -1,0 +1,110 @@
+{
+  "verified_at": "2026-10-13T01:42:08.717270+00:00",
+  "source": {
+    "studio_name": "Grackle HQ",
+    "slug": "grackle-hq",
+    "provider": "pending",
+    "provider_candidate": "grackle",
+    "board_key": "grackle",
+    "careers_url": "https://gracklehq.com/jobs",
+    "source_kind": "job_board",
+    "segment": "unknown",
+    "verification_status": "unsupported",
+    "verification_note": "Public list works, but observed canonical job paths redirect offsite and expose no full job descriptions. Collector not implemented or activated; existing WWI/Lever feeds cover observed target redirects."
+  },
+  "access": {
+    "url": "https://gracklehq.com/jobs?metro=Remote",
+    "http_status": 200,
+    "bytes": 43351,
+    "sha256": "c36b507859a9d42efa9de944e8268daf35fe5bfca1b8c5a8a0b91ad301433291",
+    "advertised_results": 255,
+    "observed_cards": 30,
+    "observed_pagination_links": [
+      "./jobs?metro=Remote&pageidx=0",
+      "./jobs?metro=Remote&pageidx=2"
+    ],
+    "complete_list_verified": false,
+    "full_description_available_on_board": false
+  },
+  "redirect_probe_policy": "Anonymous GET with automatic redirects disabled. Recorded302Location headers only; did not fetch outbound application/careers URLs, log in, bypass protection, or submit applications. No endpoint guessing except /jobs/383490404 diagnostic recorded below.",
+  "redirects": [
+    {
+      "url": "https://gracklehq.com/rd/383208",
+      "status": 302,
+      "location": "https://www.workwithindies.com/careers/makrp-game-artist-concept-3d"
+    },
+    {
+      "url": "https://gracklehq.com/rd/383257",
+      "status": 302,
+      "location": "https://www.workwithindies.com/careers/febucci-general-artist-3d"
+    },
+    {
+      "url": "https://gracklehq.com/rd/383240",
+      "status": 302,
+      "location": "https://jobs.lever.co/blackbirdinteractive/98050e1b-0adb-4842-96e9-a6b9c987b799"
+    },
+    {
+      "url": "https://gracklehq.com/rd/383061",
+      "status": 302,
+      "location": "https://www.workwithindies.com/careers/midain-studios-art-director-environmental-art-generalist"
+    },
+    {
+      "url": "https://gracklehq.com/rd/383490",
+      "status": 302,
+      "location": "https://www.workwithindies.com/careers/fallen-tree-games-mid-level-3d-artist-environment-generalist"
+    },
+    {
+      "url": "https://gracklehq.com/rd/383410",
+      "status": 302,
+      "location": "https://www.workwithindies.com/careers/astronomad-studios-senior-level-designer"
+    }
+  ],
+  "diagnostic_detail_path": {
+    "url": "https://gracklehq.com/jobs/383490",
+    "http_status": 404
+  },
+  "linked_script": {
+    "url": "https://gracklehq.com/js/site.js?v=dLGP40S79Xnx6GqUthRF6NWvjvhQ1nOvdVSwaNcgG18",
+    "http_status": 200,
+    "bytes": 230,
+    "observation": "ASP.NET placeholder comments only; no published jobs JSON/API calls."
+  },
+  "target_discovery_cards": [
+    {
+      "board_job_id": "383490",
+      "title": "Mid-Level 3D Artist (Environment Generalist)",
+      "advertised_company_location": "Fallen Tree Games - Remote",
+      "board_redirect_url": "https://gracklehq.com/rd/383490",
+      "observed_redirect": "https://www.workwithindies.com/careers/fallen-tree-games-mid-level-3d-artist-environment-generalist"
+    },
+    {
+      "board_job_id": "383257",
+      "title": "General Artist (3D)",
+      "advertised_company_location": "Febucci - Remote",
+      "board_redirect_url": "https://gracklehq.com/rd/383257",
+      "observed_redirect": "https://www.workwithindies.com/careers/febucci-general-artist-3d"
+    },
+    {
+      "board_job_id": "383240",
+      "title": "Environment and Prop Artist (3-month contract)",
+      "advertised_company_location": "Blackbird Interactive - Remote",
+      "board_redirect_url": "https://gracklehq.com/rd/383240",
+      "observed_redirect": "https://jobs.lever.co/blackbirdinteractive/98050e1b-0adb-4842-96e9-a6b9c987b799"
+    },
+    {
+      "board_job_id": "383208",
+      "title": "Game Artist (Concept + 3D)",
+      "advertised_company_location": "makRP - Remote",
+      "board_redirect_url": "https://gracklehq.com/rd/383208",
+      "observed_redirect": "https://www.workwithindies.com/careers/makrp-game-artist-concept-3d"
+    },
+    {
+      "board_job_id": "383061",
+      "title": "Art Director (Environmental Art / Generalist)",
+      "advertised_company_location": "Midain Studios - Remote",
+      "board_redirect_url": "https://gracklehq.com/rd/383061",
+      "observed_redirect": "https://www.workwithindies.com/careers/midain-studios-art-director-environmental-art-generalist"
+    }
+  ],
+  "recommendation": "Retain Grackle as a manual discovery directory, not an active description feed. Process canonical Work With Indies and Blackbird Lever through already-supported adapters. No new verified studio or unique vacancy count asserted."
+}

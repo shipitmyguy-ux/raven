@@ -1,0 +1,180 @@
+{
+  "verified_at": "2026-10-13T01:42:58.639803+00:00",
+  "provider": "hitmarker",
+  "board_key": "hitmarker",
+  "source_kind": "job_board",
+  "studio_class": "unknown",
+  "status": "implemented_public_sitemap_adapter",
+  "public_access": {
+    "jobs": "HTTP200 client-rendered shell; no job cards",
+    "robots": "Explicitly allows discovery/live user fetch; disallows actions/cache/cpresources; notes /dist must stay crawlable",
+    "sitemap_index": "https://hitmarker.net/sitemap.xml",
+    "job_sitemaps": [
+      "https://hitmarker.net/sitemap-jobs.xml/p1",
+      "https://hitmarker.net/sitemap-jobs.xml/p2",
+      "https://hitmarker.net/sitemap-jobs.xml/p3"
+    ],
+    "first_sitemap_urls": 5000,
+    "first_sitemap_chars": 850654,
+    "rss_advertised": false
+  },
+  "access_limit": "Client jobfeed implements guest signup hard wall/lock. Public Typesense replay not used; no login/captcha bypass. Public server detail pages + official sitemap provide an alternative legitimate path.",
+  "live_lead": {
+    "url": "https://hitmarker.net/jobs/mob-entertainment-principal-environment-artist-5151006",
+    "http_status": 200,
+    "title": "Principal Environment Artist",
+    "company": "Mob Entertainment",
+    "provider_id": "5151006",
+    "date_posted": "2026-10-07T15:44:01+01:00",
+    "active_marker": "Still accepting applications",
+    "expiration": null,
+    "remote_description_marker": "#LI-Remote",
+    "location": "USA",
+    "description_chars": 6363,
+    "remote": true
+  },
+  "blockers": [
+    "Integration/deployment/live scan owned by root; initial index contains174target candidates and12detailsper scan means partial coverage is reported."
+  ],
+  "sitemap_page_counts": [
+    5000,
+    5000,
+    4432
+  ],
+  "sitemap_total": 14432,
+  "implementation": "Fixed official index and advertised p1–p3 only; max15000URLs, URL-slug targetprefilter followed by exact authoritative detail identity+active validation. Max12details2parallel rotatingcursor; candidate descriptions deferred/failed reportpartial even when samplezero. No outboundapplications/searchkey/gate replay.",
+  "target_candidates": 174,
+  "live_matching_details_verified": 1,
+  "index_count_caveat": "14432 sitemap URLs describe public discovery index coverage, not current active vacancies; only validated detail records establish paid active matching jobs.",
+  "detail_cache_policy": "Always revalidate details because sitemap slugs cannot establish authoritative title/employer; prepareDetails is intentionally not called.",
+  "candidate_priority": "Advertised lastmod descending; fallback numeric jobID descending is priority only, not an asserted posting date. Mob Entertainment sample target index13.",
+  "first12_anonymous_details_verified_at": "2026-10-13T01:47:42.885Z",
+  "first12_anonymous_details": [
+    {
+      "url": "https://hitmarker.net/jobs/riot-games-principal-3d-environment-artist-unpublished-r-d-product-5200755",
+      "provider_job_id": "5200755",
+      "title": "Principal 3D Environment Artist - Unpublished R&D Product",
+      "company": "Riot Games",
+      "remote": false,
+      "location": "Los Angeles, California, US",
+      "posted_at": "2026-10-12T21:16:53.000Z",
+      "studio_description_updated_at": "2026-10-13T01:49:22.044Z",
+      "description_chars": 5447
+    },
+    {
+      "url": "https://hitmarker.net/jobs/reality-games-junior-game-artist-5187609",
+      "provider_job_id": "5187609",
+      "title": "Junior Game Artist",
+      "company": "Reality Games",
+      "remote": false,
+      "location": "El Realito, Tamaulipas, MX",
+      "posted_at": "2026-07-21T13:23:12.000Z",
+      "studio_description_updated_at": "2026-10-13T01:49:22.047Z",
+      "description_chars": 1908
+    },
+    {
+      "url": "https://hitmarker.net/jobs/reality-games-3d-generalist-5187603",
+      "provider_job_id": "5187603",
+      "title": "3D Generalist",
+      "company": "Reality Games",
+      "remote": false,
+      "location": "El Realito, Tamaulipas, MX",
+      "posted_at": "2025-01-27T12:52:36.000Z",
+      "studio_description_updated_at": "2026-10-13T01:49:22.049Z",
+      "description_chars": 2792
+    },
+    {
+      "url": "https://hitmarker.net/jobs/lakshya-digital-3d-generalist-5185764",
+      "provider_job_id": "5185764",
+      "title": "3D Generalist",
+      "company": "Lakshya Digital",
+      "remote": false,
+      "location": "Gurugram, Haryana, IN; Pune, Maharashtra, IN; Seattle, Washington, US; San Diego, California, US; Tokyo, JP; Role Information: EN Studio: Lakshya Location: Asia Pacific, India, Haryana Area of Work: Art Services Service: Create Employment Type: Full Time Working Pattern: Onsite",
+      "posted_at": "2026-10-12T04:25:53.000Z",
+      "studio_description_updated_at": "2026-10-13T01:49:22.050Z",
+      "description_chars": 3364
+    },
+    {
+      "url": "https://hitmarker.net/jobs/lockwood-publishing-principal-environment-artist-lead-5174042",
+      "provider_job_id": "5174042",
+      "title": "Principal Environment Artist/ Lead",
+      "company": "Lockwood Publishing",
+      "remote": false,
+      "location": "Job Title: Principal Environment Artist/ Lead Location: Remote, UK OR Hybrid Lisbon, EU Reporting to: Director of Art Salary: £45k - £70k per annum/ €53,295 – € 82,748 per annum Contract: Full time, 6 Month FTC (with possibility to move to permanent) Company Overview At Lockwood, our vision is to bring people together through Avakin Life, where players can play, share, and socialize in one of the ",
+      "posted_at": "2026-10-08T22:00:00.000Z",
+      "studio_description_updated_at": "2026-10-13T01:49:22.052Z",
+      "description_chars": 8867
+    },
+    {
+      "url": "https://hitmarker.net/jobs/game-boost-open-application-game-artists-game-boost-home-of-game-gigs-sweden-hybrid-remote-5168420",
+      "excluded": true
+    },
+    {
+      "url": "https://hitmarker.net/jobs/take-two-interactive-senior-level-artist-5151164",
+      "provider_job_id": "5151164",
+      "title": "Senior Level Artist",
+      "company": "Take-Two Interactive",
+      "remote": false,
+      "location": "Massachusetts, US",
+      "posted_at": "2026-10-07T18:18:34.000Z",
+      "studio_description_updated_at": "2026-10-13T01:49:22.054Z",
+      "description_chars": 8416
+    },
+    {
+      "url": "https://hitmarker.net/jobs/storytoys-3d-art-lead-5079670",
+      "provider_job_id": "5079670",
+      "title": "3D Art Lead",
+      "company": "StoryToys",
+      "remote": true,
+      "location": "Remote; geographic scope not specified",
+      "posted_at": "2026-10-04T22:00:00.000Z",
+      "studio_description_updated_at": "2026-10-13T01:49:22.055Z",
+      "description_chars": 10254
+    },
+    {
+      "url": "https://hitmarker.net/jobs/ghost-story-games-senior-level-artist-5149989",
+      "provider_job_id": "5149989",
+      "title": "Senior Level Artist",
+      "company": "Ghost Story Games",
+      "remote": false,
+      "location": "Massachusetts, US",
+      "posted_at": "2026-10-07T17:53:25.000Z",
+      "studio_description_updated_at": "2026-10-13T01:49:22.057Z",
+      "description_chars": 8416
+    },
+    {
+      "url": "https://hitmarker.net/jobs/embark-studios-3d-artist-5163045",
+      "provider_job_id": "5163045",
+      "title": "3D Artist",
+      "company": "Embark Studios",
+      "remote": false,
+      "location": "Stockholm, SE",
+      "posted_at": "2026-10-08T10:04:57.000Z",
+      "studio_description_updated_at": "2026-10-13T01:49:22.058Z",
+      "description_chars": 2438
+    },
+    {
+      "url": "https://hitmarker.net/jobs/skybox-labs-world-artist-5161522",
+      "provider_job_id": "5161522",
+      "title": "World Artist",
+      "company": "SkyBox Labs",
+      "remote": false,
+      "location": "Burnaby, British Columbia, CA; Since our inception in 2011, SkyBox Labs has evolved from a small team of eight individuals to a fully established team of Engineers, Artists, Animators, Designers, Producers, and more.Come join our hybrid team in our Burnaby, BC studio today!; PLEASE NOTE: At this time, we are only able to hire candidates who are legally eligible to work in Canada and reside within Canada.; Please note: this role is on a hybrid work team, requiring 3-days a week in our beautiful Burnaby studio.",
+      "posted_at": "2026-10-08T00:00:00.000Z",
+      "studio_description_updated_at": "2026-10-13T01:49:22.060Z",
+      "description_chars": 5430
+    },
+    {
+      "url": "https://hitmarker.net/jobs/studio-wildcard-jr-prop-artist-5160712",
+      "provider_job_id": "5160712",
+      "title": "Jr Prop Artist",
+      "company": "Studio Wildcard",
+      "remote": false,
+      "location": "Bellevue, Washington, US; Each pay range is only relevant to those residing in WA state and can vary based on geographical location.",
+      "posted_at": "2026-10-08T00:00:00.000Z",
+      "studio_description_updated_at": "2026-10-13T01:49:22.061Z",
+      "description_chars": 4043
+    }
+  ],
+  "speculative_exclusion": "Title-only open/general applications, general-interest, speculative, evergreen, talentpool/pipeline excluded. Actual sampled Game Boost open application excluded; ordinary production pipelines in job text unaffected."
+}

@@ -1,5 +1,6 @@
 import {candidateAllowedForTrack} from "./utils.ts";
 import type { Candidate, Track } from "./types.ts";
+import {deduplicateStudioResults} from "../_shared/studio-result-dedup.mjs";
 import { validAtsRow } from "./csv-records.mjs";
 
 function isPersistableCandidate(c:Candidate){
@@ -74,7 +75,8 @@ export async function listResults(track:Track){
   const groups=await Promise.all(responses.map(response=>response.json()));
   const unique=new Map<string,Candidate>();
   for(const row of groups.flat())if(candidateAllowedForTrack(track,row)&&row.url)unique.set(row.url,row);
-  return [...unique.values()].sort((a:any,b:any)=>Number(b.score||0)-Number(a.score||0)||String(b.last_seen||"").localeCompare(String(a.last_seen||"")));
+  const visible=track==="Games / 3D"?deduplicateStudioResults([...unique.values()]):[...unique.values()];
+  return visible.sort((a:any,b:any)=>Number(b.score||0)-Number(a.score||0)||String(b.last_seen||"").localeCompare(String(a.last_seen||"")));
 }
 
 export async function updateDescription(url:string,c:Candidate){

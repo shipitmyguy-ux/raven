@@ -1,0 +1,36 @@
+{
+  "studio_name": "Singularity6",
+  "source_kind": "studio",
+  "segment": "boutique",
+  "registry_status": "Pending candidate in docs/indie-extra-verified-feeds.json; no existing active source migration found via repository search. Live registry not inspected by this worker.",
+  "official_url": "https://www.singularity6.com/careers/",
+  "verification_status": "pending",
+  "verified_at": "2026-10-13T01:45:47.659618+00:00",
+  "actual_official_checks": {
+    "careers_http_status": 200,
+    "department_count": 24,
+    "departments_jobs_empty": true,
+    "legacy_job_url": "https://www.singularity6.com/careers/job?gh_jid=5778599004",
+    "legacy_job_document_title": "Singularity 6 | undefined",
+    "legacy_job_payload": {
+      "status": 404,
+      "error": "Job not found"
+    },
+    "legacy_job_description_available": false
+  },
+  "indexed_legacy_role": {
+    "title": "Environment Artist (Temporary Assignment)",
+    "company": "Singularity 6",
+    "source_url": "https://gamejobs.co/Environment-Artist-Temporary-Assignment-at-Singularity-6",
+    "exact_apply_url": "https://www.singularity6.com/careers?gh_jid=5778599004",
+    "indexed_status": "This job might no longer be available. Seven months old.",
+    "indexed_compensation": "$78.00\u2013$83.00/hour (Los Angeles hourly range); 40 hours/week; 3 month temporary assignment with possible extension",
+    "indexed_remote_scope": "Remote in supported US states including Colorado; core PT hours 10:00\u201316:00. Historical indexed terms only, not a current vacancy."
+  },
+  "provider_binding": {
+    "observed_provider_hint": "Official query parameter gh_jid indicates Greenhouse integration; no exact current board token established. Official Nuxt script references inspected without a verified public ATS endpoint; do not guess board key.",
+    "provider": null,
+    "board_key": null
+  },
+  "decision": "Do not activate guessed ATS binding or ingest stale role. Existing pending candidate can retain exact official careers URL. Public primary firstparty job payload confirms closed/unavailable historical vacancy; no current full content or eligible target verified."
+}
