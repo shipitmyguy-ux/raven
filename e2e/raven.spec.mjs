@@ -6,6 +6,9 @@ const generatedResume={name:"Test Candidate",headline:"Project & Implementation 
 const generatedLetter={greeting:"Dear Hiring Manager,",paragraphs:["I am applying for the Implementation Project Manager role.","My background includes project delivery and internal team leadership."],closing:"Sincerely,",signature:"Test Candidate"};
 
 async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJob=null,dataDelayMs=0,discoveredJob=null,availabilityResponse=null}={}){
+  // These fixtures exercise the remote-provider workflow. One-click cases
+  // explicitly override this route and install their own helper fixtures.
+  await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=false;await route.fulfill({json:config});});
   let job={...savedJob,...(initialJob||{})};
   let persisted=!discoveredJob;
   let generationCalls=0;
