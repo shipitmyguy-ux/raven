@@ -1,5 +1,13 @@
 # Raven Tasks
 
+## Recruiter boards — 2026-10-12 evening
+
+- [x] Implement and independently review 8Bit, Skillsearch and Games Jobs Direct adapters.
+- [x] Deploy collector v12/backend v64; verify live 8Bit and Games Jobs Direct scans and four regional full-description listings.
+- [x] Mark Skillsearch blocked after deployed HTTP 403; disable scans and preserve tested adapter.
+- [ ] Establish supported Skillsearch collector access before reactivation.
+- [ ] Inspect Games Jobs Direct single unverified description; retain honest partial health.
+
 ## Board coverage and deduplication — 2026-10-12 evening
 - [x] Deploy public Hitmarker sitemap/detail scan;77 active sources/163registry/86pending.
 - [x] Verify two rotating live checks and3full-description listings; Mob/StoryToys new, HyperHug overlap recorded.

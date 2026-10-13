@@ -1,0 +1,2 @@
+-- Research access succeeded, but the deployed collector received HTTP 403.
+update public.raven_studio_sources set verification_status='blocked',enabled=false,verification_note='Public research fetches verified Art Jobs category and five descriptions; deployed Supabase collector received Provider HTTP 403 on 2026-10-13. Adapter implemented and tested; automatic monitoring disabled pending supported runtime access.' where slug='skillsearch-art-jobs' and provider='skillsearch';
