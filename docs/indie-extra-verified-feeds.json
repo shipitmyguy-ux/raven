@@ -1,0 +1,1582 @@
+{
+  "verified_at": "2026-10-13T00:24:53.055303+00:00",
+  "scope": "Direct official careers-to-supported-provider verification; boutique includes indie-origin or publisher-owned and co-development studios with explicit notes.",
+  "verification_method": "Fetched official careers HTML/redirect and exact public ATS JSON with Mozilla User-Agent. No guessed slug treated as verified. No runtime writes. Counts are provider rows, not eligible jobs. Existing records/provider corrections separate.",
+  "verified_sources": [
+    {
+      "studio_name": "Double Eleven",
+      "slug": "double-eleven",
+      "provider": "workable",
+      "board_key": "double-eleven",
+      "careers_url": "https://double11.com/vacancies/",
+      "feed_url": "https://apply.workable.com/api/v1/widget/accounts/double-eleven?details=true",
+      "evidence": "Official /careers redirects /vacancies; links six exact Workable job shortlinks. Feed shortcodes match all six.",
+      "official_evidence": "Official /careers redirects /vacancies; links six exact Workable job shortlinks. Feed shortcodes match all six.",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00",
+      "verification_status": "verified",
+      "fetched": 6,
+      "segment": "boutique",
+      "source_kind": "studio",
+      "ownership_note": "Independent ownership not re-audited; established co-development studio, boutique classification only.",
+      "segment_note": "Independent ownership not re-audited; established co-development studio, boutique classification only.",
+      "interval_hours": 24,
+      "priority": 1,
+      "titles": [
+        "Concept Artist",
+        "Expression of Interest (Kuala Lumpur)",
+        "Expression of Interest (UK)",
+        "Lead Programmer (C++ Custom Engine)",
+        "Principal Low-Level Graphics Programmer",
+        "Senior Graphics Programmer"
+      ],
+      "current_art_roles": [
+        {
+          "title": "Concept Artist",
+          "location": null,
+          "locations": [
+            {
+              "country": "Malaysia",
+              "countryCode": "MY",
+              "city": "Kuala Lumpur",
+              "region": "Federal Territory of Kuala Lumpur",
+              "hidden": false
+            }
+          ],
+          "atsLocation": null,
+          "isRemote": null,
+          "telecommuting": false,
+          "url": "https://apply.workable.com/j/53FB2B93EB"
+        }
+      ],
+      "normalized_count": 6,
+      "normalized_roles": [
+        {
+          "title": "Concept Artist",
+          "location": "Kuala Lumpur, Federal Territory of Kuala Lumpur, Malaysia",
+          "remote": false,
+          "url": "https://apply.workable.com/j/53FB2B93EB",
+          "description_length": 5774
+        },
+        {
+          "title": "Expression of Interest (Kuala Lumpur)",
+          "location": "Kuala Lumpur, Federal Territory of Kuala Lumpur, Malaysia",
+          "remote": false,
+          "url": "https://apply.workable.com/j/75808FA5F5",
+          "description_length": 1610
+        },
+        {
+          "title": "Expression of Interest (UK)",
+          "location": "Middlesbrough, England, United Kingdom",
+          "remote": false,
+          "url": "https://apply.workable.com/j/99F32D8BF0",
+          "description_length": 1610
+        },
+        {
+          "title": "Lead Programmer (C++ Custom Engine)",
+          "location": "Middlesbrough, England, United Kingdom",
+          "remote": false,
+          "url": "https://apply.workable.com/j/38C4D1F485",
+          "description_length": 6950
+        },
+        {
+          "title": "Principal Low-Level Graphics Programmer",
+          "location": "Middlesbrough, England, United Kingdom",
+          "remote": true,
+          "url": "https://apply.workable.com/j/FD59C7B736",
+          "description_length": 6889
+        },
+        {
+          "title": "Senior Graphics Programmer",
+          "location": "Middlesbrough, England, United Kingdom",
+          "remote": true,
+          "url": "https://apply.workable.com/j/9F8299FCE1",
+          "description_length": 5951
+        }
+      ]
+    },
+    {
+      "studio_name": "Colonist",
+      "slug": "colonist",
+      "provider": "ashby",
+      "board_key": "colonist",
+      "careers_url": "https://colonist.io/careers",
+      "feed_url": "https://api.ashbyhq.com/posting-api/job-board/colonist",
+      "evidence": "Official careers links https://jobs.ashbyhq.com/colonist?locationId=4cc9e45e-e7d9-4771-b4c5-bf91c7c6424e.",
+      "official_evidence": "Official careers links https://jobs.ashbyhq.com/colonist?locationId=4cc9e45e-e7d9-4771-b4c5-bf91c7c6424e.",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00",
+      "verification_status": "verified",
+      "fetched": 4,
+      "segment": "boutique",
+      "source_kind": "studio",
+      "ownership_note": "Browser strategy game team; current ownership not audited.",
+      "segment_note": "Browser strategy game team; current ownership not audited.",
+      "interval_hours": 24,
+      "priority": 1,
+      "titles": [
+        "Talent Pool",
+        "Product Developer Intern",
+        "QA Engineer",
+        "DevOps Engineer"
+      ],
+      "current_art_roles": [],
+      "normalized_count": 4,
+      "normalized_roles": [
+        {
+          "title": "Talent Pool",
+          "location": "Any Location",
+          "remote": true,
+          "url": "https://jobs.ashbyhq.com/colonist/ee99fc96-537a-40f6-966e-c17f207cbba3",
+          "description_length": 2902
+        },
+        {
+          "title": "Product Developer Intern",
+          "location": "Any Location",
+          "remote": true,
+          "url": "https://jobs.ashbyhq.com/colonist/b9285b46-6972-4443-b34f-8d74631a0dbd",
+          "description_length": 3011
+        },
+        {
+          "title": "QA Engineer",
+          "location": "Any Location",
+          "remote": true,
+          "url": "https://jobs.ashbyhq.com/colonist/435458c1-22bf-44cc-83a8-51ca6f5319f3",
+          "description_length": 3728
+        },
+        {
+          "title": "DevOps Engineer",
+          "location": "Any Location",
+          "remote": true,
+          "url": "https://jobs.ashbyhq.com/colonist/a8300c34-6aaf-415c-a247-5e0ce8556c5f",
+          "description_length": 4821
+        }
+      ]
+    },
+    {
+      "studio_name": "PikPok",
+      "slug": "pikpok",
+      "provider": "workable",
+      "board_key": "pikpok",
+      "careers_url": "https://pikpok.com/careers/",
+      "feed_url": "https://apply.workable.com/api/v1/widget/accounts/pikpok?details=true",
+      "evidence": "Official careers redirects https://apply.workable.com/pikpok/; valid JSON feed empty.",
+      "official_evidence": "Official careers redirects https://apply.workable.com/pikpok/; valid JSON feed empty.",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00",
+      "verification_status": "verified",
+      "fetched": 0,
+      "segment": "boutique",
+      "source_kind": "studio",
+      "ownership_note": "Established New Zealand developer; boutique discovery category, not small-team or independent ownership claim.",
+      "segment_note": "Established New Zealand developer; boutique discovery category, not small-team or independent ownership claim.",
+      "interval_hours": 168,
+      "priority": 1,
+      "titles": [],
+      "current_art_roles": [],
+      "normalized_count": 0,
+      "normalized_roles": []
+    },
+    {
+      "studio_name": "Rushdown Studios",
+      "slug": "rushdown-studios",
+      "provider": "greenhouse",
+      "board_key": "rushdownstudios",
+      "careers_url": "https://www.rushdownstudios.com/careers",
+      "feed_url": "https://boards-api.greenhouse.io/v1/boards/rushdownstudios/jobs?content=true",
+      "evidence": "Official careers HTML directly links https://job-boards.greenhouse.io/rushdownstudios.",
+      "official_evidence": "Official careers HTML directly links https://job-boards.greenhouse.io/rushdownstudios.",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00",
+      "verification_status": "verified",
+      "fetched": 4,
+      "segment": "boutique",
+      "source_kind": "studio",
+      "ownership_note": "Co-development studio; ownership not audited.",
+      "segment_note": "Co-development studio; ownership not audited.",
+      "interval_hours": 24,
+      "priority": 1,
+      "titles": [
+        "Backend Engineer (Golang)",
+        "General Interest - Other",
+        "Senior Backend Engineer (C++)",
+        "Senior DevOps Engineer"
+      ],
+      "current_art_roles": [],
+      "normalized_count": 4,
+      "normalized_roles": [
+        {
+          "title": "Backend Engineer (Golang)",
+          "location": "Saratoga Springs, New York, United States",
+          "remote": false,
+          "url": "https://job-boards.greenhouse.io/rushdownstudios/jobs/4294221009",
+          "description_length": 8210
+        },
+        {
+          "title": "General Interest - Other",
+          "location": "United States (Remote)",
+          "remote": true,
+          "url": "https://job-boards.greenhouse.io/rushdownstudios/jobs/4093292009",
+          "description_length": 3965
+        },
+        {
+          "title": "Senior Backend Engineer (C++)",
+          "location": "Saratoga Springs, New York, United States",
+          "remote": false,
+          "url": "https://job-boards.greenhouse.io/rushdownstudios/jobs/4387513009",
+          "description_length": 9677
+        },
+        {
+          "title": "Senior DevOps Engineer",
+          "location": "Saratoga Springs, New York, United States",
+          "remote": false,
+          "url": "https://job-boards.greenhouse.io/rushdownstudios/jobs/4250960009",
+          "description_length": 8943
+        }
+      ]
+    },
+    {
+      "studio_name": "Series Entertainment",
+      "slug": "series-entertainment",
+      "provider": "bamboohr",
+      "board_key": "seriesai",
+      "careers_url": "https://series.inc/careers/",
+      "feed_url": "https://seriesai.bamboohr.com/careers/list",
+      "evidence": "Official careers HTML embeds https://seriesai.bamboohr.com/js/embed.js.",
+      "official_evidence": "Official careers HTML embeds https://seriesai.bamboohr.com/js/embed.js.",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00",
+      "verification_status": "verified",
+      "fetched": 0,
+      "segment": "boutique",
+      "source_kind": "studio",
+      "ownership_note": "Developer platform/group rather than a tiny indie; ownership not audited.",
+      "segment_note": "Developer platform/group rather than a tiny indie; ownership not audited.",
+      "interval_hours": 168,
+      "priority": 1,
+      "titles": [],
+      "current_art_roles": [],
+      "normalized_count": 0,
+      "normalized_roles": []
+    },
+    {
+      "studio_name": "Nightdive Studios",
+      "slug": "nightdive-studios",
+      "provider": "greenhouse",
+      "board_key": "nightdivestudios",
+      "careers_url": "https://www.nightdivestudios.com/careers/",
+      "feed_url": "https://boards-api.greenhouse.io/v1/boards/nightdivestudios/jobs?content=true",
+      "evidence": "Official careers redirects https://job-boards.greenhouse.io/nightdivestudios; valid empty feed.",
+      "official_evidence": "Official careers redirects https://job-boards.greenhouse.io/nightdivestudios; valid empty feed.",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00",
+      "verification_status": "verified",
+      "fetched": 0,
+      "segment": "boutique",
+      "source_kind": "studio",
+      "ownership_note": "Indie-origin, Atari-owned; not currently independent.",
+      "segment_note": "Indie-origin, Atari-owned; not currently independent.",
+      "interval_hours": 168,
+      "priority": 1,
+      "titles": [],
+      "current_art_roles": [],
+      "normalized_count": 0,
+      "normalized_roles": []
+    },
+    {
+      "studio_name": "Ghost Story Games",
+      "slug": "ghost-story-games",
+      "provider": "greenhouse",
+      "board_key": "gsgcareers",
+      "careers_url": "https://www.ghoststorygames.com/careers/",
+      "feed_url": "https://boards-api.greenhouse.io/v1/boards/gsgcareers/jobs?content=true",
+      "evidence": "Official careers redirects https://job-boards.greenhouse.io/gsgcareers; descriptions explicitly identify Ghost Story Games founded by Ken Levine. Board logo does not supersede role identity.",
+      "official_evidence": "Official careers redirects https://job-boards.greenhouse.io/gsgcareers; descriptions explicitly identify Ghost Story Games founded by Ken Levine. Board logo does not supersede role identity.",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00",
+      "verification_status": "verified",
+      "fetched": 3,
+      "segment": "boutique",
+      "source_kind": "studio",
+      "ownership_note": "Take-Two-owned boutique; not currently independent.",
+      "segment_note": "Take-Two-owned boutique; not currently independent.",
+      "interval_hours": 24,
+      "priority": 1,
+      "titles": [
+        "Cinematic Technical Animator",
+        "Engineering Manager",
+        "Senior Level Artist"
+      ],
+      "current_art_roles": [
+        {
+          "title": "Senior Level Artist",
+          "location": {
+            "name": "Massachusetts, USA"
+          },
+          "locations": null,
+          "atsLocation": null,
+          "isRemote": null,
+          "telecommuting": null,
+          "url": "https://job-boards.greenhouse.io/gsgcareers/jobs/8221278"
+        }
+      ],
+      "normalized_count": 3,
+      "normalized_roles": [
+        {
+          "title": "Cinematic Technical Animator",
+          "location": "Massachusetts, USA",
+          "remote": false,
+          "url": "https://job-boards.greenhouse.io/gsgcareers/jobs/8221276",
+          "description_length": 7071
+        },
+        {
+          "title": "Engineering Manager",
+          "location": "Massachusetts, USA",
+          "remote": false,
+          "url": "https://job-boards.greenhouse.io/gsgcareers/jobs/8031365",
+          "description_length": 6986
+        },
+        {
+          "title": "Senior Level Artist",
+          "location": "Massachusetts, USA",
+          "remote": false,
+          "url": "https://job-boards.greenhouse.io/gsgcareers/jobs/8221278",
+          "description_length": 9562
+        }
+      ]
+    },
+    {
+      "studio_name": "Turn Me Up",
+      "slug": "turn-me-up",
+      "provider": "bamboohr",
+      "board_key": "turnmeup",
+      "careers_url": "https://www.turnmeup.la/careers",
+      "feed_url": "https://turnmeup.bamboohr.com/careers/list",
+      "evidence": "Official careers directly links https://turnmeup.bamboohr.com/careers.",
+      "official_evidence": "Official careers directly links https://turnmeup.bamboohr.com/careers.",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00",
+      "verification_status": "verified",
+      "fetched": 0,
+      "segment": "boutique",
+      "source_kind": "studio",
+      "ownership_note": "Co-development studio; ownership not audited.",
+      "segment_note": "Co-development studio; ownership not audited.",
+      "interval_hours": 168,
+      "priority": 1,
+      "titles": [],
+      "current_art_roles": [],
+      "normalized_count": 0,
+      "normalized_roles": []
+    },
+    {
+      "studio_name": "Panic Stations",
+      "slug": "panic-stations",
+      "provider": "workable",
+      "board_key": "panic-stations",
+      "careers_url": "https://www.panicstations.com/",
+      "feed_url": "https://apply.workable.com/api/v1/widget/accounts/panic-stations?details=true",
+      "evidence": "Official homepage directly links https://apply.workable.com/panic-stations/. Two current roles; old advertised Senior3DGeneralist no longer in feed.",
+      "official_evidence": "Official homepage directly links https://apply.workable.com/panic-stations/. Two current roles; old advertised Senior3DGeneralist no longer in feed.",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00",
+      "verification_status": "verified",
+      "fetched": 2,
+      "segment": "boutique",
+      "source_kind": "studio",
+      "ownership_note": "Skeleton Crew studio; boutique label does not assert independent ownership.",
+      "segment_note": "Skeleton Crew studio; boutique label does not assert independent ownership.",
+      "interval_hours": 24,
+      "priority": 1,
+      "titles": [
+        "Level Designer - 6 month contract",
+        "System Designer - 3 month contract"
+      ],
+      "current_art_roles": [
+        {
+          "title": "Level Designer - 6 month contract",
+          "location": null,
+          "locations": [
+            {
+              "country": "United Kingdom",
+              "countryCode": "GB",
+              "city": "",
+              "region": null,
+              "hidden": true
+            },
+            {
+              "country": "United Kingdom",
+              "countryCode": "GB",
+              "city": "London",
+              "region": "England",
+              "hidden": true
+            }
+          ],
+          "atsLocation": null,
+          "isRemote": null,
+          "telecommuting": true,
+          "url": "https://apply.workable.com/j/E89DCE8B71"
+        }
+      ],
+      "normalized_count": 2,
+      "normalized_roles": [
+        {
+          "title": "Level Designer - 6 month contract",
+          "location": "United Kingdom; London, England, United Kingdom",
+          "remote": true,
+          "url": "https://apply.workable.com/j/E89DCE8B71",
+          "description_length": 2225
+        },
+        {
+          "title": "System Designer - 3 month contract",
+          "location": "United Kingdom; London, England, United Kingdom",
+          "remote": true,
+          "url": "https://apply.workable.com/j/34B12B223D",
+          "description_length": 2096
+        }
+      ]
+    },
+    {
+      "studio_name": "Offworld Industries",
+      "slug": "offworld-industries",
+      "provider": "bamboohr",
+      "board_key": "owi",
+      "careers_url": "https://www.offworldindustries.com/careers",
+      "feed_url": "https://owi.bamboohr.com/careers/list",
+      "evidence": "Official careers directly links https://owi.bamboohr.com/careers. Explicitly game developer, distinct from OffWorld robotics and fictional offworldcareers.com.",
+      "official_evidence": "Official careers directly links https://owi.bamboohr.com/careers. Explicitly game developer, distinct from OffWorld robotics and fictional offworldcareers.com.",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00",
+      "verification_status": "verified",
+      "fetched": 8,
+      "segment": "boutique",
+      "source_kind": "studio",
+      "ownership_note": "Modding-origin game developer; current ownership not audited.",
+      "segment_note": "Modding-origin game developer; current ownership not audited.",
+      "interval_hours": 24,
+      "priority": 1,
+      "titles": [
+        "General Application",
+        "Build Engineer",
+        "DevOps & Build Engineer",
+        "3D Character Artist",
+        "Senior Game Backend Engineer",
+        "UI/UX Designer",
+        "Technical Designer",
+        "Senior Producer"
+      ],
+      "current_art_roles": [
+        {
+          "title": "3D Character Artist",
+          "location": {
+            "city": "New Westminster",
+            "state": "British Columbia"
+          },
+          "locations": null,
+          "atsLocation": {
+            "country": null,
+            "state": null,
+            "province": null,
+            "city": null
+          },
+          "isRemote": null,
+          "telecommuting": null,
+          "url": null
+        }
+      ],
+      "normalized_count": 8,
+      "normalized_roles": [
+        {
+          "title": "General Application",
+          "location": "New Westminster, British Columbia, Canada",
+          "remote": false,
+          "url": "https://owi.bamboohr.com/careers/140",
+          "description_length": 0
+        },
+        {
+          "title": "Build Engineer",
+          "location": "New Westminster, British Columbia",
+          "remote": false,
+          "url": "https://owi.bamboohr.com/careers/164",
+          "description_length": 0
+        },
+        {
+          "title": "DevOps & Build Engineer",
+          "location": "New Westminster, British Columbia",
+          "remote": false,
+          "url": "https://owi.bamboohr.com/careers/194",
+          "description_length": 0
+        },
+        {
+          "title": "3D Character Artist",
+          "location": "New Westminster, British Columbia",
+          "remote": false,
+          "url": "https://owi.bamboohr.com/careers/199",
+          "description_length": 0
+        },
+        {
+          "title": "Senior Game Backend Engineer",
+          "location": "New Westminster, British Columbia",
+          "remote": false,
+          "url": "https://owi.bamboohr.com/careers/200",
+          "description_length": 0
+        },
+        {
+          "title": "UI/UX Designer",
+          "location": "New Westminster, British Columbia",
+          "remote": false,
+          "url": "https://owi.bamboohr.com/careers/201",
+          "description_length": 0
+        },
+        {
+          "title": "Technical Designer",
+          "location": "New Westminster, British Columbia",
+          "remote": false,
+          "url": "https://owi.bamboohr.com/careers/202",
+          "description_length": 0
+        },
+        {
+          "title": "Senior Producer",
+          "location": "New Westminster, British Columbia",
+          "remote": false,
+          "url": "https://owi.bamboohr.com/careers/204",
+          "description_length": 0
+        }
+      ]
+    }
+  ],
+  "existing_source_corrections": [
+    {
+      "studio_name": "Bad Robot Games",
+      "slug": "bad-robot-games",
+      "provider": "ashby",
+      "board_key": "badrobotgames",
+      "careers_url": "https://www.badrobotgames.com/careers",
+      "feed_url": "https://api.ashbyhq.com/posting-api/job-board/badrobotgames",
+      "evidence": "Official careers directly links https://jobs.ashbyhq.com/badrobotgames; current source already catalogued; provider correction only.",
+      "official_evidence": "Official careers directly links https://jobs.ashbyhq.com/badrobotgames; current source already catalogued; provider correction only.",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00",
+      "verification_status": "verified",
+      "fetched": 0,
+      "segment": "boutique",
+      "source_kind": "studio",
+      "ownership_note": "Existing boutique record; ownership not audited.",
+      "segment_note": "Existing boutique record; ownership not audited.",
+      "interval_hours": 168,
+      "priority": 1,
+      "titles": [],
+      "current_art_roles": [],
+      "normalized_count": 0,
+      "normalized_roles": []
+    },
+    {
+      "studio_name": "Dreamhaven",
+      "slug": "dreamhaven",
+      "provider": "bamboohr",
+      "board_key": "dreamhaven",
+      "careers_url": "https://dreamhaven.com/careers",
+      "feed_url": "https://dreamhaven.bamboohr.com/careers/list",
+      "evidence": "Official careers links https://dreamhaven.bamboohr.com/jobs/view.php?id=8&source=other; empty current careers/list feed.",
+      "official_evidence": "Official careers links https://dreamhaven.bamboohr.com/jobs/view.php?id=8&source=other; empty current careers/list feed.",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00",
+      "verification_status": "verified",
+      "fetched": 0,
+      "segment": "boutique",
+      "source_kind": "group",
+      "ownership_note": "Existing developer/publisher group; retain group source kind.",
+      "segment_note": "Existing developer/publisher group; retain group source kind.",
+      "interval_hours": 168,
+      "priority": 1,
+      "titles": [],
+      "current_art_roles": [],
+      "normalized_count": 0,
+      "normalized_roles": []
+    }
+  ],
+  "unresolved": [
+    {
+      "studio_name": "Half Mermaid",
+      "careers_url": "https://www.halfmermaid.co/jobs",
+      "observed_final_url": "https://halfmermaid.co/jobs",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Fallen Tree",
+      "careers_url": "https://www.fallentreegames.com",
+      "observed_final_url": "https://fallentreegames.com/",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Sad Owl",
+      "careers_url": "https://www.sos.games",
+      "observed_final_url": "https://www.sos.games",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Panna Cotta",
+      "careers_url": "https://www.pannacottagames.com",
+      "observed_final_url": "https://www.pannacottagames.com",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Neon Badger",
+      "careers_url": "https://www.neonbadgergames.com",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 502: Bad Gateway",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Febucci",
+      "careers_url": "https://www.febucci.com",
+      "observed_final_url": "https://febucci.com/",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Out of Bounds",
+      "careers_url": "https://www.outofboundsgames.com",
+      "observed_final_url": "https://www.outofboundsgames.com",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Flatter Than Earth",
+      "careers_url": "https://www.flatterthanearth.com/join-us",
+      "observed_final_url": "https://www.flatterthanearth.com/join-us",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Rogue Snail",
+      "careers_url": "https://www.roguesnail.com/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 406: Not Acceptable",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Wildflower Interactive",
+      "careers_url": "https://wildflowergames.com/careers",
+      "observed_final_url": "https://wildflowergames.com/careers/",
+      "observed_provider_links": [
+        "https://wildflower-interactive.breezy.hr/p/48977dc29940-additional-roles/apply"
+      ],
+      "blocker": "Observed alternative provider links: https://wildflower-interactive.breezy.hr/p/48977dc29940-additional-roles/apply",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Hidden Path",
+      "careers_url": "https://www.hiddenpath.com/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Remilia",
+      "careers_url": "https://remilia.org/careers/",
+      "observed_final_url": "https://remilia.org/careers/",
+      "observed_provider_links": [
+        "https://api.ashbyhq.com",
+        "https://jobs.ashbyhq.com/remilia"
+      ],
+      "blocker": "Excluded: official Ashby linkage valid but game-development relevance not established; crypto/art ecosystem and generic roles are insufficient.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Worlds",
+      "careers_url": "https://worlds.org/careers",
+      "observed_final_url": "https://store.steampowered.com/app/2353050/WTF__Waifu_Tactical_Force/",
+      "observed_provider_links": [],
+      "blocker": "Observed redirect unrelated to active studio careers; exclude activation: https://store.steampowered.com/app/2353050/WTF__Waifu_Tactical_Force/",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Bit Reactor",
+      "careers_url": "https://www.bitreactor.com/careers",
+      "observed_final_url": "https://www.bitreactor.com/careers/",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Moonshot Games",
+      "careers_url": "https://www.moonshotgames.com/careers",
+      "observed_final_url": "https://moonshotgames.com/careers/",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Mountaintop",
+      "careers_url": "https://www.mountaintop.gg/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 410: Gone",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Wonderstorm",
+      "careers_url": "https://www.wonderstorm.net/careers",
+      "observed_final_url": "https://www.wonderstorm.net/careers",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Singularity6",
+      "careers_url": "https://www.singularity6.com/careers",
+      "observed_final_url": "https://www.singularity6.com/careers",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Playground Games",
+      "careers_url": "https://playground-games.com/careers",
+      "observed_final_url": "https://playground-games.com/careers",
+      "observed_provider_links": [
+        "https://app.jobvite.com/CompanyJobs/Careers.aspx?k=Apply"
+      ],
+      "blocker": "Observed alternative provider links: https://app.jobvite.com/CompanyJobs/Careers.aspx?k=Apply",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Owlcat",
+      "careers_url": "https://owlcat.games/careers",
+      "observed_final_url": "https://owlcat.games/careers",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Gunfire",
+      "careers_url": "https://gunfiregames.com/careers",
+      "observed_final_url": "https://gunfiregames.com/careers",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "System Era",
+      "careers_url": "https://systemera.net/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Mega Crit",
+      "careers_url": "https://www.megacrit.com/jobs",
+      "observed_final_url": "https://www.megacrit.com/jobs",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Brace Yourself",
+      "careers_url": "https://braceyourselfgames.com/careers/",
+      "observed_final_url": "https://braceyourselfgames.com/careers/",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Strange Scaffold",
+      "careers_url": "https://www.strangescaffold.com",
+      "observed_final_url": "https://www.strangescaffold.com",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Abstraction",
+      "careers_url": "https://abstraction.games/careers",
+      "observed_final_url": "https://abstraction.games/careers",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "BeamNG",
+      "careers_url": "https://www.beamng.com/game/about/jobs/",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Funcom",
+      "careers_url": "https://www.funcom.com/careers/",
+      "observed_final_url": "https://www.funcom.com/careers-in-funcom/",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Ludeon",
+      "careers_url": "https://ludeon.com/blog/jobs/",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Chucklefish",
+      "careers_url": "https://chucklefish.org/careers/",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Motion Twin",
+      "careers_url": "https://motiontwin.com",
+      "observed_final_url": "https://motiontwin.com",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Klang Games",
+      "careers_url": "https://www.klang-games.com/careers",
+      "observed_final_url": "https://www.klang-games.com/careers",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Funovus",
+      "careers_url": "https://www.funovus.com/careers",
+      "observed_final_url": "https://www.funovus.com/careers/",
+      "observed_provider_links": [],
+      "blocker": "Two official role pages successfully fetched: 3D Artist, Environment and Freelance Artist. Freelance explicitly Location: Remote; studio says US-based with team globally. Custom Gatsby roles, no supported ATS binding observed. Strong follow-up for custom adapter rather than guessing feed.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00",
+      "official_role_urls": [
+        "https://www.funovus.com/careers/EnvironmentArtist/",
+        "https://www.funovus.com/careers/FreelanceArtist/"
+      ]
+    },
+    {
+      "studio_name": "Drop Fake",
+      "careers_url": "https://dropfake.com/",
+      "observed_final_url": "https://www.dropfake.com/",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Core Loop",
+      "careers_url": "https://coreloop.gg/",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 403: Forbidden",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Greensky Games",
+      "careers_url": "https://www.greenskygames.com/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 502: Bad Gateway",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Monomi Park",
+      "careers_url": "https://www.monomipark.com/jobs.html",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "The Game Band",
+      "careers_url": "https://thegameband.com/careers",
+      "observed_final_url": "https://thegameband.com/careers",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Volley",
+      "careers_url": "https://www.volley.com/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 502: Bad Gateway",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Gym Class",
+      "careers_url": "https://www.gymclassvr.com/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Trailmix",
+      "careers_url": "https://www.trailmixgames.com/careers",
+      "observed_final_url": "https://www.trailmixgames.com/careers",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Rocket Science",
+      "careers_url": "https://www.rocketscience.gg/careers",
+      "observed_final_url": "https://www.rocketscience.gg/careers",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Brass Lion",
+      "careers_url": "https://brasslionentertainment.com/careers/",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 403: Forbidden",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Redcatpig",
+      "careers_url": "https://www.redcatpig.com/careers",
+      "observed_final_url": "https://redcatpig.com/careers/",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Redhill",
+      "careers_url": "https://www.redhillgames.com/careers/",
+      "observed_final_url": "https://www.redhillgames.com/careers/",
+      "observed_provider_links": [
+        "https://scripts.teamtailor-cdn.com/widgets/eu-pink/hiring.js"
+      ],
+      "blocker": "Observed alternative provider links: https://scripts.teamtailor-cdn.com/widgets/eu-pink/hiring.js",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Sandsoft",
+      "careers_url": "https://sandsoft.com/careers/",
+      "observed_final_url": "https://sandsoft.com/careers/",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Snowprint",
+      "careers_url": "https://snowprintstudios.com/careers/",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 406: Not Acceptable",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Tactics Studios",
+      "careers_url": "https://tacticsstudios.com/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 502: Bad Gateway",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Wonder Works",
+      "careers_url": "https://www.wonderworks.gg/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Vertigo Games",
+      "careers_url": "https://vertigo-games.com/careers/",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Outplay",
+      "careers_url": "https://outplay.com/careers/",
+      "observed_final_url": "https://outplay.com/careers/",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Lightforge",
+      "careers_url": "https://lightforge.gg/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 502: Bad Gateway",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Bungie",
+      "careers_url": "https://careers.bungie.com/",
+      "observed_final_url": "https://careers.bungie.com/",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Mighty Bear",
+      "careers_url": "https://mightybeargames.com/careers/",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Storm8",
+      "careers_url": "https://www.storm8.com/careers/",
+      "observed_final_url": "https://www.storm8.com/careers/",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Nimble Giant",
+      "careers_url": "https://www.nimblegiant.com/careers/",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Lucky VR",
+      "careers_url": "https://www.luckyvr.com/careers",
+      "observed_final_url": "https://www.luckyvr.com/careers",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "nDreams",
+      "careers_url": "https://ndreams.com/careers",
+      "observed_final_url": "https://ndreams.com/careers/",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "DreamWorld",
+      "careers_url": "https://www.playdreamworld.com/careers",
+      "observed_final_url": "https://www.playdreamworld.com/careers",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Tactile",
+      "careers_url": "https://tactilegames.com/careers/",
+      "observed_final_url": "https://tactilegames.com/careers/",
+      "observed_provider_links": [
+        "https://boards.eu.greenhouse.io/tactilegames/jobs/4319957101?gh_jid=4319957101"
+      ],
+      "blocker": "Official careers links boards.eu.greenhouse.io/tactilegames/jobs/4319957101. US boards-api endpoint returns one Open Applications row, but EU endpoint fetch failed502; do not activate as regular Greenhouse. Root to retry EU endpoint.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00",
+      "provider": "greenhouse_eu",
+      "board_key": "tactilegames",
+      "feed_url": "https://boards-api.eu.greenhouse.io/v1/boards/tactilegames/jobs?content=true"
+    },
+    {
+      "studio_name": "Wayfinder Games",
+      "careers_url": "https://wayfindergames.se/careers/",
+      "observed_final_url": "https://www.wayfinderstudios.com/careers",
+      "observed_provider_links": [
+        "https://scripts.teamtailor-cdn.com/widgets/production/jobs.js"
+      ],
+      "blocker": "Observed alternative provider links: https://scripts.teamtailor-cdn.com/widgets/production/jobs.js",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Studio Firefly",
+      "careers_url": "https://www.studiofirefly.com/careers",
+      "observed_final_url": "https://www.hugedomains.com/domain_profile.cfm?d=studiofirefly.com",
+      "observed_provider_links": [],
+      "blocker": "Observed redirect unrelated to active studio careers; exclude activation: https://www.hugedomains.com/domain_profile.cfm?d=studiofirefly.com",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Moonlit",
+      "careers_url": "https://moonlit.games/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Midsummer",
+      "careers_url": "https://midsummerstudios.com/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Nightdive",
+      "careers_url": "https://www.nightdivestudios.com/careers/",
+      "observed_final_url": "https://job-boards.greenhouse.io/nightdivestudios",
+      "observed_provider_links": [
+        "http://job-boards.greenhouse.io/nightdivestudios",
+        "https://api-geocode-earth-proxy.greenhouse.io/",
+        "https://boards.greenhouse.io",
+        "https://job-boards.cdn.greenhouse.io",
+        "https://job-boards.cdn.greenhouse.io/assets/_url_token-CkwDg_Dl.js",
+        "https://job-boards.cdn.greenhouse.io/assets/entry-CYrTbB0d.css",
+        "https://job-boards.cdn.greenhouse.io/assets/entry.client-ClhIqXFJ.js",
+        "https://job-boards.cdn.greenhouse.io/assets/manifest-dc5ec512.js",
+        "https://job-boards.cdn.greenhouse.io/assets/root-DNMzpkAo.js",
+        "https://job-boards.cdn.greenhouse.io/assets/vendor-Ann2cuF6.js",
+        "https://job-boards.cdn.greenhouse.io/assets/vendor-da5IcPkB.css",
+        "https://job-boards.greenhouse.io/nightdivestudios",
+        "https://my.greenhouse.io",
+        "https://s8-recruiting.cdn.greenhouse.io/external_greenhouse_job_boards/logos/400/501/800/original/kENekhpw.png?1735601045",
+        "https://www.greenhouse.com"
+      ],
+      "blocker": "Observed alternative provider links: http://job-boards.greenhouse.io/nightdivestudios, https://api-geocode-earth-proxy.greenhouse.io/, https://boards.greenhouse.io",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Free Range Games",
+      "careers_url": "https://www.freerangegames.com/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Counterplay",
+      "careers_url": "https://www.counterplaygames.com/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Absurd Ventures",
+      "careers_url": "https://www.absurdventures.com/careers",
+      "observed_final_url": "https://www.absurdventures.com/careers",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Playful Studios",
+      "careers_url": "https://playfulstudios.com/careers",
+      "observed_final_url": "https://playfulstudios.com/careers/",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Probability",
+      "careers_url": "https://www.probablymonsters.com/careers/",
+      "observed_final_url": "https://www.probablymonsters.com/careers/",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Unbroken",
+      "careers_url": "https://www.unbrokenstudios.com/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Liquid Swords",
+      "careers_url": "https://liquidswords.com/careers/",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Ghost Story",
+      "careers_url": "https://www.ghoststorygames.com/careers/",
+      "observed_final_url": "https://job-boards.greenhouse.io/gsgcareers",
+      "observed_provider_links": [
+        "http://job-boards.greenhouse.io/gsgcareers",
+        "https://api-geocode-earth-proxy.greenhouse.io/",
+        "https://boards.greenhouse.io",
+        "https://job-boards.cdn.greenhouse.io",
+        "https://job-boards.cdn.greenhouse.io/assets/_url_token-CkwDg_Dl.js",
+        "https://job-boards.cdn.greenhouse.io/assets/entry-CYrTbB0d.css",
+        "https://job-boards.cdn.greenhouse.io/assets/entry.client-ClhIqXFJ.js",
+        "https://job-boards.cdn.greenhouse.io/assets/manifest-dc5ec512.js",
+        "https://job-boards.cdn.greenhouse.io/assets/root-DNMzpkAo.js",
+        "https://job-boards.cdn.greenhouse.io/assets/vendor-Ann2cuF6.js",
+        "https://job-boards.cdn.greenhouse.io/assets/vendor-da5IcPkB.css",
+        "https://job-boards.greenhouse.io/gsgcareers",
+        "https://job-boards.greenhouse.io/gsgcareers/jobs/8031365",
+        "https://job-boards.greenhouse.io/gsgcareers/jobs/8221276",
+        "https://job-boards.greenhouse.io/gsgcareers/jobs/8221278",
+        "https://my.greenhouse.io",
+        "https://recruiting.cdn.greenhouse.io/external_greenhouse_job_boards/logos/000/018/538/original/CF_Primary-Logo_rgb_vector-color_64x64.png?1759231579",
+        "https://recruiting.cdn.greenhouse.io/job_board_renderer/job_board_configurations/banners/000/005/104/original/FinalBanner_1400x300.png?1759231580",
+        "https://www.greenhouse.com"
+      ],
+      "blocker": "Observed alternative provider links: http://job-boards.greenhouse.io/gsgcareers, https://api-geocode-earth-proxy.greenhouse.io/, https://boards.greenhouse.io",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Hidden Leaf",
+      "careers_url": "https://www.hiddenleafgames.com/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 502: Bad Gateway",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Firewalk",
+      "careers_url": "https://www.firewalkstudios.com/careers",
+      "observed_final_url": "https://www.playstation.com/en-us/",
+      "observed_provider_links": [],
+      "blocker": "Observed redirect unrelated to active studio careers; exclude activation: https://www.playstation.com/en-us/",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Chamo Games",
+      "careers_url": "https://www.chamogames.com/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Mainframe",
+      "careers_url": "https://themainframe.com/careers",
+      "observed_final_url": "https://themainframe.com/careers",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Resolution Games",
+      "careers_url": "https://www.resolutiongames.com/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Omeda",
+      "careers_url": "https://www.omedastudios.com/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Playstack",
+      "careers_url": "https://www.playstack.com/careers",
+      "observed_final_url": "https://www.playstack.com/careers",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Wushu",
+      "careers_url": "https://wushustudios.com/careers",
+      "observed_final_url": "https://wushustudios.com/careers/",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Ballistic Moon",
+      "careers_url": "https://ballisticmoon.com/careers",
+      "observed_final_url": "https://ballisticmoon.com/careers/",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Bulkhead",
+      "careers_url": "https://bulkhead.com/careers",
+      "observed_final_url": "https://bulkhead.com/careers/",
+      "observed_provider_links": [
+        "https://api.teamtailor.com/v1"
+      ],
+      "blocker": "Observed alternative provider links: https://api.teamtailor.com/v1",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Wicked Workshop",
+      "careers_url": "https://www.wickedworkshop.com.au/careers",
+      "observed_final_url": "https://www.wickedworkshop.com.au/careers",
+      "observed_provider_links": [
+        "https://jobs.smartrecruiters.com/KeywordsStudios/744000113045937-general-expressions-of-interest?oga=true"
+      ],
+      "blocker": "Observed alternative provider links: https://jobs.smartrecruiters.com/KeywordsStudios/744000113045937-general-expressions-of-interest?oga=true",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Emptyvessel",
+      "careers_url": "https://emptyvessel.io/careers",
+      "observed_final_url": "https://emptyvessel.io/careers",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Survios",
+      "careers_url": "https://survios.com/studio/careers/",
+      "observed_final_url": "https://survios.com/studio/careers/",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "OtherSide",
+      "careers_url": "https://www.otherside-e.com/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Pipeworks",
+      "careers_url": "https://www.pipeworks.com/careers/",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 404: Not Found",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Disbelief",
+      "careers_url": "https://www.disbelief.com/careers/",
+      "observed_final_url": "https://www.disbelief.com/careers/",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "IronOak",
+      "careers_url": "https://www.ironoakgames.com/careers",
+      "observed_final_url": null,
+      "observed_provider_links": [],
+      "blocker": "HTTP Error 406: Not Acceptable",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Ludia",
+      "careers_url": "https://www.ludia.com/careers",
+      "observed_final_url": "https://www.ludia.com/careers",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Blue Isle Studios",
+      "careers_url": "https://www.blueislestudios.ca/jobs",
+      "observed_final_url": "https://www.blueislestudios.ca/jobs",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    },
+    {
+      "studio_name": "Unbroken Studios",
+      "careers_url": "https://unbrokenstudios.com",
+      "observed_final_url": "https://unbrokenstudios.com",
+      "observed_provider_links": [],
+      "blocker": "Official page fetched but supported ATS linkage not found. Needs custom-page or deeper verification; no guessed board activation.",
+      "segment": "boutique",
+      "verification_status": "pending",
+      "verified_at": "2026-10-13T00:24:53.055303+00:00"
+    }
+  ],
+  "excluded_names": [
+    "Remilia"
+  ],
+  "validation": "All10 new and2 existing-provider-correction public payloads passed actual normalizeStudioJobs and exact providerEndpoint checks. Counts are public records, not art/eligibility matches. No runtime writes."
+}

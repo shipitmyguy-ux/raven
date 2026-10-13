@@ -1,0 +1,10 @@
+import fs from "node:fs"; import assert from "node:assert/strict";
+const src=fs.readFileSync(new URL("../supabase/functions/raven-backend-v3/index.ts",import.meta.url),"utf8");
+const db=fs.readFileSync(new URL("../supabase/functions/raven-backend-v3/db.ts",import.meta.url),"utf8");
+assert.match(src,/listTasksForHealth\(\)/);
+assert.match(src,/counts\.activeFailures\?"degraded":"healthy"/);
+assert.match(src,/BLOCKED_USER/);
+assert.match(src,/historical_legacy/);
+assert.match(db,/raven_tasks\?select=task_id,job_id,type,status,created,updated,last_error,input_json/);
+assert.doesNotMatch(src,/status:"healthy",\s*service:"raven-backend-v3"/);
+console.log("Current backend task-health contract verified.");

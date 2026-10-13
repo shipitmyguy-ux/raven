@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Raven · JobTrack Pipeline</title>
+  <script>
+    window.RAVEN_ASSET_VERSION = Date.now().toString(36);
+    document.write('<link rel="stylesheet" href="./styles.css?v=20261008-pill-icon">');
+    document.write('<link rel="stylesheet" href="./theme.css?v=' + window.RAVEN_ASSET_VERSION + '">');
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>Raven</h1>
+    <div class="topbar-actions">
+      <a href="./studio-directory.html" style="color:inherit;font-size:.83rem;white-space:nowrap;text-decoration:underline;text-underline-offset:3px">Studio Directory</a>
+      <p id="syncStatus">Loading jobs...</p>
+      <button id="optionsButton" class="options-button" type="button" aria-haspopup="dialog" aria-controls="optionsDialog" aria-label="Open options" title="Options">⚙</button>
+    </div>
+  </header>
+
+  <main>
+
+    <section class="track-tabs" id="jobs" role="tablist" aria-label="Job tracks">
+      <button type="button" class="track-tab active" data-track="Games / 3D" role="tab" aria-selected="true">Games / 3D</button>
+      <button type="button" class="track-tab" data-track="Professional" role="tab" aria-selected="false">Professional</button>
+      <button type="button" class="track-tab" data-track="Labor" role="tab" aria-selected="false">Labor</button>
+      <button type="button" class="track-tab" data-track="Wildcard" role="tab" aria-selected="false">Wildcard</button>
+    </section>
+
+    <section class="toolbar">
+      <input id="searchBox" type="search" placeholder="Search jobs" data-feature="search">
+      <select id="statusFilter" aria-label="Filter jobs" data-feature="status-filter" hidden><option value="">All statuses</option></select>
+      <button id="searchJobsButton" type="button" data-feature="job-search-trigger">Refresh all jobs</button>
+      <button id="toggleCaptureButton" type="button" aria-expanded="false" aria-controls="captureForm">Add job</button>
+      <form id="captureForm" class="url-capture" data-feature="capture-form" hidden>
+        <input id="jobUrl" name="url" type="url" autocomplete="off" placeholder="Paste job URL" required>
+        <button type="submit">Add</button>
+      </form>
+    </section>
+
+    <section class="pipeline-shell">
+      <div class="pipeline-board" id="jobList" aria-live="polite"></div>
+    </section>
+
+    <dialog id="optionsDialog" class="options-dialog">
+      <form method="dialog">
+        <header class="options-dialog-header">
+          <h2>Options</h2>
+          <button type="submit" class="options-close" aria-label="Close options" title="Close">×</button>
+        </header>
+
+        <div class="options-viewport">
+          <section id="optionsHome" class="options-screen options-home" aria-label="Option categories">
+            <button type="button" class="options-category" data-options-target="control-panel">
+              <span>Control panel</span><span aria-hidden="true">›</span>
+            </button>
+            <button type="button" class="options-category" data-options-target="analytics">
+              <span>Outcomes</span><span aria-hidden="true">›</span>
+            </button>
+            <button type="button" class="options-category" data-options-target="master-resumes">
+              <span>Master resumes</span><span aria-hidden="true">›</span>
+            </button>
+            <button type="button" class="options-category" data-options-target="application-profile"><span>Application profile</span><span aria-hidden="true">›</span></button>\n            <button type="button" class="options-category" data-options-target="answer-memory"><span>Answer memory</span><span aria-hidden="true">›</span></button>
+            <button type="button" class="options-category" data-options-target="device-backup"><span>Device backup</span><span aria-hidden="true">›</span></button>
+            <button type="button" class="options-category" data-options-target="layout">
+              <span>Layout</span><span aria-hidden="true">›</span>
+            </button>
+            <button type="button" class="options-category" data-options-target="job-info">
+              <span>Job information</span><span aria-hidden="true">›</span>
+            </button>
+            <button type="button" class="options-category" data-options-target="behavior">
+              <span>Behavior</span><span aria-hidden="true">›</span>
+            </button>
+            <button id="resetOptionsButton" class="options-reset" type="button">Reset to defaults</button>
+          </section>
+
+          <section id="optionsCard" class="options-screen options-card" aria-live="polite" hidden>
+            <header class="options-card-header">
+              <button id="optionsBackButton" class="options-back" type="button" aria-label="Back to option categories" title="Back">←</button>
+              <h3 id="optionsCardTitle">Options</h3>
+            </header>
+
+            <div class="options-card-panel control-panel-panel" data-options-panel="control-panel" hidden>
+              <p class="options-help">Live Raven backend status and bounded maintenance actions.</p>
+              <section class="control-section">
+                <h4>System</h4>
+                <div class="control-grid-metrics">
+                  <div class="control-metric"><span>Service</span><strong id="controlMetricService">raven-control-v1</strong></div>
+                  <div class="control-metric"><span>Jobs</span><strong id="controlMetricJobs">—</strong></div>
+                  <div class="control-metric"><span>Short descriptions</span><strong id="controlMetricShort">—</strong></div>
+                  <div class="control-metric"><span>Current task failures</span><strong id="controlMetricFailures">—</strong></div>
+                </div>
+              </section>
+              <section class="control-section">
+                <h4>Actions</h4>
+                <div class="control-actions-grid">
+                  <button id="ctrlRefreshAllButton" type="button">Refresh all tracks</button>
+                  <div class="control-action-row">
+                    <select id="ctrlSourceTrack"><option value="all">All tracks</option><option>Professional</option><option>Labor</option><option>Wildcard</option><option>Games / 3D</option></select>
+                    <button id="ctrlRunSourceDiagnosticsButton" type="button">Run source diagnostics</button>
+                  </div>
+                  <div class="control-action-row">
+                    <select id="ctrlRepairTrack"><option value="">All tracks</option><option>Professional</option><option>Labor</option><option>Wildcard</option><option>Games / 3D</option></select>
+                    <input id="ctrlRepairLimit" type="number" min="1" max="8" value="6" aria-label="Repair limit">
+                    <button id="ctrlRepairDescriptionsButton" type="button">Repair descriptions</button>
+                  </div>
+                  <div class="control-action-row">
+                    <select id="ctrlSmokeTrack"><option>Professional</option><option>Labor</option><option>Wildcard</option><option>Games / 3D</option></select>
+                    <button id="ctrlSmokeAtsButton" type="button">ATS smoke test</button>
+                  </div>
+                </div>
+              </section>
+              <section class="control-section">
+                <h4>Latest source diagnostics</h4>
+                <div id="controlSourceDiagnosticsList" class="control-list-compact"><p class="options-help">Open the panel to load.</p></div>
+              </section>
+              <section class="control-section">
+                <h4>Recent control events</h4>
+                <div id="controlEventsFeed" class="control-events-feed"><p class="options-help">Open the panel to load.</p></div>
+              </section>
+              <section class="control-section">
+                <h4>Policies</h4>
+                <p class="options-help">Policy/config writes and employer submission remain blocked from the browser.</p>
+                <pre id="controlPolicyView" class="control-json-view">Loading…</pre>
+              </section>
+            </div>
+
+            <div class="options-card-panel analytics-panel" data-options-panel="analytics" hidden>
+              <p class="options-help">Application outcomes calculated from Raven jobs and lifecycle activity.</p>
+              <div class="analytics-metrics">
+                <div class="control-metric"><span>Applications</span><strong id="analyticsApplications">—</strong></div>
+                <div class="control-metric"><span>Interviews</span><strong id="analyticsInterviews">—</strong></div>
+                <div class="control-metric"><span>Offers</span><strong id="analyticsOffers">—</strong></div>
+                <div class="control-metric"><span>Avg. response</span><strong id="analyticsResponse">—</strong></div>
+              </div>
+              <section class="control-section">
+                <h4>By track</h4>
+                <div id="analyticsByTrack" class="analytics-breakdown"><p class="options-help">Open the panel to load.</p></div>
+              </section>
+              <section class="control-section">
+                <h4>By source</h4>
+                <div id="analyticsBySource" class="analytics-breakdown"><p class="options-help">Open the panel to load.</p></div>
+              </section>
+              <section class="control-section">
+                <h4>By submitted resume</h4>
+                <div id="analyticsByResume" class="analytics-breakdown"><p class="options-help">Open the panel to load.</p></div>
+              </section>
+            </div>
+
+            <div class="options-card-panel master-resumes-panel" data-options-panel="master-resumes" hidden>
+              <p class="options-help">Add one or more source resumes, then assign each to the tracks it should drive.</p>
+              <div id="masterResumeList" class="master-resume-list"></div>
+              <button id="addMasterResumeButton" class="master-resume-add" type="button">+ Add master resume</button>
+              <input id="masterResumeQuickFile" type="file" accept=".pdf,.doc,.docx,.txt,.rtf" hidden>
+
+              <section id="masterResumeEditor" class="master-resume-editor" hidden>
+                <label class="master-resume-field">
+                  <span>Name</span>
+                  <input id="masterResumeName" type="text" placeholder="e.g. 3D master">
+                </label>
+
+                <label class="master-resume-field">
+                  <span>Source</span>
+                  <select id="masterResumeSource">
+                    <option value="drive">Google Drive</option>
+                    <option value="local">Local file</option>
+                  </select>
+                </label>
+
+                <label id="masterResumeDriveRow" class="master-resume-field">
+                  <span>Google Drive URL</span>
+                  <input id="masterResumeDriveUrl" type="url" placeholder="https://drive.google.com/...">
+                  <small>Google Doc or PDF share link. The file must be viewable by anyone with the link; keep private files as Local file instead.</small>
+                </label>
+
+                <label id="masterResumeLocalRow" class="master-resume-field" hidden>
+                  <span>Local file</span>
+                  <input id="masterResumeFile" type="file" accept=".pdf,.doc,.docx,.txt,.rtf">
+                  <small id="masterResumeLocalStatus">Stored on this device.</small>
+                </label>
+
+                <fieldset class="master-resume-tracks">
+                  <legend>Use for</legend>
+                  <label><input type="checkbox" value="Games / 3D"> Games / 3D</label>
+                  <label><input type="checkbox" value="Professional"> Professional</label>
+                  <label><input type="checkbox" value="Labor"> Labor</label>
+                  <label><input type="checkbox" value="Wildcard"> Wildcard</label>
+                </fieldset>
+
+                <div class="master-resume-actions">
+                  <button id="saveMasterResumeButton" type="button">Save</button>
+                  <button id="cancelMasterResumeButton" type="button">Cancel</button>
+                </div>
+              </section>
+            </div>
+
+            <div class="options-card-panel" data-options-panel="application-profile" hidden>
+              <p class="options-help">Stored on this device and used only to fill known contact fields. Raven never submits automatically.</p>
+              <label class="master-resume-field"><span>First name</span><input data-profile-key="firstName" type="text"></label>
+              <label class="master-resume-field"><span>Last name</span><input data-profile-key="lastName" type="text"></label>
+              <label class="master-resume-field"><span>Email</span><input data-profile-key="email" type="email"></label>
+              <label class="master-resume-field"><span>Phone</span><input data-profile-key="phone" type="tel"></label>
+              <label class="master-resume-field"><span>Address line 1</span><input data-profile-key="address1" type="text" autocomplete="address-line1"></label>
+              <label class="master-resume-field"><span>Address line 2</span><input data-profile-key="address2" type="text" autocomplete="address-line2"></label>
+              <label class="master-resume-field"><span>City</span><input data-profile-key="city" type="text" autocomplete="address-level2"></label>
+              <label class="master-resume-field"><span>State / province</span><input data-profile-key="region" type="text" autocomplete="address-level1"></label>
+              <label class="master-resume-field"><span>ZIP / postal code</span><input data-profile-key="postalCode" type="text" autocomplete="postal-code"></label>
+              <label class="master-resume-field"><span>Country</span><input data-profile-key="country" type="text" autocomplete="country-name"></label>
+              <label class="master-resume-field"><span>LinkedIn</span><input data-profile-key="linkedin" type="url"></label>
+              <label class="master-resume-field"><span>Portfolio / website</span><input data-profile-key="portfolio" type="url"></label>
+              <button id="saveApplicationProfile" type="button">Save application profile</button>
+            </div>
+
+            <div class="options-card-panel answer-memory-panel" data-options-panel="answer-memory" hidden>
+              <p class="options-help">Save reusable, non-sensitive answers Raven can fill when the question is recognized. Legal, demographic, salary, sponsorship, CAPTCHA, and assessment answers are intentionally excluded.</p>
+              <div id="answerMemoryList" class="answer-memory-list"></div>
+              <section class="answer-memory-editor">
+                <label class="master-resume-field"><span>Question</span><input id="answerMemoryQuestion" type="text" placeholder="e.g. Are you willing to travel occasionally?"></label>
+                <label class="master-resume-field"><span>Answer</span><textarea id="answerMemoryAnswer" rows="3" placeholder="Reusable answer"></textarea></label>
+                <div class="master-resume-actions">
+                  <button id="saveAnswerMemory" type="button">Save answer</button>
+                  <button id="cancelAnswerMemory" type="button">Clear</button>
+                </div>
+              </section>
+            </div>
+            <div class="options-card-panel" data-options-panel="device-backup" hidden>
+              <p class="options-help">Export device-local Raven data, including local master-resume files, Application Profile, Answer Memory, approvals, and settings. The backup can contain personal information; store it securely.</p>
+              <div class="master-resume-actions">
+                <button id="exportDeviceBackup" type="button">Export device backup</button>
+                <button id="importDeviceBackup" type="button">Restore device backup</button>
+                <input id="deviceBackupFile" type="file" accept=".json,application/json" hidden>
+              </div>
+            </div>
+
+            <div class="options-card-panel" data-options-panel="layout" hidden>
+              <label class="option-row">
+                <span>Card density</span>
+                <select data-setting-key="card-density">
+                  <option value="compact">Compact</option>
+                  <option value="comfortable">Comfortable</option>
+                </select>
+              </label>
+              <label class="option-row">
+                <span>Sidebar width</span>
+                <select data-setting-key="sidebar-width">
+                  <option value="300px">Narrow</option>
+                  <option value="360px">Default</option>
+                  <option value="420px">Wide</option>
+                </select>
+              </label>
+              <label class="option-row">
+                <span>Detail width</span>
+                <select data-setting-key="detail-panel-width">
+                  <option value="0.8fr">Narrow</option>
+                  <option value="1fr">Default</option>
+                  <option value="1.25fr">Wide</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="options-card-panel" data-options-panel="job-info" hidden>
+              <label class="option-toggle"><input type="checkbox" data-setting-key="show-salary"><span>Show salary</span></label>
+              <label class="option-toggle"><input type="checkbox" data-setting-key="show-remote"><span>Show remote status</span></label>
+              <label class="option-toggle"><input type="checkbox" data-setting-key="show-source"><span>Show source</span></label>
+              <label class="option-toggle"><input type="checkbox" data-setting-key="show-notes"><span>Show notes</span></label>
+              <label class="option-toggle"><input type="checkbox" data-setting-key="show-sync-status"><span>Show sync status</span></label>
+            </div>
+
+            <div class="options-card-panel" data-options-panel="behavior" hidden>
+              <p class="options-help"><strong>Job location — all tabs:</strong> Remote jobs anywhere; in-person and hybrid jobs only in Fort Collins and nearby northern Colorado communities. Jobs without a confirmed location are hidden.</p>
+              <label class="option-row">
+                <span>Default sort</span>
+                <select data-setting-key="default-sort">
+                  <option value="added-desc">Newest first</option>
+                  <option value="added-asc">Oldest first</option>
+                  <option value="title-asc">Title A–Z</option>
+                  <option value="company-asc">Company A–Z</option>
+                </select>
+              </label>
+            </div>
+          </section>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="documentReviewDialog" class="document-review-dialog">
+      <form id="documentReviewForm" method="dialog">
+        <header><div><h2 id="reviewTitle">Review document</h2><p id="reviewContext"></p></div><button type="button" data-review-close aria-label="Close and save" title="Close and save">×</button></header>
+        <div class="document-preview"><iframe id="reviewFrame" title="Generated document preview"></iframe><a id="reviewOpenFile" href="#" target="_blank" rel="noopener">Open file in a new tab</a></div>
+        <label class="review-prompt"><span>Ask AI for a change</span><textarea id="reviewInstructions" rows="3" placeholder="Optional: Make the summary shorter, emphasize specific experience, or adjust the tone."></textarea></label>
+        <p id="reviewFeedback" role="status" aria-live="polite"></p>
+        <footer><button type="button" data-review-close>Close</button><button type="button" id="reviewDownloadWord">Download Word</button><button type="button" id="reviewDownloadPdf">Save as PDF</button><button type="button" id="reviewApprove">Approve document</button><button type="submit" id="reviewSubmit">Apply requested changes</button></footer>
+      </form>
+    </dialog>
+
+    <dialog id="chatGptImportDialog" class="chatgpt-import-dialog">
+      <form id="chatGptImportForm" method="dialog">
+        <header>
+          <div>
+            <h2 id="chatGptImportTitle">Import ChatGPT result</h2>
+            <p id="chatGptImportContext"></p>
+          </div>
+          <button type="button" data-chatgpt-import-close aria-label="Close import" title="Close">×</button>
+        </header>
+        <label class="chatgpt-import-field">
+          <span>JSON file (imports automatically after selection)</span>
+          <input id="chatGptImportFile" type="file" accept=".json,application/json">
+          <span>Or paste a ChatGPT response</span>
+          <textarea id="chatGptImportText" rows="18" spellcheck="false" placeholder="Paste the complete Raven JSON response from ChatGPT here."></textarea>
+        </label>
+        <p id="chatGptImportFeedback" role="status" aria-live="polite">Raven will validate every claim against your verified background before saving.</p>
+        <footer>
+          <button type="button" data-chatgpt-import-close>Cancel</button>
+          <button type="submit" id="chatGptImportSubmit">Validate &amp; import</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <div id="ravenExtensionBridge" hidden></div>
+    <footer class="app-footer">
+      <a href="./extension/raven-capture-extension.zip" id="extensionLink" data-feature="extension-download">Chrome extension</a>
+    </footer>
+  </main>
+
+  <script src="./snapshot.js?v=20260918-0518"></script>
+  <script src="./config.js?v=8"></script>
+  <script src="./supabase/functions/_shared/track-filter.js?v=5"></script>
+  <script src="./raven-core.js?v=5"></script>
+  <script src="./raven-api.js?v=10"></script>
+  <script src="./app.js?v=84"></script>
+</body>
+</html>

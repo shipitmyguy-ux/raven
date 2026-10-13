@@ -1,0 +1,15 @@
+{
+  "name": "raven-regression",
+  "private": true,
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:smoke": "playwright test e2e/production-smoke.spec.mjs",
+    "backup:raven": "node scripts/export-raven.mjs",
+    "verify:backup": "node scripts/verify-raven-backup.mjs",
+    "restore:raven": "node scripts/restore-raven.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "jose": "6.2.12"
+  }
+}

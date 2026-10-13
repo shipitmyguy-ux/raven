@@ -1,0 +1,205 @@
+{
+  "verified_sources": [
+    {
+      "studio_name": "Unknown Worlds",
+      "slug": "unknown-worlds",
+      "provider": "greenhouse",
+      "board_key": "unknownworlds",
+      "careers_url": "https://unknownworlds.com/en/careers",
+      "source_kind": "studio",
+      "segment": "indie_origin",
+      "segment_note": "Current feed identifies KRAFTON Americas; do not label currently independent.",
+      "interval_hours": 24
+    },
+    {
+      "studio_name": "Velan Studios",
+      "slug": "velan-studios",
+      "provider": "workable",
+      "board_key": "velanstudios",
+      "careers_url": "https://www.velanstudios.com/careers",
+      "source_kind": "studio",
+      "segment": "boutique",
+      "segment_note": "Independent studio candidate; current ownership has not been separately audited in this batch.",
+      "interval_hours": 24
+    },
+    {
+      "studio_name": "Homa",
+      "slug": "homa",
+      "provider": "workable",
+      "board_key": "homa-games",
+      "careers_url": "https://www.homagames.com/careers",
+      "source_kind": "studio",
+      "segment": "boutique",
+      "segment_note": "Mobile developer/publisher platform rather than a small independent studio; retain this distinction.",
+      "interval_hours": 24
+    },
+    {
+      "studio_name": "Heart Machine",
+      "slug": "heart-machine",
+      "provider": "smartrecruiters",
+      "board_key": "HeartMachine",
+      "careers_url": "https://www.heartmachine.com/careers",
+      "source_kind": "studio",
+      "segment": "boutique",
+      "segment_note": "Official independent statement where segment indie; boutique is discovery segment only, ownership not independently audited.",
+      "interval_hours": 168
+    },
+    {
+      "studio_name": "Bad Robot Games",
+      "slug": "bad-robot-games",
+      "provider": "ashby",
+      "board_key": "badrobotgames",
+      "careers_url": "https://www.badrobotgames.com/careers",
+      "source_kind": "studio",
+      "segment": "boutique",
+      "segment_note": "Official independent statement where segment indie; boutique is discovery segment only, ownership not independently audited.",
+      "interval_hours": 168
+    },
+    {
+      "studio_name": "Second Dinner",
+      "slug": "second-dinner",
+      "provider": "ashby",
+      "board_key": "SecondDinner",
+      "careers_url": "https://seconddinner.com/careers/",
+      "source_kind": "studio",
+      "segment": "indie",
+      "segment_note": "Official independent statement where segment indie; boutique is discovery segment only, ownership not independently audited.",
+      "interval_hours": 24
+    },
+    {
+      "studio_name": "Red Barrels",
+      "slug": "red-barrels",
+      "provider": "bamboohr",
+      "board_key": "redbarrels",
+      "careers_url": "https://redbarrelsgames.com/careers/job-listing/",
+      "source_kind": "studio",
+      "segment": "boutique",
+      "segment_note": "Official independent statement where segment indie; boutique is discovery segment only, ownership not independently audited.",
+      "interval_hours": 24
+    },
+    {
+      "studio_name": "Dreamhaven",
+      "slug": "dreamhaven",
+      "provider": "bamboohr",
+      "board_key": "dreamhaven",
+      "careers_url": "https://www.dreamhaven.com/careers",
+      "source_kind": "studio",
+      "segment": "boutique",
+      "segment_note": "Official independent statement where segment indie; boutique is discovery segment only, ownership not independently audited.",
+      "interval_hours": 168
+    },
+    {
+      "studio_name": "Torn Banner Studios",
+      "slug": "torn-banner-studios",
+      "provider": "bamboohr",
+      "board_key": "tornbanner",
+      "careers_url": "https://tornbanner.com/careers/",
+      "source_kind": "studio",
+      "segment": "indie",
+      "segment_note": "Official independent statement where segment indie; boutique is discovery segment only, ownership not independently audited.",
+      "interval_hours": 24
+    },
+    {
+      "studio_name": "Big Viking Games",
+      "slug": "big-viking-games",
+      "provider": "workable",
+      "board_key": "big-viking-games-3",
+      "careers_url": "https://www.bigvikinggames.com/careers/",
+      "source_kind": "studio",
+      "segment": "indie",
+      "segment_note": "Official independent statement where segment indie; boutique is discovery segment only, ownership not independently audited.",
+      "interval_hours": 24
+    },
+    {
+      "studio_name": "Bonfire Studios",
+      "slug": "bonfire-studios",
+      "provider": "greenhouse",
+      "board_key": "bonfirestudiosinc",
+      "careers_url": "https://bonfirestudios.com/work-with-us/index.html",
+      "source_kind": "studio",
+      "segment": "boutique",
+      "segment_note": "Official independent statement where segment indie; boutique is discovery segment only, ownership not independently audited.",
+      "interval_hours": 24
+    },
+    {
+      "studio_name": "Believer",
+      "slug": "believer",
+      "provider": "ashby",
+      "board_key": "believer",
+      "careers_url": "https://believer.gg/jobs/",
+      "source_kind": "studio",
+      "segment": "boutique",
+      "segment_note": "Official independent statement where segment indie; boutique is discovery segment only, ownership not independently audited.",
+      "interval_hours": 24
+    },
+    {
+      "studio_name": "Gardens Interactive",
+      "slug": "gardens-interactive",
+      "provider": "ashby",
+      "board_key": "gardens",
+      "careers_url": "https://gardens.dev/careers",
+      "source_kind": "studio",
+      "segment": "boutique",
+      "segment_note": "Official independent statement where segment indie; boutique is discovery segment only, ownership not independently audited.",
+      "interval_hours": 24
+    },
+    {
+      "studio_name": "Embark Studios",
+      "slug": "embark-studios",
+      "provider": "teamtailor",
+      "board_key": "embark-studios",
+      "careers_url": "https://careers.embark-studios.com/jobs",
+      "source_kind": "studio",
+      "segment": "indie_origin",
+      "segment_note": "Indie-origin developer or group; current independence not asserted.",
+      "interval_hours": 24
+    },
+    {
+      "studio_name": "Coffee Stain",
+      "slug": "coffee-stain",
+      "provider": "teamtailor",
+      "board_key": "coffee-stain",
+      "careers_url": "https://jobs.coffeestain.com/jobs",
+      "source_kind": "job_board",
+      "segment": "indie_origin",
+      "segment_note": "Indie-origin developer or group; current independence not asserted.",
+      "interval_hours": 24
+    },
+    {
+      "studio_name": "Ghost Ship Games",
+      "slug": "ghost-ship-games",
+      "provider": "teamtailor",
+      "board_key": "ghost-ship-games",
+      "careers_url": "https://jobs.ghostship.dk/jobs",
+      "source_kind": "studio",
+      "segment": "indie_origin",
+      "segment_note": "Indie-origin developer or group; current independence not asserted.",
+      "interval_hours": 168
+    },
+    {
+      "studio_name": "IO Interactive",
+      "slug": "io-interactive",
+      "provider": "teamtailor",
+      "board_key": "io-interactive",
+      "careers_url": "https://apply.ioi.dk/jobs",
+      "source_kind": "studio",
+      "segment": "boutique",
+      "segment_note": "Indie-origin developer or group; current independence not asserted.",
+      "interval_hours": 24
+    },
+    {
+      "studio_name": "Work With Indies",
+      "slug": "work-with-indies",
+      "provider": "workwithindies",
+      "board_key": "workwithindies",
+      "careers_url": "https://www.workwithindies.com/",
+      "source_kind": "job_board",
+      "segment": "indie",
+      "segment_note": "Indie hiring board; each vacancy retains its actual employer.",
+      "interval_hours": 6
+    }
+  ],
+  "verified_count": 18,
+  "pending_candidates": 56,
+  "catalog_rows": 74
+}

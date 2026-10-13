@@ -1,0 +1,31 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+const read=p=>fs.readFileSync(new URL("../"+p,import.meta.url),"utf8");
+const router=read("supabase/functions/raven-generate-v1/index.ts");
+const handler=read("supabase/functions/_shared/document-handler.mjs");
+const writer=read("supabase/functions/_shared/document-writer.mjs");
+const llmRouter=read("supabase/functions/_shared/llm-router.mjs");
+for(const [slug,kind] of [["raven-generate-v2","resume"],["raven-cover-v2","coverLetter"]]){
+ assert.ok(router.includes('"'+slug+'"'));
+ const entry=read("supabase/functions/"+slug+"/index.ts");
+ assert.ok(entry.includes('createDocumentHandler("'+kind+'"'));
+}
+assert.match(router,/retryableBareFailure/);
+assert.match(router,/instructions:body\.instructions/);
+assert.match(router,/currentDocument:body\.currentDocument/,"Revisions must include the draft.");
+assert.match(handler,/raven_canonical_profiles/);
+assert.match(handler,/x-raven-client/);
+assert.doesNotMatch(handler,/\|\|req\.method===["']GET["']/);
+assert.match(handler,/createLLMCompletion/);
+assert.match(llmRouter,/RAVEN_GEMINI_API_KEY/);
+assert.match(llmRouter,/generativelanguage\.googleapis\.com/);
+assert.match(llmRouter,/RAVEN_CEREBRAS_API_KEY/);
+assert.match(llmRouter,/RAVEN_GROQ_API_KEY/);
+assert.match(llmRouter,/RAVEN_GEMINI_API_KEY/);
+assert.match(llmRouter,/api\.cerebras\.ai\/v1/);
+assert.match(llmRouter,/api\.groq\.com\/openai\/v1/);
+assert.match(llmRouter,/generativelanguage\.googleapis\.com/);
+assert.match(handler,/name==="RAVEN_LLM_PROVIDER_ORDER"\?"cloudflare,openrouter"/);
+assert.match(llmRouter,/max_price:\{prompt:0,completion:0\}/,"Every OpenRouter request must cap cost at zero.");
+assert.doesNotMatch(writer,/api\.cerebras\.ai|api\.groq\.com|generativelanguage\.googleapis\.com/,"Grounded writer must remain provider neutral.");
+console.log("Shared document route contract passed");

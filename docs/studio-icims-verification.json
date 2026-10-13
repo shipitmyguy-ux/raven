@@ -1,0 +1,72 @@
+{
+  "verified_at": "2026-10-12T23:43:00Z",
+  "adapter": "icims",
+  "board_key": "zenimax",
+  "official_linkage": {
+    "studio_home": "https://www.machinegames.com/",
+    "linked_careers_url": "https://careers-zenimax.icims.com/jobs/search?ss=1&searchLocation=13555-13559-Uppsala",
+    "icims_search_behavior": "HTTP 200 shell with window.top.location.href pointing to https://jobs.zenimax.com/jobs",
+    "directory_url": "https://jobs.zenimax.com/jobs"
+  },
+  "observed_taxonomy": {
+    "company_field": "job-filter raw-data.jobs[].location.name (employer name, not geographic formatted_name)",
+    "values": [
+      "MachineGames ",
+      "ZeniMax Media, Inc."
+    ],
+    "department_values": [
+      "Art",
+      "Facilities"
+    ]
+  },
+  "verified_source": {
+    "studio_name": "MachineGames",
+    "provider": "icims",
+    "board_key": "zenimax",
+    "job_scope": {
+      "field": "company",
+      "values": [
+        "MachineGames"
+      ]
+    }
+  },
+  "live_adapter_result": {
+    "directory_http_status": 200,
+    "detail_http_status": 200,
+    "fetched": 2,
+    "scoped_jobs": 1,
+    "detail_completed": 1,
+    "snippet_length": 3450,
+    "job_url": "https://careers-zenimax.icims.com/jobs/3477/senior-environment-artist/job",
+    "title": "Senior Environment Artist",
+    "location": "Uppsala, SE",
+    "remote": false
+  },
+  "bounds": {
+    "list_pages": 1,
+    "max_jobs": 1000,
+    "max_bytes_per_response": 4000000,
+    "max_detail_requests": 12,
+    "detail_concurrency": 2,
+    "deadline_ms_default": 40000,
+    "transport_timeout_ms_required": 6000,
+    "redirect_policy_required": "error"
+  },
+  "transport_contract": "Root fetchStudioText must reject redirects, cap bytes while streaming, timeout6s. Adapter validates all destination URLs and rejects oversized text before parsing. No anti-bot bypass attempted.",
+  "limitations": [
+    "Only MachineGames exact employer taxonomy verified live. Do not activate id Software, Bethesda Game Studios, or Arkane company scopes until official metadata confirms exact labels.",
+    "iCIMS structured data reports publisher hiringOrganization ZeniMax Media Inc.; it is intentionally ignored for per-studio attribution.",
+    "DatePosted comes from provider schema.org; no inference or correction applied.",
+    "Live read was independent adapter fetch; not proof of deployment, database persistence, or role eligibility under Raven location policy."
+  ],
+  "unit_tests": {
+    "command": "node --test tests/studio-icims.test.mjs",
+    "passed": 9,
+    "failed": 0
+  },
+  "integration_contract": {
+    "detailAllowed": "Art-title candidates only; evaluate location after details may reveal TELECOMMUTE. Falls back to jobAllowed for backward compatibility.",
+    "prepareDetails": "Optional async callback on candidates before detail reads; populate fresh cached snippet, remote and timestamp. Only missing snippets fetched.",
+    "detail_cursor_next": "Advance source.detail_cursor by attempted uncached detail count modulo pending count, max12 each scan."
+  }
+}

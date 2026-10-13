@@ -1,0 +1,10 @@
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.*
+secrets.*
+private/
+node_modules/
+test-results/
+playwright-report/

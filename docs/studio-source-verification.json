@@ -1,0 +1,277 @@
+{
+  "verified_at": "2026-10-12T20:42:14.774386+00:00",
+  "method": "Read official public careers HTML/job detail HTML with standard browser User-Agent; read public ATS JSON and count returned postings. Counts represent public fetched postings, not eligible Raven jobs. No guessed boards activated.",
+  "verified_sources": [
+    {
+      "provider": "greenhouse",
+      "board_key": "naughtydog",
+      "api_url": "https://boards-api.greenhouse.io/v1/boards/naughtydog/jobs?content=true",
+      "http_status": 200,
+      "fetched": 15,
+      "sample_urls": [
+        "https://job-boards.greenhouse.io/naughtydog/jobs/6105185004",
+        "https://job-boards.greenhouse.io/naughtydog/jobs/6116051004",
+        "https://job-boards.greenhouse.io/naughtydog/jobs/6116053004"
+      ],
+      "sample_titles": [
+        "Associate Game Designer, Technical",
+        "Game Designer, Level (Contingent)",
+        "Game Designer, Technical (Contingent)"
+      ],
+      "studio_name": "Naughty Dog",
+      "slug": "naughty-dog",
+      "careers_url": "https://www.naughtydog.com/openings",
+      "official_page_http_status": 200,
+      "verification": "https://www.naughtydog.com/greenhouse/job/6108251004?gh_jid=6108251004 embeds https://boards.greenhouse.io/embed/job_board/js?for=naughtydog",
+      "enabled": true,
+      "priority": 2,
+      "interval_hours": 24
+    },
+    {
+      "provider": "greenhouse",
+      "board_key": "digitalextremes",
+      "api_url": "https://boards-api.greenhouse.io/v1/boards/digitalextremes/jobs?content=true",
+      "http_status": 200,
+      "fetched": 8,
+      "sample_urls": [
+        "https://job-boards.greenhouse.io/digitalextremes/jobs/5190928007",
+        "https://job-boards.greenhouse.io/digitalextremes/jobs/5227518007",
+        "https://job-boards.greenhouse.io/digitalextremes/jobs/5242174007"
+      ],
+      "sample_titles": [
+        "Associate Influencer Marketing Manager",
+        "Concept Artist",
+        "Customer Support Specialist, Japanese"
+      ],
+      "studio_name": "Digital Extremes",
+      "slug": "digital-extremes",
+      "careers_url": "https://www.digitalextremes.com/careers/list",
+      "official_page_http_status": 200,
+      "verification": "https://www.digitalextremes.com/careers/position/5190928007 links https://job-boards.greenhouse.io/digitalextremes/jobs/5190928007#app; all eight official job IDs match provider",
+      "enabled": true,
+      "priority": 2,
+      "interval_hours": 24
+    },
+    {
+      "provider": "greenhouse",
+      "board_key": "housemarque",
+      "api_url": "https://boards-api.greenhouse.io/v1/boards/housemarque/jobs?content=true",
+      "http_status": 200,
+      "fetched": 5,
+      "sample_urls": [
+        "https://job-boards.greenhouse.io/housemarque/jobs/6191607004",
+        "https://job-boards.greenhouse.io/housemarque/jobs/6191620004",
+        "https://job-boards.greenhouse.io/housemarque/jobs/5528948004"
+      ],
+      "sample_titles": [
+        "Associate Development Director",
+        "Head of Design",
+        "Lead Lighting Artist"
+      ],
+      "studio_name": "Housemarque",
+      "slug": "housemarque",
+      "careers_url": "https://housemarque.com/careers",
+      "official_page_http_status": 200,
+      "verification": "Official careers button links https://boards.greenhouse.io/housemarque",
+      "enabled": true,
+      "priority": 2,
+      "interval_hours": 24
+    },
+    {
+      "provider": "lever",
+      "board_key": "blackbirdinteractive",
+      "api_url": "https://api.lever.co/v0/postings/blackbirdinteractive?mode=json",
+      "http_status": 200,
+      "fetched": 4,
+      "sample_urls": [
+        "https://jobs.lever.co/blackbirdinteractive/98050e1b-0adb-4842-96e9-a6b9c987b799",
+        "https://jobs.lever.co/blackbirdinteractive/498bb3c2-b23f-4aed-8fdd-ee80649e381d",
+        "https://jobs.lever.co/blackbirdinteractive/fc427213-d70e-4429-9b73-7be6ae4c3e6e"
+      ],
+      "sample_titles": [
+        "Environment and Prop Artist (3-month contract)",
+        "General Application",
+        "Senior Technical Artist (7-month contract)"
+      ],
+      "studio_name": "Blackbird Interactive",
+      "slug": "blackbird-interactive",
+      "careers_url": "https://www.blackbirdinteractive.com/careers",
+      "official_page_http_status": 200,
+      "verification": "Official careers inline script fetches https://api.lever.co/v0/postings/blackbirdinteractive?mode=json",
+      "enabled": true,
+      "priority": 2,
+      "interval_hours": 24
+    },
+    {
+      "studio_name": "Crytek",
+      "slug": "crytek",
+      "provider": "lever",
+      "board_key": "crytek",
+      "careers_url": "https://www.crytek.com/career",
+      "official_page_http_status": 200,
+      "verification": "Official page has seven jobs with jobs.lever.co/crytek/<id>/apply links",
+      "enabled": true,
+      "priority": 2,
+      "interval_hours": 24,
+      "api_url": "https://api.lever.co/v0/postings/crytek?mode=json",
+      "http_status": 200,
+      "fetched": 7,
+      "sample_urls": [
+        "https://jobs.lever.co/crytek/7ce0000a-b794-492e-a387-f5838ba5af6d",
+        "https://jobs.lever.co/crytek/555f1234-84d1-46a9-a71c-1d1db8d7df0d",
+        "https://jobs.lever.co/crytek/f5364e79-e4f7-46e3-b809-d0a21e893d8f"
+      ]
+    },
+    {
+      "studio_name": "Striking Distance Studios",
+      "slug": "striking-distance-studios",
+      "provider": "greenhouse",
+      "board_key": "pubgsanramon",
+      "careers_url": "https://sds.com/en/careers",
+      "official_page_http_status": 200,
+      "verification": "Official careers page links https://boards.greenhouse.io/pubgsanramon; API returns an empty jobs array",
+      "enabled": true,
+      "priority": 2,
+      "interval_hours": 24,
+      "api_url": "https://boards-api.greenhouse.io/v1/boards/pubgsanramon/jobs?content=true",
+      "http_status": 200,
+      "fetched": 0,
+      "sample_urls": []
+    },
+    {
+      "studio_name": "People Can Fly",
+      "slug": "people-can-fly",
+      "provider": "smartrecruiters",
+      "board_key": "PeopleCanFly",
+      "careers_url": "https://peoplecanfly.com/career/",
+      "official_page_http_status": 200,
+      "verification": "Official careers page links https://careers.smartrecruiters.com/PeopleCanFly and matching job IDs",
+      "enabled": true,
+      "priority": 2,
+      "interval_hours": 24,
+      "api_url": "https://api.smartrecruiters.com/v1/companies/PeopleCanFly/postings?limit=100&offset=0",
+      "http_status": 200,
+      "fetched": 10,
+      "total": 10,
+      "sample_ids": [
+        "744000153500485",
+        "744000151377560",
+        "744000149844299"
+      ]
+    },
+    {
+      "studio_name": "CD Projekt Red",
+      "slug": "cd-projekt-red",
+      "provider": "smartrecruiters",
+      "board_key": "CDPROJEKTRED",
+      "careers_url": "https://www.cdprojektred.com/en/jobs",
+      "official_page_http_status": 200,
+      "verification": "Official jobs page embeds SmartRecruiters apply URLs on jobs.smartrecruiters.com/CDPROJEKTRED, including 744000071781996 and 744000139197469.",
+      "enabled": true,
+      "priority": 2,
+      "interval_hours": 24,
+      "api_url": "https://api.smartrecruiters.com/v1/companies/CDPROJEKTRED/postings?limit=100&offset=0",
+      "http_status": 200,
+      "fetched": 47,
+      "total": 47
+    },
+    {
+      "studio_name": "Rebellion",
+      "slug": "rebellion",
+      "provider": "workable",
+      "board_key": "rebellion",
+      "careers_url": "https://careers.rebellion.com/",
+      "official_page_http_status": 200,
+      "verification": "Official rebellion.com home links careers.rebellion.com; rebellion.com/jobs/ redirects there. Official careers HTML loads /build/assets/app-Dkfjxyeq.js, whose vacancies buttons link https://apply.workable.com/rebellion/.",
+      "evidence_url": "https://careers.rebellion.com/build/assets/app-Dkfjxyeq.js",
+      "enabled": true,
+      "priority": 2,
+      "interval_hours": 24,
+      "api_url": "https://apply.workable.com/api/v1/widget/accounts/rebellion",
+      "http_status": 200,
+      "fetched": 38,
+      "unique_canonical_jobs": 18,
+      "sample_urls": [
+        "https://apply.workable.com/j/16E47C04EE",
+        "https://apply.workable.com/j/208EE0B93D"
+      ],
+      "checked_at": "2026-10-12T20:44:21.355994+00:00",
+      "notes": "Multi-location widget rows repeat canonical posting URLs. Deduplicate by canonical job URL; 38 raw rows are 18 unique jobs."
+    }
+  ],
+  "pending_evidence": [
+    {
+      "studio_name": "Epic Games",
+      "provider": "greenhouse",
+      "board_key": "epicgames",
+      "fetched": 141,
+      "reason": "API canonical job URLs belong to epicgames.com, official landing uses internal Greenhouse service. Direct board linkage needs additional official evidence; do not automatically enable."
+    },
+    {
+      "studio_name": "Insomniac Games",
+      "provider": "greenhouse",
+      "board_key": "insomniac",
+      "fetched": 9,
+      "reason": "Provider board works; official careers page client-rendered. Direct link not extracted; keep pending."
+    },
+    {
+      "studio_name": "Crystal Dynamics",
+      "provider": "greenhouse",
+      "board_key": "crystaldynamics",
+      "fetched": 1,
+      "reason": "Board works with only general application; official page does not expose direct board link. Keep pending."
+    },
+    {
+      "studio_name": "Avalanche Studios",
+      "provider": "lever",
+      "board_key": "avalanchestudios",
+      "fetched": 8,
+      "reason": "Board works; official JS uses publisher proxy; direct key link not verified. Keep pending."
+    },
+    {
+      "studio_name": "Bend Studio",
+      "careers_url": "https://www.bendstudio.com/careers",
+      "reason": "Official links shared sonyinteractiveentertainmentglobal board with keyword=Bend. Requires explicit studio scoping before enabling to avoid misattribution."
+    },
+    {
+      "studio_name": "Studio Wildcard",
+      "careers_url": "https://studiowildcard.bamboohr.com/careers",
+      "reason": "Official studiowildcard.com/jobs redirects to BambooHR; provider currently unsupported."
+    },
+    {
+      "studio_name": "InXile Entertainment",
+      "careers_url": "https://www.inxile-entertainment.com/careers",
+      "reason": "Official embed data-domain=inxile.bamboohr.com; provider currently unsupported."
+    },
+    {
+      "studio_name": "Gunfire Games",
+      "careers_url": "https://gunfiregames.com/careers",
+      "reason": "Official careers links Paylocity employer UUID 20e9f03b-0303-4991-9f63-b4dae15d620f; provider currently unsupported."
+    },
+    {
+      "studio_name": "Eidos Montreal",
+      "careers_url": "https://www.eidosmontreal.com/careers/",
+      "reason": "Official job links Dayforce eic/CANDIDATEPORTAL; provider currently unsupported."
+    },
+    {
+      "studio_name": "Undead Labs",
+      "careers_url": "https://www.undeadlabs.com/careers",
+      "reason": "Official careers links https://undeadlabs.careers.hibob.com/; provider currently unsupported."
+    },
+    {
+      "studio_name": "Techland",
+      "provider": "smartrecruiters",
+      "board_key": "TechlandSA",
+      "fetched": 25,
+      "reason": "Public provider API confirmed, official page uses client render with no extracted provider link; keep pending."
+    },
+    {
+      "studio_name": "nDreams",
+      "careers_url": "https://ndreams.com/careers/",
+      "provider": "workable",
+      "board_key": "ndreams",
+      "fetched": 0,
+      "reason": "Public Workable API responds with zero jobs, but official careers page and its page-data JSON do not expose linkage. Keep unverified; do not activate."
+    }
+  ]
+}

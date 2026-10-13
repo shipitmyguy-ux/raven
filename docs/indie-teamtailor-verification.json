@@ -1,0 +1,69 @@
+{
+  "sources": [
+    {
+      "studio_name": "Embark Studios",
+      "board_key": "embark-studios",
+      "official_url": "https://www.embark-studios.com/",
+      "careers_url": "https://careers.embark-studios.com/jobs",
+      "provider": "teamtailor",
+      "fetched": 19,
+      "total": 19,
+      "detail_verified": true,
+      "detail_url": "https://careers.embark-studios.com/jobs/7964466-environment-artist",
+      "description_chars": 2713,
+      "remote": false,
+      "verification": "Official careers binding + public server-rendered Teamtailor jobs count and exact JobPosting identifier/title/hiringOrganization. Coffee Stain board is publisher-group board; classify as group, not Coffee Stain Studios.",
+      "verified_at": "2026-10-13T00:06:28.634Z"
+    },
+    {
+      "studio_name": "Coffee Stain",
+      "board_key": "coffee-stain",
+      "official_url": "https://www.coffeestain.com/careers/",
+      "careers_url": "https://jobs.coffeestain.com/jobs",
+      "provider": "teamtailor",
+      "fetched": 2,
+      "total": 2,
+      "detail_verified": true,
+      "detail_url": "https://jobs.coffeestain.com/jobs/8083591-art-director-and-art-lead",
+      "description_chars": 6716,
+      "remote": false,
+      "verification": "Official careers binding + public server-rendered Teamtailor jobs count and exact JobPosting identifier/title/hiringOrganization. Coffee Stain board is publisher-group board; classify as group, not Coffee Stain Studios.",
+      "verified_at": "2026-10-13T00:06:28.635Z"
+    },
+    {
+      "studio_name": "Ghost Ship Games",
+      "board_key": "ghost-ship-games",
+      "official_url": "https://ghostship.dk/",
+      "careers_url": "https://jobs.ghostship.dk/jobs",
+      "provider": "teamtailor",
+      "fetched": 0,
+      "total": 0,
+      "detail_verified": false,
+      "verification": "Official careers binding + public server-rendered Teamtailor jobs count and exact JobPosting identifier/title/hiringOrganization. Coffee Stain board is publisher-group board; classify as group, not Coffee Stain Studios.",
+      "verified_at": "2026-10-13T00:06:28.635Z"
+    },
+    {
+      "studio_name": "IO Interactive",
+      "board_key": "io-interactive",
+      "official_url": "https://ioi.dk/careers",
+      "careers_url": "https://apply.ioi.dk/jobs",
+      "provider": "teamtailor",
+      "fetched": 7,
+      "total": 7,
+      "detail_verified": true,
+      "detail_url": "https://apply.ioi.dk/jobs/8529218-data-engineer",
+      "description_chars": 5392,
+      "remote": false,
+      "verification": "Official careers binding + public server-rendered Teamtailor jobs count and exact JobPosting identifier/title/hiringOrganization. Coffee Stain board is publisher-group board; classify as group, not Coffee Stain Studios.",
+      "verified_at": "2026-10-13T00:06:28.636Z"
+    }
+  ],
+  "limits": {
+    "jobs": 1000,
+    "pages": 10,
+    "details": 12,
+    "detail_concurrency": 2
+  },
+  "remote_policy": "Only fully remote list text or JobPosting TELECOMMUTE; remote prose does not qualify.",
+  "pagination": "Only fixed host /jobs?page=N; advertised counts must match deduplicated results; unobserved pagination structure fails explicitly."
+}

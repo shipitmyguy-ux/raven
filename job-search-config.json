@@ -1,0 +1,81 @@
+{
+  "mode": "background",
+  "runtime_owner": "Supabase Edge Function: raven-search",
+  "active_backend_sources": [
+    "LinkedIn public job feed",
+    "Remotive",
+    "RemoteOK",
+    "Arbeitnow",
+    "Jobicy",
+    "Himalayas",
+    "Greenhouse via ATS dataset",
+    "Lever via ATS dataset",
+    "Ashby via ATS dataset",
+    "Workday via ATS dataset",
+    "SmartRecruiters via ATS dataset",
+    "Workable via ATS dataset",
+    "iCIMS via ATS dataset"
+  ],
+  "target_source_pool": [
+    "LinkedIn Jobs",
+    "Indeed",
+    "Greenhouse",
+    "Lever",
+    "Workday",
+    "Built In",
+    "Wellfound",
+    "USAJOBS",
+    "Colorado state and local government job boards",
+    "Direct employer career pages"
+  ],
+  "behavior": {
+    "discovered_results": "Stored in Supabase and automatically saved to the Google Sheet",
+    "canonical_jobs": "Google Sheet JobTrack Database",
+    "promotion": "All discovered jobs are written automatically to the Google Sheet with the active Track",
+    "automatic_save": true
+  },
+  "tracks": {
+    "Professional": [
+      "Project Manager",
+      "Project Coordinator",
+      "Implementation",
+      "Program",
+      "Operations",
+      "Training",
+      "Enablement",
+      "Customer Success",
+      "Onboarding"
+    ],
+    "Labor": [
+      "Maintenance",
+      "Facilities",
+      "Grounds/Parks/Trails",
+      "Painting/Pressure Washing",
+      "Warehouse",
+      "Production",
+      "Field Service",
+      "Repair/Assembly"
+    ],
+    "Wildcard": [
+      "Operations",
+      "Training",
+      "Implementation",
+      "Customer Success",
+      "Production",
+      "Field Service",
+      "Project/Program Coordination",
+      "Onboarding"
+    ],
+    "Games / 3D": [
+      "Environment Artist",
+      "Senior Environment Artist",
+      "Lead Environment Artist",
+      "World Artist",
+      "3D Environment Artist",
+      "Level Artist",
+      "Prop Artist",
+      "3D Artist",
+      "World Builder"
+    ]
+  }
+}

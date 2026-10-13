@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {stripTypeScriptTypes} from 'node:module';
+import '../supabase/functions/_shared/track-filter.js';
+const source=stripTypeScriptTypes(fs.readFileSync('supabase/functions/raven-studio-scan/index.ts','utf8').replace(/^import .*;\n/gm,''));
+let handler,calls=0,noCount=false;
+const fakeFetch=async(url,options)=>{
+ calls++;assert.equal(options.headers.Prefer,'count=exact');
+ const u=new URL(url);assert.equal(u.searchParams.get('select').includes('board_key'),false,'directory keeps internal board keys private');
+ const offset=Number(u.searchParams.get('offset')),limit=Number(u.searchParams.get('limit'));
+ const rows=Array.from({length:Math.min(limit,Math.max(0,601-offset))},(_,i)=>({studio_name:'Indie '+(offset+i),slug:'indie-'+(offset+i),source_kind:'studio',segment:'indie'}));
+ return Response.json(rows,{headers:noCount?{}:{'content-range':`${offset}-${offset+rows.length-1}/601`}});
+};
+vm.runInNewContext(source,{globalThis:{RavenTrackFilter:globalThis.RavenTrackFilter},Deno:{env:{get:n=>n==='SUPABASE_URL'?'https://db.example':'test-key'},serve:fn=>handler=fn},fetch:fakeFetch,Response,AbortSignal,URL});
+let response=await handler(new Request('https://collector.example?limit=500&offset=500'));let data=await response.json();
+assert.equal(data.total,601);assert.equal(data.offset,500);assert.equal(data.count,101);assert.equal(data.studios[0].slug,'indie-500');
+data=await (await handler(new Request('https://collector.example?limit=9999'))).json();assert.equal(data.limit,500);assert.equal(data.count,500);
+const before=calls;assert.equal((await handler(new Request('https://collector.example?offset=-1'))).status,400);assert.equal(calls,before);
+noCount=true;assert.equal((await handler(new Request('https://collector.example'))).status,500,'missing exact count is an explicit failure, not silent truncation');
+console.log('directory exact-count pagination and invalid request checks passed');

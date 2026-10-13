@@ -1,0 +1,572 @@
+{
+  "verified_at": "2026-10-12T23:28:21.044294+00:00",
+  "method": "Official public HTML, first-party linked JS/data and public ATS API fetched using curl Mozilla/5.0; exact IDs/board fields compared. No guessed board activated. Counts are all public fetched postings, before Raven filters.",
+  "researched_studios": [
+    {
+      "studio_name": "id Software",
+      "slug": "id-software",
+      "careers_url": "https://www.idsoftware.com/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "icims",
+      "reason": "Official home links jobs.zenimax.com filtered location14/20; Bethesda/MachineGames official pages confirm ZeniMax iCIMS. iCIMS adapter unsupported; publisher studio scoping needed."
+    },
+    {
+      "studio_name": "Bethesda Game Studios",
+      "slug": "bethesda-game-studios",
+      "careers_url": "https://bethesdagamestudios.com/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "icims",
+      "reason": "Official home links jobs.zenimax.com/search and careers-zenimax.icims.com job3523. Requires iCIMS adapter and studio scoping."
+    },
+    {
+      "studio_name": "MachineGames",
+      "slug": "machinegames",
+      "careers_url": "https://www.machinegames.com/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "icims",
+      "reason": "Official home links careers-zenimax.icims.com/jobs/search?ss=1&searchLocation=13555-13559-Uppsala. Requires iCIMS adapter and exact studio scope; location alone not safe."
+    },
+    {
+      "studio_name": "Arkane Studios",
+      "slug": "arkane-studios",
+      "careers_url": "https://www.arkane-studios.com/en/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "pending",
+      "provider": null,
+      "reason": "Official studio page200 and app.js200; careers navigation is in-page #studios but no extractable provider linkage found. Do not guess ZeniMax studio board."
+    },
+    {
+      "studio_name": "Tango Gameworks",
+      "slug": "tango-gameworks",
+      "careers_url": "https://tangogameworks.com/careers/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "custom-wordpress",
+      "reason": "Official careers200 contains 12 direct WordPress job detail links; no supported ATS provider. Requires bounded official HTML/WordPress adapter."
+    },
+    {
+      "studio_name": "Remedy Entertainment",
+      "slug": "remedy-entertainment",
+      "careers_url": "https://www.remedygames.com/careers",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "jobylon",
+      "reason": "Official careers HTML embeds jobylon-jobs-widget and jbl_company_id = 2986, jbl_version=v2; loads https://cdn.jobylon.com/embedder.js. Jobylon unsupported.",
+      "provider_identifier": "2986"
+    },
+    {
+      "studio_name": "Frictional Games",
+      "slug": "frictional-games",
+      "careers_url": "https://frictionalgames.com/category/careers/open-positions/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "custom-wordpress",
+      "reason": "Official home links official open-positions WordPress category; careers FAQ directs email application. No supported provider extracted."
+    },
+    {
+      "studio_name": "Bloober Team",
+      "slug": "bloober-team",
+      "careers_url": "https://blooberteam.traffit.com/career/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "traffit",
+      "reason": "Official https://www.blooberteam.com/ home200 links https://blooberteam.traffit.com/career/. Traffit unsupported."
+    },
+    {
+      "studio_name": "Motive Studio",
+      "slug": "motive-studio",
+      "careers_url": "https://www.ea.com/ea-studios/motive/careers",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "avature",
+      "reason": "Official careers200 links jobs.ea.com/en_US/careers/Home/?4538=%5B8376%5D&4538_format=3021&listFilterMode=1&jobRecordsPerPage=20& (EA shared portal). Adapter unsupported; exact studio query ID8376 proven."
+    },
+    {
+      "studio_name": "DICE",
+      "slug": "dice",
+      "careers_url": "https://www.dice.se/careers",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "avature",
+      "reason": "Official careers200 links jobs.ea.com/en_US/careers/Home/?4538=%5B8370%5D&4538_format=3021&listFilterMode=1&jobRecordsPerPage=20&. EA shared portal unsupported; studio query ID8370 proven."
+    },
+    {
+      "studio_name": "Respawn Entertainment",
+      "slug": "respawn-entertainment",
+      "careers_url": "https://www.respawn.com/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "pending",
+      "provider": null,
+      "reason": "Official home200 is Vue JS shell; /careers returns404. No provider linkage extracted yet; do not infer EA board scope."
+    },
+    {
+      "studio_name": "Sledgehammer Games",
+      "slug": "sledgehammer-games",
+      "careers_url": "https://www.sledgehammergames.com/careers",
+      "official_page_http_status": 502,
+      "enabled": false,
+      "status": "blocked",
+      "provider": "selectminds",
+      "reason": "Official careers redirects to https://activision.referrals.selectminds.com/sledgehammer; destination returned502. SelectMinds unsupported."
+    },
+    {
+      "studio_name": "Infinity Ward",
+      "slug": "infinity-ward",
+      "careers_url": "https://www.infinityward.com/careers",
+      "official_page_http_status": 502,
+      "enabled": false,
+      "status": "blocked",
+      "provider": "selectminds",
+      "reason": "Official careers redirects to https://activision.referrals.selectminds.com/infinityward; destination returned502. SelectMinds unsupported."
+    },
+    {
+      "studio_name": "Treyarch",
+      "slug": "treyarch",
+      "careers_url": "https://careers.treyarch.com/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "phenom",
+      "reason": "Official www.treyarch.com/careers200 links careers.treyarch.com; target200 uses Phenom-hosted career portal. No supported ATS linkage found."
+    },
+    {
+      "studio_name": "Raven Software",
+      "slug": "raven-software",
+      "careers_url": "https://careers.ravensoftware.com/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "phenom",
+      "reason": "Official www.ravensoftware.com home200 links careers.ravensoftware.com and department routes. /careers on www is a soft404 error page; career portal requires separate adapter."
+    },
+    {
+      "studio_name": "Insomniac Games",
+      "slug": "insomniac-games",
+      "careers_url": "https://insomniac.games/careers/",
+      "official_page_http_status": 200,
+      "enabled": true,
+      "status": "verified",
+      "provider": "greenhouse",
+      "board_key": "insomniac",
+      "api_url": "https://boards-api.greenhouse.io/v1/boards/insomniac/jobs?content=true",
+      "http_status": 200,
+      "fetched": 9,
+      "evidence_url": "https://cdn.craft.cloud/eceafce0-560a-4eac-b843-eba40951739b/builds/a2dd39b1-f10c-45a4-8619-803e0c9ae890/artifacts/assets-site/js/chunk-common.c519578f.js",
+      "verification": "Official careers HTML loads the linked chunk-common.c519578f.js; this script directly fetches https://boards-api.greenhouse.io/v1/boards/insomniac/jobs?content=true",
+      "sample_ids": [
+        6116916004,
+        6009620004,
+        6164402004
+      ],
+      "sample_urls": [
+        "https://job-boards.greenhouse.io/insomniac/jobs/6116916004",
+        "https://job-boards.greenhouse.io/insomniac/jobs/6009620004",
+        "https://job-boards.greenhouse.io/insomniac/jobs/6164402004"
+      ]
+    },
+    {
+      "studio_name": "Santa Monica Studio",
+      "slug": "santa-monica-studio",
+      "careers_url": "https://sms.playstation.com/careers/",
+      "official_page_http_status": 200,
+      "enabled": true,
+      "status": "verified",
+      "provider": "greenhouse",
+      "evidence_url": "https://sms.playstation.com/data/careers/qa-sr-analyst.json",
+      "board_key": "sonyinteractiveentertainmentglobal",
+      "api_url": "https://boards-api.greenhouse.io/v1/boards/sonyinteractiveentertainmentglobal/jobs?content=true",
+      "http_status": 200,
+      "fetched": 203,
+      "scoped_fetched": 1,
+      "job_scope": {
+        "field": "department",
+        "values": [
+          "Santa Monica Studio"
+        ]
+      },
+      "department_ids": [
+        4037286004
+      ],
+      "sample_ids": [
+        6115184004
+      ],
+      "sample_urls": [
+        "https://job-boards.greenhouse.io/sonyinteractiveentertainmentglobal/jobs/6115184004"
+      ],
+      "verification": "Official careers Vue bundle loads /data/careers.json; careers-detail.4af210d9.js loads /data/careers/{jobId}.json. Official /data/careers/qa-sr-analyst.json apply URL grnh.se/t8d2wcvf4us redirects200 to Sony shared board job6115184004. Raw matching job department name exactly Santa Monica Studio, ID4037286004. Apply exact department scope before normalization; do not ingest unscoped Sony board.",
+      "notes": "Official careers JSON currently lists4 entries, shared Sony board yields1 scoped public posting; other3 official entries need additional board verification."
+    },
+    {
+      "studio_name": "Bend Studio",
+      "slug": "bend-studio",
+      "careers_url": "https://www.bendstudio.com/careers",
+      "official_page_http_status": 200,
+      "enabled": true,
+      "status": "verified",
+      "provider": "greenhouse",
+      "board_key": "sonyinteractiveentertainmentglobal",
+      "api_url": "https://boards-api.greenhouse.io/v1/boards/sonyinteractiveentertainmentglobal/jobs?content=true",
+      "http_status": 200,
+      "fetched": 203,
+      "scoped_fetched": 1,
+      "job_scope": {
+        "field": "department",
+        "values": [
+          "Bend Studio"
+        ]
+      },
+      "department_ids": [
+        4037277004
+      ],
+      "sample_ids": [
+        6166115004
+      ],
+      "verification": "Official careers page directly links shared Sony board with keyword=Bend and job6166115004. Raw API job has departments=[{id:4037277004,name:Bend Studio}]. Apply exact department name to raw records before normalization; never ingest the unscoped publisher board."
+    },
+    {
+      "studio_name": "Guerrilla Games",
+      "slug": "guerrilla-games",
+      "careers_url": "https://www.guerrilla-games.com/join/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "pending",
+      "provider": "greenhouse",
+      "reason": "Official join200 reports zero openings; official scripts.js fetches local /api/greenhouse/jobs (from=0 request400). Public guerrilla-games board exists with zero postings, but direct board key linkage not established; keep pending."
+    },
+    {
+      "studio_name": "Bluepoint Games",
+      "slug": "bluepoint-games",
+      "careers_url": "https://www.bluepointgames.com/careers/",
+      "official_page_http_status": 502,
+      "enabled": false,
+      "status": "blocked",
+      "provider": null,
+      "reason": "Official home and /careers returned502; no trustworthy supported provider evidence extracted."
+    },
+    {
+      "studio_name": "Epic Games",
+      "slug": "epic-games",
+      "careers_url": "https://www.epicgames.com/site/en-US/careers",
+      "official_page_http_status": 200,
+      "enabled": true,
+      "status": "verified",
+      "provider": "greenhouse",
+      "board_key": "epicgames",
+      "api_url": "https://boards-api.greenhouse.io/v1/boards/epicgames/jobs?content=true",
+      "http_status": 200,
+      "fetched": 141,
+      "evidence_url": "https://greenhouse-service.debc.live.use1a.on.epicgames.com/api/job?skip=0",
+      "script_evidence_url": "https://assets.unrealengine.com/5d6d176/epicgames/static/webpack/main.epic-games.946c2547.js",
+      "verification": "Official careers HTML envConfig exposes greenhouse service; linked main JS fetches service /api/job. Official service returns explicit board=epicgames for13 English hits, all13 match public board IDs. All141 public records have metadata Careers Page Company=Epic Games. Other official service hits use French/Portuguese boards; this source intentionally covers English board only.",
+      "sample_ids": [
+        6103058004,
+        6183293004,
+        6123848004
+      ],
+      "sample_urls": [
+        "https://epicgames.com/careers/jobs/6103058004?gh_jid=6103058004",
+        "https://epicgames.com/careers/jobs/6183293004?gh_jid=6183293004",
+        "https://epicgames.com/careers/jobs/6123847004?gh_jid=6123847004"
+      ]
+    }
+  ],
+  "verified_sources": [
+    {
+      "studio_name": "Insomniac Games",
+      "slug": "insomniac-games",
+      "careers_url": "https://insomniac.games/careers/",
+      "official_page_http_status": 200,
+      "enabled": true,
+      "status": "verified",
+      "provider": "greenhouse",
+      "board_key": "insomniac",
+      "api_url": "https://boards-api.greenhouse.io/v1/boards/insomniac/jobs?content=true",
+      "http_status": 200,
+      "fetched": 9,
+      "evidence_url": "https://cdn.craft.cloud/eceafce0-560a-4eac-b843-eba40951739b/builds/a2dd39b1-f10c-45a4-8619-803e0c9ae890/artifacts/assets-site/js/chunk-common.c519578f.js",
+      "verification": "Official careers HTML loads the linked chunk-common.c519578f.js; this script directly fetches https://boards-api.greenhouse.io/v1/boards/insomniac/jobs?content=true",
+      "sample_ids": [
+        6116916004,
+        6009620004,
+        6164402004
+      ],
+      "sample_urls": [
+        "https://job-boards.greenhouse.io/insomniac/jobs/6116916004",
+        "https://job-boards.greenhouse.io/insomniac/jobs/6009620004",
+        "https://job-boards.greenhouse.io/insomniac/jobs/6164402004"
+      ]
+    },
+    {
+      "studio_name": "Santa Monica Studio",
+      "slug": "santa-monica-studio",
+      "careers_url": "https://sms.playstation.com/careers/",
+      "official_page_http_status": 200,
+      "enabled": true,
+      "status": "verified",
+      "provider": "greenhouse",
+      "evidence_url": "https://sms.playstation.com/data/careers/qa-sr-analyst.json",
+      "board_key": "sonyinteractiveentertainmentglobal",
+      "api_url": "https://boards-api.greenhouse.io/v1/boards/sonyinteractiveentertainmentglobal/jobs?content=true",
+      "http_status": 200,
+      "fetched": 203,
+      "scoped_fetched": 1,
+      "job_scope": {
+        "field": "department",
+        "values": [
+          "Santa Monica Studio"
+        ]
+      },
+      "department_ids": [
+        4037286004
+      ],
+      "sample_ids": [
+        6115184004
+      ],
+      "sample_urls": [
+        "https://job-boards.greenhouse.io/sonyinteractiveentertainmentglobal/jobs/6115184004"
+      ],
+      "verification": "Official careers Vue bundle loads /data/careers.json; careers-detail.4af210d9.js loads /data/careers/{jobId}.json. Official /data/careers/qa-sr-analyst.json apply URL grnh.se/t8d2wcvf4us redirects200 to Sony shared board job6115184004. Raw matching job department name exactly Santa Monica Studio, ID4037286004. Apply exact department scope before normalization; do not ingest unscoped Sony board.",
+      "notes": "Official careers JSON currently lists4 entries, shared Sony board yields1 scoped public posting; other3 official entries need additional board verification."
+    },
+    {
+      "studio_name": "Bend Studio",
+      "slug": "bend-studio",
+      "careers_url": "https://www.bendstudio.com/careers",
+      "official_page_http_status": 200,
+      "enabled": true,
+      "status": "verified",
+      "provider": "greenhouse",
+      "board_key": "sonyinteractiveentertainmentglobal",
+      "api_url": "https://boards-api.greenhouse.io/v1/boards/sonyinteractiveentertainmentglobal/jobs?content=true",
+      "http_status": 200,
+      "fetched": 203,
+      "scoped_fetched": 1,
+      "job_scope": {
+        "field": "department",
+        "values": [
+          "Bend Studio"
+        ]
+      },
+      "department_ids": [
+        4037277004
+      ],
+      "sample_ids": [
+        6166115004
+      ],
+      "verification": "Official careers page directly links shared Sony board with keyword=Bend and job6166115004. Raw API job has departments=[{id:4037277004,name:Bend Studio}]. Apply exact department name to raw records before normalization; never ingest the unscoped publisher board."
+    },
+    {
+      "studio_name": "Epic Games",
+      "slug": "epic-games",
+      "careers_url": "https://www.epicgames.com/site/en-US/careers",
+      "official_page_http_status": 200,
+      "enabled": true,
+      "status": "verified",
+      "provider": "greenhouse",
+      "board_key": "epicgames",
+      "api_url": "https://boards-api.greenhouse.io/v1/boards/epicgames/jobs?content=true",
+      "http_status": 200,
+      "fetched": 141,
+      "evidence_url": "https://greenhouse-service.debc.live.use1a.on.epicgames.com/api/job?skip=0",
+      "script_evidence_url": "https://assets.unrealengine.com/5d6d176/epicgames/static/webpack/main.epic-games.946c2547.js",
+      "verification": "Official careers HTML envConfig exposes greenhouse service; linked main JS fetches service /api/job. Official service returns explicit board=epicgames for13 English hits, all13 match public board IDs. All141 public records have metadata Careers Page Company=Epic Games. Other official service hits use French/Portuguese boards; this source intentionally covers English board only.",
+      "sample_ids": [
+        6103058004,
+        6183293004,
+        6123848004
+      ],
+      "sample_urls": [
+        "https://epicgames.com/careers/jobs/6103058004?gh_jid=6103058004",
+        "https://epicgames.com/careers/jobs/6183293004?gh_jid=6183293004",
+        "https://epicgames.com/careers/jobs/6123847004?gh_jid=6123847004"
+      ]
+    }
+  ],
+  "pending_evidence": [
+    {
+      "studio_name": "id Software",
+      "slug": "id-software",
+      "careers_url": "https://www.idsoftware.com/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "icims",
+      "reason": "Official home links jobs.zenimax.com filtered location14/20; Bethesda/MachineGames official pages confirm ZeniMax iCIMS. iCIMS adapter unsupported; publisher studio scoping needed."
+    },
+    {
+      "studio_name": "Bethesda Game Studios",
+      "slug": "bethesda-game-studios",
+      "careers_url": "https://bethesdagamestudios.com/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "icims",
+      "reason": "Official home links jobs.zenimax.com/search and careers-zenimax.icims.com job3523. Requires iCIMS adapter and studio scoping."
+    },
+    {
+      "studio_name": "MachineGames",
+      "slug": "machinegames",
+      "careers_url": "https://www.machinegames.com/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "icims",
+      "reason": "Official home links careers-zenimax.icims.com/jobs/search?ss=1&searchLocation=13555-13559-Uppsala. Requires iCIMS adapter and exact studio scope; location alone not safe."
+    },
+    {
+      "studio_name": "Arkane Studios",
+      "slug": "arkane-studios",
+      "careers_url": "https://www.arkane-studios.com/en/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "pending",
+      "provider": null,
+      "reason": "Official studio page200 and app.js200; careers navigation is in-page #studios but no extractable provider linkage found. Do not guess ZeniMax studio board."
+    },
+    {
+      "studio_name": "Tango Gameworks",
+      "slug": "tango-gameworks",
+      "careers_url": "https://tangogameworks.com/careers/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "custom-wordpress",
+      "reason": "Official careers200 contains 12 direct WordPress job detail links; no supported ATS provider. Requires bounded official HTML/WordPress adapter."
+    },
+    {
+      "studio_name": "Remedy Entertainment",
+      "slug": "remedy-entertainment",
+      "careers_url": "https://www.remedygames.com/careers",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "jobylon",
+      "reason": "Official careers HTML embeds jobylon-jobs-widget and jbl_company_id = 2986, jbl_version=v2; loads https://cdn.jobylon.com/embedder.js. Jobylon unsupported.",
+      "provider_identifier": "2986"
+    },
+    {
+      "studio_name": "Frictional Games",
+      "slug": "frictional-games",
+      "careers_url": "https://frictionalgames.com/category/careers/open-positions/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "custom-wordpress",
+      "reason": "Official home links official open-positions WordPress category; careers FAQ directs email application. No supported provider extracted."
+    },
+    {
+      "studio_name": "Bloober Team",
+      "slug": "bloober-team",
+      "careers_url": "https://blooberteam.traffit.com/career/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "traffit",
+      "reason": "Official https://www.blooberteam.com/ home200 links https://blooberteam.traffit.com/career/. Traffit unsupported."
+    },
+    {
+      "studio_name": "Motive Studio",
+      "slug": "motive-studio",
+      "careers_url": "https://www.ea.com/ea-studios/motive/careers",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "avature",
+      "reason": "Official careers200 links jobs.ea.com/en_US/careers/Home/?4538=%5B8376%5D&4538_format=3021&listFilterMode=1&jobRecordsPerPage=20& (EA shared portal). Adapter unsupported; exact studio query ID8376 proven."
+    },
+    {
+      "studio_name": "DICE",
+      "slug": "dice",
+      "careers_url": "https://www.dice.se/careers",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "avature",
+      "reason": "Official careers200 links jobs.ea.com/en_US/careers/Home/?4538=%5B8370%5D&4538_format=3021&listFilterMode=1&jobRecordsPerPage=20&. EA shared portal unsupported; studio query ID8370 proven."
+    },
+    {
+      "studio_name": "Respawn Entertainment",
+      "slug": "respawn-entertainment",
+      "careers_url": "https://www.respawn.com/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "pending",
+      "provider": null,
+      "reason": "Official home200 is Vue JS shell; /careers returns404. No provider linkage extracted yet; do not infer EA board scope."
+    },
+    {
+      "studio_name": "Sledgehammer Games",
+      "slug": "sledgehammer-games",
+      "careers_url": "https://www.sledgehammergames.com/careers",
+      "official_page_http_status": 502,
+      "enabled": false,
+      "status": "blocked",
+      "provider": "selectminds",
+      "reason": "Official careers redirects to https://activision.referrals.selectminds.com/sledgehammer; destination returned502. SelectMinds unsupported."
+    },
+    {
+      "studio_name": "Infinity Ward",
+      "slug": "infinity-ward",
+      "careers_url": "https://www.infinityward.com/careers",
+      "official_page_http_status": 502,
+      "enabled": false,
+      "status": "blocked",
+      "provider": "selectminds",
+      "reason": "Official careers redirects to https://activision.referrals.selectminds.com/infinityward; destination returned502. SelectMinds unsupported."
+    },
+    {
+      "studio_name": "Treyarch",
+      "slug": "treyarch",
+      "careers_url": "https://careers.treyarch.com/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "phenom",
+      "reason": "Official www.treyarch.com/careers200 links careers.treyarch.com; target200 uses Phenom-hosted career portal. No supported ATS linkage found."
+    },
+    {
+      "studio_name": "Raven Software",
+      "slug": "raven-software",
+      "careers_url": "https://careers.ravensoftware.com/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "unsupported",
+      "provider": "phenom",
+      "reason": "Official www.ravensoftware.com home200 links careers.ravensoftware.com and department routes. /careers on www is a soft404 error page; career portal requires separate adapter."
+    },
+    {
+      "studio_name": "Guerrilla Games",
+      "slug": "guerrilla-games",
+      "careers_url": "https://www.guerrilla-games.com/join/",
+      "official_page_http_status": 200,
+      "enabled": false,
+      "status": "pending",
+      "provider": "greenhouse",
+      "reason": "Official join200 reports zero openings; official scripts.js fetches local /api/greenhouse/jobs (from=0 request400). Public guerrilla-games board exists with zero postings, but direct board key linkage not established; keep pending."
+    },
+    {
+      "studio_name": "Bluepoint Games",
+      "slug": "bluepoint-games",
+      "careers_url": "https://www.bluepointgames.com/careers/",
+      "official_page_http_status": 502,
+      "enabled": false,
+      "status": "blocked",
+      "provider": null,
+      "reason": "Official home and /careers returned502; no trustworthy supported provider evidence extracted."
+    }
+  ]
+}
