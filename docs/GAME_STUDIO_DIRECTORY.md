@@ -60,3 +60,13 @@ ZeniMax iCIMS uses the first-party ZeniMax embedded directory and iCIMS public J
 Portal details evaluate art title eligibility before location because explicit remote metadata can appear only in details. Existing global location policy applies after enrichment. Fresh cached descriptions skip requests; detail_cursor rotates missing candidates beyond the twelve-detail scan budget. Partial detail outcomes remain visible and saved descriptions are preserved on refresh failure.
 
 Games/3D read results preserve the existing aggregate top100 and merge up to50 most recently seen official studio results, deduplicating by URL and applying existing role/location eligibility. This prevents valid official-board jobs at score12 being absent from the browser results window. Other tracks keep their original window.
+
+## Indie discovery
+
+Work With Indies is a job-board source; vacancies retain actual employer, authoritative remote/location restrictions and complete validated descriptions. Closed/expired/unpaid/revenue-share roles are excluded. Only same-board official detail URLs are fetched. Teamtailor uses verified fixed career-host bindings, exact employer/job identity and pagination counts.
+
+Directory source_kind distinguishes studios from hiring boards. Segments indie, indie_origin, boutique, major and unknown carry ownership/source caveats rather than assuming every small or indie-origin developer remains independent. GET uses exact-count limit/offset pagination, max500 per page; UI initially loads2,000 with Load more and explicit partial results/retry.
+
+Oldest-due selection is fair, with12-source tick budget, caps6 per provider/host, transport concurrency2 and140-second deadline. Explicit check intervals win; active feeds typically24h, quiet verified feeds168h, Work With Indies6h. Backoff12–168h is based on actual failed checks. Candidate window120 can underfill a mixed-provider tick when flooded by one provider; this is recorded in scheduling notes. Pending sources are never treated as checked vacancies.
+
+Portal cache restoration validates unchanged title/employer and24-hour stamp, restoring remote/location so cached board posts remain eligible. Lever descriptions combine introduction, role lists and additional content. Game art generalist title additions retain character, technical, animation and VFX exclusions.

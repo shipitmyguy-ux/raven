@@ -25,3 +25,8 @@ test('ranking applies role eligibility before incidental keyword and location bo
  ]);
  assert.deepEqual(rows.map(r=>r.title),['Senior Environment Artist']);
 });
+
+assert.equal(allowed({title:'Senior 3D Gameplay Artist - Generalist'}),true);
+assert.equal(allowed({title:'3D Art Generalist'}),true);
+assert.equal(allowed({title:'3D Character Artist - Generalist'}),false);
+assert.equal(allowed({title:'3D Gameplay VFX Artist'}),false);

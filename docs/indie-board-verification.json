@@ -1,0 +1,142 @@
+{
+  "verified_at": "2026-10-13T00:03:44.629Z",
+  "source": {
+    "provider": "workwithindies",
+    "board_key": "workwithindies"
+  },
+  "official_page": "https://www.workwithindies.com/",
+  "pagination": "87 server-rendered cards, empty Webflow pagination wrapper; future pagination fails explicitly",
+  "security": "Only fixed official homepage and exact canonical /careers/{slug} fetched. External application links are not fetched or substituted. Board canonical retained for honest origin and email applications.",
+  "jobs": [
+    {
+      "provider_job_id": "fallen-tree-games-mid-level-3d-artist-environment-generalist",
+      "title": "Mid-Level 3D Artist (Environment Generalist)",
+      "company": "Fallen Tree Games",
+      "location": "United Kingdom",
+      "remote": true,
+      "url": "https://www.workwithindies.com/careers/fallen-tree-games-mid-level-3d-artist-environment-generalist",
+      "posted_at": "2026-10-12T00:00:00.000Z",
+      "studio_description_updated_at": "2026-10-13T00:03:44.007Z",
+      "snippet_length": 3256
+    },
+    {
+      "provider_job_id": "half-mermaid-environment-artist",
+      "title": "Environment Artist",
+      "company": "Half Mermaid",
+      "location": "European Union; CET ± 3 hours",
+      "remote": true,
+      "url": "https://www.workwithindies.com/careers/half-mermaid-environment-artist",
+      "posted_at": "2026-10-09T00:00:00.000Z",
+      "studio_description_updated_at": "2026-10-13T00:03:44.088Z",
+      "snippet_length": 2968
+    },
+    {
+      "provider_job_id": "half-mermaid-senior-environment-artist",
+      "title": "Senior Environment Artist",
+      "company": "Half Mermaid",
+      "location": "European Union; CET ± 3 hours",
+      "remote": true,
+      "url": "https://www.workwithindies.com/careers/half-mermaid-senior-environment-artist",
+      "posted_at": "2026-10-09T00:00:00.000Z",
+      "studio_description_updated_at": "2026-10-13T00:03:44.133Z",
+      "snippet_length": 3284
+    },
+    {
+      "provider_job_id": "febucci-general-artist-3d",
+      "title": "General Artist (3D)",
+      "company": "Febucci",
+      "location": "European Union",
+      "remote": true,
+      "url": "https://www.workwithindies.com/careers/febucci-general-artist-3d",
+      "posted_at": "2026-10-07T00:00:00.000Z",
+      "studio_description_updated_at": "2026-10-13T00:03:44.203Z",
+      "snippet_length": 3068
+    },
+    {
+      "provider_job_id": "makrp-game-artist-concept-3d",
+      "title": "Game Artist (Concept + 3D)",
+      "company": "makRP",
+      "location": "United States",
+      "remote": true,
+      "url": "https://www.workwithindies.com/careers/makrp-game-artist-concept-3d",
+      "posted_at": "2026-10-06T00:00:00.000Z",
+      "studio_description_updated_at": "2026-10-13T00:03:44.241Z",
+      "snippet_length": 2395
+    },
+    {
+      "provider_job_id": "ambedo-studios-3d-game-artist",
+      "title": "3D Game Artist",
+      "company": "ambedo studios",
+      "location": "Vancouver, BC",
+      "remote": false,
+      "url": "https://www.workwithindies.com/careers/ambedo-studios-3d-game-artist",
+      "posted_at": "2026-10-06T00:00:00.000Z",
+      "studio_description_updated_at": "2026-10-13T00:03:44.312Z",
+      "snippet_length": 3343
+    },
+    {
+      "provider_job_id": "ambedo-studios-3d-character-animator",
+      "title": "3D Character Animator",
+      "company": "ambedo studios",
+      "location": "Vancouver, BC",
+      "remote": false,
+      "url": "https://www.workwithindies.com/careers/ambedo-studios-3d-character-animator",
+      "posted_at": "2026-10-06T00:00:00.000Z",
+      "studio_description_updated_at": "2026-10-13T00:03:44.352Z",
+      "snippet_length": 3124
+    },
+    {
+      "provider_job_id": "dillo-interactive-graphic-design-generalist",
+      "title": "Graphic Design Generalist",
+      "company": "Dillo Interactive",
+      "location": "United States",
+      "remote": true,
+      "url": "https://www.workwithindies.com/careers/dillo-interactive-graphic-design-generalist",
+      "posted_at": "2026-09-16T00:00:00.000Z",
+      "studio_description_updated_at": "2026-10-13T00:03:44.423Z",
+      "snippet_length": 2136
+    },
+    {
+      "provider_job_id": "neon-badger-mid-senior-3d-generalist",
+      "title": "Mid-Senior 3D Generalist",
+      "company": "Neon Badger",
+      "location": "Australia",
+      "remote": true,
+      "url": "https://www.workwithindies.com/careers/neon-badger-mid-senior-3d-generalist",
+      "posted_at": "2026-09-04T00:00:00.000Z",
+      "studio_description_updated_at": "2026-10-13T00:03:44.492Z",
+      "snippet_length": 2287
+    },
+    {
+      "provider_job_id": "sad-owl-studios-senior-3d-environment-artist",
+      "title": "Senior 3D Environment Artist",
+      "company": "Sad Owl Studios",
+      "location": "United Kingdom",
+      "remote": true,
+      "url": "https://www.workwithindies.com/careers/sad-owl-studios-senior-3d-environment-artist",
+      "posted_at": "2026-09-01T00:00:00.000Z",
+      "studio_description_updated_at": "2026-10-13T00:03:44.629Z",
+      "snippet_length": 1411
+    },
+    {
+      "provider_job_id": "panna-cotta-software-3d-environment-artist",
+      "title": "3D Environment Artist",
+      "company": "Panna Cotta Software",
+      "location": "Canada",
+      "remote": true,
+      "url": "https://www.workwithindies.com/careers/panna-cotta-software-3d-environment-artist",
+      "posted_at": "2026-08-26T00:00:00.000Z",
+      "studio_description_updated_at": "2026-10-13T00:03:44.615Z",
+      "snippet_length": 2938
+    }
+  ],
+  "fetched": 87,
+  "detail_cursor_next": 12,
+  "details": {
+    "status": "partial",
+    "attempted": 12,
+    "completed": 11,
+    "deferred": 3,
+    "error": "3 descriptions deferred by scan budget"
+  }
+}

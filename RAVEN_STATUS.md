@@ -1,5 +1,9 @@
 # Raven Status
 
+## Indie discovery rollout — 2026-10-12 evening
+Implemented Work With Indies public paid-active listing collector and verified Teamtailor feeds, indie/boutique/catalog taxonomy, paginated directory and fair bounded scheduling. Eighteen verified feed records (including existing identities) plus56 honest pending candidates prepared in indie-catalog-summary.json. Root game art rule now includes 3D Gameplay Artist /3D Art Generalist while excluded specialties remain rejected. Fixed cached portal remote/location metadata and Lever omitted responsibility lists. All49 local workflow commands pass. GitHub CI and live deployment/ingestion acceptance follow.
+
+
 ## Official portal adapters and studio visibility — 2026-10-12
 Deployed studio collector v6 and backend v60. Registry67;32 active integrations all successfully checked,35 remaining pending (24 unsupported systems,3 blocked sites,8 unconfirmed scopes/linkages). Activated MachineGames, Motive Studio, DICE, Remedy, Techland and Avalanche. Real public portal source evidence is under docs/studio-{icims,ea,jobylon}-verification.json; all18 unconfirmed/blocked sources rechecked in docs/studio-source-resolution.json; activation batch in studio-portal-activation.json. Bethesda/id exact ZeniMax company taxonomy is currently unobserved; Respawn official EA job/studio linkage found but numeric filterID remains unverified. Do not imply these studios are checking.
 

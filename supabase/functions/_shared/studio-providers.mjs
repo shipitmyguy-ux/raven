@@ -88,7 +88,14 @@ export function normalizeStudioJobs(source, data) {
     if (source.provider === 'smartrecruiters' && !jobUrl && /^[a-zA-Z0-9-]+$/.test(String(x.id || ''))) jobUrl = `https://jobs.smartrecruiters.com/${encodeURIComponent(source.board_key)}/${encodeURIComponent(x.id)}`;
     const url = source.provider === 'bamboohr' && !/^[1-9][0-9]{0,15}$/.test(String(x.id || '')) ? '' : canonicalStudioUrl(jobUrl);
     const sections = x.jobAd?.sections;
-    const description = sections ? Object.values(sections).map(v => v?.text || '').join(' ') : x.descriptionPlain || x.descriptionHtml || x.content || x.description;
+    let description = sections ? Object.values(sections).map(v => v?.text || '').join(' ') : x.descriptionPlain || x.descriptionHtml || x.content || x.description;
+    if(source.provider==='lever'){
+      const main=[x.descriptionPlain,x.descriptionHtml,x.description].filter(v=>typeof v==='string').map(v=>clean(v,20000)).sort((a,b)=>b.length-a.length)[0]||'';
+      const parts=[main];
+      for(const section of Array.isArray(x.lists)?x.lists:[]){const text=clean([section.text,section.content].filter(Boolean).join(' '),20000);if(text&&!parts.some(p=>p.includes(text)))parts.push(text);}
+      const additional=clean(x.additional||x.additionalPlain,20000);if(additional&&!parts.some(p=>p.includes(additional)))parts.push(additional);
+      description=parts.join(' ');
+    }
     return { provider_job_id: String(x.id || ''), title, company: source.studio_name, location, remote, url, snippet: clean(description,20000), posted_at: String(x.publishedAt || x.updated_at || x.published_on || x.releasedDate || x.datePosted || '') };
   }).filter(j => j.title && j.url);
   return deduplicateStudioJobs(jobs);

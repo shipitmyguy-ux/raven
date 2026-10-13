@@ -25,3 +25,8 @@ reuseFreshStudioDescriptions([cacheJob,oldJob,updatedJob,legacyJob],[
 assert.equal(cacheJob.snippet,'Fresh cached');assert.equal(oldJob.snippet,'');assert.equal(updatedJob.snippet,'');assert.equal(legacyJob.snippet,'');
 const priorCalls=calls;await enrichStudioDetails(source,[cacheJob,oldJob,updatedJob,legacyJob],{fetcher:good});assert.equal(calls-priorCalls,3);assert.ok(oldJob.studio_description_updated_at);
 console.log('24-hour cache expiry and provider update invalidation passed');
+
+const metadataJob={url:'https://example.com/job',title:'Environment Artist',company:'Example',location:'Anywhere',remote:false,snippet:''};
+reuseFreshStudioDescriptions([metadataJob],[{...metadataJob,snippet:'Complete cached body',remote:true,location:'Remote US',studio_description_updated_at:new Date().toISOString()}],Date.now(),true);
+assert.equal(metadataJob.remote,true);assert.equal(metadataJob.location,'Remote US');
+const changed={...metadataJob,title:'Different Role',snippet:''};reuseFreshStudioDescriptions([changed],[{...metadataJob,studio_description_updated_at:new Date().toISOString()}],Date.now(),true);assert.equal(changed.snippet,'');

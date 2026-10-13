@@ -12,13 +12,16 @@ export async function fetchStudioText(url, fetcher=fetch) {
  return new TextDecoder().decode(bytes);
 }
 export async function fetchStudioJson(url,fetcher=fetch){return JSON.parse(await fetchStudioText(url,fetcher));}
-export function reuseFreshStudioDescriptions(jobs,existing,now=Date.now()) {
+export function reuseFreshStudioDescriptions(jobs,existing,now=Date.now(),restoreMetadata=false) {
  const byUrl=new Map(existing.map(row=>[row.url,row]));
  for(const job of jobs){
   if(job.snippet)continue;
   const cached=byUrl.get(job.url),stamp=Date.parse(cached?.studio_description_updated_at||''),published=Date.parse(job.posted_at||'');
+  const sameIdentity=String(cached?.title||'').trim()===String(job.title||'').trim()&&String(cached?.company||'').trim()===String(job.company||'').trim();
+  if(restoreMetadata&&!sameIdentity)continue;
   if(cached?.snippet&&Number.isFinite(stamp)&&stamp<=now&&now-stamp<24*3600000&&(!Number.isFinite(published)||published<=stamp)){
    job.snippet=cached.snippet;job.studio_description_updated_at=cached.studio_description_updated_at;
+   if(restoreMetadata){job.remote=cached.remote===true;if(cached.location)job.location=cached.location;}
   }
  }
 }

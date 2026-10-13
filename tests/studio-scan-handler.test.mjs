@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import {stripTypeScriptTypes} from 'node:module';
 import * as collector from '../supabase/functions/_shared/studio-collector.mjs';
+import * as schedule from '../supabase/functions/_shared/studio-schedule.mjs';
 import * as providers from '../supabase/functions/_shared/studio-providers.mjs';
 import '../supabase/functions/_shared/track-filter.js';
 const source=stripTypeScriptTypes(fs.readFileSync('supabase/functions/raven-studio-scan/index.ts','utf8').replace(/^import .*;\n/gm,''));
@@ -10,13 +11,13 @@ const token='a'.repeat(64);
 const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(token));
 const tokenHash=[...new Uint8Array(digest)].map(n=>n.toString(16).padStart(2,'0')).join('');
 let handler; const writes=[]; let providerMode='ok';let providerCalls=0;
-const due=[{id:'123',studio_name:'Example Studio',provider:'smartrecruiters',board_key:'example',interval_hours:24}];
+const due=[{id:'123',studio_name:'Example Studio',provider:'smartrecruiters',board_key:'example',interval_hours:24,enabled:true,verification_status:'verified',next_check_at:'2026-10-01T00:00:00Z',priority:2}];
 const fakeFetch=async(url,opts={})=>{
  if(url.startsWith('https://db.example/rest/v1/')){
   const path=url.split('/rest/v1/')[1];
   if(opts.method!=='GET'){const body=JSON.parse(opts.body);if(path.startsWith('raven_search_results'))assert.ok(body.every(row=>Object.keys(row).sort().join(',')===Object.keys(body[0]).sort().join(',')));writes.push({path,body});return new Response(null,{status:204});}
   const result=path.startsWith('raven_studio_cron_auth')?[{token_hash:tokenHash}]:path.includes('enabled=eq.true')?due:[];
-  if(path.includes('enabled=eq.true')){assert.match(path,/provider=neq.pending/);assert.match(path,/next_check_at=lte\./);assert.match(path,/limit=6$/);}
+  if(path.includes('enabled=eq.true')){assert.match(path,/provider=neq.pending/);assert.match(path,/next_check_at=lte\./);assert.match(path,/limit=120$/);}
   return Response.json(result);
  }
  providerCalls++;
@@ -42,7 +43,7 @@ const fakeFetch=async(url,opts={})=>{
   {id:'3',name:'Environment Artist',location:{city:'London',country:'UK'}},
  ]});
 };
-vm.runInNewContext(source,{...providers,...collector,fetchStudioJson:url=>collector.fetchStudioJson(url,fakeFetch),enrichStudioDetails:(s,j,opts)=>collector.enrichStudioDetails(s,j,{...opts,fetcher:fakeFetch}),globalThis:{RavenTrackFilter:globalThis.RavenTrackFilter},Deno:{env:{get:n=>n==='SUPABASE_URL'?'https://db.example':'test-key'},serve:fn=>{handler=fn;}},fetch:fakeFetch,crypto,Response,TextEncoder,TextDecoder,Uint8Array,AbortSignal,URL});
+vm.runInNewContext(source,{...providers,...collector,...schedule,fetchStudioJson:url=>collector.fetchStudioJson(url,fakeFetch),enrichStudioDetails:(s,j,opts)=>collector.enrichStudioDetails(s,j,{...opts,fetcher:fakeFetch}),globalThis:{RavenTrackFilter:globalThis.RavenTrackFilter},Deno:{env:{get:n=>n==='SUPABASE_URL'?'https://db.example':'test-key'},serve:fn=>{handler=fn;}},fetch:fakeFetch,crypto,Response,TextEncoder,TextDecoder,Uint8Array,AbortSignal,URL});
 const request=secret=>new Request('https://collector.example',{method:'POST',headers:secret?{'x-raven-studio-secret':secret}:{}});
 assert.equal((await handler(request())).status,401);
 assert.equal(providerCalls,0);

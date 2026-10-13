@@ -483,3 +483,10 @@ Remaining:35 provider/scoping/linkage tasks, plus generic EA pagination beyond20
 - [x] Verify49 local commands, browser/core/Pages/smoke and actual full-description discovery readback.
 - [ ] Resolve35 remaining source-specific blockers with official evidence; verify EA pagination before expanding that adapter.
 - [ ] Audit legacy nonempty shortened-description generation preparation separately.
+
+## Indie discovery rollout — 2026-10-12 evening
+Implemented Work With Indies public paid-active listing collector and verified Teamtailor feeds, indie/boutique/catalog taxonomy, paginated directory and fair bounded scheduling. Eighteen verified feed records (including existing identities) plus56 honest pending candidates prepared in indie-catalog-summary.json. Root game art rule now includes 3D Gameplay Artist /3D Art Generalist while excluded specialties remain rejected. Fixed cached portal remote/location metadata and Lever omitted responsibility lists. All49 local workflow commands pass. GitHub CI and live deployment/ingestion acceptance follow.
+
+- [x] Implement indie board/feed integration, catalog filters/pagination, bounded fair scheduling.
+- [x] Verify49 local workflow commands and independent review.
+- [ ] Deploy, activate catalog and verify real indie jobs in hosted Raven.

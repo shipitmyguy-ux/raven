@@ -79,3 +79,6 @@ assert.equal(sourceJobAllowed(organizationSource,{customField:[{fieldLabel:'Orga
 
 const longPosting=normalizeStudioJobs(source('smartrecruiters'),{content:[{id:'123',name:'Environment Artist',location:{city:'Remote'},jobAd:{sections:{jobDescription:{text:'x'.repeat(25000)}}}}]})[0];
 assert.equal(longPosting.snippet.length,20000);
+
+const leverFull=normalizeStudioJobs({provider:'lever',board_key:'example',studio_name:'Example' },[{text:'Environment Artist',hostedUrl:'https://jobs.lever.co/example/1',descriptionPlain:'Studio intro',description:'<p>Studio intro</p>',lists:[{text:'Responsibilities',content:'<ul><li>Create modular props and environments.</li></ul>'}],additional:'Paid contract'}])[0];
+assert.match(leverFull.snippet,/Responsibilities Create modular props/);assert.match(leverFull.snippet,/Paid contract/);

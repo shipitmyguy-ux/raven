@@ -3,6 +3,9 @@ import {MAX_STUDIO_JOBS, providerEndpoint, providerRecords, normalizeStudioJobs,
 import {fetchStudioJson, fetchStudioText, enrichStudioDetails, reuseFreshStudioDescriptions} from "../_shared/studio-collector.mjs";
 import {collectIcims} from "../_shared/studio-icims.mjs";
 import {collectAvature} from "../_shared/studio-avature.mjs";
+import {collectTeamtailor} from "../_shared/studio-teamtailor.mjs";
+import {collectIndieBoard} from "../_shared/studio-indie-board.mjs";
+import {selectDueSources,computeNextCheck} from "../_shared/studio-schedule.mjs";
 import {collectJobylon} from "../_shared/studio-jobylon.mjs";
 const {gameArtRoleAllowed,jobLocationAllowed}=(globalThis as any).RavenTrackFilter;
 const base=Deno.env.get("SUPABASE_URL")||"",key=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
@@ -24,16 +27,18 @@ async function auth(request:Request){
  let diff=0;for(let i=0;i<hash.length;i++)diff|=hash.charCodeAt(i)^expected.charCodeAt(i);
  return diff===0;
 }
-async function preparePortalDetails(jobs:any[],deadline:number){
+async function preparePortalDetails(jobs:any[],deadline:number,restoreMetadata=false){
  for(let i=0;i<jobs.length;i+=20){
   if(Date.now()+8000>deadline)throw Error("Source description cache budget exhausted");
   const batch=jobs.slice(i,i+20),urls=batch.map((j:any)=>'"'+j.url.replace(/"/g,'\\"')+'"').join(',');
-  const existing=await db("raven_search_results?select=url,snippet,studio_description_updated_at&url=in."+encodeURIComponent('('+urls+')'));
-  reuseFreshStudioDescriptions(batch,existing);
+  const existing=await db("raven_search_results?select=url,snippet,studio_description_updated_at,title,company,remote,location&url=in."+encodeURIComponent('('+urls+')'));
+  reuseFreshStudioDescriptions(batch,existing,Date.now(),restoreMetadata);
  }
 }
 async function sourceJobs(s:any,deadline:number){
- const portalOptions={fetchJson:fetchStudioJson,fetchText:fetchStudioText,deadline,jobAllowed:(j:any)=>gameArtRoleAllowed(j)&&jobLocationAllowed(j),detailAllowed:(j:any)=>gameArtRoleAllowed(j),prepareDetails:(jobs:any[])=>preparePortalDetails(jobs,deadline)};
+ const portalOptions={fetchJson:fetchStudioJson,fetchText:fetchStudioText,deadline,jobAllowed:(j:any)=>gameArtRoleAllowed(j)&&jobLocationAllowed(j),detailAllowed:(j:any)=>gameArtRoleAllowed(j),prepareDetails:(jobs:any[])=>preparePortalDetails(jobs,deadline,true)};
+ if(s.provider==="teamtailor")return collectTeamtailor(s,portalOptions);
+ if(s.provider==="workwithindies")return collectIndieBoard(s,portalOptions);
  if(s.provider==="icims")return collectIcims(s,portalOptions);
  if(s.provider==="avature")return collectAvature(s,portalOptions);
  if(s.provider==="jobylon")return collectJobylon(s,portalOptions);
@@ -77,7 +82,7 @@ async function check(s:any,tickDeadline:number){
  const checked=new Date().toISOString();
  await db("raven_studio_sources?id=eq."+s.id,"PATCH",{
   last_checked_at:checked,...(status==="ok"?{last_success_at:checked}:{}),
-  next_check_at:new Date(Date.now()+Math.max(status==="ok"?6:12,s.interval_hours)*3600000).toISOString(),
+  next_check_at:computeNextCheck(s,{status,fetched:total,failureCount:Number(s.consecutive_failures||0)+1}),
   last_status:status,last_error:error||null,...(Number.isInteger(cursorNext)&&cursorNext>=0?{detail_cursor:cursorNext}:{}),...(status==="ok"?{last_job_count:eligible}:{}),updated_at:checked,
   consecutive_failures:status==="ok"?0:Number(s.consecutive_failures||0)+1,
   health_status:status==="ok"?(details.status==="partial"||details.status==="failed"?"degraded":"healthy"):(Number(s.consecutive_failures||0)+1>=3?"broken":"failing"),
@@ -91,12 +96,22 @@ Deno.serve(async request=>{
  try{
   if(!base||!key)return json({error:"Backend credentials missing"},503);
   if(request.method==="GET"){
-   const studios=await db("raven_studio_sources?select=studio_name,slug,provider,job_scope,verification_status,verification_note,source_verified_at,careers_url,priority,enabled,next_check_at,interval_hours,last_status,last_checked_at,last_success_at,last_job_count,last_error,consecutive_failures,health_status,detail_health_status,detail_error&order=priority.desc,studio_name.asc&limit=500");
-   return json({ok:true,count:studios.length,studios});
+   const params=new URL(request.url).searchParams;
+   const rawLimit=params.get("limit")||"500",rawOffset=params.get("offset")||"0";
+   if(!/^\d+$/.test(rawLimit)||!/^\d+$/.test(rawOffset))return json({error:"Invalid directory pagination"},400);
+   const limit=Math.max(1,Math.min(500,Number(rawLimit))),offset=Number(rawOffset);
+   if(!Number.isSafeInteger(offset)||offset<0)return json({error:"Invalid directory offset"},400);
+   const path="raven_studio_sources?select=studio_name,slug,provider,source_kind,segment,segment_note,job_scope,verification_status,verification_note,source_verified_at,careers_url,priority,enabled,next_check_at,interval_hours,last_status,last_checked_at,last_success_at,last_job_count,last_error,consecutive_failures,health_status,detail_health_status,detail_error&order=priority.desc,studio_name.asc,slug.asc&limit="+limit+"&offset="+offset;
+   const response=await fetch(base+"/rest/v1/"+path,{headers:{apikey:key,Authorization:"Bearer "+key,Prefer:"count=exact"},signal:AbortSignal.timeout(8000)});
+   if(!response.ok)throw Error("Directory read failed "+response.status);
+   const studios=await response.json(),total=Number(response.headers.get("content-range")?.split("/")[1]);
+   if(!Array.isArray(studios)||!Number.isSafeInteger(total)||total<0)throw Error("Directory count unavailable");
+   return json({ok:true,count:studios.length,total,limit,offset,studios});
   }
   if(request.method!=="POST")return json({error:"Method not allowed"},405);
   if(!await auth(request))return json({error:"Unauthorized"},401);
-  const due=await db("raven_studio_sources?select=id,studio_name,slug,provider,board_key,interval_hours,job_scope,consecutive_failures,detail_cursor&enabled=eq.true&provider=neq.pending&next_check_at=lte."+encodeURIComponent(new Date().toISOString())+"&order=priority.desc,next_check_at.asc&limit=6");
+  const candidates=await db("raven_studio_sources?select=id,studio_name,slug,provider,board_key,interval_hours,job_scope,consecutive_failures,detail_cursor,enabled,verification_status,next_check_at,priority,careers_url&enabled=eq.true&verification_status=eq.verified&provider=neq.pending&next_check_at=lte."+encodeURIComponent(new Date().toISOString())+"&order=next_check_at.asc,priority.desc&limit=120");
+  const due=selectDueSources(candidates);
   const results=[],tickDeadline=Date.now()+140000;for(let i=0;i<due.length;i+=2){if(Date.now()+8000>tickDeadline)break;results.push(...await Promise.all(due.slice(i,i+2).map((s:any)=>check(s,tickDeadline))));}
   return json({ok:true,checked:results.length,results});
  }catch(e){return json({error:String(e instanceof Error?e.message:e)},500);}

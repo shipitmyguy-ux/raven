@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-const endpoint='**/functions/v1/raven-studio-scan';
+const endpoint='**/functions/v1/raven-studio-scan*';
 const studios=[
  {studio_name:'Example Studio',provider:'workable',careers_url:'https://apply.workable.com/example',last_status:'pending',enabled:true,next_check_at:'2026-10-12T18:00:00Z',last_job_count:0},
  {studio_name:'Checked Studio',provider:'smartrecruiters',careers_url:'https://careers.smartrecruiters.com/checked',last_status:'ok',last_success_at:'2026-10-12T12:00:00Z',last_job_count:0},
@@ -96,4 +96,42 @@ test('unsupported and blocked verification notes do not imply broken source chec
  await expect(page.locator('#health-summary')).toBeHidden();
  await page.locator('#filter').selectOption('attention');await expect(page.locator('.card')).toHaveCount(0);
  await page.locator('#filter').selectOption('pending');await expect(page.locator('.card')).toHaveCount(2);
+});
+
+
+test('indie taxonomy separates indie origin and honest job board sources',async({page})=>{
+ await page.route(endpoint,r=>r.fulfill({json:{studios:[
+  {...studios[0],studio_name:'Small Team',segment:'indie',source_kind:'studio',segment_note:'Independent team; official careers source verified.'},
+  {...studios[1],studio_name:'Established Team',segment:'indie_origin',source_kind:'studio'},
+  {...studios[1],studio_name:'Work With Indies',provider:'workwithindies',segment:'indie',source_kind:'job_board',careers_url:'https://www.workwithindies.com/'},
+ ]}}));await page.goto('/studio-directory.html');
+ await expect(page.locator('#total')).toHaveText('2');await expect(page.locator('#boards')).toHaveText('1');
+ await expect(page.locator('.card').filter({hasText:'Work With Indies'})).toContainText('Job board · Indie');
+ await expect(page.locator('.card').filter({hasText:'Work With Indies'}).locator('a')).toHaveText('Job board ↗');
+ await page.locator('#segment').selectOption('indie');await expect(page.locator('.card')).toHaveCount(2);
+ await page.locator('#source-kind').selectOption('studio');await expect(page.locator('.card')).toHaveCount(1);
+ await expect(page.locator('.card')).toContainText('Small Team');
+ await page.getByRole('button',{name:'Clear filters'}).click();await page.locator('#segment').selectOption('indie_origin');await expect(page.locator('.card')).toHaveCount(1);
+ await expect(page.locator('.card')).toContainText('Established Team');
+});
+test('directory fetches past 500 and searches all loaded pages',async({page})=>{
+ const sources=Array.from({length:601},(_,i)=>({...studios[0],studio_name:'Catalog Studio '+i}));const offsets=[];
+ await page.route(endpoint,r=>{const offset=Number(new URL(r.request().url()).searchParams.get('offset'));offsets.push(offset);return r.fulfill({json:{studios:sources.slice(offset,offset+500),offset,total:sources.length,limit:500}});});
+ await page.goto('/studio-directory.html');await expect(page.locator('#total')).toHaveText('601');
+ expect(offsets).toEqual([0,500]);await page.locator('#search').fill('Catalog Studio 600');await expect(page.locator('.card')).toHaveCount(1);
+ await expect(page.locator('#notice')).not.toContainText('Partial directory');
+});
+test('malformed second page preserves explicit partial counts and retry resumes',async({page})=>{
+ const sources=Array.from({length:501},(_,i)=>({...studios[0],studio_name:'Catalog Studio '+i}));let failed=false;
+ await page.route(endpoint,r=>{const offset=Number(new URL(r.request().url()).searchParams.get('offset'));if(offset===500&&!failed){failed=true;return r.fulfill({json:{total:501,studios:'invalid'}});}return r.fulfill({json:{studios:sources.slice(offset,offset+500),offset,total:501,limit:500}});});
+ await page.goto('/studio-directory.html');await expect(page.locator('#notice')).toContainText('Partial directory: 500 of 501 sources loaded');
+ await expect(page.locator('#notice')).toContainText('Loading stopped: Unexpected response');await expect(page.locator('#total')).toHaveText('500');
+ await page.getByRole('button',{name:'Retry loading directory'}).click();await expect(page.locator('#total')).toHaveText('501');await expect(page.locator('#retry')).toBeHidden();
+ await expect(page.locator('#notice')).not.toContainText('Partial directory');
+});
+test('bounded initial loading exposes load more and never silently truncates catalog',async({page})=>{
+ const sources=Array.from({length:2001},(_,i)=>({...studios[0],studio_name:'Large Catalog '+i}));
+ await page.route(endpoint,r=>{const offset=Number(new URL(r.request().url()).searchParams.get('offset'));return r.fulfill({json:{studios:sources.slice(offset,offset+500),offset,total:2001,limit:500}});});
+ await page.goto('/studio-directory.html');await expect(page.locator('#notice')).toContainText('Partial directory: 2000 of 2001 sources loaded');
+ await page.getByRole('button',{name:'Load more sources'}).click();await expect(page.locator('#total')).toHaveText('2001');await expect(page.locator('#load-more')).toBeHidden();
 });
