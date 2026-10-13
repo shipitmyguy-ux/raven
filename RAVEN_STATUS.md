@@ -1,5 +1,12 @@
 # Raven Status
 
+## Approved InGameJob production activation — 2026-10-13
+
+User explicitly approved deployment/activation with d. Deployed collectorv14/backendv69 ACTIVE and applied committed gamesmith_ingamejob_sources migration. Actual Vault-authenticated scan request584 HTTP200 checked1source:37fetched,7details attempted,6complete plus1excluded,0deferred,6eligible. All six full descriptions1549–4639chars persisted and remote/geographic conditions preserved. Public directory confirms enabled/verified/ok/complete and24hour interval with next check October14. Gamesmith remains blocked/disabled/pending provider because publicDNS fails; no successful Gamesmith scan claimed.
+
+Prior PR77/main core,130browser,safety,Windows,Pages and smoke checks passed. Post-backend production smoke38477717810 passed. Public Games/3D results HTTP200 returns all six InGameJob listings. Security advisor comparison shows no new notices. No user documents, approvals or applications modified by this rollout. Evidence docs/board-ingamejob-verification.json; live six roles AstermanStylizedEnv,HyperVR3DGeneralist,HypercellUnityGeneralist,ValuesValueLevelArtist/LeadLevelArtist,JustCreateSenior3DArtist. Six listings are not a guarantee of six unique vacancies or personal eligibility; current shared dedup/remote-anywhere rules remain.
+
+
 ## Gamesmith and InGameJob sources — 2026-10-13
 
 User requested both boards added. Implemented InGameJob public English Art and Animation category integration, complete bounded pagination, fresh canonical/employer/title/active-Apply checks, complete nested descriptions, remote/geography/hybrid conditions, serial5second request starts, max12 rotating details and24hour source cadence. Added existing shared saved/discovery dedup recognition and directory label. Gamesmith registered blocked/disabled/pending provider because firstparty domain DNS returns SERVFAIL independently; no speculative adapter or false scan success. Provider constraint/migration extends only ingamejob; no saved jobs, documents, approvals or applications modified.
