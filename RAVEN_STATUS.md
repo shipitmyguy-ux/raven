@@ -4,7 +4,11 @@
 
 Implemented button → local signed-in Codex helper → validated Raven save → exact PDF → verified Drive upload → durable review link. Existing documents preserved; retries reuse verified exports. No manual prompt/JSON/upload, paid API route, automatic approval or employer submission. Helper must run on this computer; browser may request one-time local-network permission. Grant expires November 1. No automatic Windows startup installed.
 
-Actual fresh Mob Entertainment resume JT-1791413319517 completed every stage: PDF file 1Aswd4Dfuaz9z35JZMx_shPr7Ag-kNW1- in 1resumecoverletter, document SHA6e20888cb4a7b55166fee56cd2a49d1592e2252aed0886215a12e08e100354df. Two-page PDF visually/text verified; independent factual audit passed. BulletFarm retry reused saved draft. All52 local core commands,24 oneclick cases, four focused browser cases, secrets/diff and PowerShell syntax passed. Publication/full GitHub checks and real browser acceptance pending. Details: docs/ONE_CLICK_RESUMES.md.
+Actual fresh Mob Entertainment resume JT-1791413319517 completed every stage: PDF file 1Aswd4Dfuaz9z35JZMx_shPr7Ag-kNW1- in 1resumecoverletter, document SHA6e20888cb4a7b55166fee56cd2a49d1592e2252aed0886215a12e08e100354df. Two-page PDF visually/text verified; independent factual audit passed. BulletFarm retry reused saved draft. All52 local core commands,24 oneclick cases, four focused browser cases, secrets/diff and PowerShell syntax passed. Published with all GitHub checks and real hosted browser/reload acceptance passed. Details: docs/ONE_CLICK_RESUMES.md.
+
+PR74 merged/published at 144ac07eb08a0c0861e2a4772e8dfd7a34349ba8. PR core/Windows/safety checks and125 browser cases passed. Main core38470191323, browser38470191259 (125 cases), Pages38470191324, push smoke38470191266 and post-Pages smoke38470240820 (14 cases) passed. Actual published app87/runtime flag and real Edge button/helper run64ab5365-daba-446c-8a8e-d1f7b6a1fb36 passed without local asset routing or a ChatGPT window. Full reload retained the exact document SHA, Drive file, Applied status and approval. Normal local-network permission was explicitly granted; users may need to allow it once. Final helper restarted and remains running; no automatic startup service. Personal outputs/receipts remain ignored.
+
+
 
 
 ## All-track duplicate audit and cleanup - 2026-10-13

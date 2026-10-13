@@ -1,5 +1,7 @@
 # Direct ChatGPT resume and Drive workflow
 
+The default ChatGPT button now uses the published automatic workflow in [ONE_CLICK_RESUMES.md](ONE_CLICK_RESUMES.md). This document describes the retained manual handoff when chatgpt-one-click is disabled and the separate review export action.
+
 Implemented 2026-10-13. The ChatGPT button opens a short request for the exact saved Raven job. In ChatGPT, select Raven Private and send the request. The plugin reads the posting and canonical facts, validates structured drafts internally, and saves directly to the job. There is no user JSON transfer. Existing documents are preserved; the private tunnel still has no revision permission. Human review and manual employer submission remain required.
 
 After reviewing a saved document, **Save PDF to Drive** opens a separate ChatGPT request. Select Raven Private and Google Drive. The private `export_document_pdf` tool renders the exact saved HTML with headless Edge, JavaScript disabled and outbound requests blocked. It returns a local PDF path and base64 bytes; a ChatGPT file tool can materialize the bytes if the Drive connector cannot access the local path. The connected Drive tool uploads to the configured folder. Only after a Drive metadata readback confirms PDF MIME type and exact parent does ChatGPT call `record_drive_export`.
