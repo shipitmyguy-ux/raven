@@ -1,0 +1,220 @@
+{
+  "verified_at": "2026-10-13T22:11:09.795Z",
+  "provider": "ingamejob",
+  "board_key": "ingamejob",
+  "source_kind": "job_board",
+  "studio_class": "unknown",
+  "category_url": "https://ingamejob.com/en/jobs/art-and-animation",
+  "transport": "Actual anonymous Node fetch with accept:text/html, redirect:error and6sec timeout; no cookies/credentials/browser impersonation/security bypass. Serial minimum5sec request starts.",
+  "requests": [
+    {
+      "url": "https://ingamejob.com/en/jobs/art-and-animation",
+      "status": 200,
+      "bytes": 510406,
+      "at": "2026-10-13T22:10:31.265Z"
+    },
+    {
+      "url": "https://ingamejob.com/en/jobs/art-and-animation?page=2",
+      "status": 200,
+      "bytes": 454361,
+      "at": "2026-10-13T22:10:34.875Z"
+    },
+    {
+      "url": "https://ingamejob.com/en/job/level-artist-31",
+      "status": 200,
+      "bytes": 49213,
+      "at": "2026-10-13T22:10:39.655Z"
+    },
+    {
+      "url": "https://ingamejob.com/en/job/lead-level-artist-2",
+      "status": 200,
+      "bytes": 51778,
+      "at": "2026-10-13T22:10:44.823Z"
+    },
+    {
+      "url": "https://ingamejob.com/en/job/3d-generalist-81",
+      "status": 200,
+      "bytes": 49976,
+      "at": "2026-10-13T22:10:49.863Z"
+    },
+    {
+      "url": "https://ingamejob.com/en/job/senior-game-artist-2d-motion",
+      "status": 200,
+      "bytes": 49474,
+      "at": "2026-10-13T22:10:54.628Z"
+    },
+    {
+      "url": "https://ingamejob.com/en/job/junior-middle-3d-artist-1",
+      "status": 200,
+      "bytes": 47379,
+      "at": "2026-10-13T22:10:59.755Z"
+    },
+    {
+      "url": "https://ingamejob.com/en/job/3d-environment-artist-stylized",
+      "status": 200,
+      "bytes": 48885,
+      "at": "2026-10-13T22:11:04.693Z"
+    },
+    {
+      "url": "https://ingamejob.com/en/job/3d-generalistenvironment-artist-unity",
+      "status": 200,
+      "bytes": 51045,
+      "at": "2026-10-13T22:11:09.778Z"
+    }
+  ],
+  "fetched": 37,
+  "details": {
+    "status": "complete",
+    "attempted": 7,
+    "completed": 6,
+    "deferred": 0,
+    "error": null
+  },
+  "detail_cursor_next": 0,
+  "matching_remote_environment_or_3d": 6,
+  "roles": [
+    {
+      "provider_job_id": "level-artist-31",
+      "url": "https://ingamejob.com/en/job/level-artist-31",
+      "title": "Level Artist",
+      "company": "Values Value (undisclosed client)",
+      "location": "Remote;  Fully remote work with B2B type of employment or officially employed in Kazakhstan;  Relocation support to Kazakhstan if it’s needed: legal / work-permit assistance is available; the financial part of a relocation package is considered individually",
+      "remote": true,
+      "studio_description_updated_at": "2026-10-13T22:15:58.069Z",
+      "description_chars": 3267
+    },
+    {
+      "provider_job_id": "lead-level-artist-2",
+      "url": "https://ingamejob.com/en/job/lead-level-artist-2",
+      "title": "Lead Level Artist",
+      "company": "Values Value (undisclosed client)",
+      "location": "Remote; Fully remote, or optional workplace for Kyiv-based specialists",
+      "remote": true,
+      "studio_description_updated_at": "2026-10-13T22:15:58.073Z",
+      "description_chars": 4639
+    },
+    {
+      "provider_job_id": "3d-generalist-81",
+      "url": "https://ingamejob.com/en/job/3d-generalist-81",
+      "title": "3D Generalist",
+      "company": "HyperVR Games",
+      "location": "Remote",
+      "remote": true,
+      "studio_description_updated_at": "2026-10-13T22:15:58.076Z",
+      "description_chars": 2907
+    },
+    {
+      "provider_job_id": "junior-middle-3d-artist-1",
+      "url": "https://ingamejob.com/en/job/junior-middle-3d-artist-1",
+      "title": "Senior 3D Artist (Low Poly & Stylized)",
+      "company": "JustCreate",
+      "location": "Remote",
+      "remote": true,
+      "studio_description_updated_at": "2026-10-13T22:15:58.078Z",
+      "description_chars": 1730
+    },
+    {
+      "provider_job_id": "3d-environment-artist-stylized",
+      "url": "https://ingamejob.com/en/job/3d-environment-artist-stylized",
+      "title": "3D Environment Artist (Stylized)",
+      "company": "Asterman",
+      "location": "Remote (explicit description)",
+      "remote": true,
+      "studio_description_updated_at": "2026-10-13T22:15:58.079Z",
+      "description_chars": 1549
+    },
+    {
+      "provider_job_id": "3d-generalistenvironment-artist-unity",
+      "url": "https://ingamejob.com/en/job/3d-generalistenvironment-artist-unity",
+      "title": "3D Generalist/Environment Artist (Unity)",
+      "company": "Hypercell Games",
+      "location": "Remote",
+      "remote": true,
+      "studio_description_updated_at": "2026-10-13T22:15:58.080Z",
+      "description_chars": 2259
+    }
+  ],
+  "limits": [
+    "Filtered Art and Animation category, not complete whole-board coverage.",
+    "No exact posting date or expiry date advertised; preserve relative Posted text in source and validate fresh active Apply UI plus archived/closed markers each scan.",
+    "Remote visibility does not establish personal residency, work authorization or global eligibility.",
+    "Descriptions refreshed serially with at most12 target candidates each scan and rotating cursor; partial/deferred coverage remains explicit.",
+    "Node reachability is verified; deployed Supabase runtime reachability still requires root integration acceptance."
+  ],
+  "final_parser_rechecked_at": "2026-10-13T22:15:58.084Z",
+  "final_parser_recheck": "All actual captured anonymous public pages reprocessed after exact company-origin, balanced nested descriptions, hybrid-casual genre, optional remote-choice and explicit description-remote fixes. Six eligible roles with complete descriptions; original raw source capture timestamps retained in requests.",
+  "request_timestamps": "requests[].at is response body completion time; adapter serializes request starts with minimum5000ms spacing.",
+  "active_detail_outcomes": {
+    "attempted": 7,
+    "completed": 6,
+    "excluded_2d_only": 1,
+    "failed": 0,
+    "deferred": 0
+  },
+  "safety_tests": 11,
+  "target_detail_outcomes": [
+    {
+      "url": "https://ingamejob.com/en/job/level-artist-31",
+      "title": "Level Artist",
+      "excluded": false,
+      "remote": true,
+      "location": "Remote;  Fully remote work with B2B type of employment or officially employed in Kazakhstan;  Relocation support to Kazakhstan if it’s needed: legal / work-permit assistance is available; the financial part of a relocation package is considered individually",
+      "eligible": true,
+      "description_chars": 3267
+    },
+    {
+      "url": "https://ingamejob.com/en/job/lead-level-artist-2",
+      "title": "Lead Level Artist",
+      "excluded": false,
+      "remote": true,
+      "location": "Remote; Fully remote, or optional workplace for Kyiv-based specialists",
+      "eligible": true,
+      "description_chars": 4639
+    },
+    {
+      "url": "https://ingamejob.com/en/job/3d-generalist-81",
+      "title": "3D Generalist",
+      "excluded": false,
+      "remote": true,
+      "location": "Remote",
+      "eligible": true,
+      "description_chars": 2907
+    },
+    {
+      "url": "https://ingamejob.com/en/job/senior-game-artist-2d-motion",
+      "title": "Senior Game Artist | 2D & Motion",
+      "excluded": true,
+      "remote": null,
+      "location": "Remote",
+      "eligible": false,
+      "description_chars": 0
+    },
+    {
+      "url": "https://ingamejob.com/en/job/junior-middle-3d-artist-1",
+      "title": "Senior 3D Artist (Low Poly & Stylized)",
+      "excluded": false,
+      "remote": true,
+      "location": "Remote",
+      "eligible": true,
+      "description_chars": 1730
+    },
+    {
+      "url": "https://ingamejob.com/en/job/3d-environment-artist-stylized",
+      "title": "3D Environment Artist (Stylized)",
+      "excluded": false,
+      "remote": true,
+      "location": "Remote (explicit description)",
+      "eligible": true,
+      "description_chars": 1549
+    },
+    {
+      "url": "https://ingamejob.com/en/job/3d-generalistenvironment-artist-unity",
+      "title": "3D Generalist/Environment Artist (Unity)",
+      "excluded": false,
+      "remote": true,
+      "location": "Remote",
+      "eligible": true,
+      "description_chars": 2259
+    }
+  ]
+}

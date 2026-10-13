@@ -2,7 +2,7 @@
 "use strict";
 // Shared identity for discovery, saved jobs, browser display and import. No rows are deleted.
 const OFFICIAL = new Set(['ashby','greenhouse','lever','workable','smartrecruiters','bamboohr','icims','avature','jobylon','teamtailor','breezy','recruitee']);
-const BOARDS = new Set(['workwithindies','remotegamejobs','artstation','blenderartists','epicforum','hitmarker','eightbit','skillsearch','gamesjobsdirect']);
+const BOARDS = new Set(['workwithindies','remotegamejobs','artstation','blenderartists','epicforum','hitmarker','eightbit','skillsearch','gamesjobsdirect','ingamejob']);
 const normalize = value => String(value || '').normalize('NFKC').toLowerCase().replace(/\s+/g,' ').trim();
 function employer(value) {
   const name=normalize(value), alias=name.replace(/[\s-]/g,'');

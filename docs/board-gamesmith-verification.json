@@ -1,0 +1,47 @@
+{
+  "source": "Gamesmith",
+  "official_url": "https://gamesmith.com/",
+  "listing_url": "https://gamesmith.com/jobs",
+  "source_kind": "job_board",
+  "segment": "mixed",
+  "provider_candidate": "gamesmith",
+  "board_key_candidate": "gamesmith",
+  "verification_status": "blocked",
+  "verified_at": "2026-10-13T22:07:29Z",
+  "enabled_recommendation": false,
+  "blocker": "Public domain DNS currently returns SERVFAIL; no anonymous HTTP listing or description could be retrieved.",
+  "probes": [
+    {"url": "https://gamesmith.com/", "http_status": null, "node_error": "EAI_AGAIN", "windows_error": "No such host is known. (gamesmith.com:443)"},
+    {"url": "https://gamesmith.com/jobs", "http_status": null, "node_error": "EAI_AGAIN", "windows_error": "No such host is known. (gamesmith.com:443)"},
+    {"url": "https://www.gamesmith.com/jobs", "http_status": null, "node_error": "EAI_AGAIN", "windows_error": "No such host is known. (www.gamesmith.com:443)"}
+  ],
+  "independent_dns_diagnostic": [
+    {
+      "url": "https://dns.google/resolve?name=gamesmith.com&type=A",
+      "http_status": 200,
+      "dns_status": 2,
+      "dns_status_name": "SERVFAIL",
+      "comment": "Name servers refused query (lame delegation?) [205.251.198.162, 205.251.192.61, 205.251.194.131, 205.251.196.49].",
+      "extended_dns_error_codes": [23, 22]
+    },
+    {
+      "url": "https://dns.google/resolve?name=www.gamesmith.com&type=A",
+      "http_status": 200,
+      "dns_status": 2,
+      "dns_status_name": "SERVFAIL",
+      "comment": "Name servers refused query (lame delegation?) [205.251.198.162, 205.251.192.61, 205.251.196.49, 205.251.194.131].",
+      "extended_dns_error_codes": [23, 22]
+    }
+  ],
+  "transport": "Ordinary anonymous HTTPS Node fetch and Windows Invoke-WebRequest. Windows trusted certificate transport used for public Google DNS diagnostic; no TLS verification bypass, private IP override, proxy bypass, credentials or account requests.",
+  "identity_evidence": [
+    {"url": "https://gamescareersweek.org/find-a-job/", "support": "Games Careers Week's own resource directory identifies Gamesmith and links gamesmith.com. Its historical job-count statement does not establish current availability."},
+    {"url": "https://blogs.chapman.edu/dodge/2021/01/04/game-industry-job-resources/", "support": "Chapman University's own careers-resource post links Gamesmith at https://gamesmith.com/jobs. Historical link only; not a verified feed."}
+  ],
+  "listing_count": null,
+  "full_description_verified": false,
+  "remote_scope_verified": false,
+  "expiry_verified": false,
+  "decision": "Register Gamesmith as blocked/disabled if desired, exposing the domain DNS blocker. No adapter or synthetic parser created because current firstparty listing structure, pagination, employer identity, descriptions, remote restrictions and application state are unverified. Retry ordinary public DNS/HTTPS after domain recovery; do not label it an active monitored source or successful zero-job scan.",
+  "limitations": "DNS failure demonstrates current transport unavailability, not proof that the business is permanently closed. Unrelated similarly named Gamesmith Studio/Game Smithing services must not be substituted."
+}

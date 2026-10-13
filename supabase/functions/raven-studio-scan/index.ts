@@ -3,6 +3,7 @@ import {MAX_STUDIO_JOBS, providerEndpoint, providerRecords, normalizeStudioJobs,
 import {fetchStudioJson, fetchStudioText, enrichStudioDetails, reuseFreshStudioDescriptions} from "../_shared/studio-collector.mjs";
 import {collectIcims} from "../_shared/studio-icims.mjs";
 import {collectAvature} from "../_shared/studio-avature.mjs";
+import {collectInGameJob} from "../_shared/studio-ingamejob.mjs";
 import {collectGamesJobsDirect} from "../_shared/studio-gamesjobsdirect.mjs";
 import {collectEightBit} from "../_shared/studio-eightbit.mjs";
 import {collectSkillsearchSnapshot} from "../_shared/studio-skillsearch-snapshot.mjs";
@@ -47,6 +48,7 @@ async function preparePortalDetails(jobs:any[],deadline:number,restoreMetadata=f
 }
 async function sourceJobs(s:any,deadline:number){
  const portalOptions={fetchJson:fetchStudioJson,fetchText:fetchStudioText,deadline,jobAllowed:(j:any)=>gameArtRoleAllowed(j)&&jobLocationAllowed(j),detailAllowed:(j:any)=>gameArtRoleAllowed(j),prepareDetails:(jobs:any[])=>preparePortalDetails(jobs,deadline,true)};
+ if(s.provider==="ingamejob")return collectInGameJob(s,portalOptions);
  if(s.provider==="gamesjobsdirect")return collectGamesJobsDirect(s,portalOptions);
  if(s.provider==="eightbit")return collectEightBit(s,portalOptions);
  if(s.provider==="skillsearch")return collectSkillsearchSnapshot(s,portalOptions);
