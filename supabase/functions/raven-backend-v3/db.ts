@@ -1,6 +1,6 @@
 import {candidateAllowedForTrack} from "./utils.ts";
 import type { Candidate, Track } from "./types.ts";
-import {deduplicateStudioResults,deduplicateJobs,findExistingJob} from "../_shared/studio-result-dedup.mjs";
+import {deduplicateStudioResults,deduplicateJobs,findExistingJob,sameJob} from "../_shared/studio-result-dedup.mjs";
 import { validAtsRow } from "./csv-records.mjs";
 
 function isPersistableCandidate(c:Candidate){
@@ -78,8 +78,9 @@ export async function listResults(track:Track){
   const discovery=track==="Games / 3D"?deduplicateStudioResults([...unique.values()]):[...unique.values()];
   // Include saved/application identities without rewriting their records.
   const saved=await listJobs();
-  const discoveryRows=new Set(discovery);
-  const visible=deduplicateJobs([...saved,...discovery]).filter((row:any)=>discoveryRows.has(row));
+  // Any saved identity suppresses its discovery copy, even if other saved
+  // aliases contain incomplete employer metadata. Preserve every saved record.
+  const visible=deduplicateJobs(discovery.filter((row:any)=>!saved.some((job:any)=>sameJob(job,row))));
   return visible.sort((a:any,b:any)=>Number(b.score||0)-Number(a.score||0)||String(b.last_seen||"").localeCompare(String(a.last_seen||"")));
 }
 
