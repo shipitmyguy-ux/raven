@@ -959,7 +959,14 @@
     const snapshots=Array.isArray(activity.snapshots)?activity.snapshots:[];
     const latestSnapshot=snapshots.find((item)=>item.snapshot_type==="application")||snapshots[0]||null;
     const interviewMode=String(job.status||"").toLowerCase()==="interview";
-    const rows=events.slice(0,10).map((event)=>{
+    // Keep the newest export for each document visible even after progress fills the timeline.
+    const visibleEvents=events.slice(0,10),exportKinds=new Set();
+    for(const event of events){
+      const kind=event.metadata?.document_type;
+      if(event.event_type!=="document_drive_export"||!["resume","coverLetter"].includes(kind)||exportKinds.has(kind)||!/^https:\/\/drive\.google\.com\/file\/d\/[A-Za-z0-9_-]{10,160}\/view$/.test(event.metadata?.drive_url||""))continue;
+      exportKinds.add(kind);if(!visibleEvents.includes(event))visibleEvents.push(event);
+    }
+    const rows=visibleEvents.map((event)=>{
       const suggested=String(event?.metadata?.suggested_status||"");
       const autoApplied=event?.metadata?.auto_applied===true;
       const suggestion=suggested&&!autoApplied&&suggested!==String(job.status||"")

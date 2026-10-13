@@ -1541,3 +1541,14 @@ test("Apply on site reports missing listing and does not write a resume",async({
  await expect(page.locator('#syncStatus')).toContainText('did not provide a job description');
  expect(api.getGenerationCalls()).toBe(0);expect(api.getJob().resume).toBe('');
 });
+
+test('Drive exports remain visible when workflow progress fills the activity window',async({page})=>{
+ await mockRaven(page,{initialJob:{resume:'data:text/html,resume',cover_letter:'data:text/html,cover'}});
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();
+ await page.evaluate(async()=>{
+  for(const kind of ['resume','coverLetter'])await window.RavenAPI.addJobEvent('job-1',{eventType:'document_drive_export',metadata:{document_type:kind,drive_url:'https://drive.google.com/file/d/'+(kind==='resume'?'resume12345678':'cover123456789')+'/view'}});
+  for(let i=0;i<12;i++)await window.RavenAPI.addJobEvent('job-1',{eventType:'resume_workflow',summary:'Queued workflow '+i});
+ });
+ await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+ await expect(page.getByRole('link',{name:'Open PDF in Drive'})).toHaveCount(2);
+});
