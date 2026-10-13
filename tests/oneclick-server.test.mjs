@@ -60,3 +60,14 @@ test('a model manifest never substitutes for actual upload and metadata tool rea
  assert.throws(()=>verifiedDriveReceipt([upload,item('get_file_metadata',{fileId:meta.id},{...meta,parent_ids:['wrong']})],options),/METADATA_NOT_CONFIRMED/);
  assert.equal(verifiedDriveReceipt([upload,item('get_file_metadata',{fileId:meta.id},meta)],options).file_id,meta.id);
 });
+
+test('cover letter for the same job is accepted while resume runs and completes after it',async()=>{
+ let release,started;const gate=new Promise(r=>release=r),begun=new Promise(r=>started=r);const order=[];
+ const f=await fixture(async(input,onProgress)=>{order.push(input.documentType);onProgress({stage:'writing',document_type:input.documentType});if(input.documentType==='resume'){started();await gate;}return {job_id:input.jobId,stage:'complete',documents:[{document_type:input.documentType}]};});
+ try{
+  const resume=await (await f.request('/runs',{job_id:'same',document_type:'resume'})).json();await begun;
+  const response=await f.request('/runs',{job_id:'same',document_type:'coverLetter'});assert.equal(response.status,202);const cover=await response.json();assert.notEqual(cover.run_id,resume.run_id);assert.equal(cover.stage,'queued');
+  assert.deepEqual(order,['resume']);release();await f.runtime.drain();assert.deepEqual(order,['resume','coverLetter']);
+  assert.equal((await (await f.request('/runs/'+cover.run_id)).json()).stage,'complete');
+ }finally{release();await f.cleanup();}
+});

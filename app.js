@@ -1500,10 +1500,11 @@
     const lifecycleControl='<div class="job-lifecycle-row"><label class="lifecycle-control"><span>Status</span><select data-lifecycle-status aria-label="Job status">'+lifecycleOptions+'</select></label>'+
       followUpControl+(nextAction?'<span class="next-action">'+escapeHtml(nextAction)+'</span>':'')+'</div>';
     const docsReady=documentsReadyForApplication(job);
+    const bothBusy=oneClickSession(job,"both");
     const generateBoth=(!job.resume||!job.coverLetter)&&featureEnabled("resume-generation")&&featureEnabled("cover-letter-generation")
-      ? '<button class="workflow-action" type="button" data-generate-both'+(generationSession(job)?' disabled aria-busy="true"':'')+'><span>'+(generationSession(job)?'Creating documents…':job.resume||job.coverLetter?'Finish documents':'Generate both')+'</span></button>':"";
+      ? '<button class="workflow-action" type="button" data-generate-both'+(generationSession(job)||bothBusy?' disabled aria-busy="true"':'')+'><span>'+(bothBusy?escapeHtml(bothBusy.label):generationSession(job)?'Creating documents…':job.resume||job.coverLetter?'Finish documents':'Generate both')+'</span></button>':"";
     const chatGptBoth=!job.resume&&!job.coverLetter
-      ? '<button class="workflow-action chatgpt-action" type="button" data-chatgpt-prompt="both"><span class="workflow-icon" aria-hidden="true">✦</span><span>ChatGPT both</span></button>'+
+      ? '<button class="workflow-action chatgpt-action" type="button" data-chatgpt-prompt="both"'+(bothBusy?' disabled aria-busy="true"':'')+'><span class="workflow-icon" aria-hidden="true">✦</span><span>'+(bothBusy?escapeHtml(bothBusy.label):'ChatGPT both')+'</span></button>'+
         '<button class="workflow-action" type="button" data-chatgpt-import="both"><span class="workflow-icon" aria-hidden="true">⇩</span><span>Import AI docs</span></button>'
       : "";
     const statusLower=currentStatus.toLowerCase();
@@ -1735,6 +1736,7 @@
   }
 
   async function generateBothForJob(job){
+    if(state.runtime.settings["chatgpt-one-click"]===true)return generateOneClick(job,"both",null);
     if(generationSession(job))return;
     const missing=["resume","coverLetter"].filter(type=>!job[type]);
     if(!missing.length)return openDocumentReview(job,"resume");
@@ -1765,6 +1767,10 @@
   }
 
   async function generateForJob(job,type,button=null,options={}) {
+    if(state.runtime.settings["chatgpt-one-click"]===true&&!options.force){
+      if(job[type])return openDocumentReview(job,type);
+      return generateOneClick(job,type,button,{autoOpen:options.autoOpen!==false});
+    }
     const existing=generationSession(job);
     if(existing){
       if(Date.now()-Number(existing.startedAt||0)<180000) return;
@@ -1923,23 +1929,32 @@
     return String(payload.prompt);
   }
 
-  const activeOneClickJobs=new Set();
-  let oneClickClient;
-  async function generateOneClick(job,type,button){
+  const activeOneClickJobs=new Map();
+  function oneClickSession(job,type){
     const key=String(job.id||job.url);
-    if(activeOneClickJobs.has(key))return;
-    activeOneClickJobs.add(key);
+    return type==="both"?(activeOneClickJobs.get(key+":resume")||activeOneClickJobs.get(key+":coverLetter")):activeOneClickJobs.get(key+":"+type);
+  }
+  let oneClickClient;
+  async function generateOneClick(job,type,button,{autoOpen=true}={}){
+    let key=String(job.id||job.url);
+    const kinds=type==="both"?["resume","coverLetter"]:[type];
+    if(kinds.some(kind=>activeOneClickJobs.has(key+":"+kind))){setStatus("This document is already queued or being generated. The other document can be queued separately.");return;}
+    const session={label:"Preparing…",autoOpen:autoOpen&&state.selectedId===job.id};
+    kinds.forEach(kind=>activeOneClickJobs.set(key+":"+kind,session));
     try{
       setGenerationButton(button,true,"Preparing…");
+      render();
       setStatus("Preparing your job for one-click generation…");
       await prepareJobForGeneration(job);
+      const savedKey=String(job.id||job.url);
+      if(savedKey!==key){kinds.forEach(kind=>{activeOneClickJobs.delete(key+":"+kind);activeOneClickJobs.set(savedKey+":"+kind,session);});key=savedKey;}
       if(!oneClickClient){
         const {createOneClickClient}=await import("./oneclick-client.mjs?v=1");
         oneClickClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
       }
-      const labels={queued:"Waiting for writer…",writing:"Writing from verified facts…",saving:"Saving in Raven…",pdf:"Creating PDF…",uploading:"Saving PDF to Drive…",recording:"Confirming saved links…",complete:"Verifying saved documents…"};
+      const labels={queued:"Queued · waiting for writer…",writing:"Writing from verified facts…",saving:"Saving in Raven…",pdf:"Creating PDF…",uploading:"Saving PDF to Drive…",recording:"Confirming saved links…",complete:"Verifying saved documents…"};
       const result=await oneClickClient.run({job_id:String(job.id),document_type:type},stage=>{
-        setGenerationButton(button,true,labels[stage]||"Generating…");setStatus(labels[stage]||"Generating…");
+        session.label=labels[stage]||"Generating…";render();setStatus(session.label);
       });
       // Read the canonical data directly: loadJobs deliberately tolerates offline
       // cache, which cannot establish that this run actually saved its outputs.
@@ -1949,9 +1964,9 @@
       state.jobs=mergePendingDocuments(freshJobs);writeCache(CACHE_JOBS_KEY,state.jobs);
       await loadJobActivity(saved,true);render();
       setStatus(result.documents.some(doc=>doc.reused_existing)?"Existing Raven document preserved and copied to Drive · review required":"Saved in Raven and copied to Drive · review required");
-      if(!document.querySelector("dialog[open]"))await openDocumentReview(saved,type==="both"?"resume":type);
+      if(session.autoOpen&&state.selectedId===saved.id&&!document.querySelector("dialog[open]"))await openDocumentReview(saved,type==="both"?"resume":type);
     }catch(error){setStatus("One-click generation: "+error.message);}
-    finally{activeOneClickJobs.delete(key);setGenerationButton(button,false);}
+    finally{kinds.forEach(kind=>activeOneClickJobs.delete(key+":"+kind));setGenerationButton(button,false);render();}
   }
   async function launchChatGptPrompt(job,type,button=null){
     if(state.runtime.settings["chatgpt-one-click"]===true)return generateOneClick(job,type,button);
@@ -2583,6 +2598,10 @@
     const feedback=error?'<span class="document-generation-error" role="alert">'+escapeHtml(error)+'</span>':"";
     const fileLabel=String(label||"file").toLowerCase();
     const generating=generationSession(job);
+    const oneClickBusy=oneClickSession(job,key);
+    if(oneClickBusy){
+      return '<span class="document-control is-empty is-generating"><button class="document-primary is-generating" type="button" disabled aria-busy="true" data-generate="'+escapeAttr(key)+'"><span class="generation-spinner" aria-hidden="true"></span><span>'+escapeHtml(oneClickBusy.label)+'</span></button></span>';
+    }
     if(generating?.type===key){
       return '<span class="document-control is-empty is-generating">'+
         '<button class="document-primary is-generating" type="button" disabled aria-busy="true"><span class="generation-spinner" aria-hidden="true"></span><span>AI generating…</span></button>'+
