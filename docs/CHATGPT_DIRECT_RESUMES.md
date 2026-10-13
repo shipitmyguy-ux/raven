@@ -19,3 +19,7 @@ Run `npm ci` before PDF export. Windows Edge must be installed. The launcher pre
 - Windows fixture readers now accept CRLF; generated-renderer validation normalizes line endings without changing rendered content.
 
 These checks verify the renderer, connector-assisted upload, durable event and mocked frontend interactions. The exact signed-in ChatGPT button → new resume generation → private save → PDF tool → Drive chain has not been exercised. New tools require a ChatGPT plugin refresh. Frontend publication and CI status are recorded in WORK_HANDOFF.md; implementation is not equivalent to a verified live release.
+
+## Publication
+
+User explicitly approved merge/publication. PR73 merged at 8ad4cc0; hosted app85, Drive button, direct-save configuration and handoff module HTTP200 verified. All120 PR browser tests and all14 post-Pages smoke cases passed. Actual Raven web API read back the saved Drive event after upload. The installed ChatGPT plugin still needs a one-time tool refresh; this chat exposes its prior five cached tools. Signed-in full-chain acceptance remains pending that refresh and a selected-job run.

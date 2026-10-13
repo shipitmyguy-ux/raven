@@ -14,7 +14,7 @@ Limit: unsupported aliases and simultaneous first imports of previously unseen d
 - [x] Implement job-bound direct ChatGPT save, exact saved-document PDF export and Drive action for the selected folder.
 - [x] Verify real PDF rendering/layout, Drive upload/metadata, durable export event and original-document preservation.
 - [x] Pass focused unit/browser/Windows checks; integrate latest GitHub main and preserve unrelated user files.
-- [ ] Publish reviewed frontend changes and verify deployment/smoke.
+- [x] Publish reviewed frontend changes with explicit user approval; PR73 merged, hosted app85 verified, main checks and post-deployment smoke passed.
 - [ ] Refresh Raven Private tools in ChatGPT and test the signed-in button-to-generation/save/PDF/Drive chain.
 - Evidence: docs/CHATGPT_DIRECT_RESUMES.md.
 
