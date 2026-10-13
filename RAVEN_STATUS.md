@@ -1,5 +1,12 @@
 # Raven Status
 
+## One-click resumes — 2026-10-13
+
+Implemented button → local signed-in Codex helper → validated Raven save → exact PDF → verified Drive upload → durable review link. Existing documents preserved; retries reuse verified exports. No manual prompt/JSON/upload, paid API route, automatic approval or employer submission. Helper must run on this computer; browser may request one-time local-network permission. Grant expires November 1. No automatic Windows startup installed.
+
+Actual fresh Mob Entertainment resume JT-1791413319517 completed every stage: PDF file 1Aswd4Dfuaz9z35JZMx_shPr7Ag-kNW1- in 1resumecoverletter, document SHA6e20888cb4a7b55166fee56cd2a49d1592e2252aed0886215a12e08e100354df. Two-page PDF visually/text verified; independent factual audit passed. BulletFarm retry reused saved draft. All52 local core commands,24 oneclick cases, four focused browser cases, secrets/diff and PowerShell syntax passed. Publication/full GitHub checks and real browser acceptance pending. Details: docs/ONE_CLICK_RESUMES.md.
+
+
 ## All-track duplicate audit and cleanup - 2026-10-13
 
 Audited all 391 saved records and all 800 discovery-cache metadata rows, plus 177 API-visible full descriptions. Existing source cache contains 383 copies of saved vacancies, 16 of them surfacing in another track. Backend and UI now suppress saved identities across all four tracks; exact posting identity survives track assignment changes. Added narrowly verified Eleventh Hour Games and Mob Entertainment source aliases and LinkedIn posting-ID normalization. Eleventh Hour's original Greenhouse Applied record wins display/import while both applied histories and identical document links stay stored. Mob's Applied record is retained, with a guarded correction of its stale remote flag from validated matching source metadata. No saved rows or documents are deleted or overwritten.
