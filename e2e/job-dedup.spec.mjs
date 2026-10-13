@@ -15,7 +15,7 @@ test('applied cross-board vacancy appears once after reload and keeps its docume
   const roles=page.getByRole('button',{name:/Applied Senior Environment Artist Smile-Break/});
   await expect(roles).toHaveCount(1);
   await expect(page.getByRole('button',{name:/^Senior Environment Artist Smile Break/})).toHaveCount(0);
-  await roles.click();
+  if(await roles.getAttribute('aria-expanded')!=='true')await roles.click();
   await expect(page.getByRole('checkbox',{name:'Unmark as applied'})).toBeChecked();
   await expect(page.getByRole('button',{name:'Review',exact:true})).toHaveCount(2);
  }
