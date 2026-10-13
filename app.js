@@ -773,7 +773,8 @@
         };
       });
     const savedUrls = new Set(saved.map((job)=>normalizeComparableUrl(job.url)).filter(Boolean));
-    const unsaved = discovered.filter((job)=>!savedUrls.has(normalizeComparableUrl(job.url)));
+    const unsaved = discovered.filter((job)=>!savedUrls.has(normalizeComparableUrl(job.url))
+      && !state.jobs.some(existing=>window.RavenJobDedup.sameJob(existing,job)));
     return window.RavenJobDedup.deduplicateJobs([...saved, ...unsaved]).filter(job=>job.listing_state==="closed" || (
       (state.activeTrack!=="Games / 3D"||window.RavenTrackFilter.gameArtRoleAllowed(job))
       && (state.activeTrack!=="Professional"||window.RavenTrackFilter.professionalRoleAllowed(job))

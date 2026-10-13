@@ -11,7 +11,7 @@ const studio={title:'Senior Level Artist',url:'https://jobs.smartrecruiters.com/
 const indieBoard={...studio,company:'Half Mermaid',title:'Senior Environment Artist',location:'Remote US',source:'Studio:workwithindies',url:'https://www.workwithindies.com/careers/half-mermaid',snippet:'board description'};
 const indieOfficial={...indieBoard,company:'Half Mermaid Productions',source:'Studio:ashby',url:'https://jobs.ashbyhq.com/halfmermaid/123',snippet:'official description'};
 let failure=false;
-const context={deduplicateStudioResults,deduplicateJobs,findExistingJob,Deno:{env:{get:n=>n==='SUPABASE_URL'?'https://db.example':'test-key'}},Headers,URL,Response,fetch:async(url,opts)=>{calls.push(url);assert.equal(opts.method,'GET');if(failure&&url.includes('source=like'))return new Response('',{status:503});return Response.json(url.includes('source=like')?[studio,indieBoard,indieOfficial,normal[0],{...studio,url:'https://example.com/onsite',remote:false,location:'London, UK'}]:normal);},candidateAllowedForTrack:(track,row)=>globalThis.RavenTrackFilter.gameArtRoleAllowed(row)&&globalThis.RavenTrackFilter.jobLocationAllowed(row),validAtsRow:()=>true};
+const context={deduplicateStudioResults,deduplicateJobs,findExistingJob,Deno:{env:{get:n=>n==='SUPABASE_URL'?'https://db.example':'test-key'}},Headers,URL,Response,fetch:async(url,opts)=>{calls.push(url);assert.equal(opts.method,'GET');if(url.includes('raven_jobs?'))return Response.json([]);if(failure&&url.includes('source=like'))return new Response('',{status:503});return Response.json(url.includes('source=like')?[studio,indieBoard,indieOfficial,normal[0],{...studio,url:'https://example.com/onsite',remote:false,location:'London, UK'}]:normal);},candidateAllowedForTrack:(track,row)=>globalThis.RavenTrackFilter.gameArtRoleAllowed(row)&&globalThis.RavenTrackFilter.jobLocationAllowed(row),validAtsRow:()=>true};
 vm.runInNewContext(source+';globalThis.testApi={listResults};',context);
 const rows=await context.testApi.listResults('Games / 3D');
 assert.equal(rows.length,102,'preserve all top100 and add distinct eligible recent studio jobs');
@@ -22,6 +22,6 @@ assert.equal(rows.filter(row=>row.url===normal[0].url).length,1,'deduplicate sha
 assert.equal(rows.some(row=>row.url.endsWith('/onsite')),false,'apply existing location rules to both windows');
 assert.match(calls[1],/source=like.Studio%3A%25/);
 assert.match(calls[1],/order=last_seen.desc&limit=50$/);
-calls.length=0;await context.testApi.listResults('Professional');assert.equal(calls.length,1,'other tracks retain one original window');
+calls.length=0;await context.testApi.listResults('Professional');assert.equal(calls.length,2,'other tracks keep the original discovery window and now check saved identities');
 failure=true;await assert.rejects(()=>context.testApi.listResults('Games / 3D'),/503/,'fail visibly if the studio window fails');
 console.log('studio result window coverage, deduplication and full-description checks passed');

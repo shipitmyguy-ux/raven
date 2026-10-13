@@ -91,6 +91,14 @@ const VERIFIED_POSTINGS = new Map([
     }
   ]
 ]);
+// Additional saved-record audit evidence: docs/qa/2026-10-13-all-jobs-dedup.md.
+for(const [url,posting,company,title,source] of [
+  ['https://remotegamejobs.com/jobs/eleventh-hour-games-senior-environment-artist-remote-job-0969af74-f18a-4318-af57-ede0884e5bd1','https://job-boards.greenhouse.io/eleventhhourgames/jobs/8501085002','eleventh hour games','senior environment artist','remotegamejobs'],
+  ['https://www.linkedin.com/jobs/view/senior-environment-artist-at-eleventh-hour-games-4399058671','https://job-boards.greenhouse.io/eleventhhourgames/jobs/8501085002','eleventh hour games','senior environment artist','linkedin'],
+  ['https://job-boards.greenhouse.io/eleventhhourgames/jobs/8501085002','https://job-boards.greenhouse.io/eleventhhourgames/jobs/8501085002','eleventh hour games','senior environment artist','greenhouse'],
+  ['https://hitmarker.net/jobs/mob-entertainment-principal-environment-artist-5151006','https://job-boards.greenhouse.io/mobentertainment/jobs/5259693007','mob entertainment','principal environment artist','hitmarker'],
+  ['https://www.linkedin.com/jobs/view/principal-environment-artist-at-mob-entertainment-4474473548','https://job-boards.greenhouse.io/mobentertainment/jobs/5259693007','mob entertainment','principal environment artist','linkedin'],
+])VERIFIED_POSTINGS.set(url,{posting,company,title,provider:source});
 function identity(row) {
   const company=employer(row.company), title=normalize(row.title), location=normalize(row.location);
   // Unknown remote status or geography cannot establish compatible constraints.
@@ -143,6 +151,7 @@ function canonicalUrl(value) {
 function atsKey(value) {
   const url=canonicalUrl(value); if(!url)return '';
   const u=new URL(url),h=u.hostname.toLowerCase(),p=u.pathname;let m;
+  if(['www.linkedin.com','linkedin.com'].includes(h)&&(m=p.match(/^\/jobs\/view\/(?:[^/]*-)?(\d{6,})\/?$/)))return 'linkedin:'+m[1];
   if(['www.useparallel.com','useparallel.com'].includes(h)&& (m=p.match(/^\/([^/]+)\/careers\/([a-f0-9]{24})(?:\/apply)?$/i)))return 'parallel-id:'+m[2].toLowerCase();
   if(['www.useparallel.com','useparallel.com'].includes(h)&& (m=p.match(/^\/app\/candidate\/job\/([a-f0-9]{24})$/i)))return 'parallel-id:'+m[1].toLowerCase();
   if(['boards.greenhouse.io','job-boards.greenhouse.io','boards.eu.greenhouse.io','job-boards.eu.greenhouse.io'].includes(h)&& (m=p.match(/^\/([^/]+)\/jobs\/(\d+)(?:\/application)?$/)))return 'greenhouse:'+m[1].toLowerCase()+':'+m[2];
@@ -177,10 +186,10 @@ function sameJob(a,b) {
   if(au&&au===bu)return true;
   const company=employer(a.company);
   if(!company||company!==employer(b.company)||!titleKey(a.title)||titleKey(a.title)!==titleKey(b.title))return false;
-  if(a.track&&b.track&&normalize(a.track)!==normalize(b.track))return false;
   const ak=postingKeys(a),bk=postingKeys(b);
   // Exact employer posting identity is stronger than board location labels.
   if(ak.size&&bk.size)return [...ak].some(key=>bk.has(key));
+  if(a.track&&b.track&&normalize(a.track)!==normalize(b.track))return false;
   // Similar titles alone never merge jobs. The fallback requires full identical
   // descriptions, compatible work scopes and distinct verified source providers.
   const ap=provider(a),bp=provider(b),ar=remoteValue(a),br=remoteValue(b);
@@ -202,7 +211,7 @@ function preferred(a,b){
   if(saved(a)!==saved(b))return saved(b)?b:a;
   const ad=Boolean(a.resume||a.cover_letter||a.coverLetter),bd=Boolean(b.resume||b.cover_letter||b.coverLetter);
   if(ad!==bd)return bd?b:a;
-  const aa=Boolean(atsKey(a.url)),ba=Boolean(atsKey(b.url));if(aa!==ba)return ba?b:a;
+  const aa=Boolean(atsKey(a.url))&&!atsKey(a.url).startsWith('linkedin:'),ba=Boolean(atsKey(b.url))&&!atsKey(b.url).startsWith('linkedin:');if(aa!==ba)return ba?b:a;
   return String(b.snippet||b.notes||'').length>String(a.snippet||a.notes||'').length?b:a;
 }
 function deduplicateJobs(rows){

@@ -77,7 +77,7 @@ export async function listResults(track:Track){
   for(const row of groups.flat())if(candidateAllowedForTrack(track,row)&&row.url)unique.set(row.url,row);
   const discovery=track==="Games / 3D"?deduplicateStudioResults([...unique.values()]):[...unique.values()];
   // Include saved/application identities without rewriting their records.
-  const saved=track==="Games / 3D"?(await listJobs()).filter((row:any)=>row.track===track):[];
+  const saved=await listJobs();
   const discoveryRows=new Set(discovery);
   const visible=deduplicateJobs([...saved,...discovery]).filter((row:any)=>discoveryRows.has(row));
   return visible.sort((a:any,b:any)=>Number(b.score||0)-Number(a.score||0)||String(b.last_seen||"").localeCompare(String(a.last_seen||"")));

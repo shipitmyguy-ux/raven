@@ -1,5 +1,12 @@
 # Raven Status
 
+## All-track duplicate audit and cleanup - 2026-10-13
+
+Audited all 391 saved records and all 800 discovery-cache metadata rows, plus 177 API-visible full descriptions. Existing source cache contains 383 copies of saved vacancies, 16 of them surfacing in another track. Backend and UI now suppress saved identities across all four tracks; exact posting identity survives track assignment changes. Added narrowly verified Eleventh Hour Games and Mob Entertainment source aliases and LinkedIn posting-ID normalization. Eleventh Hour's original Greenhouse Applied record wins display/import while both applied histories and identical document links stay stored. Mob's Applied record is retained, with a guarded correction of its stale remote flag from validated matching source metadata. No saved rows or documents are deleted or overwritten.
+
+27 similar employer/title groups examined: Smile Break already resolved, two additional groups confirmed; other 24 retained as distinct regional/requisition postings or unverified matches. All 52 local core workflow commands and focused all-track/alias/import tests passed. Added browser fixtures for duplicate applied copies and cross-track suppression. GitHub publication, backend/Pages deployment, guarded live cleanup, preservation check of all 16 application records and 25 document-bearing records, and final browser acceptance pending. Evidence: docs/qa/2026-10-13-all-jobs-dedup.md and docs/qa/2026-10-13-all-jobs-cleanup.sql. Private baseline stays outside Git.
+
+
 ## Saved/discovered duplicate prevention - 2026-10-13
 
 Implemented shared browser/backend vacancy identity and saved-record aware discovery suppression. Fixes the Smile Break ArtStation repost appearing alongside the existing Applied Remote Game Jobs record. Imports now return the existing job ID/status/documents for exact matches. Supported ATS identifiers and explicitly labelled application links cover future cross-source copies; verified aliases remain shared with studio result dedup. Canonical tracking URL normalization, distinct requisition/title/track checks, exact-description/geography fallback and unknown-employer guards retain separate vacancies. Saved lookup paginates and fails at its bound rather than silently missing old records.

@@ -20,3 +20,32 @@ test('applied cross-board vacancy appears once after reload and keeps its docume
   await expect(page.getByRole('button',{name:'Review',exact:true})).toHaveCount(2);
  }
 });
+async function auditFixture(page,jobs,discoveries){
+ await page.route('**/functions/v1/**',async route=>{
+  const url=new URL(route.request().url()),body=route.request().postData();
+  const action=url.searchParams.get('action')||(body?JSON.parse(body).action:'');
+  if(action==='jobs')return route.fulfill({json:{ok:true,jobs}});
+  if(action==='listResults'||action==='search')return route.fulfill({json:{ok:true,results:discoveries.filter(j=>j.track===url.searchParams.get('track'))}});
+  return route.fulfill({json:{ok:true,events:[],snapshots:[],results:[],tasks:[],runs:[],counts:{},analytics:{}}});
+ });
+ await page.goto('/');await expect(page.getByText('Up to date',{exact:true})).toBeVisible();
+}
+test('Eleventh Hour applied copies retain the original employer record and both document links',async({page})=>{
+ const original={id:'ehg-primary',track:'Games / 3D',title:'Senior Environment Artist',company:'Eleventh Hour Games',location:'Remote',remote:true,status:'Applied',applied_date:'2026-10-07T12:00:00Z',resume:'https://example.com/resume.pdf',cover_letter:'https://example.com/cover.pdf',source:'Greenhouse',url:'https://job-boards.greenhouse.io/eleventhhourgames/jobs/8501085002',notes:'Verified employer summary'};
+ const mirror={...original,id:'ehg-linkedin',remote:false,location:'',source:'LinkedIn',url:'https://www.linkedin.com/jobs/view/senior-environment-artist-at-eleventh-hour-games-4399058671',notes:'Longer verified role text '.repeat(100)};
+ await auditFixture(page,[mirror,original],[]);
+ await page.getByRole('tab',{name:'Games / 3D',exact:true}).click();
+ const card=page.getByRole('button',{name:/Applied Senior Environment Artist Eleventh Hour Games/});
+ await expect(card).toHaveCount(1);await card.click();
+ await expect(page.getByRole('link',{name:'View listing',exact:true})).toHaveAttribute('href',original.url);
+ await expect(page.getByRole('button',{name:'Review',exact:true})).toHaveCount(2);
+});
+test('saved vacancy assigned to Wildcard is not rediscovered as a new Professional job',async({page})=>{
+ const saved={id:'canonical-training',track:'Wildcard',title:'Training Manager',company:'Audit Studio',remote:true,location:'Remote',status:'Saved',url:'https://example.com/jobs/training-manager',source:'Jobicy',notes:'Verified training and onboarding role',resume:'https://example.com/training-resume.pdf'};
+ const discovery={...saved,id:'discovery-training',track:'Professional',status:'Discovered',resume:'',snippet:saved.notes};
+ await auditFixture(page,[saved],[discovery]);
+ await page.getByRole('tab',{name:'Professional',exact:true}).click();
+ await expect(page.getByRole('button',{name:/Training Manager Audit Studio/})).toHaveCount(0);
+ await page.getByRole('tab',{name:'Wildcard',exact:true}).click();
+ await expect(page.getByRole('button',{name:/Training Manager Audit Studio/})).toHaveCount(1);
+});
