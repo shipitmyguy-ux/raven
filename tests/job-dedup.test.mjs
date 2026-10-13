@@ -43,8 +43,8 @@ const db=stripTypeScriptTypes(fs.readFileSync('supabase/functions/raven-backend-
 let posts=0;
 const backend={...globalThis.RavenJobDedup,Deno:{env:{get:n=>n==='SUPABASE_URL'?'https://db.example':'test-key'}},Headers,URL,Response,Set,candidateAllowedForTrack:()=>true,validAtsRow:()=>true,fetch:async(url,opts)=>{
  if(opts.method==='POST'){posts++;return Response.json([{...JSON.parse(opts.body)}]);}
- if(url.includes('raven_jobs?select=*&url='))return Response.json([]);
- if(url.includes('raven_jobs?'))return Response.json([old]);
+ if(url.includes('raven_jobs?select=*&url='))return Response.json([{...incoming,status:'Ignored'}]);
+ if(url.includes('raven_jobs?'))return Response.json([old,{...incoming,status:'Ignored'}]);
  return Response.json([{...incoming,status:'Discovered',snippet:incoming.notes}]);
 }};
 vm.runInNewContext(db+';globalThis.api={addJob,listResults};',backend);

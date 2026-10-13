@@ -186,7 +186,9 @@ export async function getJobByUrl(url:string){
 }
 export async function addJob(input:any){
   const url=String(input.url||"").trim();
-  const existing=await getJobByUrl(url)||findExistingJob({...input,url},await listJobs());
+  const byUrl=await getJobByUrl(url);
+  // An archived mirror's exact URL must not outrank the original application.
+  const existing=findExistingJob({...input,url},await listJobs())||byUrl;
   if(existing) return {...existing,duplicate:true,ok:true};
   const now=new Date().toISOString();
   const row={
