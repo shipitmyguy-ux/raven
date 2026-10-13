@@ -35,19 +35,22 @@ export async function createPrivateDispatcher({config,serviceKey,fetchImpl=fetch
   return async line=>{
     let rpc;try{rpc=JSON.parse(line);}catch{rpc=null;}
     // Explicit local owner opt-in applies only to this private tunnel, never public OAuth.
-    if(config.allowSavedJobs===true&&Date.parse(config.expiresAt)>now()&&rpc?.jsonrpc==='2.0'&&Object.hasOwn(rpc,'id')&&rpc?.method==='tools/call'){
+    const validRpc=rpc?.jsonrpc==='2.0'&&Object.hasOwn(rpc,'id')&&(rpc.id===null||typeof rpc.id==='string'||(typeof rpc.id==='number'&&Number.isFinite(rpc.id)));
+    if(config.allowSavedJobs===true&&Date.parse(config.expiresAt)>now()&&validRpc&&rpc?.method==='tools/call'){
       let ids=config.jobIds;
       if(rpc.params?.name==='list_jobs'){
         const query=rpc.params?.arguments?.query;
         if(Object.keys(rpc.params.arguments||{}).some(k=>k!=='query')||(query!==undefined&&(typeof query!=='string'||query.length>200)))return JSON.stringify({jsonrpc:'2.0',id:rpc.id,result:{content:[{type:'text',text:'INVALID_ARGUMENTS'}],isError:true}});
-        const rows=await rest('raven_jobs?select=id,title,company,track,last_updated,resume,cover_letter&order=last_updated.desc&limit=200');
+        let rows;
+        try{rows=await rest('raven_jobs?select=id,title,company,track,last_updated,resume,cover_letter&order=last_updated.desc&limit=200');}
+        catch{return JSON.stringify({jsonrpc:'2.0',id:rpc.id,result:{content:[{type:'text',text:'DATABASE_UNAVAILABLE'}],isError:true}});}
         const jobs=rows.filter(row=>!query||(row.title+' '+row.company).toLowerCase().includes(query.toLowerCase())).map(row=>({id:row.id,title:row.title,company:row.company,track:row.track,expected_version:row.last_updated,has_resume:Boolean(row.resume),has_cover_letter:Boolean(row.cover_letter)}));
         return JSON.stringify({jsonrpc:'2.0',id:rpc.id,result:{content:[{type:'text',text:JSON.stringify({jobs,limit:200})}],structuredContent:{jobs,limit:200},isError:false}});
       }else if(/^[A-Za-z0-9_-]{1,160}$/.test(rpc.params?.arguments?.job_id||''))ids=[rpc.params.arguments.job_id];
       const grants=JSON.parse(env.RAVEN_MCP_GRANTS);grants[0].job_ids=ids.length?ids:['JT-no-authorized-jobs'];env.RAVEN_MCP_GRANTS=JSON.stringify(grants);
     }
     let payload;
-    if(config.documentWorkflow===true&&rpc?.jsonrpc==='2.0'&&rpc?.method==='tools/call'&&workflowTools.some(t=>t.name===rpc.params?.name)){
+    if(config.documentWorkflow===true&&validRpc&&rpc?.method==='tools/call'&&workflowTools.some(t=>t.name===rpc.params?.name)){
       try{const data=await workflow(rpc.params.name,rpc.params.arguments);payload={jsonrpc:'2.0',id:rpc.id,result:{content:[{type:'text',text:JSON.stringify(data)}],structuredContent:data,isError:false}};}
       catch(error){payload={jsonrpc:'2.0',id:rpc.id,result:{content:[{type:'text',text:error.message==='VERSION_CONFLICT'?'VERSION_CONFLICT':'PDF_OR_DRIVE_EXPORT_FAILED'}],isError:true}};}
     }else{

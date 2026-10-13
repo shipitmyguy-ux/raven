@@ -1,4 +1,4 @@
-import {mkdir,writeFile} from 'node:fs/promises';
+import {mkdir,writeFile,readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {createHash} from 'node:crypto';
 export const workflowTools=[
@@ -26,7 +26,7 @@ export async function renderSavedPdf({documentUrl,outputDir,fileName}){
   return {file_path:path,file_name:fileName,mime_type:'application/pdf',pdf_sha256:hash(pdf),pdf_base64:pdf.toString('base64')};
  }finally{await browser.close();}
 }
-export function createDocumentWorkflow({config,readDocument,rest,renderPdf=renderSavedPdf}){
+export function createDocumentWorkflow({config,readDocument,rest,renderPdf=renderSavedPdf,readPdfHash=async path=>hash(await readFile(path))}){
  return async(name,args)=>{
   const tool=workflowTools.find(t=>t.name===name);
   if(!tool||!args||Object.keys(args).some(k=>!Object.hasOwn(tool.inputSchema.properties,k))||tool.inputSchema.required.some(k=>typeof args[k]!=='string'))throw Error('INVALID_ARGUMENTS');
@@ -38,6 +38,8 @@ export function createDocumentWorkflow({config,readDocument,rest,renderPdf=rende
    return {...await renderPdf({documentUrl:doc.document_url,outputDir:resolve('private/exports'),fileName}),job_id:args.job_id,document_type:args.document_type,document_sha256:doc.document_sha256};
   }
   if(!config.driveFolderId||args.folder_id!==config.driveFolderId||!/^[A-Za-z0-9_-]{10,160}$/.test(args.file_id)||!/^[a-f0-9]{64}$/.test(args.pdf_sha256)||args.file_name.length>200||!args.file_name.endsWith('.pdf'))throw Error('INVALID_DRIVE_EXPORT');
+  const exportedPath=resolve('private/exports',`${args.job_id}-${args.document_type}-${args.document_sha256.slice(0,12)}.pdf`);
+  if(await readPdfHash(exportedPath)!==args.pdf_sha256)throw Error('PDF_VERSION_CONFLICT');
   const digest=hash([args.job_id,args.document_type,args.document_sha256,args.file_id].join('|'));
   const id=[digest.slice(0,8),digest.slice(8,12),digest.slice(12,16),digest.slice(16,20),digest.slice(20,32)].join('-');
   const metadata={...args,verification:'connected-drive-metadata-readback',drive_url:`https://drive.google.com/file/d/${args.file_id}/view`};

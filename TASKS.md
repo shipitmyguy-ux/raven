@@ -1,5 +1,16 @@
 # Raven Tasks
 
+## Direct ChatGPT / Drive workflow — 2026-10-13
+
+- [x] Launch protected private tunnel and verify actual saved-document read.
+- [x] Implement job-bound direct ChatGPT save, exact saved-document PDF export and Drive action for the selected folder.
+- [x] Verify real PDF rendering/layout, Drive upload/metadata, durable export event and original-document preservation.
+- [x] Pass focused unit/browser/Windows checks; integrate latest GitHub main and preserve unrelated user files.
+- [ ] Publish reviewed frontend changes and verify deployment/smoke.
+- [ ] Refresh Raven Private tools in ChatGPT and test the signed-in button-to-generation/save/PDF/Drive chain.
+- Evidence: docs/CHATGPT_DIRECT_RESUMES.md.
+
+
 ## Skillsearch runner — 2026-10-12 evening
 
 - [x] Verify hosted anonymous public access and publish daily bounded snapshots on a dedicated branch.

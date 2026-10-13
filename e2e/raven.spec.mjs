@@ -669,6 +669,7 @@ test("completion event with host mismatch is ignored",async({page})=>{
 
 test("document pills keep busy labels and adjacent controls contained",async({page})=>{
   await mockRaven(page);
+  await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-direct-save']=false;await route.fulfill({json:config});});
   await page.addInitScript(()=>window.open=()=>null);
   await page.route("**/functions/v1/raven-generate-v1**",()=>{});
   for(const width of [320,375,715,768,1024,1440]){
@@ -694,6 +695,39 @@ test("document pills keep busy labels and adjacent controls contained",async({pa
     expect((await importButton.boundingBox()).height).toBeLessThan(35);
     if(width===320||width===1440)await page.screenshot({path:`test-results/document-pills-${width}.png`,fullPage:true});
   }
+});
+
+test('ChatGPT button sends a direct job-bound save request without the JSON prompt service',async({page})=>{
+  const api=await mockRaven(page);
+  await page.addInitScript(()=>{
+    window.open=()=>({closed:false,document:{title:'',body:{}},location:{replace:url=>{window.lastChatGptUrl=url;}},close(){}});
+    Object.defineProperty(navigator,'clipboard',{value:{writeText:async()=>{}},configurable:true});
+  });
+  await page.goto('/');
+  await page.locator('[data-track="Professional"]').click();
+  await page.locator('.job-card-summary').first().click();
+  await page.locator('[data-chatgpt-prompt="resume"]').click();
+  await expect(page.locator('#syncStatus')).toContainText('saves directly');
+  const prompt=await page.evaluate(()=>new URL(window.lastChatGptUrl).searchParams.get('q'));
+  expect(prompt).toContain('job-1');expect(prompt).toContain('save_generated_document');
+  expect(api.getGenerationCalls()).toBe(0);
+});
+
+test('saved resume Drive action requests exact PDF export to configured folder and preserves resume',async({page})=>{
+  const resume='data:text/html;charset=utf-8,'+encodeURIComponent('<!doctype html><html><body><h1>Test Candidate</h1><p>Saved verified resume.</p></body></html>');
+  const api=await mockRaven(page,{initialJob:{resume}});
+  await page.addInitScript(()=>{
+    window.open=()=>({closed:false,location:{replace:url=>{window.lastChatGptUrl=url;}},close(){}});
+    Object.defineProperty(navigator,'clipboard',{value:{writeText:async()=>{}},configurable:true});
+  });
+  await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+  await page.locator('[data-generate="resume"]').click();
+  await page.locator('#reviewSaveDrive').click();
+  await expect(page.locator('#syncStatus')).toContainText('verified Drive link');
+  const prompt=await page.evaluate(()=>new URL(window.lastChatGptUrl).searchParams.get('q'));
+  expect(prompt).toContain('export_document_pdf');expect(prompt).toContain('1-1XjnS0MGWmRl1iAJYmOOxs2pNA6gTkl');
+  expect(api.getJob().resume).toBe(resume);
+  await page.reload();await page.locator('[data-track="Professional"]').click();await expect(page.locator('.job-card')).toHaveCount(1);expect(api.getJob().resume).toBe(resume);
 });
 
 for(const [status,appliedDate,visible] of [

@@ -29,7 +29,7 @@ const sha='a'.repeat(64),pdfsha='b'.repeat(64);
 const args={job_id:'JT-test',document_type:'resume',document_sha256:sha};
 function fixture({changed=false,fail=false}={}){
  let rendered=false,writes=0,row;
- const workflow=createDocumentWorkflow({config:{driveFolderId:'folder1234567890'},readDocument:async()=>({document_sha256:changed?'c'.repeat(64):sha,document_url:'saved-html'}),renderPdf:async input=>{rendered=true;assert.equal(input.documentUrl,'saved-html');return {pdf_sha256:pdfsha,file_path:'private/export.pdf'};},rest:async(_path,init)=>{if(init){writes++;row=JSON.parse(init.body);return [row];}return fail?[]:[row];}});
+ const workflow=createDocumentWorkflow({config:{driveFolderId:'folder1234567890'},readPdfHash:async()=>pdfsha,readDocument:async()=>({document_sha256:changed?'c'.repeat(64):sha,document_url:'saved-html'}),renderPdf:async input=>{rendered=true;assert.equal(input.documentUrl,'saved-html');return {pdf_sha256:pdfsha,file_path:'private/export.pdf'};},rest:async(_path,init)=>{if(init){writes++;row=JSON.parse(init.body);return [row];}return fail?[]:[row];}});
  return {workflow,rendered:()=>rendered,writes:()=>writes};
 }
 test('stale PDF export fails before rendering or writing',async()=>{

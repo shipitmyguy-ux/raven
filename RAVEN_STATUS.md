@@ -1,5 +1,11 @@
 # Raven Status
 
+## Direct ChatGPT resumes and Drive PDF implementation — 2026-10-13
+
+Implemented a short job-bound ChatGPT button request that saves via Raven Private without manual JSON. Added review Save PDF to Drive, private exact-HTML PDF rendering, local PDF/document hash checks, configured-folder checks and idempotent durable Drive links in existing job activity. User selected 1resumecoverletter. Private owner explicitly opted into saved-job scope; create-only/version/expiry and public OAuth protections retained. Fixed Windows tunnel Node path; tunnel started with encrypted saved credentials and actual plugin read verified.
+
+Actual existing-resume PDF rendered, page inspected, connected Drive upload metadata read back in target folder, and export event persisted/read back with unchanged resume URL/version. 49 original workflow commands, 13 direct/private focused cases, three browser cases and Windows credential tests passed; added two syntax checks pending final runner. Latest main integrated; unrelated personal artifacts and renderer line endings preserved. Frontend is prepared at app85, not published. Signed-in ChatGPT full-chain acceptance and refreshed seven-tool plugin discovery remain pending. See docs/CHATGPT_DIRECT_RESUMES.md.
+
 ## Skillsearch scheduled runner — 2026-10-12 evening MDT / 2026-10-13 UTC
 
 Skillsearch is operational again through an ordinary anonymous GitHub-hosted collector. Source 558887d805b3fbe7da5f6cd414bd73c815800878 is published; studio collector v13 deployed, backend remains v64. Registry 166 entries / 80 verified enabled / 86 pending, blocked or unsupported. Direct Supabase requests still return 403; the collector consumes the dedicated skillsearch-feed branch snapshot instead.

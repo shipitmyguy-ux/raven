@@ -3,7 +3,7 @@ import fs from 'node:fs';
 // Reuse the immutable public posting snapshot from the Node integration test.
 // This extracts data only; it does not execute its tests.
 const fixtureSource=fs.readFileSync(new URL('../tests/studio-to-resume.test.mjs',import.meta.url),'utf8');
-const fixture=JSON.parse(fixtureSource.match(/const posting=(.+);\nconst source=/)[1]);
+const fixture=JSON.parse(fixtureSource.match(/const posting=(.+);\r?\nconst source=/)[1]);
 import {normalizeStudioJobs} from '../supabase/functions/_shared/studio-providers.mjs';
 const [publicRow]=normalizeStudioJobs({studio_name:'People Can Fly',provider:'smartrecruiters',board_key:'PeopleCanFly'},{content:[fixture]});
 const discovered={...publicRow,id:'pcf-fixture',track:'Games / 3D',source:'Studio:smartrecruiters',last_seen:new Date().toISOString()};

@@ -10,6 +10,7 @@ on:
       - "document-revision.mjs"
       - "document-download.mjs"
       - "resume-transfer.mjs"
+      - "chatgpt-direct.mjs"
       - "raven-core.js"
       - "config.js"
       - "runtime-config.json"

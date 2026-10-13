@@ -5,6 +5,7 @@ on:
     paths:
       - "raven-core.js"
       - "document-revision.mjs"
+      - "chatgpt-direct.mjs"
       - "raven-api.js"
       - "app.js"
       - "index.html"
@@ -29,6 +30,7 @@ on:
     paths:
       - "raven-core.js"
       - "document-revision.mjs"
+      - "chatgpt-direct.mjs"
       - "raven-api.js"
       - "app.js"
       - "index.html"
@@ -62,6 +64,8 @@ jobs:
           node --check raven-core.js
           node --check raven-api.js
           node --check app.js
+          node --check chatgpt-direct.mjs
+          node --check scripts/private-document-workflow.mjs
           node --check supabase/functions/_shared/mcp-bridge.mjs
           node --check supabase/functions/_shared/mcp-oauth.mjs
           node --check oauth-consent.mjs

@@ -6,7 +6,7 @@ import * as collector from '../supabase/functions/_shared/studio-collector.mjs';
 import * as schedule from '../supabase/functions/_shared/studio-schedule.mjs';
 import * as providers from '../supabase/functions/_shared/studio-providers.mjs';
 import '../supabase/functions/_shared/track-filter.js';
-const source=stripTypeScriptTypes(fs.readFileSync('supabase/functions/raven-studio-scan/index.ts','utf8').replace(/^import .*;\n/gm,''));
+const source=stripTypeScriptTypes(fs.readFileSync('supabase/functions/raven-studio-scan/index.ts','utf8').replace(/^import .*;\r?\n/gm,''));
 const token='a'.repeat(64);
 const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(token));
 const tokenHash=[...new Uint8Array(digest)].map(n=>n.toString(16).padStart(2,'0')).join('');

@@ -1,0 +1,21 @@
+# Direct ChatGPT resume and Drive workflow
+
+Implemented 2026-10-13. The ChatGPT button opens a short request for the exact saved Raven job. In ChatGPT, select Raven Private and send the request. The plugin reads the posting and canonical facts, validates structured drafts internally, and saves directly to the job. There is no user JSON transfer. Existing documents are preserved; the private tunnel still has no revision permission. Human review and manual employer submission remain required.
+
+After reviewing a saved document, **Save PDF to Drive** opens a separate ChatGPT request. Select Raven Private and Google Drive. The private `export_document_pdf` tool renders the exact saved HTML with headless Edge, JavaScript disabled and outbound requests blocked. It returns a local PDF path and base64 bytes; a ChatGPT file tool can materialize the bytes if the Drive connector cannot access the local path. The connected Drive tool uploads to the configured folder. Only after a Drive metadata readback confirms PDF MIME type and exact parent does ChatGPT call `record_drive_export`.
+
+The record checks the current document hash, locally rendered PDF hash, configured folder and safe file ID. It writes an idempotent `document_drive_export` event to existing `raven_job_events`, reads it back, and keeps the link in the job's activity history. It accurately labels Drive verification as connector-reported; the tunnel has no Google OAuth credentials and cannot independently verify Drive metadata. It never changes the saved resume, cover letter, approval or application state. An upload failure leaves the Raven document intact; repeat the Drive action to retry. A failed event record can be retried with the existing uploaded file rather than uploading another copy.
+
+Public defaults remain in `runtime-config.json`: `chatgpt-direct-save` and `resume-drive-folder-id`. Turning off direct-save retains the earlier extension/file import route. The personal owner has explicitly enabled all saved jobs in ignored `private/raven-tunnel.json` using `allowSavedJobs: true`; direct ID lookup is restricted to existing canonical jobs. Listing is bounded to the newest 200 jobs. `documentWorkflow: true` advertises two additional private tools. Fixed expiry, create-only saves, atomic version checks and public OAuth remain unchanged. No schema or public Supabase deployment is needed.
+
+Run `npm ci` before PDF export. Windows Edge must be installed. The launcher prefers the bundled Node path to avoid the tunnel client's Windows quoting failure with `C:/Program Files/nodejs/node.exe`. Start under the owner Windows account because the sandbox cannot decrypt owner DPAPI credentials. Keep the tunnel running. Refresh Raven Private tools in ChatGPT after this adapter update: seven tools should appear, including the two export tools. The website cannot select ChatGPT plugins or send the user's ChatGPT message automatically.
+
+## Actual verification
+
+- Existing DataHouse resume read through the actual Raven Private plugin after tunnel restart, with unchanged SHA256 `5d7f835efac4e60ea92c379547861b9282f48ebbd484f3c7301e0c7a67981779`.
+- Actual local private dispatcher rendered a 63,789-byte, one-page PDF. Extracted text length 2,015; page image inspected with complete sections and clean layout.
+- Actual Google Drive upload and fresh metadata readback confirmed a PDF in the user-selected `1resumecoverletter` folder. Actual export event write/readback confirmed; saved resume URL and version unchanged.
+- Core workflow checks, new direct/workflow tests and three focused Edge browser cases passed, including direct job binding without the legacy prompt API, Drive request/folder, resume reload preservation and responsive busy labels. Windows credential/launcher synthetic checks passed.
+- Windows fixture readers now accept CRLF; generated-renderer validation normalizes line endings without changing rendered content.
+
+These checks verify the renderer, connector-assisted upload, durable event and mocked frontend interactions. The exact signed-in ChatGPT button → new resume generation → private save → PDF tool → Drive chain has not been exercised. New tools require a ChatGPT plugin refresh. Frontend publication and CI status are recorded in WORK_HANDOFF.md; implementation is not equivalent to a verified live release.
