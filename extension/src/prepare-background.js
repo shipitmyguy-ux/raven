@@ -190,7 +190,8 @@
       const all = await get();
       for (const [id, item] of Object.entries(all)) if (item.tabId === tabId && !same(info.url, item.expectedUrl)) {
         delete all[id];
-        finish(id, { ok: false, status: "blocked", reason: "Application redirected or navigated. Retry Prepare.", observedUrl: info.url });
+        finish(id, { ok: false, status: item.stage === "opening" ? "manual" : "blocked",
+          reason: "Application redirected or navigated. Review its access requirements before resuming form preparation.", observedUrl: info.url });
       }
       await save(all);
     });

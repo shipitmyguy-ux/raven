@@ -113,7 +113,7 @@ test("preflight stops on a sign-in destination before any packet or upload", asy
   await page.goto("https://jobs.example/login");
   await page.addScriptTag({ content: fs.readFileSync(new URL("../extension/src/assistant-core.js", import.meta.url), "utf8") });
   await page.addScriptTag({ content: fs.readFileSync(new URL("../extension/src/prepare-content.js", import.meta.url), "utf8") });
-  await expect.poll(() => page.evaluate(() => window.__ravenMessages.find(item => item.type === "raven-preflight-result")?.status)).toBe("blocked");
+  await expect.poll(() => page.evaluate(() => window.__ravenMessages.find(item => item.type === "raven-preflight-result")?.status)).toBe("manual");
   const result = await page.evaluate(() => window.__ravenMessages.find(item => item.type === "raven-preflight-result"));
   expect(result.reason).toMatch(/sign-in|account/i);
   expect(await page.locator('input[type="file"]').evaluate(input => input.files.length)).toBe(0);

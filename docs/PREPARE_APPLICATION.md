@@ -2,6 +2,10 @@
 
 The Prepare application button generates or reuses both canonical documents through the existing local signed-in Codex writer, verifies saved Raven/Drive records, renders the exact saved versions to PDF, then sends their bytes and the browser-local applicant profile to the Raven Chrome extension. The extension opens a tab for that job, fills recognized fields, selects the PDFs in matching upload controls, and stops for human review. It never submits, grants document approval, or changes the application status. Applied jobs offer Prepare again for review.
 
+## Employer access gates
+
+Employer access controls do not prevent document preparation. A sign-in or visible challenge leaves the resume and cover letter saved in Raven with verified Drive PDFs for later use. Raven shows Documents ready and retains an explicit Resume preparation action. Resume re-inspects the destination and reuses the unchanged saved documents before filling the form. No applicant packet is delivered while access is blocked. Hidden/passive CAPTCHA infrastructure alone is not an access gate. Component, transport and job-identity errors still require recovery before continuing.
+
 ## Requirements and activation
 
 Use desktop Chrome with the updated Raven Application Assistant extension, the updated local writer running on port 8766, and the saved Application profile in Raven Options. Refresh Raven after reloading the extension. The existing phone document queue remains available for document generation; application preparation requires the local desktop helper and extension. Existing saved documents are reused rather than overwritten. A fresh-generation test must explicitly reset only the selected job's document fields after a recovery copy is saved.

@@ -1,5 +1,8 @@
 # Recovery after a Raven reload during application preparation
 
+Current correction (October 14): a genuine login/challenge destination pauses form delivery only. Prepare still generates/reuses and verifies both documents and Drive PDFs, stores documents-ready recovery metadata, and resumes only on an explicit click. Hidden/passive anti-bot markup is not a gate. Earlier recommendations to stop document generation at a login/challenge are superseded by this user requirement.
+
+
 ## Implementation underway — October 14, 2026
 
 The renovation branch implements a metadata-only, 24-hour recovery record and an explicit Resume preparation control. Loading Raven does not restart generation or dispatch files. A known writer run is resumed with a read-only status request; an unavailable run requires a deliberate restart. Canonical job URL/document hashes, recorded Drive receipts, and live Drive file metadata are checked before verified PDF delivery. A browser lock and expiring lease prevent simultaneous resumes. Saved-document and Drive verification have distinct stages.

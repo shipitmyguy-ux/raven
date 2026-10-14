@@ -108,6 +108,22 @@ test('wrong tab, path, job and token cannot deliver', async () => {
   assert.equal(env.calls.includes('send'), false);
 });
 
+test('a sign-in redirect during inspection permits documents only and invalidates delivery', async () => {
+  const env = setup();
+  const pending = env.preflight();
+  await env.tick(); await env.tick();
+  env.tabs.get(40).url = 'https://jobs.example/login';
+  env.events.updated(40, { url: 'https://jobs.example/login' });
+  const result = await pending;
+  assert.equal(result.ok, false);
+  assert.equal(result.status, 'manual');
+  assert.match(result.reason, /redirected/);
+  const delivery = await env.request({ type: 'raven-prepare-application', requestId,
+    preflightId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', packet: packet() }, raven);
+  assert.equal(delivery.ok, false);
+  assert.equal(env.calls.includes('send'), false);
+});
+
 test('navigation or closed tab invalidates same-tab delivery', async () => {
   for (const removed of [false, true]) {
     const env = setup();

@@ -22,7 +22,10 @@ export function preflightPreparationApplication({jobId,jobUrl,title='',company='
     const onResponse=()=>{
       let value;try{value=JSON.parse(bridge.dataset.preparePreflightResponse||'');}catch{return;}
       if(value.requestId!==requestId)return;
-      if(value.ok!==true||value.status!=='ready'||!uuidPattern.test(value.preflightId||'')){finish(Error(value.reason||'The application destination needs manual review.'));return;}
+      if(value.ok===false&&value.status==='manual'&&typeof value.reason==='string'&&value.reason.trim()){
+        finish(null,{status:'manual',reason:value.reason.slice(0,240)});return;
+      }
+      if(value.ok!==true||value.status!=='ready'||!uuidPattern.test(value.preflightId||'')){finish(Error(value.reason||'The application destination could not be verified.'));return;}
       finish(null,value);
     };
     const timer=setTimeout(()=>finish(Error('Chrome did not confirm the application destination. Review it before preparing documents.')),timeoutMs);

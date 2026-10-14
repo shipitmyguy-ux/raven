@@ -1583,9 +1583,12 @@
     const progress=oneClickProgress(job)|| (prepareBusy?'Preparing application…':generating?'Creating '+documentLabel(generating.type)+'…':'');
     const liveFeedback=state.preparationFeedback?.jobId===String(job.id)?state.preparationFeedback:null;
     const savedError=savedPreparation?.state==="needs-review"&&String(savedPreparation.jobId)===String(job.id)?savedPreparation.reason:"";
+    const savedManual=savedPreparation?.state==="documents-ready"&&savedPreparation.reason&&String(savedPreparation.jobId)===String(job.id)
+      ? "Documents ready; employer form needs manual access. "+savedPreparation.reason+" Resume preparation after access is restored.":"";
     const progressHtml=progress?'<p class="job-detail-progress" role="status" aria-live="polite"><span class="generation-spinner" aria-hidden="true"></span>'+escapeHtml(progress)+'</p>':
       liveFeedback?'<p class="job-detail-feedback is-'+escapeAttr(liveFeedback.kind)+'" role="'+(liveFeedback.kind==="error"?'alert':'status')+'">'+escapeHtml(liveFeedback.message)+'</p>':
-      savedError?'<p class="job-detail-feedback is-error" role="alert">'+escapeHtml(savedError)+'</p>':'';
+      savedError?'<p class="job-detail-feedback is-error" role="alert">'+escapeHtml(savedError)+'</p>':
+      savedManual?'<p class="job-detail-feedback is-success" role="status">'+escapeHtml(savedManual)+'</p>':'';
     const documentRows=[["resume","Resume"],["coverLetter","Cover letter"]].map(([key,label])=>{
       const exportEvent=(state.jobActivity[String(job.id)]?.events||[]).find(event=>event.event_type==="document_drive_export"&&currentDocumentExport(job,event,key)&&/^https:\/\/drive\.google\.com\/file\/d\/[A-Za-z0-9_-]{10,160}\/view$/.test(event.metadata?.drive_url||""));
       const currentPdf=exportEvent?'<a class="document-current-export" href="'+escapeAttr(exportEvent.metadata.drive_url)+'" target="_blank" rel="noopener noreferrer">Current PDF</a>':"";
@@ -2014,7 +2017,7 @@
   let preparationRecovery;
   async function getPreparationRecovery(){
     if(!preparationRecovery){
-      const {createPreparationRecovery}=await import("./application-prepare.mjs?v=3");
+      const {createPreparationRecovery}=await import("./application-prepare.mjs?v=4");
       preparationRecovery=createPreparationRecovery();
     }
     return preparationRecovery;
@@ -2029,7 +2032,9 @@
     const job=knownJobById(intent.jobId);
     banner.querySelector("[data-preparation-recovery-text]").textContent=intent.expired
       ? "A saved preparation expired. Review the role before starting again."
-      : "Preparation for "+(job?.title||"a saved job")+" is ready to resume.";
+      : intent.state==="documents-ready"&&intent.reason
+        ? "Documents ready for "+(job?.title||"a saved job")+"; employer form needs manual access. "+intent.reason+" Resume preparation after access is restored."
+        : "Preparation for "+(job?.title||"a saved job")+" is ready to resume.";
     banner.querySelector("[data-resume-preparation]").hidden=Boolean(intent.expired);
     banner.querySelector("[data-clear-preparation]").textContent=intent.expired?"Clear expired preparation":"Dismiss";
   }
@@ -2121,7 +2126,7 @@
     try{
       if(job.listing_state==="closed")throw Error("This listing is source-confirmed closed. Review the employer link before preparing documents.");
       if(!/^https:\/\//i.test(String(job.url||"")))throw Error("A secure employer listing URL is required to prepare this application.");
-      const {probePreparationExtension,preflightPreparationApplication,dispatchPreparedApplication}=await import("./application-prepare.mjs?v=3");
+      const {probePreparationExtension,preflightPreparationApplication,dispatchPreparedApplication}=await import("./application-prepare.mjs?v=4");
       const recovery=await getPreparationRecovery();
       const savedIntent=recovery.load();
       if(savedIntent&&!savedIntent.expired&&savedIntent.state!=="opened"&&String(savedIntent.jobId)!==String(job.id))throw Error("Another application preparation is saved. Resume or dismiss it before starting this role.");
@@ -2166,8 +2171,18 @@
         }
         await localPreparationClient.verifyApplicationReceipts({job_id:String(job.id),documents:verified.result.documents.map(doc=>({document_type:doc.document_type,document_sha256:doc.document_sha256,file_id:doc.file_id,drive_url:doc.drive_url}))});
         const hashes=Object.fromEntries(verified.result.documents.map(doc=>[doc.document_type,{documentSha256:doc.document_sha256}]));
-        intent=recovery.update(preparationId,{state:"documents-ready",documents:hashes});
         const prepared=await localPreparationClient.prepareApplicationDocuments({job_id:String(job.id),documents:verified.result.documents.map(doc=>({document_type:doc.document_type,document_sha256:doc.document_sha256}))});
+        if(!Array.isArray(prepared.documents)||prepared.documents.length!==2||!["resume","coverLetter"].every(kind=>prepared.documents.some(doc=>doc.document_type===kind&&doc.document_sha256===hashes[kind].documentSha256&&typeof doc.data_url==="string")))throw Error("The writer did not return both verified PDFs.");
+        if(preflight.status==="manual"){
+          const reason=preflight.reason;
+          intent=recovery.update(preparationId,{state:"documents-ready",documents:hashes,reason});
+          const message="Documents ready; employer form needs manual access. "+reason+" Resume preparation after access is restored.";
+          setStatus(message);
+          state.preparationFeedback={jobId:String(job.id),kind:"success",message};
+          updatePreparationRecoveryBanner();
+          return;
+        }
+        intent=recovery.update(preparationId,{state:"documents-ready",documents:hashes,reason:""});
         const canonical=verified.job;
         const packet={version:2,mode:"prepare",createdAt:new Date().toISOString(),jobId:String(job.id),jobUrl:canonical.url||"",title:canonical.title||"",company:canonical.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory()};
         for(const doc of prepared.documents)packet[doc.document_type==="resume"?"resume":"coverLetter"]=doc.data_url;
