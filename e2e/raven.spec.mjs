@@ -792,12 +792,12 @@ async function mockOneClickQueue(page,api,{delayResume=false}={}){
   await route.fulfill({json:{run_id:runId,job_id:input.job_id,stage:'complete',documents}});
  });
  await page.addInitScript(()=>{window.chatWindows=0;window.open=()=>{window.chatWindows++;return null;};});
- return {requests,release:()=>{released=true;},releaseCover:()=>{releaseCover=true;},resume,cover};
+ return {requests,ready:()=>expect(page.locator('#statusFilter option[value="Interested"]')).toHaveCount(1),release:()=>{released=true;},releaseCover:()=>{releaseCover=true;},resume,cover};
 }
 
 test('Generate both uses one-click helper for both saved PDFs and survives refresh',async({page})=>{
  const api=await mockRaven(page),helper=await mockOneClickQueue(page,api);
- await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+ await page.goto('/');await helper.ready();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
  await openDetailSection(page,"Job details");await jobDetail(page, "[data-generate-both]").click();await expect(page.locator('#syncStatus')).toContainText('copied to Drive');
  expect(helper.requests).toEqual([{job_id:'job-1',document_type:'both'}]);expect(api.getGenerationCalls()).toBe(0);expect(api.getJob().resume).toBe(helper.resume);expect(api.getJob().cover_letter).toBe(helper.cover);
  expect(await page.evaluate(()=>window.chatWindows)).toBe(0);await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
@@ -806,12 +806,12 @@ test('Generate both uses one-click helper for both saved PDFs and survives refre
 
 test('cover can queue while resume writes and reservations remain busy through rerender',async({page})=>{
  const api=await mockRaven(page),helper=await mockOneClickQueue(page,api,{delayResume:true});
- await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+ await page.goto('/');await helper.ready();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
  await page.locator('[data-generate="resume"]').click();await expect(page.locator('[data-generate="resume"]')).toHaveAttribute('aria-busy','true');
  await page.locator('[data-generate="coverLetter"]').click();await expect(page.locator('[data-generate="coverLetter"]')).toHaveAttribute('aria-busy','true');
  await expect(page.locator('[data-generate="coverLetter"]')).toHaveText('Generate');
  await expect(page.locator('[data-generate="resume"]')).toHaveAttribute('aria-busy','true');await expect(jobDetail(page, "[data-generate-both]")).toBeDisabled();
- expect(helper.requests.map(x=>x.document_type)).toEqual(['resume','coverLetter']);expect(api.getGenerationCalls()).toBe(0);
+ await expect.poll(()=>helper.requests.map(x=>x.document_type)).toEqual(['resume','coverLetter']);expect(api.getGenerationCalls()).toBe(0);
  // Collapsing and re-opening re-renders the controls without losing reservations.
  await page.locator('[data-close-job-detail]').click();await page.locator('.job-card-summary').first().click();await expect(page.locator('[data-generate="coverLetter"]')).toHaveAttribute('aria-busy','true');
  helper.release();await expect.poll(()=>api.getJob().resume).toBe(helper.resume);helper.releaseCover();await expect.poll(()=>api.getJob().cover_letter).toBe(helper.cover);
@@ -820,7 +820,7 @@ test('cover can queue while resume writes and reservations remain busy through r
 
 test('both reserves each document and overlapping duplicate requests show visible feedback',async({page})=>{
  const api=await mockRaven(page),helper=await mockOneClickQueue(page,api,{delayResume:true});
- await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+ await page.goto('/');await helper.ready();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
  await page.evaluate(()=>{window.staleResume=document.querySelector('[data-generate="resume"]');window.staleBoth=document.querySelector('[data-generate-both]');});
  await openDetailSection(page,"Job details");await jobDetail(page, "[data-generate-both]").click();await expect(page.locator('[data-generate="resume"]')).toBeDisabled();await expect(page.locator('[data-generate="coverLetter"]')).toBeDisabled();
  // A stale control event cannot bypass the reservation, even if delivered after re-render.
@@ -831,7 +831,7 @@ test('both reserves each document and overlapping duplicate requests show visibl
 
 test('one-click completion does not open review after the user leaves the job',async({page})=>{
  const api=await mockRaven(page),helper=await mockOneClickQueue(page,api,{delayResume:true});
- await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();await page.locator('[data-generate="resume"]').click();
+ await page.goto('/');await helper.ready();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();await page.locator('[data-generate="resume"]').click();
  await page.locator('[data-close-job-detail]').click();helper.release();await expect(page.locator('#syncStatus')).toContainText('copied to Drive');
  await expect(page.locator('dialog[open]')).toHaveCount(0);expect(api.getJob().resume).toBe(helper.resume);
 });

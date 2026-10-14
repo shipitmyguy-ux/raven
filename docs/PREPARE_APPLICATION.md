@@ -33,3 +33,9 @@ Synthetic browser tests establish button routing, canonical readback, actual Fil
 - Upload failure: show the specific missing attachment; retain the generated document and Drive copy.
 - A repeated click must not start overlapping preparation for the same job.
 
+
+## Reducing extension reloads — owner direction, October 14
+
+Treat extension updates as exceptional and batch them. Raven and the local helper own document writing, factual validation, canonical saves, Drive receipts, PDF generation, workflow state, retries and user feedback. The extension retains browser-only operations: exact tab/URL binding, DOM inspection, safe field assignment, attachment selection, and the prohibition on automatic submission. Use a stable versioned data contract with bounded identities and capabilities. No remote executable code or expanded permissions.
+
+The next small implementation is to make extension capability an optional second phase. If the extension is absent or outdated, generate/reuse and verify both canonical documents and Drive copies, save documents-ready metadata with an actionable form-setup reason, and return before PDF packet delivery. Explicit Resume then probes the extension and reuses the unchanged documents before form inspection/delivery. Add tests for absent bridge, incompatible protocol, no packet/profile delivery, retry without a second writer run, and writer/receipt/hash failures. Current individual document generation already does not require the extension; the combined Prepare action still probes it early. This structural change is planned, not yet implemented.
