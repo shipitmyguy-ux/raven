@@ -1,5 +1,15 @@
 # Raven Tasks
 
+## Live keep-awake acceptance - October 14, 2026
+
+Completed the owner-authorized real 3D-job test with a Blackbird Interactive Environment and Prop Artist role missing both documents. Used published Raven Generate controls in two sequential runs. No existing document was deleted or replaced. The job remains Saved; no employer form, upload or submission was attempted.
+
+Observed Off before work, On during resume generation, and Stopped with the task still running after clicking Stop. Independent native verification confirmed the hold was released while the writer continued. The resume completed successfully in45.9s. A new cover-letter batch automatically reacquired the hold, confirmed in Raven and by the native control. It completed in40.8s without Stop. Raven automatically returned to Off, the native hold was absent and the helper reported zero active tasks. Timings cover accepted-run creation through durable completion, including PDF and Drive verification, excluding manual test gaps.
+
+Both saved documents and their Current PDF links survived full Raven refresh. Workflow validation and Drive receipt checks passed; no separate full content/layout audit was performed. Private identifiers, links, hashes, screenshots and document content are excluded from these repository notes. Left the job drawer open for owner review. No source, extension or helper update was necessary.
+
+Follow-up observation: Chrome automation briefly disconnected and reconnected during each real run; recovered the unchanged Raven tab. Document generation and Raven status continued successfully. A separate read-only connector probe was rate-limited; verification used Raven and local completion evidence. These connector interruptions are not claimed fixed.
+
 ## Keep-awake controls inside Raven - October 14, 2026
 
 Options now includes Laptop keep-awake with automatically refreshed local status, active-task count, Check status and Stop keeping awake. States distinguish idle, starting, confirmed awake, manually stopped and unavailable; an absent/old writer is never labelled off. The UI only checks on opening Options and while it remains open. Closing Options ends polling. Paired-phone generation is unchanged; these controls address the writer on this computer.
