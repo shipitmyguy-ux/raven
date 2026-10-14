@@ -1,5 +1,12 @@
 # Raven Status
 
+## SoundAir game-generation filtering - October 13, 2026
+
+Live resume logs show repeated INVALID_DRAFT records containing exp_soundair, most recently at 22:31 UTC. Instructions excluded SoundAir, but evidence and allowed history schemas still exposed it. Shared generationProfile now scopes game evidence before model/schema construction and external prompts. Canonical history and non-game tracks remain intact; explicit SoundAir revisions remain supported. One-click rebuilds game guidance from scoped evidence and restricts experience_id choices.
+
+Deployed resume v135 and cover v105 preserving existing JWT/custom checks. Live prompt-only readback confirms no soundair_1 and retained game chronology. Focused writer/helper tests61, review/reliability/bridge69, and scope/security6 pass. No saved documents or approvals changed. Live generation returned ok=true with exactly eight game roles and no SoundAir. The response architecture remains the existing grounded-llm-v7 label in the narrowly patched deployed bundle; canonical source uses v9. Local idle helper adapter activated/restarted; session readiness readback passed. PR78 core, Windows and browser-safety checks passed. 35/36 local core commands passed; remaining OAuth command lacked local jose dependency, while the complete GitHub core job passed with dependencies installed. No user document was saved by the acceptance generation. The deployed code is a narrow patch to live bundles, rather than replacement with broader canonical changes.
+
+
 ## Approved InGameJob production activation — 2026-10-13
 
 User explicitly approved deployment/activation with d. Deployed collectorv14/backendv69 ACTIVE and applied committed gamesmith_ingamejob_sources migration. Actual Vault-authenticated scan request584 HTTP200 checked1source:37fetched,7details attempted,6complete plus1excluded,0deferred,6eligible. All six full descriptions1549–4639chars persisted and remote/geographic conditions preserved. Public directory confirms enabled/verified/ok/complete and24hour interval with next check October14. Gamesmith remains blocked/disabled/pending provider because publicDNS fails; no successful Gamesmith scan claimed.

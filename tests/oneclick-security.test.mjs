@@ -10,6 +10,24 @@ import {createCodexAdapters,verifiedDriveReceipt} from '../scripts/oneclick-code
 const metadata={id:'file1234567890',mime_type:'application/pdf',parent_ids:['folder12345'],title:'resume.pdf'};
 const readEvent={type:'mcp_tool_call',tool:'google_drive.get_file_metadata',status:'completed',arguments:{fileId:metadata.id},result:{structured_content:metadata}};
 
+test('game subprocess cannot select SoundAir and regenerates stale full-profile guidance',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'raven-game-profile-'));
+ let prompt='',schema;
+ try{
+  const adapters=createCodexAdapters({codexPath:'synthetic',workDir:dir,spawnImpl:(_path,args)=>{
+   const child=new EventEmitter();child.stdout=new PassThrough();child.stderr=new PassThrough();child.stdin=new PassThrough();child.kill=()=>child.emit('close',1);
+   child.stdin.on('data',chunk=>prompt+=chunk);
+   child.stdin.on('finish',async()=>{
+    schema=JSON.parse(await (await import('node:fs/promises')).readFile(args[args.indexOf('--output-schema')+1],'utf8'));
+    await writeFile(args[args.indexOf('-o')+1],'{}');child.emit('close',0);
+   });return child;
+  }});
+  await adapters.generateDraft({job:{track:'Games / 3D',title:'Artist'},profile:{skills:['Unity'],experience:[{id:'art',company:'Studio',facts:[{id:'art1',text:'Built worlds.'}]},{id:'exp_soundair',company:'SoundAir',facts:[{id:'soundair_1',text:'Repaired coffee makers.'}]}],resume_required_experience_ids:['art']},writingPrompt:'Stale evidence: soundair_1 Repaired coffee makers.',documentType:'resume'});
+  assert.deepEqual(schema.properties.experience.items.properties.experience_id.enum,['art']);
+  assert.ok(!prompt.includes('soundair_1'));assert.ok(!prompt.includes('Repaired coffee makers.'));
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
 test('Drive receipt requires observed matching tool output rather than model prose',()=>{
  assert.throws(()=>verifiedDriveReceipt([{type:'agent_message',text:JSON.stringify(metadata)}],{fileId:metadata.id,folderId:'folder12345'}),/DRIVE_METADATA_NOT_CONFIRMED/);
  assert.throws(()=>verifiedDriveReceipt([readEvent],{fileId:'other1234567890',folderId:'folder12345'}),/DRIVE_METADATA_NOT_CONFIRMED/);

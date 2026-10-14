@@ -1,8 +1,9 @@
+import {generationProfile} from "./document-profile.mjs";
 import {reviewDocument,reviewFacts,REVIEW_VERSION} from "./document-review.mjs";
 import {studioRelevance} from "./studio-context.mjs";
 import {buildRoleEvidencePlan,professionalSummaryIssue} from './professional-evidence.mjs';
 // One structured writer for initial drafts and revisions; layout stays in Raven.
-export const WRITER_VERSION="grounded-llm-v8";
+export const WRITER_VERSION="grounded-llm-v9";
 const str={type:"string"};
 const arr=(items,minItems=0,maxItems=20)=>({type:"array",items,minItems,maxItems});
 const obj=(properties)=>({type:"object",properties,required:Object.keys(properties),additionalProperties:false});
@@ -533,6 +534,7 @@ export async function writeDocument({kind,profile,target,instructions="",current
     if(revisionSection!=="summary"||kind!=="resume"||!instructions.trim()||!currentDocument.trim())throw new WriterError("Invalid summary revision request.","INVALID_INPUT",400);
     return writeSummary({profile,target,instructions,currentDocument,complete,reviewComplete,onDiagnostic,onEvidenceTrace});
   }
+  profile=generationProfile(profile,target,instructions);
   const schema=structuredClone(kind==="resume"?resumeSchema:coverSchema);
   const roleEvidencePlan=buildRoleEvidencePlan(profile,target);
   const relevantRoleIds=new Set((roleEvidencePlan?.employer_evidence||[]).filter(row=>row.priority_facts.length).map(row=>row.experience_id));
