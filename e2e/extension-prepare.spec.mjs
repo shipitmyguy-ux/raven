@@ -33,9 +33,9 @@ test("Ashby prepare fills known fields and reports delayed accepted or rejected 
         <label for="_systemfield_email">Email</label><input id="_systemfield_email" type="email">
         <label for="portfolio-field">Portfolio/website</label><input id="portfolio-field" type="text">
         <label for="sponsorship">Will you need sponsorship?</label><input id="sponsorship" type="radio" value="No">
-        <label for="autofill-resume">Autofill from resume</label><input id="autofill-resume" type="file" name="resume_import">
-        <label for="_systemfield_resume">Resume</label><input id="_systemfield_resume" type="file" accept=".pdf">
-        <label for="cover-uuid-17">Cover Letter</label><input id="cover-uuid-17" type="file" accept="application/pdf">
+        <div class="upload-field"><label for="autofill-resume">Autofill from resume</label><input id="autofill-resume" type="file" name="resume_import"></div>
+        <div class="upload-field"><label for="_systemfield_resume">Resume</label><input id="_systemfield_resume" type="file" accept=".pdf"></div>
+        <div class="upload-field"><label for="cover-uuid-17">Cover Letter</label><input id="cover-uuid-17" type="file" accept="application/pdf"></div>
         <button type="submit">Submit application</button>
       </form>
     </body></html>`
@@ -48,7 +48,7 @@ test("Ashby prepare fills known fields and reports delayed accepted or rejected 
       const status = document.createElement("span");
       status.className = "upload-acceptance";
       status.textContent = input.id === "cover-uuid-17" ? "Upload failed: unsupported file" : input.files[0].name;
-      input.parentElement.appendChild(status);
+      input.closest(".upload-field").appendChild(status);
     }, 1200);
   }));
   await page.addScriptTag({ content: fs.readFileSync(new URL("../extension/src/assistant-core.js", import.meta.url), "utf8") });
