@@ -25,7 +25,8 @@
     let explicit = null;
     try { explicit = id ? document.querySelector('label[for="' + CSS.escape(id) + '"]') : null; } catch {}
     const described = (el.getAttribute("aria-labelledby") || "").split(/\s+/).filter(Boolean).map(ref => document.getElementById(ref)?.innerText || "").join(" ");
-    return [...new Set([explicit?.innerText, el.closest("label")?.innerText, el.getAttribute("aria-label"), described, el.getAttribute("placeholder")].filter(Boolean))].join(" ");
+    const primary = [explicit?.innerText, el.closest("label")?.innerText, el.getAttribute("aria-label"), described].find(value => String(value || "").trim());
+    return String(primary || el.getAttribute("placeholder") || "").trim();
   }
   function sensitive(el, label) {
     const metadata = [label, el.name, el.id, el.getAttribute("autocomplete"), el.getAttribute("placeholder"), el.getAttribute("data-testid")].filter(Boolean).join(" ");

@@ -115,16 +115,16 @@ test('prepare content attaches PDFs and contains no submission or navigation act
 test('Ashby preparation targets labeled application files and leaves sponsorship controls alone', async () => {
   const labels = new Map();
   const fields = [];
-  const addInput = ({ id, name = '', type = 'text', label, value = '', accept = '' }) => {
+  const addInput = ({ id, name = '', type = 'text', label, value = '', accept = '', placeholder = '' }) => {
     const input = {
       tagName: 'INPUT', id, name, type, value, accept, disabled: false, readOnly: false, files: [],
-      getAttribute(key) { return ({ 'aria-labelledby': '', 'aria-label': label, autocomplete: '', placeholder: '', 'data-testid': '' })[key] || null; },
+      getAttribute(key) { return ({ 'aria-labelledby': '', 'aria-label': label, autocomplete: '', placeholder, 'data-testid': '' })[key] || null; },
       closest() { return null; }, dispatchEvent(event) { if (event.type === 'change' && this.type === 'file' && this.files[0]) this.parentElement.innerText += ' ' + this.files[0].name; },
       setAttribute() {}, parentElement: { innerText: 'Upload ' + label }
     };
     labels.set(id, label); fields.push(input); return input;
   };
-  addInput({ id: '_systemfield_name', label: 'Name' });
+  addInput({ id: '_systemfield_name', label: 'Name', placeholder: 'Type here...' });
   addInput({ id: '_systemfield_email', type: 'email', label: 'Email' });
   addInput({ id: 'portfolio-id', label: 'Portfolio/website' });
   addInput({ id: 'sponsorship-radio', type: 'radio', label: 'Will you need sponsorship?' });
