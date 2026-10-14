@@ -114,3 +114,16 @@ test('actual button rejects missing durable Drive event and suppresses duplicate
  const f=appFixture({persisted:false});await vm.runInContext(f.handler+'\nPromise.all([launchChatGptPrompt({id:"JT-test"},"resume"),launchChatGptPrompt({id:"JT-test"},"resume")])',f.ctx);
  assert.equal(f.counts().runs,1);assert.equal(f.counts().review,0);assert.match(f.counts().status,/could not confirm/);
 });
+
+test('power controls validate status and keep Stop behind the authenticated local session',async()=>{
+ const calls=[];
+ const client=createOneClickClient({fetchImpl:async(url,options)=>{
+  calls.push({url,options});return {ok:true,json:async()=>url.endsWith('/session')?{token:'power-token'}:{supported:true,active_tasks:2,state:url.endsWith('/stop')?'stopped':'awake'}};
+ }});
+ assert.equal((await client.getPowerStatus()).state,'awake');
+ assert.equal((await client.stopKeepingAwake()).state,'stopped');
+ assert.equal(calls.length,3);assert.equal(calls[2].options.headers.Authorization,'Bearer power-token');
+ assert.equal(calls[2].options.method,'POST');assert.deepEqual(JSON.parse(calls[2].options.body),{});
+ const malformed=createOneClickClient({fetchImpl:async url=>({ok:true,json:async()=>url.endsWith('/session')?{token:'token'}:{supported:true,state:'idle'}})});
+ await assert.rejects(malformed.getPowerStatus(),/Update and restart/);
+});

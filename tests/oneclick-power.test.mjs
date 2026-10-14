@@ -33,6 +33,17 @@ test('non-Windows jobs do not launch a power process',async()=>{
  assert.equal(await activity.run(async()=>42),42);assert.equal(activity.active,0);
 });
 
+test('manual Stop retains running jobs and only a new batch reacquires the hold',async()=>{
+ let finish;const events=[];
+ const activity=createJobActivity({startHold(){events.push('hold');return ()=>events.push('release');}});
+ const job=activity.run(()=>new Promise(r=>finish=r));
+ assert.equal(activity.status().state,'awake');
+ assert.deepEqual(activity.stop(),{supported:true,active_tasks:1,state:'stopped'});
+ await activity.run(async()=>{});assert.deepEqual(events,['hold','release']);
+ finish();await job;assert.equal(activity.status().state,'idle');
+ await activity.run(async()=>{});assert.deepEqual(events,['hold','release','hold','release']);
+});
+
 test('Windows native hold starts and releases on pipe closure',{skip:process.platform!=='win32',timeout:15000},async()=>{
  const child=spawn('powershell.exe',['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',fileURLToPath(new URL('../scripts/oneclick-awake.ps1',import.meta.url))],{windowsHide:true,stdio:['pipe','pipe','pipe']});
  let output='',errors='';child.stdout.on('data',chunk=>output+=chunk);child.stderr.on('data',chunk=>errors+=chunk);

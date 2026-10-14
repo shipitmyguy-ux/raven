@@ -123,6 +123,11 @@ export async function createOneClickServer({runWorkflow,rest,authorizeJob,pairRe
    }
    const token=String(req.headers.authorization||'').replace(/^Bearer /,'');
    if(!sessions.has(token)||sessions.get(token)<Date.now())return send(401,{error:'Raven helper session expired.'});
+   if(req.method==='GET'&&path==='/power')return send(200,activity.status());
+   if(req.method==='POST'&&path==='/power/stop'){
+    if(!body||Object.keys(body).length)return send(400,{error:'Invalid keep-awake request.'});
+    return send(200,activity.stop());
+   }
    if(req.method==='POST'&&path==='/pair'){
     if(!pairRemote)return send(503,{error:'Phone queue is not configured on this computer.'});
     return send(200,await pairRemote());

@@ -43,7 +43,11 @@ export function createOneClickClient({baseUrl='http://127.0.0.1:8766',fetchImpl=
   }
   function validateRunInput(input){if(!['resume','coverLetter','both'].includes(input?.document_type)||!String(input?.job_id||''))throw Error('Invalid document request.');}
   async function session(){if(!token){const result=await request('/session',{});if(typeof result.token!=='string'||!result.token)throw Error('Raven helper session was not established.');token=result.token;}}
-  return {async ensureApplicationPreparation(){return ensureApplicationPreparation();},async verifyApplicationReceipts(input){
+  function validatePower(value){
+    if(typeof value.supported!=='boolean'||!Number.isInteger(value.active_tasks)||value.active_tasks<0||!['idle','starting','awake','stopped','unavailable'].includes(value.state))throw Error('Update and restart the Raven writer to use keep-awake controls.');
+    return value;
+  }
+  return {async getPowerStatus(){await session();return validatePower(await request('/power'));},async stopKeepingAwake(){await session();return validatePower(await request('/power/stop',{}));},async ensureApplicationPreparation(){return ensureApplicationPreparation();},async verifyApplicationReceipts(input){
     if(!String(input?.job_id||'')||!Array.isArray(input.documents)||input.documents.length!==2||new Set(input.documents.map(d=>d?.document_type)).size!==2||input.documents.some(d=>!['resume','coverLetter'].includes(d?.document_type)||! /^[a-f0-9]{64}$/.test(d?.document_sha256||'')||! /^[A-Za-z0-9_-]{10,160}$/.test(d?.file_id||'')||d.drive_url!==`https://drive.google.com/file/d/${d.file_id}/view`))throw Error('Both exact application receipts are required.');
     const health=await ensureApplicationPreparation();
     if(health.application_receipts_supported!==true)throw Error('This Raven writer cannot recheck saved Drive receipts. Update and restart the writer before resuming.');

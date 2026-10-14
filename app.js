@@ -2069,7 +2069,7 @@
       if(savedKey!==key){kinds.forEach(kind=>{activeOneClickJobs.delete(key+":"+kind);activeOneClickJobs.set(savedKey+":"+kind,session);});key=savedKey;}
       if(forceLocal){
         if(!localPreparationClient){
-          const {createOneClickClient}=await import("./oneclick-client.mjs?v=3");
+          const {createOneClickClient}=await import("./oneclick-client.mjs?v=4");
           localPreparationClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
         }
         client=localPreparationClient;
@@ -2078,7 +2078,7 @@
         const pairedToken=localStorage.getItem(PAIR_KEY);
         if(pairedToken)oneClickClient=createRemoteWriterClient({token:pairedToken});
         else{
-          const {createOneClickClient}=await import("./oneclick-client.mjs?v=3");
+          const {createOneClickClient}=await import("./oneclick-client.mjs?v=4");
           oneClickClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
         }
       }
@@ -2143,7 +2143,7 @@
       if(intent&&String(intent.jobId)!==String(job.id))throw Error("Another application preparation is saved. Resume or dismiss it before starting this role.");
       if(intent&&new URL(intent.jobUrl).href!==new URL(job.url).href)throw Error("The saved employer URL changed. Review the listing before starting again.");
       if(!localPreparationClient){
-        const {createOneClickClient}=await import("./oneclick-client.mjs?v=3");
+        const {createOneClickClient}=await import("./oneclick-client.mjs?v=4");
         localPreparationClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
       }
       await localPreparationClient.ensureApplicationPreparation();
@@ -2924,6 +2924,33 @@
     const optionsButton=document.getElementById("optionsButton");
     const optionsDialog=document.getElementById("optionsDialog");
     if(optionsButton && optionsDialog){
+      const powerStatus=document.getElementById("writerPowerStatus");
+      const powerStop=document.getElementById("writerPowerStop");
+      const powerRefresh=document.getElementById("writerPowerRefresh");
+      let powerClient,powerClientUrl,powerTimer,powerBusy=false;
+      const renderPower=(value)=>{
+        const jobs=value.active_tasks===1?"1 active task":value.active_tasks+" active tasks";
+        const labels={idle:"Off — no active document jobs.",starting:"Starting keep-awake — "+jobs+".",awake:"On — keeping this laptop awake · "+jobs+".",stopped:"Stopped — normal sleep allowed · "+jobs+".",unavailable:"Keep-awake is unavailable on this computer."};
+        powerStatus.textContent=labels[value.state];
+        powerStop.disabled=!value.supported||!["awake","starting"].includes(value.state);
+      };
+      const updatePower=async(stop=false)=>{
+        if(powerBusy||!optionsDialog.open)return;
+        powerBusy=true;powerStop.disabled=true;powerRefresh.disabled=true;
+        try{
+          const baseUrl=state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766";
+          if(!powerClient||powerClientUrl!==baseUrl){
+            const {createOneClickClient}=await import("./oneclick-client.mjs?v=4");
+            powerClient=createOneClickClient({baseUrl});powerClientUrl=baseUrl;
+          }
+          renderPower(await (stop?powerClient.stopKeepingAwake():powerClient.getPowerStatus()));
+        }catch(error){
+          powerStatus.textContent=/Action not found|Update and restart/.test(error.message)?"Update and restart the local writer to use keep-awake controls.":"Status unavailable on this computer. "+error.message;
+          powerStop.disabled=true;
+        }finally{powerBusy=false;powerRefresh.disabled=false;}
+      };
+      powerRefresh?.addEventListener("click",()=>void updatePower());
+      powerStop?.addEventListener("click",()=>void updatePower(true));
       const optionsHome=document.getElementById("optionsHome");
       const optionsCard=document.getElementById("optionsCard");
       const optionsCardTitle=document.getElementById("optionsCardTitle");
@@ -2977,11 +3004,15 @@
         document.documentElement.classList.add("options-open");
         document.body.classList.add("options-open");
         optionsDialog.showModal();
+        void updatePower();
+        clearInterval(powerTimer);
+        powerTimer=setInterval(()=>{if(!document.hidden)void updatePower();},5000);
       });
       optionsDialog.addEventListener("click",(event)=>{
         if(event.target===optionsDialog) optionsDialog.close();
       });
       optionsDialog.addEventListener("close",()=>{
+        clearInterval(powerTimer);
         document.documentElement.classList.remove("options-open");
         document.body.classList.remove("options-open");
       });

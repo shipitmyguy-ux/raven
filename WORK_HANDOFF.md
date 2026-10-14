@@ -1,5 +1,13 @@
 # Raven execution handoff
 
+## Keep-awake controls inside Raven - October 14, 2026
+
+Options now includes Laptop keep-awake with automatically refreshed local status, active-task count, Check status and Stop keeping awake. States distinguish idle, starting, confirmed awake, manually stopped and unavailable; an absent/old writer is never labelled off. The UI only checks on opening Options and while it remains open. Closing Options ends polling. Paired-phone generation is unchanged; these controls address the writer on this computer.
+
+The authenticated loopback GET /power and exact POST /power/stop routes retain existing origin, referrer, local-client and bearer-session checks. Stop releases the sleep hold without cancelling jobs, changing documents or statuses, or submitting applications. The remainder of an overlapping batch stays released; the next batch reacquires it. Native confirmation and exit update the state, including stops from the existing shortcut. App95/client4; no extension update.
+
+Verified all38 local core command groups, secret scan, syntax and all155 Edge browser tests. New tests cover session/foreign-origin/GET-mutation rejection, invalid Stop payload, parallel-job stop/rearm behavior, client response validation, live UI Stop and missing/outdated helper recovery. Restarted the idle existing helper; authenticated live /power returned supported:true, active_tasks:0, state:idle. No personal document generation or submission. Web publication is in progress.
+
 ## Keep awake only during jobs - October 14, 2026
 
 Implemented and activated in the existing local helper. A pipe-owned Windows sleep request is acquired only for accepted local/phone document runs (including locally queued work), PDF preparation and Drive receipt verification. It covers durable success/failure saves and overlapping work; the last completed/failed task releases it. Helper exit/crash closes the pipe. Supervisor idle polling no longer holds the system awake. Active jobs request wakefulness on AC or battery; Windows display, lid, explicit sleep and power-plan settings are unchanged.

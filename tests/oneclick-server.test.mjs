@@ -30,6 +30,25 @@ test('local helper rejects foreign origin, missing bearer, GET mutations and una
   assert.equal(f.writes.length,0);
  }finally{await f.cleanup();}
 });
+
+test('power status and Stop require a Raven session and cannot cancel or submit work',async()=>{
+ let finish;const gate=new Promise(r=>finish=r);let releases=0;
+ const activity=createJobActivity({startHold(){return ()=>releases++;}});
+ const f=await fixture(async()=>{await gate;return {documents:[]};},{activity});
+ try{
+  assert.equal((await f.request('/power',undefined,{Authorization:''})).status,401);
+  assert.equal((await f.request('/power/stop',{}, {Origin:'https://evil.test'})).status,403);
+  assert.equal((await f.request('/power/stop',{}, {Authorization:''})).status,401);
+  assert.equal((await f.request('/power/stop',{extra:true})).status,400);
+  assert.equal((await f.request('/power/stop')).status,404);
+  await f.request('/runs',{job_id:'one',document_type:'resume'});
+  assert.equal((await (await f.request('/power')).json()).state,'awake');
+  assert.deepEqual(await (await f.request('/power/stop',{})).json(),{supported:true,active_tasks:1,state:'stopped'});
+  assert.equal(releases,1);assert.equal(activity.active,1);
+  finish();await f.runtime.drain();await new Promise(r=>setImmediate(r));
+  assert.equal((await (await f.request('/power')).json()).state,'idle');
+ }finally{finish();await f.cleanup();}
+});
 test('receipt verification is read only and enforces origin, session, job authorization and exact shape',async()=>{
  let checks=0;const documents=['resume','coverLetter'].map(document_type=>({document_type,document_sha256:'a'.repeat(64),file_id:'file1234567890',drive_url:'https://drive.google.com/file/d/file1234567890/view'}));
  const f=await fixture(async()=>{throw Error('writer must not run');},{verifyApplicationReceipts:async body=>{checks++;return body;}});

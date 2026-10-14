@@ -9,7 +9,7 @@
   <title>Raven · JobTrack Pipeline</title>
   <script>
     window.RAVEN_ASSET_VERSION = Date.now().toString(36);
-    document.write('<link rel="stylesheet" href="./styles.css?v=20261014-job-panel">');
+    document.write('<link rel="stylesheet" href="./styles.css?v=20261014-writer-power">');
     document.write('<link rel="stylesheet" href="./theme.css?v=' + window.RAVEN_ASSET_VERSION + '">');
   </script>
 </head>
@@ -69,6 +69,15 @@
 
         <div class="options-viewport">
           <section id="optionsHome" class="options-screen options-home" aria-label="Option categories">
+            <section class="writer-power" aria-labelledby="writerPowerTitle">
+              <h3 id="writerPowerTitle">Laptop keep-awake</h3>
+              <p id="writerPowerStatus" role="status">Checking this computer…</p>
+              <p class="options-help">Automatic during document jobs. Stopping allows normal sleep without cancelling jobs; the next batch enables it again.</p>
+              <div class="writer-power-actions">
+                <button id="writerPowerStop" type="button" disabled>Stop keeping awake</button>
+                <button id="writerPowerRefresh" type="button">Check status</button>
+              </div>
+            </section>
             <button type="button" class="options-category" data-options-target="control-panel">
               <span>Control panel</span><span aria-hidden="true">›</span>
             </button>
@@ -346,6 +355,6 @@
   <script src="./supabase/functions/_shared/job-dedup.js?v=3"></script>
   <script src="./raven-core.js?v=5"></script>
   <script src="./raven-api.js?v=10"></script>
-  <script src="./app.js?v=94"></script>
+  <script src="./app.js?v=95"></script>
 </body>
 </html>

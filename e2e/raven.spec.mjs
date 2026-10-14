@@ -18,6 +18,8 @@ async function openDetailSection(page,name){
 
 
 async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJob=null,dataDelayMs=0,discoveredJob=null,availabilityResponse=null,savedDiscoveryId=null}={}){
+  // Options may inspect the local writer; fixtures must never touch the owner's helper.
+  await page.route('http://127.0.0.1:8766/**',route=>route.fulfill({status:503,json:{error:'Writer offline in this fixture.'}}));
   // These fixtures exercise the remote-provider workflow. One-click cases
   // explicitly override this route and install their own helper fixtures.
   await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=false;await route.fulfill({json:config});});
@@ -1890,4 +1892,43 @@ test('pairing consumes URL fragment and requires deliberate connect before stora
  await page.getByRole('button',{name:'Connect this device',exact:true}).click();await expect(page.locator('#status')).toContainText('Connected');
  expect(await page.evaluate(()=>localStorage.getItem('raven.local-writer.device.v1'))).toBe('a'.repeat(64));
  await page.getByRole('button',{name:'Disconnect this device',exact:true}).click();expect(await page.evaluate(()=>localStorage.getItem('raven.local-writer.device.v1'))).toBeNull();
+});
+
+test('Options shows live keep-awake status and stops the hold without cancelling jobs',async({page})=>{
+ await mockRaven(page);
+ let state='awake',stops=0;const calls=[];
+ await page.route('http://127.0.0.1:8766/**',route=>{
+  const path=new URL(route.request().url()).pathname;calls.push(path);
+  if(path==='/session')return route.fulfill({json:{token:'power-session'}});
+  expect(route.request().headers().authorization).toBe('Bearer power-session');
+  if(path==='/power/stop'){expect(route.request().method()).toBe('POST');expect(route.request().postDataJSON()).toEqual({});stops++;state='stopped';}
+  return route.fulfill({json:{supported:true,state,active_tasks:2}});
+ });
+ await page.goto('/');await expect(page.locator('#optionsButton')).toBeVisible();
+ expect(calls).toEqual([]);
+ await page.locator('#optionsButton').click();
+ await expect(page.locator('#writerPowerStatus')).toContainText('On — keeping this laptop awake');
+ await expect(page.locator('#writerPowerStatus')).toContainText('2 active tasks');
+ await page.getByRole('button',{name:'Stop keeping awake',exact:true}).click();
+ await expect(page.locator('#writerPowerStatus')).toContainText('Stopped — normal sleep allowed');
+ await expect(page.locator('#writerPowerStop')).toBeDisabled();expect(stops).toBe(1);
+ state='idle';await page.getByRole('button',{name:'Check status',exact:true}).click();
+ await expect(page.locator('#writerPowerStatus')).toHaveText('Off — no active document jobs.');
+ expect(calls.every(path=>['/session','/power','/power/stop'].includes(path))).toBe(true);
+});
+
+test('Options never labels an unavailable or old writer as safely off',async({page})=>{
+ await mockRaven(page);
+ let old=false;
+ await page.route('http://127.0.0.1:8766/**',route=>{
+  const path=new URL(route.request().url()).pathname;
+  if(path==='/session')return route.fulfill({json:{token:'power-session'}});
+  return route.fulfill({status:old?404:503,json:{error:old?'Action not found.':'Writer unavailable.'}});
+ });
+ await page.goto('/');await page.locator('#optionsButton').click();
+ await expect(page.locator('#writerPowerStatus')).toContainText('Status unavailable');
+ await expect(page.locator('#writerPowerStop')).toBeDisabled();
+ old=true;await page.getByRole('button',{name:'Check status',exact:true}).click();
+ await expect(page.locator('#writerPowerStatus')).toContainText('Update and restart the local writer');
+ await expect(page.locator('#writerPowerStop')).toBeDisabled();
 });
