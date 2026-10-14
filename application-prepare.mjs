@@ -1,11 +1,33 @@
+export function extensionUnavailableReason(error){
+  return error?.code==='PREPARATION_EXTENSION_UNAVAILABLE'?String(error.message||'The Raven Chrome extension is unavailable.'):null;
+}
+
+function unavailable(message){
+  return Object.assign(Error(message),{code:'PREPARATION_EXTENSION_UNAVAILABLE'});
+}
+
+// Older bridge callbacks forward chrome.runtime.lastError as a negative reply.
+// Only these transport messages mean the extension worker is unavailable.
+const legacyTransportErrors=new Set([
+  'Extension did not respond.',
+  'Could not establish connection. Receiving end does not exist.',
+  'Extension context invalidated.',
+  'The message port closed before a response was received.'
+]);
+function legacyTransportUnavailable(message){
+  return typeof message==='string'&&legacyTransportErrors.has(message)
+    ? unavailable('The Raven Chrome extension did not respond. Check or reload it in Chrome, then resume preparation.')
+    : null;
+}
+
 export function probePreparationExtension({documentRef=globalThis.document,timeoutMs=1200}={}){
   return new Promise((resolve,reject)=>{
     const bridge=documentRef?.getElementById('ravenExtensionBridge');
-    if(!bridge){reject(Error('The Raven Chrome extension is required to prepare an application. Install or enable it, then refresh Raven.'));return;}
+    if(!bridge){reject(unavailable('The Raven Chrome extension is unavailable. Install or enable it, then refresh Raven.'));return;}
     let settled=false;
     const finish=(error)=>{if(settled)return;settled=true;clearTimeout(timer);bridge.removeEventListener('raven-prepare-capability',onCapability);error?reject(error):resolve(true);};
-    const onCapability=()=>{if(bridge.dataset.prepareCapability==='2')finish();};
-    const timer=setTimeout(()=>finish(Error('The Raven Chrome extension needs the latest preparation update. Update or reload it in Chrome, then refresh Raven.')),timeoutMs);
+    const onCapability=()=>{if(bridge.dataset.prepareCapability==='2')finish();else if(bridge.dataset.prepareCapability)finish(unavailable('The Raven Chrome extension needs the latest preparation update. Update or reload it in Chrome, then refresh Raven.'));};
+    const timer=setTimeout(()=>finish(unavailable('The Raven Chrome extension did not confirm preparation support. Enable or update it, then refresh Raven.')),timeoutMs);
     delete bridge.dataset.prepareCapability;
     bridge.addEventListener('raven-prepare-capability',onCapability);
     bridge.dispatchEvent(new Event('raven-prepare-probe',{bubbles:true}));
@@ -14,21 +36,25 @@ export function probePreparationExtension({documentRef=globalThis.document,timeo
 
 export function preflightPreparationApplication({jobId,jobUrl,title='',company=''},{documentRef=globalThis.document,timeoutMs=30000,requestId=crypto.randomUUID()}={}){
   const bridge=documentRef?.getElementById('ravenExtensionBridge');
-  if(!bridge)throw Error('The Raven Chrome extension is required to inspect the application destination.');
+  if(!bridge)throw unavailable('The Raven Chrome extension is unavailable. Enable it, then refresh Raven.');
   if(!uuidPattern.test(requestId))throw Error('Invalid destination preflight request ID.');
   return new Promise((resolve,reject)=>{
-    let settled=false;
+    let settled=false,invalidSeen=false;
     const finish=(error,result)=>{if(settled)return;settled=true;clearTimeout(timer);bridge.removeEventListener('raven-preflight-response',onResponse);error?reject(error):resolve(result);};
     const onResponse=()=>{
-      let value;try{value=JSON.parse(bridge.dataset.preparePreflightResponse||'');}catch{return;}
-      if(value.requestId!==requestId)return;
+      let value;try{value=JSON.parse(bridge.dataset.preparePreflightResponse||'');}catch{invalidSeen=true;return;}
+      if(!value||typeof value!=='object'||value.requestId!==requestId){invalidSeen=true;return;}
+      if(value.ok===false&&value.status==='blocked'){
+        const transport=legacyTransportUnavailable(value.reason);
+        if(transport){finish(transport);return;}
+      }
       if(value.ok===false&&value.status==='manual'&&typeof value.reason==='string'&&value.reason.trim()){
         finish(null,{status:'manual',reason:value.reason.slice(0,240)});return;
       }
       if(value.ok!==true||value.status!=='ready'||!uuidPattern.test(value.preflightId||'')){finish(Error(value.reason||'The application destination could not be verified.'));return;}
       finish(null,value);
     };
-    const timer=setTimeout(()=>finish(Error('Chrome did not confirm the application destination. Review it before preparing documents.')),timeoutMs);
+    const timer=setTimeout(()=>finish(invalidSeen?Error('Chrome returned an invalid application destination response. Review it before resuming.'):unavailable('The Raven Chrome extension did not confirm the application destination. Check it in Chrome, then resume preparation.')),timeoutMs);
     bridge.addEventListener('raven-preflight-response',onResponse);
     bridge.dataset.preparePreflightRequest=JSON.stringify({requestId,jobId,jobUrl,title,company});
     bridge.dispatchEvent(new Event('raven-preflight-application',{bubbles:true}));
@@ -37,21 +63,21 @@ export function preflightPreparationApplication({jobId,jobUrl,title='',company='
 
 export function dispatchPreparedApplication(packet,{documentRef=globalThis.document,timeoutMs=120000,requestId=crypto.randomUUID(),preflightId}={}){
   const bridge=documentRef?.getElementById('ravenExtensionBridge');
-  if(!bridge)throw Error('The Raven Chrome extension is required to prepare an application.');
+  if(!bridge)throw unavailable('The Raven Chrome extension is unavailable. Enable it, then refresh Raven.');
   if(!uuidPattern.test(requestId))throw Error('Invalid preparation request ID.');
   if(preflightId!==undefined&&!uuidPattern.test(preflightId))throw Error('Invalid destination preflight ID.');
   return new Promise((resolve,reject)=>{
-    let settled=false;
+    let settled=false,invalidSeen=false;
     const finish=(error,result)=>{if(settled)return;settled=true;clearTimeout(timer);bridge.removeEventListener('raven-prepare-response',onResponse);error?reject(error):resolve(result);};
     const onResponse=()=>{
       const response=bridge.dataset.prepareResponse;
-      if(!response)return;
-      let value;try{value=JSON.parse(response);}catch{return;}
-      if(value.requestId!==requestId)return;
-      if(value.ok!==true){finish(Error(value.error||'Chrome could not open the application for preparation.'));return;}
+      if(!response){invalidSeen=true;return;}
+      let value;try{value=JSON.parse(response);}catch{invalidSeen=true;return;}
+      if(!value||typeof value!=='object'||value.requestId!==requestId){invalidSeen=true;return;}
+      if(value.ok!==true){finish((value.ok===false&&legacyTransportUnavailable(value.error))||Error(value.error||'Chrome could not open the application for preparation.'));return;}
       finish(null,value);
     };
-    const timer=setTimeout(()=>finish(Error('Chrome did not confirm opening the application. Check Chrome and try again.')),timeoutMs);
+    const timer=setTimeout(()=>finish(invalidSeen?Error('Chrome returned an invalid application preparation response. Review it before resuming.'):unavailable('The Raven Chrome extension did not confirm opening the application. Check Chrome, then resume preparation.')),timeoutMs);
     bridge.addEventListener('raven-prepare-response',onResponse);
     bridge.dataset.prepareRequest=JSON.stringify({requestId,...(preflightId?{preflightId}:{}),packet});
     bridge.dispatchEvent(new Event('raven-prepare-application',{bubbles:true}));
@@ -77,6 +103,7 @@ function safeRecord(value,now){
   }
   if(typeof value.lastStage==='string'&&/^[a-z_]{1,40}$/.test(value.lastStage))record.lastStage=value.lastStage;
   if(typeof value.reason==='string')record.reason=value.reason.slice(0,240);
+  if(value.reasonType!==undefined){if(!['extension-unavailable','manual-access'].includes(value.reasonType))return null;record.reasonType=value.reasonType;}
   record.expired=Date.parse(record.createdAt)>now+60000||now-Date.parse(record.updatedAt)>MAX_AGE_MS;
   return record;
 }
@@ -94,7 +121,7 @@ export function createPreparationRecovery({storage=globalThis.localStorage,now=(
   const update=(preparationId,changes={})=>{
     const current=read();if(!current||current.preparationId!==preparationId)throw Error('Preparation metadata is unavailable. Start again explicitly.');
     if(current.expired)throw Error('Preparation metadata expired. Review the job and start again explicitly.');
-    if(Object.keys(changes).some(field=>!['jobId','jobUrl','runId','state','documents','lastStage','reason'].includes(field)))throw Error('Invalid preparation metadata update.');
+    if(Object.keys(changes).some(field=>!['jobId','jobUrl','runId','state','documents','lastStage','reason','reasonType'].includes(field)))throw Error('Invalid preparation metadata update.');
     if(changes.documents&&current.documents)for(const kind of ['resume','coverLetter'])if(current.documents[kind]&&changes.documents[kind]?.documentSha256!==current.documents[kind].documentSha256)throw Error('The saved document hash changed. Review it before starting again.');
     const {expired,...persisted}=current;
     return write({...persisted,...changes,updatedAt:new Date(now()).toISOString()});
