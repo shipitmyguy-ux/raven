@@ -1,16 +1,16 @@
-# Prepare application — first version
+# Prepare application — independent documents, optional form filling
 
 The Prepare application button generates or reuses both canonical documents through the existing local signed-in Codex writer, verifies saved Raven/Drive records, renders the exact saved versions to PDF, then sends their bytes and the browser-local applicant profile to the Raven Chrome extension. The extension opens a tab for that job, fills recognized fields, selects the PDFs in matching upload controls, and stops for human review. It never submits, grants document approval, or changes the application status. Applied jobs offer Prepare again for review.
 
 ## Employer access gates
 
-Employer access controls do not prevent document preparation. A sign-in or visible challenge leaves the resume and cover letter saved in Raven with verified Drive PDFs for later use. Raven shows Documents ready and retains an explicit Resume preparation action. Resume re-inspects the destination and reuses the unchanged saved documents before filling the form. No applicant packet is delivered while access is blocked. Hidden/passive CAPTCHA infrastructure alone is not an access gate. Component, transport and job-identity errors still require recovery before continuing.
+Employer access controls do not prevent document preparation. A sign-in or visible challenge leaves the resume and cover letter saved in Raven with verified Drive PDFs for later use. Raven shows Documents ready and retains an explicit Resume preparation action. Resume re-inspects the destination and reuses the unchanged saved documents before filling the form. No applicant packet is delivered while access is blocked. Hidden/passive CAPTCHA infrastructure alone is not an access gate. Writer integrity, malformed protocol and job-identity errors still require recovery before continuing. Recognized browser-bridge unavailability pauses only form filling.
 
 ## Requirements and activation
 
-Use desktop Chrome with the updated Raven Application Assistant extension, the updated local writer running on port 8766, and the saved Application profile in Raven Options. Refresh Raven after reloading the extension. The existing phone document queue remains available for document generation; application preparation requires the local desktop helper and extension. Existing saved documents are reused rather than overwritten. A fresh-generation test must explicitly reset only the selected job's document fields after a recovery copy is saved.
+Document preparation requires the local writer running on port 8766 and its existing authorized Raven/Drive connection. The Chrome extension and browser-local Application profile are needed only for employer form filling. If that stage is unavailable, both documents and verified Drive copies remain ready for review or later use. The existing phone document queue remains available separately. Existing saved documents are reused rather than overwritten. A fresh-generation test must explicitly reset only the selected job's document fields after a recovery copy is saved.
 
-The helper health response reports application_prepare_supported. The frontend checks the extension and helper before starting generation. Missing/outdated components produce a recovery message. Updating web files alone does not update an installed unpacked extension or a running helper.
+The helper health response reports application_prepare_supported. The helper is required for generation and verified Drive outputs. Extension capability is optional for document preparation: an absent, unresponsive or incompatible extension leaves Documents ready and an explicit Resume action. Form filling still requires a compatible extension. Updating web files alone does not update an installed unpacked extension or a running helper.
 
 ## Data and scope
 
@@ -27,7 +27,7 @@ Synthetic browser tests establish button routing, canonical readback, actual Fil
 ## Recovery
 
 - Writer unavailable: start or update the helper, then retry. Saved documents and verified exports are reused.
-- Extension absent/outdated: load/reload the current extension, refresh Raven, then retry.
+- Extension absent/outdated: both documents and verified Drive PDFs still finish. Review or use the Current PDF links immediately. Enable a compatible extension and refresh Raven when form filling is needed, then click Resume; unchanged documents are reused.
 - Documents changed mid-run: stop and retry from canonical records.
 - Unsupported/redirected form: leave manual completion to the user and record the observed URL and fields before adding a narrow adapter.
 - Upload failure: show the specific missing attachment; retain the generated document and Drive copy.
@@ -38,4 +38,6 @@ Synthetic browser tests establish button routing, canonical readback, actual Fil
 
 Treat extension updates as exceptional and batch them. Raven and the local helper own document writing, factual validation, canonical saves, Drive receipts, PDF generation, workflow state, retries and user feedback. The extension retains browser-only operations: exact tab/URL binding, DOM inspection, safe field assignment, attachment selection, and the prohibition on automatic submission. Use a stable versioned data contract with bounded identities and capabilities. No remote executable code or expanded permissions.
 
-The next small implementation is to make extension capability an optional second phase. If the extension is absent or outdated, generate/reuse and verify both canonical documents and Drive copies, save documents-ready metadata with an actionable form-setup reason, and return before PDF packet delivery. Explicit Resume then probes the extension and reuses the unchanged documents before form inspection/delivery. Add tests for absent bridge, incompatible protocol, no packet/profile delivery, retry without a second writer run, and writer/receipt/hash failures. Current individual document generation already does not require the extension; the combined Prepare action still probes it early. This structural change is planned, not yet implemented.
+Implemented stage boundary: both canonical documents and live Drive PDF receipt checks finish, and their hashes are persisted, before any extension probe or employer preflight. Extension capability is an optional form-filling phase. If the extension is absent, unresponsive or outdated, generate/reuse both canonical documents, verify exact saved hashes and live Drive PDF receipts, persist metadata-only documents-ready with reasonType extension-unavailable, and stop before attachment-byte retrieval, profile/answer reads or packet delivery. Explicit Resume rechecks capability, job URL, saved hashes and Drive receipts, then reuses the unchanged documents before form delivery. The current extension and helper do not change for this web release.
+
+Unknown or explicitly rejected protocol/identity responses remain hard failures rather than being relabeled unavailable. Pure bridge silence or disappearance can defer form filling; uncertain dispatch retains the stable request identity for safe explicit recovery. Already-open tab recovery also requires the original persisted document hashes and fresh receipts. No reload automatically generates or submits anything.
