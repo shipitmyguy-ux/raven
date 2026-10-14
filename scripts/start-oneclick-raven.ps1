@@ -2,6 +2,8 @@ $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
 . (Join-Path $PSScriptRoot 'private-tunnel-credentials.ps1')
 $node=Join-Path $env:USERPROFILE '.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe'
+if(!(Test-Path -LiteralPath $node)){$node=(Get-Command node -ErrorAction Stop).Source}
+if(!(Test-Path -LiteralPath (Join-Path $root 'private/raven-tunnel.credentials.clixml'))){throw 'Run the interactive private helper setup first; unattended startup cannot enroll credentials.'}
 $codex=(Get-Command codex -ErrorAction Stop).Source
 $loginProcess=[Diagnostics.Process]::new()
 $loginProcess.StartInfo.FileName=$codex

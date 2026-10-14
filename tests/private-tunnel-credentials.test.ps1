@@ -116,3 +116,9 @@ try{
 # point means every assertion and cleanup succeeded; do not propagate that mock
 # native status into CI. Terminating assertion/cleanup errors skip this exit.
 exit 0
+
+foreach($name in @('install-oneclick-startup.ps1','supervise-oneclick.ps1','start-oneclick-raven.ps1')){
+ $errors=$null;$tokens=$null
+ [Management.Automation.Language.Parser]::ParseFile((Join-Path (Split-Path $PSScriptRoot -Parent) ('scripts/'+$name)),[ref]$tokens,[ref]$errors) | Out-Null
+ Assert-Test ($errors.Count -eq 0) ('Startup syntax: '+$name)
+}

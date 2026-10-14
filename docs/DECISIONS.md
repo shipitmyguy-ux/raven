@@ -21,3 +21,7 @@ Raven scope is web application + browser-extension workflows unless explicitly c
 
 ## 2026-10-08 - Isolated single-owner MCP prototype
 The current Raven schema has no per-user ownership columns. The MCP prototype is bound to one configured dataset owner with expiring server-only hashed credentials, individually granted jobs and explicit scopes. It reuses the canonical jobs/profile and manual ChatGPT validation; it permits only an atomic first-resume save. This avoids a parallel data store, silent overwrite, new provider calls and unsupported multi-user isolation claims. Bearer authentication is implemented; ChatGPT OAuth/client connection and deployment remain unverified.
+
+## 2026-10-14 — Local execution with paired phone queue
+
+Keep ChatGPT authoring and Drive export on the owner computer. Reuse the established workflow through an outbound-polling protected queue; no publicly exposed local server and no duplicate generation pipeline. Current-user startup requires sign-in and AC-only wakefulness. Cloud-hosted execution is a future feature subject to eligibility and operating-cost verification. See ONE_CLICK_RESUMES.md.

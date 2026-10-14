@@ -1552,3 +1552,35 @@ test('Drive exports remain visible when workflow progress fills the activity win
  await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
  await expect(page.getByRole('link',{name:'Open PDF in Drive'})).toHaveCount(2);
 });
+
+test('paired phone uses remote writer and verifies both PDFs after reload',async({page})=>{
+ const api=await mockRaven(page);const token='a'.repeat(64),runId='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';let starts=0,localCalls=0;
+ await page.addInitScript(t=>localStorage.setItem('raven.local-writer.device.v1',t),token);
+ await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=true;await route.fulfill({json:config});});
+ await page.route('http://127.0.0.1:8766/**',route=>{localCalls++;return route.abort();});
+ await page.route('**/functions/v1/raven-local-queue',async route=>{
+  expect(route.request().headers()['x-raven-device']).toBe(token);const input=route.request().postDataJSON();
+  if(input.action==='enqueue'){starts++;return route.fulfill({json:{run_id:runId,job_id:'job-1',stage:'queued',online:false}});}
+  const documents=[];
+  for(const kind of ['resume','coverLetter']){
+   const url='data:text/html;charset=utf-8,'+encodeURIComponent('<html><body>Verified '+kind+'</body></html>');api.getJob()[kind==='resume'?'resume':'cover_letter']=url;
+   const doc={document_type:kind,document_url:url,document_sha256:'a'.repeat(64),file_id:kind+'1234567890',drive_url:'https://drive.google.com/file/d/'+kind+'1234567890/view'};documents.push(doc);
+   await page.evaluate(async metadata=>window.RavenAPI.addJobEvent('job-1',{eventType:'document_drive_export',metadata}),doc);
+  }
+  return route.fulfill({json:{run_id:runId,job_id:'job-1',stage:'complete',online:true,documents}});
+ });
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();await page.locator('[data-generate-both]').click();
+ await expect(page.locator('#syncStatus')).toContainText('waiting for your computer');await expect(page.locator('#syncStatus')).toContainText('copied to Drive');
+ expect(starts).toBe(1);expect(localCalls).toBe(0);
+ await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();await expect(page.getByRole('link',{name:'Open PDF in Drive'})).toHaveCount(2);
+});
+
+test('pairing consumes URL fragment and requires deliberate connect before storage',async({page})=>{
+ await page.route('**/functions/v1/raven-local-queue',route=>route.fulfill({json:{online:false}}));
+ await page.goto('/pair-writer.html#'+'a'.repeat(64));
+ await expect(page).toHaveURL(/pair-writer.html$/);
+ expect(await page.evaluate(()=>localStorage.getItem('raven.local-writer.device.v1'))).toBeNull();
+ await page.getByRole('button',{name:'Connect this device',exact:true}).click();await expect(page.locator('#status')).toContainText('Connected');
+ expect(await page.evaluate(()=>localStorage.getItem('raven.local-writer.device.v1'))).toBe('a'.repeat(64));
+ await page.getByRole('button',{name:'Disconnect this device',exact:true}).click();expect(await page.evaluate(()=>localStorage.getItem('raven.local-writer.device.v1'))).toBeNull();
+});

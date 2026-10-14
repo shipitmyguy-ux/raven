@@ -1956,10 +1956,15 @@
       const savedKey=String(job.id||job.url);
       if(savedKey!==key){kinds.forEach(kind=>{activeOneClickJobs.delete(key+":"+kind);activeOneClickJobs.set(savedKey+":"+kind,session);});key=savedKey;}
       if(!oneClickClient){
-        const {createOneClickClient}=await import("./oneclick-client.mjs?v=1");
-        oneClickClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
+        const {PAIR_KEY,createRemoteWriterClient}=await import("./remote-writer-client.mjs?v=1");
+        const pairedToken=localStorage.getItem(PAIR_KEY);
+        if(pairedToken)oneClickClient=createRemoteWriterClient({token:pairedToken});
+        else{
+          const {createOneClickClient}=await import("./oneclick-client.mjs?v=1");
+          oneClickClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
+        }
       }
-      const labels={queued:"Queued · waiting for writer…",writing:"Writing from verified facts…",saving:"Saving in Raven…",pdf:"Creating PDF…",uploading:"Saving PDF to Drive…",recording:"Confirming saved links…",complete:"Verifying saved documents…"};
+      const labels={offline:"Queued · waiting for your computer to come online…",queued:"Queued · waiting for writer…",writing:"Writing from verified facts…",saving:"Saving in Raven…",pdf:"Creating PDF…",uploading:"Saving PDF to Drive…",recording:"Confirming saved links…",complete:"Verifying saved documents…"};
       const result=await oneClickClient.run({job_id:String(job.id),document_type:type},stage=>{
         session.label=labels[stage]||"Generating…";render();setStatus(session.label);
       });

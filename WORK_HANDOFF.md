@@ -1,5 +1,17 @@
 # Raven execution handoff
 
+## Always-on local writer and paired phone queue — October 14, 2026
+
+Implemented current-user Windows logon startup, crash recovery, and AC-only idle-sleep prevention. Added revocable/expiring device pairing, an authenticated bounded Supabase queue, outbound local polling, and the existing Generate-button route for paired browsers. Existing local-only use remains available. Document authoring/save/PDF/Drive verification stays in the existing serialized local workflow. Cloud-hosted writer recorded as future feature, not provisioned.
+
+32 focused Node tests pass, including auth, device isolation, interrupted/unauthorized work, duplicate starts and saved-output verification. Live migration applied and raven-local-queue v1 ACTIVE with custom device authentication. Transaction-rolled-back SQL verifies duplicate suppression, revoked denial, invalid kinds and no client-role table/RPC grants; live anonymous request returns401. Security advisors add only three expected RLS/no-policy informational notices for service-only tables; existing password warning unchanged. Local browser runtime download failed; GitHub browser and Windows syntax checks pending.
+
+Activation remains pending on the owner's Windows computer: update checkout, close old manual helper after work finishes, install scripts/install-oneclick-startup.ps1, then pair phone via pair-writer.html. No access to that machine in this session; no startup installation, personal token, live phone generation, or new user document is claimed. Existing grant expiry remains November1. Full steps and future cloud feature: docs/ONE_CLICK_RESUMES.md.
+
+## Previous handoff
+
+# Raven execution handoff
+
 ## SoundAir game-generation filtering - October 13, 2026
 
 Live resume logs show repeated INVALID_DRAFT records containing exp_soundair, most recently at 22:31 UTC. Instructions excluded SoundAir, but evidence and allowed history schemas still exposed it. Shared generationProfile now scopes game evidence before model/schema construction and external prompts. Canonical history and non-game tracks remain intact; explicit SoundAir revisions remain supported. One-click rebuilds game guidance from scoped evidence and restricts experience_id choices.

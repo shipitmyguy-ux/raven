@@ -7,6 +7,9 @@ on:
       - "document-revision.mjs"
       - "chatgpt-direct.mjs"
       - "oneclick-client.mjs"
+      - "remote-writer-client.mjs"
+      - "pair-writer*"
+      - "supabase/functions/raven-local-queue/**"
       - "raven-api.js"
       - "app.js"
       - "index.html"
@@ -33,6 +36,9 @@ on:
       - "document-revision.mjs"
       - "chatgpt-direct.mjs"
       - "oneclick-client.mjs"
+      - "remote-writer-client.mjs"
+      - "pair-writer*"
+      - "supabase/functions/raven-local-queue/**"
       - "raven-api.js"
       - "app.js"
       - "index.html"
@@ -90,6 +96,7 @@ jobs:
         run: node scripts/check-secrets.mjs
       - name: Core regression tests
         run: |
+          node --test tests/local-writer-queue.test.mjs
           node --test tests/oneclick-client.test.mjs tests/oneclick-workflow.test.mjs tests/oneclick-server.test.mjs tests/oneclick-security.test.mjs
           node --test tests/private-mcp-stdio.test.mjs
           node --test tests/mcp-bridge.test.mjs tests/mcp-oauth.test.mjs tests/apply-resume.test.mjs
