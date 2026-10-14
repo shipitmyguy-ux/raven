@@ -8,6 +8,8 @@ on:
       - "studio-directory.html"
       - "app.js"
       - "oneclick-client.mjs"
+      - "remote-writer-client.mjs"
+      - "pair-writer.*"
       - "document-revision.mjs"
       - "document-download.mjs"
       - "resume-transfer.mjs"

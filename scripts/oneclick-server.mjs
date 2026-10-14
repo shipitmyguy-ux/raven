@@ -5,6 +5,7 @@ import {resolve,join} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {createPrivateDispatcher} from './private-mcp-stdio.mjs';
 import {createOneClickWorkflow} from './oneclick-workflow.mjs';
+import {prepareRemoteWorker,createRemotePump} from './oneclick-remote.mjs';
 import {createCodexAdapters} from './oneclick-codex.mjs';
 
 export async function atomicJson(path,value){
@@ -27,7 +28,7 @@ const safeError=error=>({
  UNAUTHORIZED:'The private Raven connection expired. Restart it with a renewed local grant.'
 }[error.message]||'The request did not complete. Your saved documents are preserved; retry to resume the remaining steps.');
 
-export async function createOneClickServer({runWorkflow,rest,authorizeJob,stateDir=resolve('private/oneclick/runs'),allowedOrigin='https://shipitmyguy-ux.github.io',refererPrefix='https://shipitmyguy-ux.github.io/raven/'}){
+export async function createOneClickServer({runWorkflow,rest,authorizeJob,pairRemote,stateDir=resolve('private/oneclick/runs'),allowedOrigin='https://shipitmyguy-ux.github.io',refererPrefix='https://shipitmyguy-ux.github.io/raven/'}){
  if(![runWorkflow,rest,authorizeJob].every(value=>typeof value==='function'))throw Error('ONE_CLICK_NOT_CONFIGURED');
  await mkdir(stateDir,{recursive:true});
  const runs=new Map(),active=new Map(),sessions=new Map();let queue=Promise.resolve();
@@ -75,7 +76,7 @@ export async function createOneClickServer({runWorkflow,rest,authorizeJob,stateD
   if(origin===allowedOrigin){Object.assign(headers,{'Access-Control-Allow-Origin':origin,'Vary':'Origin','Access-Control-Allow-Headers':'Authorization,Content-Type,X-Raven-Local-Client','Access-Control-Allow-Methods':'GET,POST,OPTIONS','Access-Control-Allow-Private-Network':'true'});}
   if(req.method==='OPTIONS')return origin===allowedOrigin?send(204,{}):send(403,{error:'Untrusted Raven origin.'});
   const path=new URL(req.url,'http://127.0.0.1').pathname;
-  if(req.method==='GET'&&path==='/health')return send(200,{app:'raven-one-click',ready:true});
+  if(req.method==='GET'&&path==='/health')return send(200,{app:'raven-one-click',ready:true,phone_queue_supported:Boolean(pairRemote)});
   if(origin!==allowedOrigin||req.headers['x-raven-local-client']!=='raven-web-v1'||!String(req.headers.referer||'').startsWith(refererPrefix))return send(403,{error:'Open this action from the Raven website.'});
   try{
    let body;
@@ -91,6 +92,10 @@ export async function createOneClickServer({runWorkflow,rest,authorizeJob,stateD
    }
    const token=String(req.headers.authorization||'').replace(/^Bearer /,'');
    if(!sessions.has(token)||sessions.get(token)<Date.now())return send(401,{error:'Raven helper session expired.'});
+   if(req.method==='POST'&&path==='/pair'){
+    if(!pairRemote)return send(503,{error:'Phone queue is not configured on this computer.'});
+    return send(200,await pairRemote());
+   }
    if(req.method==='POST'&&path==='/runs'){
     if(!body||Object.keys(body).some(key=>!['job_id','document_type'].includes(key))||!/^[A-Za-z0-9_-]{1,160}$/.test(body.job_id||'')||!['resume','coverLetter','both'].includes(body.document_type))return send(400,{error:'Invalid document request.'});
     try{await authorizeJob(body.job_id);}catch(error){return send(error.message==='NOT_FOUND'?404:403,{error:safeError(error)});}
@@ -103,7 +108,7 @@ export async function createOneClickServer({runWorkflow,rest,authorizeJob,stateD
   }catch{return send(500,{error:'Raven helper could not confirm this request.'});}
  });
  server.requestTimeout=15000;server.headersTimeout=10000;
- return {server,drain:()=>queue};
+ return {server,drain:()=>queue,submit:async input=>{await authorizeJob(input.job_id);return enqueue(input);},getRun:id=>runs.get(id)};
 }
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
@@ -119,8 +124,23 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
    if(Date.parse(config.expiresAt)<=Date.now()||(config.allowSavedJobs!==true&&!config.jobIds.includes(id)))throw Error('UNAUTHORIZED');
    const rows=await rest('raven_jobs?select=id&id=eq.'+encodeURIComponent(id)+'&limit=1');if(rows?.[0]?.id!==id)throw Error('NOT_FOUND');
   };
-  const {server}=await createOneClickServer({runWorkflow,rest,authorizeJob});
-  server.listen(8766,'127.0.0.1',()=>process.stdout.write('Raven one-click helper ready on this computer.\n'));
+  let remote,pump;
+  const runtime=await createOneClickServer({runWorkflow,rest,authorizeJob,pairRemote:async()=>{if(!remote)throw Error('QUEUE_NOT_READY');return remote.pair();}});
+  const {server}=runtime;
+  server.listen(8766,'127.0.0.1',async()=>{
+   process.stdout.write('Raven one-click helper ready on this computer.\n');
+   // Only the process that successfully owns the loopback listener can claim remote work.
+   let initializing=false;
+   const poll=async()=>{
+    if(initializing)return;initializing=true;
+    try{
+     if(!remote){remote=await prepareRemoteWorker({rest,config,directory:resolve('private/oneclick')});pump=createRemotePump({rest,remote,submit:runtime.submit,getRun:runtime.getRun,authorizeJob});}
+     await pump.tick();
+    }catch{process.stderr.write('Raven phone queue unavailable; local generation remains available.\n');}
+    finally{initializing=false;}
+   };
+   void poll();setInterval(()=>void poll(),10000).unref();
+  });
   server.on('error',()=>{process.stderr.write('Raven helper could not start. Check whether it is already running.\n');process.exitCode=1;});
  }catch{process.stderr.write('Raven helper is not configured. Check the saved credentials, local grant, Codex sign-in and resume folder.\n');process.exitCode=1;}
 }

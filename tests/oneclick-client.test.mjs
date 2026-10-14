@@ -38,10 +38,10 @@ function appFixture({persisted=true}={}){
  const source=fs.readFileSync('app.js','utf8');
  const start=source.indexOf('  const activeOneClickJobs=');
  const end=source.indexOf('  function parseChatGptPayload(');
- const handler=source.slice(start,end).replace('await import("./oneclick-client.mjs?v=1")','clientModule');
+ const handler=source.slice(start,end).replace('await import("./oneclick-client.mjs?v=1")','clientModule').replace('await import("./remote-writer-client.mjs?v=1")','remoteModule');
  let opened=0,status='',review=0,runs=0,prepared=0;
  const job={id:'JT-test',resume:'saved-html'};
- const ctx={state:{selectedId:'JT-test',runtime:{settings:{'chatgpt-one-click':true}},jobs:[]},clientModule:{createOneClickClient:()=>({run:async(input,onStage)=>{runs++;onStage('writing');await Promise.resolve();return {documents:[doc]};}})},window:{open:()=>{opened++;throw Error('must not open');},RavenAPI:{listJobs:async()=>[job],listJobEvents:async()=>({events:persisted?[{event_type:'document_drive_export',metadata:doc}]:[]})}},prepareJobForGeneration:async()=>{prepared++;},setGenerationButton:()=>{},setStatus:value=>status=value,normalizeJobs:v=>v,mergePendingDocuments:v=>v,writeCache:()=>{},CACHE_JOBS_KEY:'jobs',loadJobActivity:async()=>{},render:()=>{},document:{querySelector:()=>null},openDocumentReview:async()=>{review++;}};
+ const ctx={localStorage:{getItem:()=>null},remoteModule:{PAIR_KEY:'pair'},state:{selectedId:'JT-test',runtime:{settings:{'chatgpt-one-click':true}},jobs:[]},clientModule:{createOneClickClient:()=>({run:async(input,onStage)=>{runs++;onStage('writing');await Promise.resolve();return {documents:[doc]};}})},window:{open:()=>{opened++;throw Error('must not open');},RavenAPI:{listJobs:async()=>[job],listJobEvents:async()=>({events:persisted?[{event_type:'document_drive_export',metadata:doc}]:[]})}},prepareJobForGeneration:async()=>{prepared++;},setGenerationButton:()=>{},setStatus:value=>status=value,normalizeJobs:v=>v,mergePendingDocuments:v=>v,writeCache:()=>{},CACHE_JOBS_KEY:'jobs',loadJobActivity:async()=>{},render:()=>{},document:{querySelector:()=>null},openDocumentReview:async()=>{review++;}};
  vm.createContext(ctx);return {ctx,handler,counts:()=>({opened,status,review,runs,prepared})};
 }
 test('actual one-click button opens no ChatGPT window, saves and reviews only after canonical readback',async()=>{
