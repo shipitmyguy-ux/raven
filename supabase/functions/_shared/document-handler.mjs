@@ -1,3 +1,4 @@
+import {generationProfile} from "./document-profile.mjs";
 import {getStudioContext} from "./studio-context.mjs";
 import {cloudflareFreeStatus} from "./cloudflare-free.mjs";
 import {writeDocument,validateDraft,resumeKeywordGuidance,WriterError,WRITER_VERSION} from "./document-writer.mjs";
@@ -33,6 +34,7 @@ export function buildDeterministicCover(profile,target){
 }
 
 export function buildExternalChatPrompt(requestedKind,profile,target){
+  profile=generationProfile(profile,target);
   const kind=requestedKind==="both"?"both":requestedKind==="coverLetter"?"coverLetter":"resume";
   // Identity/contact stay device-local. The external writer only receives the
   // verified evidence needed to draft application content.
