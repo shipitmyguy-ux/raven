@@ -224,10 +224,13 @@ test.describe("Deployed Raven App Production Smoke Tests", () => {
     await page.locator('.track-tab[data-track="Professional"]').click();
     await page.locator(`.job-card[data-job-id="${syntheticTestJob.id}"] .job-card-summary`).click();
 
+    // Approved-document navigation now lives in the drawer's Job details disclosure.
+    await page.locator('.job-detail-disclosure > summary').filter({ hasText: /^Job details$/ }).click();
     // Verify approved docs state enables Apply button
     const applyGate = page.locator("[data-approved-apply]");
     await expect(applyGate).toBeVisible();
-    await expect(applyGate).toContainText("Apply");
+    await expect(applyGate).toContainText("Open with approved documents");
+    await expect(applyGate).toBeEnabled();
 
     // Click Review for resume to exercise non-destructive Review Documents flow
     await page.locator('[data-generate="resume"]').first().click();
@@ -242,7 +245,10 @@ test.describe("Deployed Raven App Production Smoke Tests", () => {
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.locator('.track-tab[data-track="Professional"]').click();
     await page.locator(`.job-card[data-job-id="${syntheticTestJob.id}"] .job-card-summary`).click();
-    await expect(page.locator("[data-approved-apply]")).toContainText("Apply");
+    await page.locator('.job-detail-disclosure > summary').filter({ hasText: /^Job details$/ }).click();
+    await expect(page.locator("[data-approved-apply]")).toBeVisible();
+    await expect(page.locator("[data-approved-apply]")).toContainText("Open with approved documents");
+    await expect(page.locator("[data-approved-apply]")).toBeEnabled();
   });
 });
 
