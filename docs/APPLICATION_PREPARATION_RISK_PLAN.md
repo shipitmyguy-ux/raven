@@ -1,5 +1,11 @@
 # Application preparation: prevention and recovery plan
 
+## Implementation underway — October 14, 2026
+
+Parallel work adds destination inspection before document generation, explicit recovery after reload, distinct saved-document/Drive stages, current-document hash-bound links, and separate required-unanswered versus not-requested reporting. Destination inspection is conservative: exact expected URL and visible title/company must match; sign-in, challenge, closed, redirected, and unrecognized forms stop. It supports the known Ashby application route without guessing other providers’ navigation. Matching PDF receipts are rechecked against live Drive metadata before delivery.
+
+These safeguards do not constitute a new live employer acceptance test. Cross-role chronology validation, richer provider-specific custom controls, and a complete phase-timing dashboard remain follow-up work. Existing Values Value sign-in blockers remain accepted. No automated submission is introduced. The original priorities and historical live measurements follow.
+
 This plan separates current guards from safeguards to add. It is based on `docs/PREPARE_APPLICATION.md`, the local writer workflow, and the extension bridge. A form’s upload controls and server acceptance still require live, per-job confirmation; fixture results do not establish employer behavior.
 
 ## Priority 0 — preflight the destination before generation

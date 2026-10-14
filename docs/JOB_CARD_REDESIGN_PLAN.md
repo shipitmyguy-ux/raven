@@ -1,5 +1,11 @@
 # Raven job-card UI review and redesign plan
 
+## Implementation underway — October 14, 2026
+
+The owner selected the renovation and authorized parallel reliability work. Option A is implemented on the renovation branch: compact pipeline cards, a desktop detail drawer/mobile sheet, one lifecycle control, Prepare application as the enabled primary action, two document rows with More menus, a single employer link, and Job details/Evidence/Activity disclosures. Applied roles foreground follow-up; preparing again preserves their status. Document-only generation remains available in Job details. Current PDF links require the exact saved document SHA; older exports stay in Activity as history.
+
+The analysis and alternatives below describe the pre-renovation UI and the original proposal. Implementation and mocked/live verification are recorded separately in WORK_HANDOFF.md; no new employer-form success or timing is implied by the redesign.
+
 ## What the current card is doing
 
 Raven is a kanban board grouped into Bookmarked, Active jobs, Tailoring, Applied, Interview, Offer, Rejected, and Archived / ignored. Each collapsed card carries the role, company, location, a generated summary, optional salary, age, status or applied markers, and floating bookmark/ignore controls. Selecting a card expands a substantial work area inside the board. The board uses multiple columns on larger screens and collapses to one column on mobile.

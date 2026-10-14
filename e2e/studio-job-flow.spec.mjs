@@ -37,9 +37,10 @@ for(const direct of [false,true])test(`studio discovery preserves complete publi
  await page.goto('/');await page.locator('[data-track="Games / 3D"]').click();
  await expect(page.locator('.job-card-summary').filter({hasText:fixture.name})).toBeVisible();
  await page.locator('.job-card-summary').filter({hasText:fixture.name}).click();
- await page.locator('[data-description-toggle]').click();
- await expect(page.locator('[data-description-full]')).toContainText(discovered.snippet);
- await page.locator('[data-chatgpt-prompt="both"]').click();
+ await page.locator('#jobDetailPanel summary').filter({hasText:/^Job details$/}).click();
+ await expect(page.locator('#jobDetailPanel .full-description')).toContainText(discovered.snippet);
+ await page.locator('[aria-label="More resume options"]').click();
+ await page.locator('[data-chatgpt-prompt="resume"]').click();
  await expect.poll(()=>page.evaluate(()=>window.lastChatGptUrl||'')).toContain('chatgpt.com');
  expect(adopted.notes).toBe(discovered.snippet);
  if(direct){
@@ -55,6 +56,6 @@ for(const direct of [false,true])test(`studio discovery preserves complete publi
  expect(adopted.resume||'').toBe('');expect(adopted.cover_letter||'').toBe('');
  await page.reload();await page.locator('[data-track="Games / 3D"]').click();
  await page.locator('.job-card-summary').filter({hasText:fixture.name}).click();
- await page.locator('[data-description-toggle]').click();
- await expect(page.locator('[data-description-full]')).toContainText(discovered.snippet);
+ await page.locator('#jobDetailPanel summary').filter({hasText:/^Job details$/}).click();
+ await expect(page.locator('#jobDetailPanel .full-description')).toContainText(discovered.snippet);
 });

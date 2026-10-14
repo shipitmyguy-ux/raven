@@ -1,5 +1,11 @@
 # Recovery after a Raven reload during application preparation
 
+## Implementation underway — October 14, 2026
+
+The renovation branch implements a metadata-only, 24-hour recovery record and an explicit Resume preparation control. Loading Raven does not restart generation or dispatch files. A known writer run is resumed with a read-only status request; an unavailable run requires a deliberate restart. Canonical job URL/document hashes, recorded Drive receipts, and live Drive file metadata are checked before verified PDF delivery. A browser lock and expiring lease prevent simultaneous resumes. Saved-document and Drive verification have distinct stages.
+
+The extension inspects a metadata-only destination tab before the writer starts, then delivers PDFs once to that same bound tab. A retry with a previously delivered or completed binding focuses the same unchanged tab and skips writing and uploading. An uncertain in-flight delivery stops for manual inspection. A pre-delivery retry can inspect a fresh tab and invalidate the old binding. PDF bytes, profile values, and answers are not persisted by recovery or preflight. Hidden/custom form groups and new employer providers still require manual review. The original design discussion follows; current verification is in WORK_HANDOFF.md.
+
 This is a minimal design note based on the current browser flow, local writer, extension bridge, and the live Believer run. It describes proposed behavior; no source changes are included.
 
 ## What currently happens

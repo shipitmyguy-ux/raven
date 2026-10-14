@@ -9,7 +9,7 @@
   <title>Raven · JobTrack Pipeline</title>
   <script>
     window.RAVEN_ASSET_VERSION = Date.now().toString(36);
-    document.write('<link rel="stylesheet" href="./styles.css?v=20261008-pill-icon">');
+    document.write('<link rel="stylesheet" href="./styles.css?v=20261014-job-panel">');
     document.write('<link rel="stylesheet" href="./theme.css?v=' + window.RAVEN_ASSET_VERSION + '">');
   </script>
 </head>
@@ -44,7 +44,20 @@
     </section>
 
     <section class="pipeline-shell">
+      <div id="preparationRecoveryBanner" class="preparation-recovery-banner" role="status" hidden>
+        <span data-preparation-recovery-text></span>
+        <button type="button" data-resume-preparation>Resume preparation</button>
+        <button type="button" data-clear-preparation>Dismiss</button>
+      </div>
       <div class="pipeline-board" id="jobList" aria-live="polite"></div>
+      <div id="jobDetailScrim" class="job-detail-scrim" hidden></div>
+      <aside id="jobDetailPanel" class="job-detail-panel" role="dialog" aria-modal="true" aria-labelledby="jobDetailTitle" hidden>
+        <header class="job-detail-header">
+          <div class="job-detail-heading"><h2 id="jobDetailTitle"></h2><p class="job-detail-meta"></p></div>
+          <button type="button" class="job-detail-close" data-close-job-detail aria-label="Close job details">Close</button>
+        </header>
+        <div class="job-detail-body"></div>
+      </aside>
     </section>
 
     <dialog id="optionsDialog" class="options-dialog">
@@ -333,6 +346,6 @@
   <script src="./supabase/functions/_shared/job-dedup.js?v=3"></script>
   <script src="./raven-core.js?v=5"></script>
   <script src="./raven-api.js?v=10"></script>
-  <script src="./app.js?v=91"></script>
+  <script src="./app.js?v=92"></script>
 </body>
 </html>

@@ -44,6 +44,21 @@ test('worker never invokes generation for an expired pairing or unauthorized job
  },authorizeJob:async()=>{throw Error('UNAUTHORIZED');},submit:async()=>{submissions++;},getRun:()=>{}});
  await pump.tick();assert.equal(submissions,0);assert.equal(writes.at(-1).stage,'failed');
 });
+test('phone worker claims two authorized rows and runs them together',async()=>{
+ const rows=[{run_id:id,device_id:id,job_id:'job-one',document_type:'resume'},
+  {run_id:'00000000-0000-4000-8000-000000000002',device_id:id,job_id:'job-two',document_type:'resume'}];
+ let release,started;const gate=new Promise(r=>release=r),bothStarted=new Promise(r=>started=r);
+ const authorized=[],submitted=[],updates=[];
+ const pump=createRemotePump({remote:{workerId:id,heartbeat:async()=>{}},rest:async(path,init)=>{
+  if(path.startsWith('raven_local_devices'))return [device];
+  if(!init)return rows.filter(row=>!updates.some(update=>update.id===row.run_id&&update.stage==='running')).slice(0,1);
+  const row=rows.find(item=>path.includes(item.run_id));const body=JSON.parse(init.body);updates.push({id:row.run_id,...body});return [row];
+ },authorizeJob:async job=>authorized.push(job),submit:async input=>{submitted.push(input.job_id);if(submitted.length===2)started();await gate;return {run_id:input.job_id};},getRun:()=>({stage:'complete',documents:[{file_id:'verified'}]})});
+ const pending=pump.tick();await bothStarted;assert.deepEqual(new Set(submitted),new Set(['job-one','job-two']));
+ assert.deepEqual(new Set(authorized),new Set(['job-one','job-two']));
+ release();await pending;assert.equal(updates.filter(item=>item.stage==='running').length,2);
+ assert.equal(updates.filter(item=>item.stage==='complete').length,2);
+});
 test('remote browser polls without local calls and rejects unconfirmed success',async()=>{
  const stages=[];let calls=0;
  const c=createRemoteWriterClient({token,pollMs:0,fetchImpl:async(url,init)=>{

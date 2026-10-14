@@ -10,6 +10,8 @@
     documentApprovals: {},
     viewedJobs: {},
     jobActivity: {},
+    jobDocumentHashes: {},
+    preparationFeedback: null,
     jobCoverage: {},
     analytics: null,
     generatorJob: null,
@@ -21,6 +23,8 @@
   const columns = window.RavenCore?.JOB_FIELDS || ["id","added","track","title","company","location","remote","salaryMin","salaryMax","salaryText","url","source","status","viewed","appliedDate","followUp","resume","coverLetter","notes","lastUpdated"];
   const status = document.getElementById("syncStatus");
   const list = document.getElementById("jobList");
+  const detailPanel = document.getElementById("jobDetailPanel");
+  const detailScrim = document.getElementById("jobDetailScrim");
   const searchBox = document.getElementById("searchBox");
   const statusFilter = document.getElementById("statusFilter");
   const trackTabs = [...document.querySelectorAll(".track-tab")];
@@ -880,20 +884,41 @@
     if(!Number.isFinite(time)) return "";
     return new Date(time).toLocaleString([], {month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"});
   }
+  async function refreshCurrentDocumentHashes(job){
+    const result={};
+    for(const key of ["resume","coverLetter"]){
+      const value=job[key];
+      if(!value)continue;
+      const bytes=new TextEncoder().encode(String(value));
+      const digest=await crypto.subtle.digest("SHA-256",bytes);
+      result[key]={value,sha256:Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,"0")).join("")};
+    }
+    state.jobDocumentHashes[String(job.id)]=result;
+  }
+  function currentDocumentExport(job,event,key){
+    const current=state.jobDocumentHashes[String(job.id)]?.[key];
+    return Boolean(current&&job[key]===current.value&&event?.metadata?.document_type===key&&event.metadata.document_sha256===current.sha256);
+  }
   async function loadJobActivity(job,force=false){
     if(!job||job._discovered||!job.id) return;
     const key=String(job.id);
     const current=state.jobActivity[key];
-    if(current?.loading || (!force&&current?.loaded)) return;
+    if(current?.loading){if(force)current.refreshAfterLoad=true;return;}
+    if(!force&&current?.loaded)return;
     state.jobActivity[key]={...(current||{}),loading:true,loaded:false};
     try{
       const [eventsPayload,snapshotsPayload]=await Promise.all([
         window.RavenAPI.listJobEvents(key),
         window.RavenAPI.listJobSnapshots(key)
       ]);
+      await refreshCurrentDocumentHashes(job).catch(()=>{state.jobDocumentHashes[key]={};});
+      const refreshAfterLoad=Boolean(state.jobActivity[key]?.refreshAfterLoad);
       state.jobActivity[key]={loading:false,loaded:true,events:eventsPayload.events||[],snapshots:snapshotsPayload.snapshots||[]};
+      if(refreshAfterLoad)queueMicrotask(()=>loadJobActivity(knownJobById(key)||job,true));
     }catch(error){
+      const refreshAfterLoad=Boolean(state.jobActivity[key]?.refreshAfterLoad);
       state.jobActivity[key]={loading:false,loaded:true,events:[],snapshots:[],error:String(error.message||error)};
+      if(refreshAfterLoad)queueMicrotask(()=>loadJobActivity(knownJobById(key)||job,true));
     }
     if(state.selectedId===job.id) render();
   }
@@ -963,7 +988,7 @@
     const visibleEvents=events.slice(0,10),exportKinds=new Set();
     for(const event of events){
       const kind=event.metadata?.document_type;
-      if(event.event_type!=="document_drive_export"||!["resume","coverLetter"].includes(kind)||exportKinds.has(kind)||!/^https:\/\/drive\.google\.com\/file\/d\/[A-Za-z0-9_-]{10,160}\/view$/.test(event.metadata?.drive_url||""))continue;
+      if(event.event_type!=="document_drive_export"||!["resume","coverLetter"].includes(kind)||exportKinds.has(kind)||!currentDocumentExport(job,event,kind)||!/^https:\/\/drive\.google\.com\/file\/d\/[A-Za-z0-9_-]{10,160}\/view$/.test(event.metadata?.drive_url||""))continue;
       exportKinds.add(kind);if(!visibleEvents.includes(event))visibleEvents.push(event);
     }
     const rows=visibleEvents.map((event)=>{
@@ -972,8 +997,9 @@
       const suggestion=suggested&&!autoApplied&&suggested!==String(job.status||"")
         ? '<button type="button" class="activity-suggestion" data-apply-suggested-status="'+escapeAttr(suggested)+'">Move to '+escapeHtml(suggested)+'</button>'
         : '';
+      const currentExport=event.metadata?.document_type&&currentDocumentExport(job,event,event.metadata.document_type);
       const drive=event.event_type==='document_drive_export'&&/^https:\/\/drive\.google\.com\/file\/d\/[A-Za-z0-9_-]{10,160}\/view$/.test(event.metadata?.drive_url||'')
-        ? '<a href="'+escapeAttr(event.metadata.drive_url)+'" target="_blank" rel="noopener noreferrer">Open PDF in Drive</a>' : '';
+        ? '<a href="'+escapeAttr(event.metadata.drive_url)+'" target="_blank" rel="noopener noreferrer">'+(currentExport?'Open current PDF in Drive':'Open historical PDF in Drive')+'</a>' : '';
       return '<li><div><strong>'+escapeHtml(activityLabel(event.event_type))+'</strong>'+
         (event.summary?'<span>'+escapeHtml(event.summary)+'</span>':'')+drive+suggestion+'</div>'+
         '<time>'+escapeHtml(formatActivityDate(event.occurred_at))+'</time></li>';
@@ -1210,19 +1236,14 @@
           card.dataset.status=statusToken(job.status);
           card.dataset.jobId=String(job.id||"");
           const company=job.company||"Company not captured";
-          const location=[job.location,job.remote].filter(Boolean).join(" · ")||"Location not captured";
+          const locationName=String(job.location||"").trim();
+          const remoteLabel=job.remote===true?"Remote":String(job.remote||"").trim();
+          const location=[locationName,remoteLabel&&!locationName.toLowerCase().includes(remoteLabel.toLowerCase())?remoteLabel:""]
+            .filter(Boolean).join(" · ")||"Location not captured";
           const salary=job.salaryText||"";
           const degreeGap=degreeAlert(job);
           const rawStatus=String(job.status||"Saved");
-          const hasApplied=Boolean(job.appliedDate||job.applied_date)||/^(applied|interview|offer|rejected)$/i.test(rawStatus);
-          const meaningfulStatus=!/^(saved|discovered|interested)$/i.test(rawStatus);
-          const statusLabel=rawStatus;
-          const attentionIndicator=meaningfulStatus&&rawStatus.toLowerCase()!=="applied"
-            ? '<span class="job-status">'+escapeHtml(statusLabel)+'</span>'
-            : '';
-          const generationIndicator=generating
-            ? '<span class="generation-card-status" role="status" aria-live="polite"><span class="generation-spinner" aria-hidden="true"></span><span>AI is generating '+escapeHtml(documentLabel(generating.type))+'…</span></span>'
-            : '';
+          const attentionIndicator='<span class="job-status">'+escapeHtml(rawStatus)+'</span>';
           const isIgnored=rawStatus.toLowerCase()==="ignored";
           const isBookmarked=rawStatus.toLowerCase()==="interested";
           const bookmarkStar=/^(applied|interview|offer|rejected|ignored)$/i.test(rawStatus) ? "" :
@@ -1232,12 +1253,10 @@
             : '';
           const ignoreControl='<button class="ignore-job-button'+(isIgnored?' is-restore':'')+'" type="button" data-ignore-job aria-label="'+(isIgnored?'Restore job':'Ignore job')+'" title="'+(isIgnored?'Restore job':'Ignore job')+'">'+(isIgnored?'↩':'×')+'</button>';
           card.innerHTML=
-            '<button class="job-card-summary" type="button" aria-expanded="'+String(job.id===state.selectedId)+'">'+
+            '<button class="job-card-summary" type="button" aria-expanded="'+String(job.id===state.selectedId)+'" aria-controls="jobDetailPanel">'+
               '<span class="card-main">'+
                 (job.listing_state==="closed"?'<span class="listing-availability" title="'+escapeHtml(job.listing_reason||"Source confirmed closed")+'">Listing closed · source checked '+escapeHtml(job.listing_checked_at?new Date(job.listing_checked_at).toLocaleString():"")+'</span>':'')+
-                 (hasApplied?'<span class="applied-job-badge" role="img" aria-label="Applied" title="Applied — application recorded"><span aria-hidden="true">✓</span></span>':'')+
                 (attentionIndicator?'<span class="card-topline">'+attentionIndicator+'</span>':'')+
-                generationIndicator+
                 '<span class="job-title">'+escapeHtml(job.title||"Untitled job")+'</span>'+
                 '<span class="company-name">'+escapeHtml(company)+'</span>'+
                 '<span class="job-location-line"><span class="job-location">'+escapeHtml(location)+'</span>'+
@@ -1249,21 +1268,121 @@
               '</span>'+
               (!isRemoteJob(job) && job.location ? '<span class="commute-footer" data-commute-key="'+escapeAttr(commuteCacheKey(job.location))+'" hidden></span>' : '')+
             '</button>'+remoteWatermark+bookmarkStar+ignoreControl;
-          if (job.id===state.selectedId) {
-            const expanded=document.createElement("span");
-            expanded.className="job-card-expanded";
-            expanded.innerHTML=renderInlineDetail(job);
-            card.appendChild(expanded);
-            expanded.querySelectorAll("[data-resume-apply]").forEach((link)=>{
-              link.addEventListener("click",(event)=>{
-                event.stopPropagation();
-                // Keep native link activation synchronous; begin preparation after navigation opens.
-                setTimeout(()=>{
-                  if(job.resume){setStatus("Opening employer site · existing resume preserved");return;}
-                  void generateForJob(job,"resume",null,{autoOpen:false,refreshDescription:true});
-                },0);
-              });
-            });
+          const summary=card.querySelector(".job-card-summary");
+          let swipeStart=null;
+          let suppressOpen=false;
+          summary.addEventListener("pointerdown",(event)=>{
+            if(event.pointerType==="touch") swipeStart={x:event.clientX,y:event.clientY};
+          });
+          summary.addEventListener("pointerup",(event)=>{
+            if(!swipeStart || event.pointerType!=="touch") return;
+            const dx=event.clientX-swipeStart.x;
+            const dy=event.clientY-swipeStart.y;
+            swipeStart=null;
+            if(dx<-60 && Math.abs(dx)>Math.abs(dy)){
+              suppressOpen=true;
+              setJobIgnored(job,true);
+            }
+          });
+          summary.addEventListener("pointercancel",()=>{ swipeStart=null; });
+          summary.addEventListener("click",()=>{
+            if(suppressOpen){
+              suppressOpen=false;
+              return;
+            }
+            const opening=state.selectedId!==job.id;
+            const nextSelectedId=opening?job.id:null;
+            if(state.selectedId!==nextSelectedId) suppressGenerationAutoOpen(state.selectedId);
+            if(opening) markViewed(job);
+            state.selectedId=nextSelectedId;
+            render();
+            if(opening){
+              loadJobActivity(job,true);
+              loadJobCoverage(job,true);
+            }
+
+            if(opening) requestAnimationFrame(()=>detailPanel?.querySelector("[data-close-job-detail]")?.focus({preventScroll:true}));
+          });
+          card.querySelectorAll("[data-card-bookmark]").forEach((button)=>{
+            button.addEventListener("click",()=>toggleBookmark(job));
+          });
+          card.querySelectorAll("[data-ignore-job]").forEach((button)=>{
+            button.addEventListener("click",()=>setJobIgnored(job,!isIgnored));
+          });
+          cards.appendChild(card);
+          if(!isRemoteJob(job) && job.location){
+            const key=commuteCacheKey(job.location);
+            const known=state.commutes[key];
+            const footer=card.querySelector(".commute-footer");
+            if(Number.isFinite(Number(known))){
+              footer.textContent=Number(known)+" min";
+              footer.hidden=false;
+            } else if(known===undefined) {
+              loadCommute(job.location);
+            }
+          }
+        });
+      section.appendChild(cards);
+      list.appendChild(section);
+    });
+    renderDetailPanel();
+    updatePreparationRecoveryBanner();
+  }
+  function closeJobDetail(){
+    const id=state.selectedId;
+    if(id===null) return;
+    suppressGenerationAutoOpen(id);
+    state.selectedId=null;
+    render();
+    requestAnimationFrame(()=>{
+      const card=[...list.querySelectorAll(".job-card")].find(item=>item.dataset.jobId===String(id));
+      (card?.querySelector(".job-card-summary")||searchBox)?.focus({preventScroll:true});
+    });
+  }
+  function renderDetailPanel(){
+    if(!detailPanel||!detailScrim) return;
+    const job=knownJobById(state.selectedId);
+    const visible=Boolean(job);
+    detailPanel.hidden=!visible;
+    detailScrim.hidden=!visible;
+    document.body.classList.toggle("job-detail-open",visible);
+    [list,document.querySelector(".topbar"),document.querySelector(".track-tabs"),document.querySelector(".toolbar"),document.getElementById("preparationRecoveryBanner")].forEach(item=>{if(item)item.inert=visible;});
+    if(!job){detailPanel.dataset.jobId="";return;}
+    const sameJob=detailPanel.dataset.jobId===String(job.id);
+    const body=detailPanel.querySelector(".job-detail-body");
+    const active=sameJob&&detailPanel.contains(document.activeElement)?document.activeElement:null;
+    const focusKey=active?.dataset.followUpDate!==undefined?"[data-follow-up-date]":
+      active?.dataset.lifecycleStatus!==undefined?"[data-lifecycle-status]":
+      active?.name==="summary"?"[name=summary]":active?.name==="type"?"[name=type]":null;
+    const caret=active&&typeof active.selectionStart==="number"?active.selectionStart:null;
+    const draft=sameJob?{
+      followUp:body.querySelector("[data-follow-up-date]")?.value,
+      summary:body.querySelector("[name=summary]")?.value,
+      activityType:body.querySelector("[name=type]")?.value,
+      disclosures:[...body.querySelectorAll(".job-detail-disclosure")].map(item=>item.open),
+      scrollTop:body.scrollTop
+    }:null;
+    detailPanel.dataset.jobId=String(job.id);
+    detailPanel.querySelector("#jobDetailTitle").textContent=job.title||"Untitled job";
+    const location=String(job.location||"").trim();
+    const remote=job.remote===true?"Remote":String(job.remote||"").trim();
+    detailPanel.querySelector(".job-detail-meta").textContent=[job.company||"Company not captured",location,remote&&!location.toLowerCase().includes(remote.toLowerCase())?remote:""].filter(Boolean).join(" · ");
+    body.innerHTML=renderInlineDetail(job);
+    if(draft){
+      if(draft.followUp!==undefined&&body.querySelector("[data-follow-up-date]"))body.querySelector("[data-follow-up-date]").value=draft.followUp;
+      if(draft.summary!==undefined&&body.querySelector("[name=summary]"))body.querySelector("[name=summary]").value=draft.summary;
+      if(draft.activityType!==undefined&&body.querySelector("[name=type]"))body.querySelector("[name=type]").value=draft.activityType;
+      body.querySelectorAll(".job-detail-disclosure").forEach((item,index)=>{item.open=Boolean(draft.disclosures[index]);});
+      body.scrollTop=draft.scrollTop;
+    }
+    bindDetailActions(job,body);
+    if(focusKey){
+      const replacement=body.querySelector(focusKey);
+      replacement?.focus({preventScroll:true});
+      if(caret!==null&&typeof replacement?.setSelectionRange==="function")replacement.setSelectionRange(caret,caret);
+    }
+  }
+  function bindDetailActions(job,expanded) {
             expanded.querySelectorAll("[data-approved-apply]").forEach((button)=>{ button.addEventListener("click",(event)=>{ event.stopPropagation(); beginApprovedApplication(job); }); });
             expanded.querySelectorAll("[data-apply-status]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
@@ -1327,6 +1446,7 @@
                 const menu=button.nextElementSibling;
                 const opening=menu.hidden;
                 expanded.querySelectorAll(".document-menu").forEach((item)=>{ item.hidden=true; });
+                expanded.querySelectorAll("[data-document-menu]").forEach((item)=>item.setAttribute("aria-expanded","false"));
                 menu.hidden=!opening;
                 button.setAttribute("aria-expanded",String(opening));
               });
@@ -1400,71 +1520,8 @@
               });
             });
             expanded.querySelectorAll("a").forEach((link)=>link.addEventListener("click",(event)=>event.stopPropagation()));
-          }
-          const summary=card.querySelector(".job-card-summary");
-          let swipeStart=null;
-          let suppressOpen=false;
-          summary.addEventListener("pointerdown",(event)=>{
-            if(event.pointerType==="touch") swipeStart={x:event.clientX,y:event.clientY};
-          });
-          summary.addEventListener("pointerup",(event)=>{
-            if(!swipeStart || event.pointerType!=="touch") return;
-            const dx=event.clientX-swipeStart.x;
-            const dy=event.clientY-swipeStart.y;
-            swipeStart=null;
-            if(dx<-60 && Math.abs(dx)>Math.abs(dy)){
-              suppressOpen=true;
-              setJobIgnored(job,true);
-            }
-          });
-          summary.addEventListener("pointercancel",()=>{ swipeStart=null; });
-          summary.addEventListener("click",()=>{
-            if(suppressOpen){
-              suppressOpen=false;
-              return;
-            }
-            const opening=state.selectedId!==job.id;
-            const nextSelectedId=opening?job.id:null;
-            if(state.selectedId!==nextSelectedId) suppressGenerationAutoOpen(state.selectedId);
-            if(opening) markViewed(job);
-            state.selectedId=nextSelectedId;
-            render();
-            if(opening){
-              loadJobActivity(job,true);
-              loadJobCoverage(job,true);
-            }
-
-            requestAnimationFrame(()=>{
-              const anchor=document.querySelector('[data-job-id="'+CSS.escape(String(job.id||""))+'"]');
-              if(anchor){
-                anchor.scrollIntoView({behavior:"smooth",block:"start",inline:"nearest"});
-                anchor.querySelector(".job-card-summary")?.focus({preventScroll:true});
-              }
-            });
-          });
-          card.querySelectorAll("[data-card-bookmark]").forEach((button)=>{
-            button.addEventListener("click",()=>toggleBookmark(job));
-          });
-          card.querySelectorAll("[data-ignore-job]").forEach((button)=>{
-            button.addEventListener("click",()=>setJobIgnored(job,!isIgnored));
-          });
-          cards.appendChild(card);
-          if(!isRemoteJob(job) && job.location){
-            const key=commuteCacheKey(job.location);
-            const known=state.commutes[key];
-            const footer=card.querySelector(".commute-footer");
-            if(Number.isFinite(Number(known))){
-              footer.textContent=Number(known)+" min";
-              footer.hidden=false;
-            } else if(known===undefined) {
-              loadCommute(job.location);
-            }
-          }
-        });
-      section.appendChild(cards);
-      list.appendChild(section);
-    });
   }
+
   function statusToken(value) {
     return String(value||"saved").trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"saved";
   }
@@ -1489,15 +1546,13 @@
   }
   function renderInlineDetail(job) {
     const configured=uiRows("detail");
-    const detailRows=(configured.length?configured:fallbackDetailRows()).filter(fieldAllowed);
+    const detailRows=(configured.length?configured:fallbackDetailRows()).filter(item=>fieldAllowed(item)&&!["resume","coverLetter","notes"].includes(item.key));
     const detailHtml=detailRows.map((item)=>{
       const value=job[item.key];
       let rendered="Unknown";
-      if (item.format==="link") rendered=documentControl(job,item.key,item.label||item.key);
-      else if (value!==undefined && value!==null && value!=="") rendered=escapeHtml(value);
+      if (value!==undefined && value!==null && value!=="") rendered=escapeHtml(value);
       return '<dt>'+escapeHtml(item.label||item.key)+'</dt><dd>'+rendered+'</dd>';
     }).join("");
-
     const isApplied=String(job.status||"").toLowerCase()==="applied";
     const currentStatus=String(job.status||"Saved");
     const lifecycleRows=lifecycleStatuses().filter((item)=>item.key!=="Discovered");
@@ -1506,47 +1561,50 @@
       lifecycleRows.map((item)=>'<option value="'+escapeAttr(item.key)+'"'+(item.key===currentStatus?' selected':'')+'>'+escapeHtml(item.label)+'</option>').join("");
     const nextAction=followUpSummary(job);
     const followUpValue=String(job.followUp||"").slice(0,10);
-    const followUpControl=isApplied?'<label class="follow-up-control"><span>Follow up</span><input type="date" data-follow-up-date value="'+escapeAttr(followUpValue)+'" aria-label="Follow-up date"></label>':"";
-    const lifecycleControl='<div class="job-lifecycle-row"><label class="lifecycle-control"><span>Status</span><select data-lifecycle-status aria-label="Job status">'+lifecycleOptions+'</select></label>'+
-      followUpControl+(nextAction?'<span class="next-action">'+escapeHtml(nextAction)+'</span>':'')+'</div>';
+    const lifecycleControl='<div class="job-lifecycle-row"><label class="lifecycle-control"><span>Stage</span><select data-lifecycle-status aria-label="Job stage">'+lifecycleOptions+'</select></label></div>';
     const docsReady=documentsReadyForApplication(job);
     const prepareBusy=activeApplicationPrepares.has(String(job.id||job.url));
     const bothBusy=oneClickSession(job,"both");
-    const generateBoth=(!job.resume||!job.coverLetter)&&featureEnabled("resume-generation")&&featureEnabled("cover-letter-generation")
-      ? '<button class="workflow-action" type="button" data-generate-both'+(generationSession(job)||bothBusy?' disabled aria-busy="true"':'')+'><span>'+(bothBusy?escapeHtml(bothBusy.label):generationSession(job)?'Creating documents…':job.resume||job.coverLetter?'Finish documents':'Generate both')+'</span></button>':"";
-    const chatGptBoth=!job.resume&&!job.coverLetter
-      ? '<button class="workflow-action chatgpt-action" type="button" data-chatgpt-prompt="both"'+(bothBusy?' disabled aria-busy="true"':'')+'><span class="workflow-icon" aria-hidden="true">✦</span><span>'+(bothBusy?escapeHtml(bothBusy.label):'ChatGPT both')+'</span></button>'+
-        '<button class="workflow-action" type="button" data-chatgpt-import="both"><span class="workflow-icon" aria-hidden="true">⇩</span><span>Import AI docs</span></button>'
-      : "";
     const statusLower=currentStatus.toLowerCase();
     const postApplication=["applied","interview","offer","rejected"].includes(statusLower);
-    const applyGate=job.url&&job.listing_state!=="closed"&&!postApplication?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply aria-label="Open application with approved documents" title="'+(docsReady?'Open application':'Approve resume and cover letter first')+'"><span class="workflow-icon" aria-hidden="true">↗</span><span>'+(docsReady?'Apply with docs':'Approve docs')+'</span></button>':"";
+    const applyGate=job.url&&job.listing_state!=="closed"&&!postApplication?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply><span>'+(docsReady?'Open with approved documents':'Approve documents for application')+'</span></button>':"";
     const isAppliedJob=statusLower==="applied";
+    const savedPreparation=preparationRecovery?.load();
+    const resumePreparation=savedPreparation&&!savedPreparation.expired&&savedPreparation.state!=="opened"&&String(savedPreparation.jobId)===String(job.id);
     const prepareAction=state.runtime?.settings?.["chatgpt-one-click"]===true&&job.url&&job.listing_state!=="closed"&&statusLower!=="closed"&&(!postApplication||isAppliedJob)
-      ? '<button class="workflow-action" type="button" data-prepare-application'+(prepareBusy?' disabled aria-busy="true"':'')+'><span>'+(prepareBusy?'Preparing application…':isAppliedJob?'Prepare again for review':'Prepare application')+'</span></button>':"";
-    const appliedAction=!["interview","offer","rejected","ignored"].includes(statusLower)?'<button class="workflow-action'+(isApplied?' is-applied':'')+'" type="button" data-apply-status="'+(isApplied?'saved':'applied')+'" aria-pressed="'+String(isApplied)+'" aria-label="'+(isApplied?'Unmark as applied':'Mark as applied')+'" title="'+(isApplied?'Unmark as applied':'Mark as applied')+'"><span class="workflow-icon" aria-hidden="true">✓</span><span>Applied</span></button>':"";
+      ? '<button class="workflow-action'+(isAppliedJob?' is-secondary':' is-primary')+'" type="button" data-prepare-application'+(prepareBusy?' disabled aria-busy="true"':'')+'><span>'+(resumePreparation?'Resume preparation':isAppliedJob?'Prepare again for review':'Prepare application')+'</span></button>':"";
     const postingUrl=/^https?:\/\//i.test(String(job.url||""))?job.url:"";
     const actions=postingUrl
-      ? '<a class="workflow-action" href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener" aria-label="View listing"><span class="workflow-icon" aria-hidden="true">↗</span><span>View listing</span></a>'+
-        (!postApplication?'<a class="workflow-action" href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener" aria-label="Apply on site" data-resume-apply><span class="workflow-icon" aria-hidden="true">↗</span><span>Apply on site</span></a>':'')
+      ? '<a class="employer-link" data-employer-link href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener">Open employer listing ↗</a>'
       : '<span class="posting-unavailable">Listing link unavailable</span>';
-
     const fullDescription=cleanJobDescription(job.notes)||"Full job description not yet available.";
-    const summary=jobDetailSummary(job);
-    const canExpand=fullDescription.length>summary.length+40;
+    const summary=conciseJobSummary(job);
+    const generating=generationSession(job);
+    const progress=oneClickProgress(job)|| (prepareBusy?'Preparing application…':generating?'Creating '+documentLabel(generating.type)+'…':'');
+    const liveFeedback=state.preparationFeedback?.jobId===String(job.id)?state.preparationFeedback:null;
+    const savedError=savedPreparation?.state==="needs-review"&&String(savedPreparation.jobId)===String(job.id)?savedPreparation.reason:"";
+    const progressHtml=progress?'<p class="job-detail-progress" role="status" aria-live="polite"><span class="generation-spinner" aria-hidden="true"></span>'+escapeHtml(progress)+'</p>':
+      liveFeedback?'<p class="job-detail-feedback is-'+escapeAttr(liveFeedback.kind)+'" role="'+(liveFeedback.kind==="error"?'alert':'status')+'">'+escapeHtml(liveFeedback.message)+'</p>':
+      savedError?'<p class="job-detail-feedback is-error" role="alert">'+escapeHtml(savedError)+'</p>':'';
+    const documentRows=[["resume","Resume"],["coverLetter","Cover letter"]].map(([key,label])=>{
+      const exportEvent=(state.jobActivity[String(job.id)]?.events||[]).find(event=>event.event_type==="document_drive_export"&&currentDocumentExport(job,event,key)&&/^https:\/\/drive\.google\.com\/file\/d\/[A-Za-z0-9_-]{10,160}\/view$/.test(event.metadata?.drive_url||""));
+      const currentPdf=exportEvent?'<a class="document-current-export" href="'+escapeAttr(exportEvent.metadata.drive_url)+'" target="_blank" rel="noopener noreferrer">Current PDF</a>':"";
+      return '<div class="document-row" data-document-type="'+key+'"><div class="document-row-label"><strong>'+label+'</strong><span>'+(job[key]?'Ready for review':'Needs a document')+'</span>'+currentPdf+'</div>'+documentControl(job,key,label)+'</div>';
+    }).join("");
+    const createDocuments=(!job.resume||!job.coverLetter)&&featureEnabled("resume-generation")&&featureEnabled("cover-letter-generation")
+      ? '<button class="workflow-action'+(prepareAction?' is-secondary':' is-primary')+'" type="button" data-generate-both'+(generating||bothBusy||prepareBusy?' disabled aria-busy="true"':'')+'>Create missing documents</button>':"";
+    const nextStep=isApplied
+      ? '<div class="job-next-step"><h3>Next step</h3><p class="next-action">'+escapeHtml(nextAction||'Set a follow-up date')+'</p><label class="follow-up-control"><span>Follow up</span><input type="date" data-follow-up-date value="'+escapeAttr(followUpValue)+'" aria-label="Follow-up date"></label>'+prepareAction+'</div>'
+      : '<div class="job-next-step"><h3>Next step</h3>'+(prepareAction||createDocuments||'<p>Review this role and choose its stage.</p>')+
+        (prepareAction?'<p class="next-step-help">Creates any missing documents and opens the employer form for review. It does not submit the application.</p>':'')+'</div>';
     return '<section class="inline-job-detail">'+
       lifecycleControl+
-      '<section class="job-description"><h3>Job summary</h3>'+
-        '<p class="job-description-text" data-description-summary>'+escapeHtml(summary)+'</p>'+
-        (canExpand?'<p class="job-description-text full-description" data-description-full hidden>'+escapeHtml(fullDescription)+'</p>':'')+
-        (canExpand?'<button class="description-toggle" type="button" data-description-toggle aria-expanded="false">Show more</button>':'')+
-      '</section>'+
-      '<dl>'+detailHtml+'</dl>'+
-      '<div class="detail-actions">'+
-        '<div class="workflow-actions" aria-label="Application actions">'+generateBoth+chatGptBoth+actions+prepareAction+applyGate+appliedAction+'</div>'+
-      '</div>'+
-      renderCoverage(job)+
-      renderJobActivity(job)+
+      '<p class="job-detail-summary">'+escapeHtml(summary)+'</p>'+progressHtml+nextStep+
+      '<section class="document-checklist" aria-label="Application documents"><h3>Documents</h3>'+documentRows+'</section>'+
+      '<div class="job-detail-actions">'+actions+'</div>'+
+      '<details class="job-detail-disclosure"><summary>Job details</summary><div class="job-detail-disclosure-content"><dl>'+detailHtml+'</dl><h3>Full posting</h3><p class="job-description-text full-description">'+escapeHtml(fullDescription)+'</p>'+(applyGate||prepareAction&&createDocuments?'<div class="advanced-application-actions"><h3>Other application actions</h3>'+(prepareAction?createDocuments:'')+applyGate+'</div>':'')+'</div></details>'+
+      '<details class="job-detail-disclosure"><summary>Evidence</summary><div class="job-detail-disclosure-content">'+renderCoverage(job)+'</div></details>'+
+      '<details class="job-detail-disclosure"><summary>Activity</summary><div class="job-detail-disclosure-content">'+renderJobActivity(job)+'</div></details>'+
     '</section>';
   }
 
@@ -1738,9 +1796,9 @@
           url:job.url,title:job.title,company:job.company,track:job.track,
           location:job.location,source:job.source
         });
-        if(result.expired){ applyListingEvidence(job,result.availability);render();throw new Error("This listing has expired. Open View listing to check it.");}
+        if(result.expired){ applyListingEvidence(job,result.availability);render();throw new Error("This listing has expired. Open employer listing to check it.");}
         const description=String(result.description||"").trim();
-        if(!description) throw new Error("The listing did not provide a job description. Open View listing to check the source.");
+        if(!description) throw new Error("The listing did not provide a job description. Open employer listing to check the source.");
         await window.RavenAPI.updateJob(job.id,{notes:description});
         job.notes=description;
         const saved=state.jobs.find((item)=>String(item.id)===String(job.id));
@@ -1953,12 +2011,40 @@
   const activeOneClickJobs=new Map();
   const activeApplicationPrepares=new Map();
   let localPreparationClient;
+  let preparationRecovery;
+  async function getPreparationRecovery(){
+    if(!preparationRecovery){
+      const {createPreparationRecovery}=await import("./application-prepare.mjs?v=3");
+      preparationRecovery=createPreparationRecovery();
+    }
+    return preparationRecovery;
+  }
+  function updatePreparationRecoveryBanner(){
+    const banner=document.getElementById("preparationRecoveryBanner");
+    if(!banner)return;
+    const intent=preparationRecovery?.load();
+    const active=intent&&intent.state!=="opened";
+    banner.hidden=!active;
+    if(!active)return;
+    const job=knownJobById(intent.jobId);
+    banner.querySelector("[data-preparation-recovery-text]").textContent=intent.expired
+      ? "A saved preparation expired. Review the role before starting again."
+      : "Preparation for "+(job?.title||"a saved job")+" is ready to resume.";
+    banner.querySelector("[data-resume-preparation]").hidden=Boolean(intent.expired);
+    banner.querySelector("[data-clear-preparation]").textContent=intent.expired?"Clear expired preparation":"Dismiss";
+  }
   function oneClickSession(job,type){
     const key=String(job.id||job.url);
     return type==="both"?(activeOneClickJobs.get(key+":resume")||activeOneClickJobs.get(key+":coverLetter")):activeOneClickJobs.get(key+":"+type);
   }
+  function oneClickProgress(job){
+    const resume=oneClickSession(job,"resume");
+    const coverLetter=oneClickSession(job,"coverLetter");
+    if(resume&&coverLetter&&resume===coverLetter)return "Resume + cover letter: "+String(resume.label||"Preparing…");
+    return [resume&&"Resume: "+String(resume.label||"Preparing…"),coverLetter&&"Cover letter: "+String(coverLetter.label||"Preparing…")].filter(Boolean).join(" · ");
+  }
   let oneClickClient;
-  async function generateOneClick(job,type,button,{autoOpen=true,propagateErrors=false,forceLocal=false}={}){
+  async function generateOneClick(job,type,button,{autoOpen=true,propagateErrors=false,forceLocal=false,onAccepted=null,resumeRunId=null,onStage=null,skipJobPreparation=false}={}){
     let key=String(job.id||job.url);
     const kinds=type==="both"?["resume","coverLetter"]:[type];
     if(kinds.some(kind=>activeOneClickJobs.has(key+":"+kind))){setStatus("This document is already queued or being generated. The other document can be queued separately.");return;}
@@ -1968,13 +2054,13 @@
       let client=oneClickClient;
       setGenerationButton(button,true,"Preparing…");
       render();
-      setStatus("Preparing your job for one-click generation…");
-      await prepareJobForGeneration(job);
+      if(state.selectedId!==job.id)setStatus("Preparing your job for one-click generation…");
+      if(!skipJobPreparation)await prepareJobForGeneration(job);
       const savedKey=String(job.id||job.url);
       if(savedKey!==key){kinds.forEach(kind=>{activeOneClickJobs.delete(key+":"+kind);activeOneClickJobs.set(savedKey+":"+kind,session);});key=savedKey;}
       if(forceLocal){
         if(!localPreparationClient){
-          const {createOneClickClient}=await import("./oneclick-client.mjs?v=2");
+          const {createOneClickClient}=await import("./oneclick-client.mjs?v=3");
           localPreparationClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
         }
         client=localPreparationClient;
@@ -1983,15 +2069,21 @@
         const pairedToken=localStorage.getItem(PAIR_KEY);
         if(pairedToken)oneClickClient=createRemoteWriterClient({token:pairedToken});
         else{
-          const {createOneClickClient}=await import("./oneclick-client.mjs?v=2");
+          const {createOneClickClient}=await import("./oneclick-client.mjs?v=3");
           oneClickClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
         }
       }
-      const labels={offline:"Queued · waiting for your computer to come online…",queued:"Queued · waiting for writer…",writing:"Writing from verified facts…",saving:"Saving in Raven…",pdf:"Creating PDF…",uploading:"Saving PDF to Drive…",recording:"Confirming saved links…",complete:"Verifying saved documents…"};
+      const labels={offline:"Queued · waiting for your computer to come online…",queued:"Queued · waiting for writer…",checking_saved_state:"Checking saved documents…",checking_drive_receipts:"Checking Drive files…",writing:"Writing from verified facts…",saving:"Saving in Raven…",pdf:"Creating PDF…",uploading:"Saving PDF to Drive…",recording:"Confirming saved links…",complete:"Verifying saved documents…"};
       client=client||oneClickClient;
-      const result=await client.run({job_id:String(job.id),document_type:type},stage=>{
-        session.label=labels[stage]||"Generating…";render();setStatus(session.label);
-      });
+      const input={job_id:String(job.id),document_type:type};
+      const stageHandler=(stage,run)=>{
+        session.label=labels[stage]||"Generating…";render();
+        if(state.selectedId!==job.id)setStatus(session.label);
+        onStage?.(stage,run);
+      };
+      const result=resumeRunId
+        ? await client.resumeRun(input,resumeRunId,stageHandler)
+        : await client.run(input,stageHandler,{onAccepted});
       // Read the canonical data directly: loadJobs deliberately tolerates offline
       // cache, which cannot establish that this run actually saved its outputs.
       const [jobsPayload,eventsPayload]=await Promise.all([window.RavenAPI.listJobs(),window.RavenAPI.listJobEvents(String(job.id))]);
@@ -2005,34 +2097,95 @@
     }catch(error){setStatus("One-click generation: "+error.message);if(propagateErrors)throw error;}
     finally{kinds.forEach(kind=>activeOneClickJobs.delete(key+":"+kind));setGenerationButton(button,false);render();}
   }
+  async function verifiedPreparationDocuments(jobId,expectedHashes,expectedUrl){
+    const [jobsPayload,eventsPayload]=await Promise.all([window.RavenAPI.listJobs(),window.RavenAPI.listJobEvents(String(jobId))]);
+    const canonical=normalizeJobs(jobsPayload).find(item=>String(item.id)===String(jobId));
+    if(!canonical)throw Error("The saved job could not be verified. Refresh Raven before resuming.");
+    if(expectedUrl&&new URL(canonical.url).href!==new URL(expectedUrl).href)throw Error("The saved employer URL changed. Review the listing before starting again.");
+    await refreshCurrentDocumentHashes(canonical);
+    const documents=["resume","coverLetter"].map(kind=>{
+      const sha=state.jobDocumentHashes[String(jobId)]?.[kind]?.sha256;
+      if(!sha||!canonical[kind]||expectedHashes?.[kind]?.documentSha256&&expectedHashes[kind].documentSha256!==sha)throw Error("A saved document changed. Review it before preparing the employer form.");
+      const event=(eventsPayload.events||[]).find(item=>item.event_type==="document_drive_export"&&item.metadata?.document_type===kind&&item.metadata?.document_sha256===sha&&item.metadata?.file_id&&/^https:\/\/drive\.google\.com\/file\/d\/[A-Za-z0-9_-]{10,160}\/view$/.test(item.metadata?.drive_url||""));
+      if(!event)throw Error("The current "+documentLabel(kind)+" has no matching verified Drive export. Resume document preparation first.");
+      return {document_type:kind,document_url:canonical[kind],document_sha256:sha,file_id:event.metadata.file_id,drive_url:event.metadata.drive_url};
+    });
+    return {job:canonical,result:{documents}};
+  }
   async function prepareApplication(job,button){
     let key=String(job.id||job.url);
     if(activeApplicationPrepares.has(key)||activeOneClickJobs.has(key+":resume")||activeOneClickJobs.has(key+":coverLetter")){setStatus("This job is already being prepared or generated. Wait for it to finish, then try again.");return;}
     const busy={label:"Preparing application…"};activeApplicationPrepares.set(key,busy);
+    state.preparationFeedback=null;
+    let intent=null;
     try{
-      const {probePreparationExtension,dispatchPreparedApplication}=await import("./application-prepare.mjs?v=1");
+      if(job.listing_state==="closed")throw Error("This listing is source-confirmed closed. Review the employer link before preparing documents.");
+      if(!/^https:\/\//i.test(String(job.url||"")))throw Error("A secure employer listing URL is required to prepare this application.");
+      const {probePreparationExtension,preflightPreparationApplication,dispatchPreparedApplication}=await import("./application-prepare.mjs?v=3");
+      const recovery=await getPreparationRecovery();
+      const savedIntent=recovery.load();
+      if(savedIntent&&!savedIntent.expired&&savedIntent.state!=="opened"&&String(savedIntent.jobId)!==String(job.id))throw Error("Another application preparation is saved. Resume or dismiss it before starting this role.");
+      await prepareJobForGeneration(job);
+      key=String(job.id||job.url);
+      for(const [activeKey,active] of activeApplicationPrepares)if(active===busy&&activeKey!==key)activeApplicationPrepares.delete(activeKey);
+      activeApplicationPrepares.set(key,busy);
+      intent=recovery.load();
+      if(intent&&(intent.expired||intent.state==="opened")){recovery.clear(intent.preparationId);intent=null;}
+      if(intent&&String(intent.jobId)!==String(job.id))throw Error("Another application preparation is saved. Resume or dismiss it before starting this role.");
+      if(intent&&new URL(intent.jobUrl).href!==new URL(job.url).href)throw Error("The saved employer URL changed. Review the listing before starting again.");
       await probePreparationExtension();
       if(!localPreparationClient){
-        const {createOneClickClient}=await import("./oneclick-client.mjs?v=2");
+        const {createOneClickClient}=await import("./oneclick-client.mjs?v=3");
         localPreparationClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
       }
       await localPreparationClient.ensureApplicationPreparation();
-      setStatus("Preparing saved resume and cover letter…");
-      let {job:saved,result}=await generateOneClick(job,"both",button,{autoOpen:false,propagateErrors:true,forceLocal:true});
-      key=String(saved.id||saved.url);
-      const expected=new Map(result.documents.map(doc=>[doc.document_type,doc]));
-      if(!expected.has("resume")||!expected.has("coverLetter"))throw Error("Raven could not confirm both saved documents.");
-      const freshJobs=normalizeJobs(await window.RavenAPI.listJobs());
-      const canonical=freshJobs.find(item=>String(item.id)===String(job.id));
-      if(!canonical||expected.get("resume").document_url!==canonical.resume||expected.get("coverLetter").document_url!==canonical.coverLetter)throw Error("The saved documents changed before preparation. Refresh Raven and try again.");
-      const prepared=await localPreparationClient.prepareApplicationDocuments({job_id:String(job.id),documents:["resume","coverLetter"].map(type=>({document_type:type,document_sha256:expected.get(type).document_sha256}))});
-      const packet={version:2,mode:"prepare",createdAt:new Date().toISOString(),jobId:String(job.id),jobUrl:canonical.url||"",title:canonical.title||"",company:canonical.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory()};
-      for(const doc of prepared.documents)packet[doc.document_type==="resume"?"resume":"coverLetter"]=doc.data_url;
-      if(typeof packet.resume!=="string"||typeof packet.coverLetter!=="string")throw Error("The writer did not return both verified PDFs.");
-      await dispatchPreparedApplication(packet);
-      setStatus("Application opened for preparation—review fields and attachments in Chrome");
-    }catch(error){setStatus("Prepare application: "+(error?.message||"Unexpected error"));}
-    finally{
+      if(!intent)intent=recovery.start({jobId:String(job.id),jobUrl:job.url});
+      updatePreparationRecoveryBanner();
+      const preparationId=intent.preparationId;
+      await recovery.withLease(preparationId,async()=>{
+        const preflight=await preflightPreparationApplication({jobId:String(job.id),jobUrl:job.url,title:job.title||"",company:job.company||""},{requestId:intent.extensionRequestId});
+        if(preflight.alreadyPrepared===true){
+          recovery.update(preparationId,{state:"opened"});
+          recovery.clear(preparationId);
+          setStatus("Application was already opened. Review the existing employer tab in Chrome.");
+          state.preparationFeedback={jobId:String(job.id),kind:"success",message:"Application already opened in Chrome. Review the existing employer tab."};
+          return;
+        }
+        let verified;
+        if(intent.documents&&["documents-ready","dispatching","needs-review"].includes(intent.state)){
+          try{verified=await verifiedPreparationDocuments(job.id,intent.documents,intent.jobUrl);}catch(error){if(!intent.runId)throw error;}
+        }
+        if(!verified){
+          const generated=await generateOneClick(job,"both",button,{autoOpen:false,propagateErrors:true,forceLocal:true,skipJobPreparation:true,
+            resumeRunId:intent.runId||null,
+            onAccepted:run=>{intent=recovery.update(preparationId,{runId:run.run_id,state:"generating"});updatePreparationRecoveryBanner();},
+            onStage:stage=>{busy.label=stage.replace(/_/g," ");intent=recovery.update(preparationId,{lastStage:stage});}
+          });
+          if(!generated)throw Error("Document preparation did not complete.");
+          verified=await verifiedPreparationDocuments(job.id,Object.fromEntries(generated.result.documents.map(doc=>[doc.document_type,{documentSha256:doc.document_sha256}])),intent.jobUrl);
+        }
+        await localPreparationClient.verifyApplicationReceipts({job_id:String(job.id),documents:verified.result.documents.map(doc=>({document_type:doc.document_type,document_sha256:doc.document_sha256,file_id:doc.file_id,drive_url:doc.drive_url}))});
+        const hashes=Object.fromEntries(verified.result.documents.map(doc=>[doc.document_type,{documentSha256:doc.document_sha256}]));
+        intent=recovery.update(preparationId,{state:"documents-ready",documents:hashes});
+        const prepared=await localPreparationClient.prepareApplicationDocuments({job_id:String(job.id),documents:verified.result.documents.map(doc=>({document_type:doc.document_type,document_sha256:doc.document_sha256}))});
+        const canonical=verified.job;
+        const packet={version:2,mode:"prepare",createdAt:new Date().toISOString(),jobId:String(job.id),jobUrl:canonical.url||"",title:canonical.title||"",company:canonical.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory()};
+        for(const doc of prepared.documents)packet[doc.document_type==="resume"?"resume":"coverLetter"]=doc.data_url;
+        if(typeof packet.resume!=="string"||typeof packet.coverLetter!=="string")throw Error("The writer did not return both verified PDFs.");
+        intent=recovery.update(preparationId,{state:"dispatching"});
+        await dispatchPreparedApplication(packet,{requestId:intent.extensionRequestId,preflightId:preflight.preflightId});
+        recovery.update(preparationId,{state:"opened"});
+        recovery.clear(preparationId);
+        setStatus("Application opened for preparation—review fields and attachments in Chrome");
+        state.preparationFeedback={jobId:String(job.id),kind:"success",message:"Application opened in Chrome. Review the fields and attachments before submitting."};
+      });
+    }catch(error){
+      if(intent?.preparationId){
+        try{const recovery=await getPreparationRecovery();recovery.update(intent.preparationId,{state:"needs-review",reason:String(error?.message||"Unexpected error")});}catch{}
+      }
+      setStatus("Prepare application: "+(error?.message||"Unexpected error"));
+      state.preparationFeedback={jobId:String(job.id),kind:"error",message:"Prepare application: "+(error?.message||"Unexpected error")};
+    }finally{
       for(const [activeKey,active] of activeApplicationPrepares)if(active===busy)activeApplicationPrepares.delete(activeKey);
       setGenerationButton(button,false);render();
     }
@@ -2226,9 +2379,11 @@
 
   function closeChatGptImport(){
     const dialog=document.getElementById("chatGptImportDialog");
+    const job=state.manualImportJob,type=state.manualImportType;
     if(dialog?.open) dialog.close();
     state.manualImportJob=null;
     state.manualImportType=null;
+    if(job&&state.selectedId===job.id)requestAnimationFrame(()=>detailPanel?.querySelector('[data-document-type="'+CSS.escape(String(type||""))+'"] [data-document-menu]')?.focus({preventScroll:true}));
   }
 
   async function submitChatGptImport(event){
@@ -2417,6 +2572,7 @@
   }
   function closeDocumentReview() {
     const dialog=document.getElementById("documentReviewDialog");
+    const job=state.generatorJob,type=state.generatorType;
     if(dialog.open) dialog.close();
     document.getElementById("reviewFrame").removeAttribute("srcdoc");
     document.getElementById("reviewFrame").onload=null;
@@ -2428,6 +2584,7 @@
     state.generatorJob=null;
     state.generatorType=null;
     render();
+    if(job&&state.selectedId===job.id)requestAnimationFrame(()=>detailPanel?.querySelector('[data-document-type="'+CSS.escape(String(type||""))+'"] [data-generate]')?.focus({preventScroll:true}));
   }
   function normalizedDocumentText(value){
     return String(value||"").replace(/\s+/g," ").trim();
@@ -2501,6 +2658,7 @@
   }
 
   async function transitionJob(job,nextStatus,options={}) {
+    const selectedAtStart=state.selectedId;
     const allowed=new Set(lifecycleStatuses().map((item)=>item.key));
     if(!allowed.has(nextStatus) && nextStatus!=="Discovered"){
       setStatus("Unsupported job status");
@@ -2537,7 +2695,7 @@
       if(options.collapse) state.selectedId=null;
       await loadJobs();
       const refreshed=state.jobs.find((item)=>String(item.id)===String(targetId));
-      if(refreshed&&!options.collapse) state.selectedId=refreshed.id;
+      if(refreshed&&!options.collapse&&state.selectedId===selectedAtStart) state.selectedId=refreshed.id;
       if(refreshed) await loadJobActivity(refreshed,true);
       setStatus(options.statusMessage||("Moved to "+nextStatus));
     }catch(error){
@@ -2664,45 +2822,68 @@
   function documentControl(job,key,label) {
     const value=job[key];
     const error=generationErrors.get(documentApprovalKey(job,key));
-    const feedback=error?'<span class="document-generation-error" role="alert">'+escapeHtml(error)+'</span>':"";
+    const feedback=error&&!value?'<span class="document-generation-error" role="alert">'+escapeHtml(error)+'</span>':"";
     const fileLabel=String(label||"file").toLowerCase();
     const generating=generationSession(job);
     const oneClickBusy=oneClickSession(job,key);
-    if(activeApplicationPrepares.has(String(job.id||job.url))){
-      return '<span class="document-control is-empty is-generating"><button class="document-primary is-generating" type="button" disabled aria-busy="true" data-generate="'+escapeAttr(key)+'"><span class="generation-spinner" aria-hidden="true"></span><span>Preparing application…</span></button></span>';
-    }
-    if(oneClickBusy){
-      return '<span class="document-control is-empty is-generating"><button class="document-primary is-generating" type="button" disabled aria-busy="true" data-generate="'+escapeAttr(key)+'"><span class="generation-spinner" aria-hidden="true"></span><span>'+escapeHtml(oneClickBusy.label)+'</span></button></span>';
-    }
-    if(generating?.type===key){
-      return '<span class="document-control is-empty is-generating">'+
-        '<button class="document-primary is-generating" type="button" disabled aria-busy="true"><span class="generation-spinner" aria-hidden="true"></span><span>AI generating…</span></button>'+
-      '</span>';
-    }
-    if(!value){
-      return '<span class="document-control is-empty">'+
-        '<button class="document-primary" type="button" data-generate="'+escapeAttr(key)+'">Generate</button>'+
-        '<button class="document-secondary chatgpt-action" type="button" title="'+(state.runtime.settings["chatgpt-one-click"]===true?'Create from verified facts, save in Raven and copy the PDF to Drive':'Open a prepared ChatGPT request')+'" data-chatgpt-prompt="'+escapeAttr(key)+'">ChatGPT</button>'+
-        '<button class="document-secondary" type="button" data-chatgpt-import="'+escapeAttr(key)+'">Import</button>'+feedback+
-      '</span>';
-    }
-    return '<span class="document-control has-file">'+
-      '<button class="document-primary" type="button" data-generate="'+escapeAttr(key)+'">Review</button>'+feedback+
+    const busy=activeApplicationPrepares.has(String(job.id||job.url))||Boolean(oneClickBusy)||generating?.type===key;
+    return '<span class="document-control '+(value?'has-file':'is-empty')+(busy?' is-generating':'')+'">'+
+      '<button class="document-primary" type="button" data-generate="'+escapeAttr(key)+'"'+(busy?' disabled aria-busy="true"':'')+'>'+(value?'Review':'Generate')+'</button>'+feedback+
       '<span class="document-overflow">'+
-        '<button class="document-menu-button" type="button" data-document-menu aria-haspopup="menu" aria-expanded="false" aria-label="More '+escapeAttr(fileLabel)+' options" title="More options">…</button>'+
+        '<button class="document-menu-button" type="button" data-document-menu aria-haspopup="menu" aria-expanded="false" aria-label="More '+escapeAttr(fileLabel)+' options"'+(busy?' disabled':'')+'>More</button>'+
         '<span class="document-menu" role="menu" hidden>'+
-          (key==="resume"?'<button type="button" role="menuitem" data-document-download="resume" title="Download resume as Word (.docx)">Download resume</button>':"")+
-          '<button type="button" role="menuitem" data-document-revise="'+escapeAttr(key)+'">Request changes</button>'+
-          '<button type="button" role="menuitem" data-document-regenerate="'+escapeAttr(key)+'">Regenerate</button>'+
-          '<button type="button" role="menuitem" data-chatgpt-prompt="'+escapeAttr(key)+'">'+(state.runtime.settings["chatgpt-one-click"]===true?'Save PDF to Drive':'Create ChatGPT prompt')+'</button>'+
-          '<button type="button" role="menuitem" data-chatgpt-import="'+escapeAttr(key)+'">Import ChatGPT result</button>'+
-          '<button class="danger-action" type="button" role="menuitem" data-document-delete="'+escapeAttr(key)+'">Delete</button>'+
+          (value&&key==="resume"?'<button type="button" role="menuitem" data-document-download="resume" title="Download resume as Word (.docx)">Download Word</button>':"")+
+          (value?'<button type="button" role="menuitem" data-document-revise="'+escapeAttr(key)+'">Request changes</button>':'')+
+          (value?'<button type="button" role="menuitem" data-document-regenerate="'+escapeAttr(key)+'">Regenerate</button>':'')+
+          '<button type="button" role="menuitem" data-chatgpt-prompt="'+escapeAttr(key)+'">'+(state.runtime.settings["chatgpt-one-click"]===true?'Create with ChatGPT':'Open ChatGPT prompt')+'</button>'+
+          '<button type="button" role="menuitem" data-chatgpt-import="'+escapeAttr(key)+'">Import document</button>'+
+          (value?'<button class="danger-action" type="button" role="menuitem" data-document-delete="'+escapeAttr(key)+'">Delete</button>':'')+
         '</span>'+
       '</span>'+
     '</span>';
   }
 
   function bindEvents() {
+    document.querySelector("[data-resume-preparation]")?.addEventListener("click",()=>{
+      const intent=preparationRecovery?.load();
+      if(!intent||intent.expired)return;
+      const job=knownJobById(intent.jobId);
+      if(!job){setStatus("Saved preparation found. Wait for jobs to finish loading, then try Resume preparation again.");return;}
+      if(job.track)state.activeTrack=job.track;
+      trackTabs.forEach(tab=>{const active=tab.dataset.track===state.activeTrack;tab.classList.toggle("active",active);tab.setAttribute("aria-selected",String(active));});
+      state.selectedId=job.id;
+      render();
+      requestAnimationFrame(()=>detailPanel?.querySelector("[data-close-job-detail]")?.focus({preventScroll:true}));
+      void prepareApplication(job,detailPanel?.querySelector("[data-prepare-application]"));
+    });
+    document.querySelector("[data-clear-preparation]")?.addEventListener("click",()=>{
+      const intent=preparationRecovery?.load();
+      if(intent)preparationRecovery.clear(intent.preparationId);
+      updatePreparationRecoveryBanner();render();
+      setStatus("Saved preparation dismissed. Saved documents remain available.");
+    });
+    detailPanel?.querySelector("[data-close-job-detail]")?.addEventListener("click",closeJobDetail);
+    detailScrim?.addEventListener("click",closeJobDetail);
+    document.addEventListener("keydown",(event)=>{
+      if(!detailPanel||detailPanel.hidden||document.querySelector("dialog[open]"))return;
+      if(event.key==="Escape"){
+        event.preventDefault();
+        closeJobDetail();
+      }else if(event.key==="Tab"){
+        const focusable=[...detailPanel.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])')]
+          .filter(item=>{
+            if(item.closest("[hidden]")||!item.getClientRects().length)return false;
+            for(let parent=item.parentElement;parent&&parent!==detailPanel;parent=parent.parentElement){
+              if(parent.matches("details:not([open])")&&!(item.tagName==="SUMMARY"&&item.parentElement===parent))return false;
+            }
+            return true;
+          });
+        if(!focusable.length)return;
+        const first=focusable[0],last=focusable[focusable.length-1];
+        if(event.shiftKey&&(document.activeElement===first||!detailPanel.contains(document.activeElement))){event.preventDefault();last.focus();}
+        else if(!event.shiftKey&&(document.activeElement===last||!detailPanel.contains(document.activeElement))){event.preventDefault();first.focus();}
+      }
+    });
     const optionsButton=document.getElementById("optionsButton");
     const optionsDialog=document.getElementById("optionsDialog");
     if(optionsButton && optionsDialog){
@@ -2948,6 +3129,8 @@
     document.querySelectorAll("[data-chatgpt-import-close]").forEach((button)=>{
       button.addEventListener("click",closeChatGptImport);
     });
+    document.getElementById("chatGptImportDialog")?.addEventListener("close",()=>{if(state.manualImportJob)closeChatGptImport();});
+    document.getElementById("documentReviewDialog")?.addEventListener("close",()=>{if(state.generatorJob)closeDocumentReview();});
     document.getElementById("reviewApprove")?.addEventListener("click",()=>{ const job=state.generatorJob,type=state.generatorType; if(!job||!type)return; setDocumentApproved(job,type,true); const button=document.getElementById("reviewApprove"); button.textContent="Approved ✓"; button.classList.add("is-approved"); setStatus(documentLabel(type)+" approved"); render(); });
     document.querySelectorAll("[data-review-close]").forEach((button)=>{
       button.addEventListener("click",closeDocumentReview);
@@ -3020,6 +3203,7 @@
     bindEvents();
     applySharedParams();
     hydrateImmediateData();
+    await getPreparationRecovery().then(updatePreparationRecoveryBanner).catch(error=>console.warn("Preparation recovery is unavailable",error));
 
     const runtimePromise=loadRuntimeConfig();
     const refreshPromise=refreshAllJobs();
