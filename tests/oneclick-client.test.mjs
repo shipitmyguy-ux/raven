@@ -34,6 +34,30 @@ test('helper restart renews the in-memory session once after unauthorized respon
  await client.run({job_id:'JT-test',document_type:'resume'});
  assert.equal(sessions,2);assert.deepEqual(tokens,['Bearer token-1','Bearer token-2']);
 });
+test('accepted run is exposed before polling so a resumed click never queues a duplicate',async()=>{
+ const calls=[],accepted=[],responses=[{token:'secret'},{run_id:id,job_id:'JT-test',document_type:'resume',stage:'queued'},{run_id:id,job_id:'JT-test',document_type:'resume',stage:'complete',documents:[doc]}];
+ const fetchImpl=async(url,options)=>{calls.push({url,method:options.method});return {ok:true,json:async()=>responses.shift()};};
+ const client=createOneClickClient({fetchImpl,pollMs:0});
+ await client.run({job_id:'JT-test',document_type:'resume'},()=>{},{onAccepted:async run=>accepted.push(run.run_id)});
+ assert.deepEqual(accepted,[id]);
+ const resumeCalls=[];
+ const resumed=createOneClickClient({fetchImpl:async(url,options)=>{resumeCalls.push({url,method:options.method});return {ok:true,json:async()=>url.endsWith('/session')?{token:'next'}:{run_id:id,job_id:'JT-test',document_type:'resume',stage:'complete',documents:[doc]}};}});
+ const result=await resumed.resumeRun({job_id:'JT-test',document_type:'resume'},id);
+ assert.equal(result.stage,'complete');
+ assert.equal(resumeCalls.some(call=>call.url.endsWith('/runs')&&call.method==='POST'),false);
+ assert.equal(resumeCalls.some(call=>call.url.endsWith('/runs/'+id)&&call.method==='GET'),true);
+});
+test('unknown saved run requires explicit recovery without starting another run',async()=>{
+ const calls=[];const client=createOneClickClient({fetchImpl:async(url,options)=>{calls.push(url);if(url.endsWith('/session'))return {ok:true,json:async()=>({token:'secret'})};return {ok:false,status:404,json:async()=>({error:'Request not found.'})};}});
+ await assert.rejects(client.resumeRun({job_id:'JT-test',document_type:'both'},id),/start again explicitly/);
+ assert.equal(calls.some(url=>url.endsWith('/runs')),false);
+});
+test('a mismatched accepted run is rejected before its ID can be persisted',async()=>{
+ let accepted=false,n=0;
+ const client=createOneClickClient({fetchImpl:async()=>({ok:true,json:async()=>n++?{run_id:id,job_id:'JT-other',document_type:'both',stage:'queued'}:{token:'secret'}})});
+ await assert.rejects(client.run({job_id:'JT-test',document_type:'both'},()=>{},{onAccepted:()=>{accepted=true;}}),/invalid run/);
+ assert.equal(accepted,false);
+});
 test('application preparation requires backend readiness and verifies returned PDF bytes',async()=>{
  const bytes=Buffer.from('%PDF-test'),pdfHash=await crypto.subtle.digest('SHA-256',bytes),hex=Array.from(new Uint8Array(pdfHash),b=>b.toString(16).padStart(2,'0')).join('');
  const source=[{document_type:'resume',document_sha256:'a'.repeat(64)},{document_type:'coverLetter',document_sha256:'b'.repeat(64)}],calls=[];
@@ -62,11 +86,21 @@ test('application preparation rejects unsupported backend and altered PDF bytes'
  }});
  await assert.rejects(bad.prepareApplicationDocuments({job_id:'JT-test',documents:docs}),/failed its byte and digest check/);
 });
+test('receipt client verifies exact read only response and never accepts changed file ID',async()=>{
+ const source=['resume','coverLetter'].map(document_type=>({document_type,document_sha256:'a'.repeat(64),file_id:'file1234567890',drive_url:'https://drive.google.com/file/d/file1234567890/view'}));
+ const input={job_id:'JT-test',documents:source},calls=[];
+ const client=createOneClickClient({fetchImpl:async(url,options)=>{calls.push({url,method:options.method});return {ok:true,json:async()=>url.endsWith('/health')?{application_prepare_supported:true,application_receipts_supported:true}:url.endsWith('/session')?{token:'secret'}:{job_id:'JT-test',documents:source}};}});
+ assert.equal((await client.verifyApplicationReceipts(input)).documents.length,2);
+ assert.equal(calls.at(-1).url.endsWith('/application-receipts'),true);
+ assert.equal(calls.some(call=>call.url.endsWith('/runs')),false);
+ const bad=createOneClickClient({fetchImpl:async url=>({ok:true,json:async()=>url.endsWith('/health')?{application_prepare_supported:true,application_receipts_supported:true}:url.endsWith('/session')?{token:'secret'}:{job_id:'JT-test',documents:[{...source[0],file_id:'other'},source[1]]}})});
+ await assert.rejects(bad.verifyApplicationReceipts(input),/mismatched application receipts/);
+});
 function appFixture({persisted=true}={}){
  const source=fs.readFileSync('app.js','utf8');
  const start=source.indexOf('  const activeOneClickJobs=');
  const end=source.indexOf('  function parseChatGptPayload(');
- const handler=source.slice(start,end).replaceAll('await import("./oneclick-client.mjs?v=2")','clientModule').replaceAll('await import("./remote-writer-client.mjs?v=1")','remoteModule');
+ const handler=source.slice(start,end).replaceAll(/await import\("\.\/oneclick-client\.mjs\?v=\d+"\)/g,'clientModule').replaceAll('await import("./remote-writer-client.mjs?v=1")','remoteModule');
  let opened=0,status='',review=0,runs=0,prepared=0;
  const job={id:'JT-test',resume:'saved-html'};
  const ctx={localStorage:{getItem:()=>null},remoteModule:{PAIR_KEY:'pair'},state:{selectedId:'JT-test',runtime:{settings:{'chatgpt-one-click':true}},jobs:[]},clientModule:{createOneClickClient:()=>({run:async(input,onStage)=>{runs++;onStage('writing');await Promise.resolve();return {documents:[doc]};}})},window:{open:()=>{opened++;throw Error('must not open');},RavenAPI:{listJobs:async()=>[job],listJobEvents:async()=>({events:persisted?[{event_type:'document_drive_export',metadata:doc}]:[]})}},prepareJobForGeneration:async()=>{prepared++;},setGenerationButton:()=>{},setStatus:value=>status=value,normalizeJobs:v=>v,mergePendingDocuments:v=>v,writeCache:()=>{},CACHE_JOBS_KEY:'jobs',loadJobActivity:async()=>{},render:()=>{},document:{querySelector:()=>null},openDocumentReview:async()=>{review++;}};

@@ -27,10 +27,10 @@
   if(location.hostname===RAVEN_HOST){
     const prepareBridge=document.getElementById("ravenExtensionBridge");
     if(prepareBridge){
-      prepareBridge.dataset.prepareCapability="1";
+      prepareBridge.dataset.prepareCapability="2";
       prepareBridge.dispatchEvent(new CustomEvent("raven-prepare-capability"));
       prepareBridge.addEventListener("raven-prepare-probe",()=>{
-        prepareBridge.dataset.prepareCapability="1";
+        prepareBridge.dataset.prepareCapability="2";
         prepareBridge.dispatchEvent(new CustomEvent("raven-prepare-capability"));
       });
       prepareBridge.addEventListener("raven-prepare-application",()=>{
@@ -40,6 +40,15 @@
           const error=chrome.runtime.lastError;
           prepareBridge.dataset.prepareResponse=JSON.stringify(response||{requestId:request.requestId,ok:false,error:error?.message||"Extension did not respond."});
           prepareBridge.dispatchEvent(new CustomEvent("raven-prepare-response"));
+        });
+      });
+      prepareBridge.addEventListener("raven-preflight-application",()=>{
+        let request;
+        try{request=JSON.parse(prepareBridge.dataset.preparePreflightRequest||"");}catch{return;}
+        chrome.runtime.sendMessage({type:"raven-preflight-application",...request},response=>{
+          const error=chrome.runtime.lastError;
+          prepareBridge.dataset.preparePreflightResponse=JSON.stringify(response||{requestId:request.requestId,ok:false,status:"blocked",reason:error?.message||"Extension did not respond."});
+          prepareBridge.dispatchEvent(new CustomEvent("raven-preflight-response"));
         });
       });
     }

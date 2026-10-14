@@ -16,7 +16,7 @@ test('applied cross-board vacancy appears once after reload and keeps its docume
   await expect(roles).toHaveCount(1);
   await expect(page.getByRole('button',{name:/^Senior Environment Artist Smile Break/})).toHaveCount(0);
   if(await roles.getAttribute('aria-expanded')!=='true')await roles.click();
-  await expect(page.getByRole('button',{name:'Unmark as applied'})).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('[data-lifecycle-status]')).toHaveValue('Applied');
   await expect(page.getByRole('button',{name:'Review',exact:true})).toHaveCount(2);
  }
 });
@@ -37,7 +37,7 @@ test('Eleventh Hour applied copies retain the original employer record and both 
  await page.getByRole('tab',{name:'Games / 3D',exact:true}).click();
  const card=page.getByRole('button',{name:/Applied Senior Environment Artist Eleventh Hour Games/});
  await expect(card).toHaveCount(1);await card.click();
- await expect(page.getByRole('link',{name:'View listing',exact:true})).toHaveAttribute('href',original.url);
+ await expect(page.getByRole('link',{name:'Open employer listing ↗',exact:true})).toHaveAttribute('href',original.url);
  await expect(page.getByRole('button',{name:'Review',exact:true})).toHaveCount(2);
 });
 test('saved vacancy assigned to Wildcard is not rediscovered as a new Professional job',async({page})=>{

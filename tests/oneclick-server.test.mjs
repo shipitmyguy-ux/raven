@@ -3,9 +3,12 @@ import assert from 'node:assert/strict';
 import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {createOneClickServer,createReceiptJournal} from '../scripts/oneclick-server.mjs';
+import {createOneClickServer,createReceiptJournal,createWriterScheduler,createDocumentLock,serializePrivateDispatch} from '../scripts/oneclick-server.mjs';
 import {verifiedDriveReceipt} from '../scripts/oneclick-codex.mjs';
 const origin='https://shipitmyguy-ux.github.io';
+function within(promise,label){
+ let timer;return Promise.race([promise,new Promise((_,reject)=>timer=setTimeout(()=>reject(Error(label+' did not start concurrently')),1500))]).finally(()=>clearTimeout(timer));
+}
 async function fixture(runWorkflow,options={}){
  const dir=await mkdtemp(join(tmpdir(),'raven-oneclick-test-'));
  const writes=[];const runtime=await createOneClickServer({stateDir:dir,runWorkflow,rest:async(_path,init)=>{writes.push(JSON.parse(init.body));assert.equal(init.headers.Prefer,'return=representation');return [];},authorizeJob:async id=>{if(id==='forbidden')throw Error('UNAUTHORIZED');},...options});
@@ -26,16 +29,30 @@ test('local helper rejects foreign origin, missing bearer, GET mutations and una
   assert.equal(f.writes.length,0);
  }finally{await f.cleanup();}
 });
-test('duplicate active starts share a run and dispatcher work is serial; completion waits for persistence',async()=>{
- let release;const gate=new Promise(resolve=>release=resolve);let running=0,max=0,calls=0;
- const f=await fixture(async(input,onProgress)=>{calls++;running++;max=Math.max(max,running);onProgress({stage:'writing'});await gate;running--;return {job_id:input.jobId,stage:'complete',documents:[]};});
+test('receipt verification is read only and enforces origin, session, job authorization and exact shape',async()=>{
+ let checks=0;const documents=['resume','coverLetter'].map(document_type=>({document_type,document_sha256:'a'.repeat(64),file_id:'file1234567890',drive_url:'https://drive.google.com/file/d/file1234567890/view'}));
+ const f=await fixture(async()=>{throw Error('writer must not run');},{verifyApplicationReceipts:async body=>{checks++;return body;}});
+ try{
+  const body={job_id:'allowed',documents};
+  assert.equal((await f.request('/application-receipts',body,{Origin:'https://evil.test'})).status,403);
+  assert.equal((await f.request('/application-receipts',body,{Authorization:''})).status,401);
+  assert.equal((await f.request('/application-receipts',{...body,job_id:'forbidden'})).status,403);
+  assert.equal((await f.request('/application-receipts',{...body,documents:[documents[0],{...documents[1],file_id:'other'}]})).status,400);
+  assert.equal(checks,0);
+  const result=await f.request('/application-receipts',body);assert.equal(result.status,200);assert.deepEqual(await result.json(),body);assert.equal(checks,1);assert.equal(f.writes.length,0);
+ }finally{await f.cleanup();}
+});
+test('duplicate active starts share a run; two jobs write together and completion waits for persistence',async()=>{
+ let release,bothStarted;const gate=new Promise(resolve=>release=resolve),begun=new Promise(resolve=>bothStarted=resolve);let running=0,max=0,calls=0;
+ const f=await fixture(async(input,onProgress)=>{calls++;running++;max=Math.max(max,running);if(running===2)bothStarted();onProgress({stage:'writing'});await gate;running--;return {job_id:input.jobId,stage:'complete',documents:[]};});
  try{
   const a=await (await f.request('/runs',{job_id:'one',document_type:'resume'})).json();
   const duplicate=await (await f.request('/runs',{job_id:'one',document_type:'resume'})).json();
   assert.equal(a.run_id,duplicate.run_id);
   await f.request('/runs',{job_id:'two',document_type:'resume'});
   const pending=await (await f.request('/runs/'+a.run_id)).json();assert.notEqual(pending.stage,'complete');
-  release();await f.runtime.drain();assert.equal(calls,2);assert.equal(max,1);
+  await within(begun,'Two different-job writers');
+  release();await f.runtime.drain();assert.equal(calls,2);assert.equal(max,2);
   assert.equal((await (await f.request('/runs/'+a.run_id)).json()).stage,'complete');
   assert.equal(f.writes.filter(row=>row.metadata.stage==='complete').length,2);
  }finally{release();await f.cleanup();}
@@ -61,13 +78,51 @@ test('a model manifest never substitutes for actual upload and metadata tool rea
  assert.equal(verifiedDriveReceipt([upload,item('get_file_metadata',{fileId:meta.id},meta)],options).file_id,meta.id);
 });
 
-test('cover letter for the same job is accepted while resume runs and completes after it',async()=>{
- let release,started;const gate=new Promise(r=>release=r),begun=new Promise(r=>started=r);const order=[];
- const f=await fixture(async(input,onProgress)=>{order.push(input.documentType);onProgress({stage:'writing',document_type:input.documentType});if(input.documentType==='resume'){started();await gate;}return {job_id:input.jobId,stage:'complete',documents:[{document_type:input.documentType}]};});
+test('cover letter for the same job writes while resume runs',async()=>{
+ let release,started,coverStarted;const gate=new Promise(r=>release=r),begun=new Promise(r=>started=r),coverBegun=new Promise(r=>coverStarted=r);const order=[];
+ const f=await fixture(async(input,onProgress)=>{order.push(input.documentType);onProgress({stage:'writing',document_type:input.documentType});if(input.documentType==='resume'){started();await gate;}else coverStarted();return {job_id:input.jobId,stage:'complete',documents:[{document_type:input.documentType}]};});
  try{
   const resume=await (await f.request('/runs',{job_id:'same',document_type:'resume'})).json();await begun;
   const response=await f.request('/runs',{job_id:'same',document_type:'coverLetter'});assert.equal(response.status,202);const cover=await response.json();assert.notEqual(cover.run_id,resume.run_id);assert.equal(cover.stage,'queued');
-  assert.deepEqual(order,['resume']);release();await f.runtime.drain();assert.deepEqual(order,['resume','coverLetter']);
+  await within(coverBegun,'Same-job cover-letter writer');assert.deepEqual(order,['resume','coverLetter']);release();await f.runtime.drain();
   assert.equal((await (await f.request('/runs/'+cover.run_id)).json()).stage,'complete');
  }finally{release();await f.cleanup();}
+});
+test('paired run reserves both kinds and keeps its request identity during progress',async()=>{
+ let release,started;const gate=new Promise(r=>release=r),begun=new Promise(r=>started=r);let calls=0;
+ const f=await fixture(async(input,onProgress)=>{calls++;onProgress({stage:'writing',document_type:'resume'});started();await gate;return {job_id:input.jobId,stage:'complete',documents:[]};});
+ try{
+  const both=await (await f.request('/runs',{job_id:'same',document_type:'both'})).json();await begun;
+  assert.equal((await f.request('/runs',{job_id:'same',document_type:'resume'})).status,409);
+  assert.equal((await f.request('/runs',{job_id:'same',document_type:'coverLetter'})).status,409);
+  const duplicate=await (await f.request('/runs',{job_id:'same',document_type:'both'})).json();assert.equal(duplicate.run_id,both.run_id);
+  const state=await (await f.request('/runs/'+both.run_id)).json();assert.equal(state.document_type,'both');assert.equal(state.current_document_type,'resume');
+  release();await f.runtime.drain();assert.equal(calls,1);
+ }finally{release();await f.cleanup();}
+});
+test('writer scheduler admits two single tasks, but a paired task waits for both slots',async()=>{
+ const scheduler=createWriterScheduler(2),started=[];let releaseA,releaseB;
+ const gateA=new Promise(r=>releaseA=r),gateB=new Promise(r=>releaseB=r);
+ const a=scheduler.schedule(async()=>{started.push('a');await gateA;});
+ const b=scheduler.schedule(async()=>{started.push('b');await gateB;});
+ const both=scheduler.schedule(async()=>{started.push('both');},2);
+ await new Promise(resolve=>setTimeout(resolve,0));assert.deepEqual(started,['a','b']);
+ releaseA();await a;await new Promise(resolve=>setTimeout(resolve,0));assert.deepEqual(started,['a','b']);
+ releaseB();await Promise.all([b,both]);await scheduler.drain();assert.deepEqual(started,['a','b','both']);
+});
+test('unsupported one-worker setting fails before a paired run can reserve state',async()=>{
+ await assert.rejects(createOneClickServer({writerConcurrency:1,runWorkflow:async()=>{},rest:async()=>[],authorizeJob:async()=>{},stateDir:join(tmpdir(),'unused-raven-state')}),/INVALID_WRITER_CONCURRENCY/);
+});
+test('document lock serializes the same document and allows different kinds together',async()=>{
+ const lock=createDocumentLock(),started=[];let release;const gate=new Promise(r=>release=r);
+ const a=lock('job','resume',async()=>{started.push('resume-1');await gate;});
+ const b=lock('job','resume',async()=>{started.push('resume-2');});
+ const c=lock('job','coverLetter',async()=>{started.push('cover');});
+ await c;assert.deepEqual(started,['resume-1','cover']);release();await Promise.all([a,b]);assert.deepEqual(started,['resume-1','cover','resume-2']);
+});
+test('private grant dispatch is isolated across concurrent jobs',async()=>{
+ let grant,maximum=0,active=0;const seen=[];
+ const dispatch=serializePrivateDispatch(async line=>{const job=JSON.parse(line).job;grant=job;active++;maximum=Math.max(maximum,active);await new Promise(resolve=>setTimeout(resolve,0));seen.push([job,grant]);active--;return job;});
+ assert.deepEqual(await Promise.all([dispatch(JSON.stringify({job:'A'})),dispatch(JSON.stringify({job:'B'}))]),['A','B']);
+ assert.deepEqual(seen,[['A','A'],['B','B']]);assert.equal(maximum,1);
 });

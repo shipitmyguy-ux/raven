@@ -19,16 +19,26 @@ export async function prepareRemoteWorker({rest,config,directory}){
   return {url:'https://shipitmyguy-ux.github.io/raven/pair-writer.html#'+token,expires_at:config.expiresAt};
  }};
 }
-export function createRemotePump({rest,remote,submit,getRun,authorizeJob}){
+export function createRemotePump({rest,remote,submit,getRun,authorizeJob,maxConcurrent=2}){
+ if(!Number.isInteger(maxConcurrent)||maxConcurrent<1||maxConcurrent>2)throw Error('INVALID_WRITER_CONCURRENCY');
  let busy=false,stopped=false;
  async function tick(){
   if(busy||stopped)return;busy=true;
   try{
    await remote.heartbeat();
-   const rows=await rest('raven_local_queue?worker_id=eq.'+remote.workerId+'&stage=eq.queued&order=created_at.asc&limit=1');
-   const row=rows[0];if(!row)return;
-   const claim=await rest('raven_local_queue?run_id=eq.'+row.run_id+'&stage=eq.queued',{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({stage:'running'})});
-   if(!claim.length)return;
+   const tasks=[],claimedIds=new Set();
+   for(let slot=0;slot<maxConcurrent;slot++){
+    const rows=await rest('raven_local_queue?worker_id=eq.'+remote.workerId+'&stage=eq.queued&order=created_at.asc&limit=1');
+    const row=rows[0];if(!row||claimedIds.has(row.run_id))break;
+    const claim=await rest('raven_local_queue?run_id=eq.'+row.run_id+'&stage=eq.queued',{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({stage:'running'})});
+    if(!claim.length)break;
+    claimedIds.add(row.run_id);
+    tasks.push(processClaim(row));
+   }
+   await Promise.allSettled(tasks);
+  }finally{busy=false;}
+ }
+ async function processClaim(row){
    const update=body=>rest('raven_local_queue?run_id=eq.'+row.run_id,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(body)});
    try{
     const devices=await rest('raven_local_devices?id=eq.'+row.device_id+'&revoked=eq.false&select=expires_at&limit=1');
@@ -41,8 +51,7 @@ export function createRemotePump({rest,remote,submit,getRun,authorizeJob}){
      await remote.heartbeat();
      await new Promise(r=>setTimeout(r,1500));
     }
-   }catch{await update({stage:'failed',error:'The local writer could not finish. Check its sign-in and grant, then retry to resume safely.'});}
-  }finally{busy=false;}
+   }catch(error){await update({stage:'failed',error:error?.message==='WORK_ALREADY_ACTIVE'?'Another document for this job is already being prepared. Retry after that run finishes.':'The local writer could not finish. Check its sign-in and grant, then retry to resume safely.'});}
  }
  return {tick,stop(){stopped=true;}};
 }

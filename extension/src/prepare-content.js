@@ -20,13 +20,13 @@
     }
     el.textContent = text;
   }
-  function labelFor(el) {
+  function labelFor(el, allowPlaceholder = true) {
     const id = el.id;
     let explicit = null;
     try { explicit = id ? document.querySelector('label[for="' + CSS.escape(id) + '"]') : null; } catch {}
     const described = (el.getAttribute("aria-labelledby") || "").split(/\s+/).filter(Boolean).map(ref => document.getElementById(ref)?.innerText || "").join(" ");
     const primary = [explicit?.innerText, el.closest("label")?.innerText, el.getAttribute("aria-label"), described].find(value => String(value || "").trim());
-    return String(primary || el.getAttribute("placeholder") || "").trim();
+    return String(primary || (allowPlaceholder && el.getAttribute("placeholder")) || "").trim();
   }
   function sensitive(el, label) {
     const metadata = [label, el.name, el.id, el.getAttribute("autocomplete"), el.getAttribute("placeholder"), el.getAttribute("data-testid")].filter(Boolean).join(" ");
@@ -56,18 +56,72 @@
     return true;
   }
   function allFields() { return [...document.querySelectorAll('input:not([type="file"]):not([type="hidden"]),textarea,select')]; }
+  function requiredLabels() {
+    const labels = new Set();
+    const controls = [...document.querySelectorAll('input,textarea,select')];
+    for (const el of controls) {
+      if (!(el.required || el.getAttribute("required") !== null || el.getAttribute("aria-required") === "true")) continue;
+      if (el.disabled || el.closest('[hidden],[aria-hidden="true"]')) continue;
+      const type = String(el.type || "").toLowerCase();
+      if (type === "hidden" || type === "submit" || type === "button") continue;
+      // File controls are often visually hidden behind a styled upload button.
+      if (type !== "file" && typeof el.getClientRects === "function" && el.getClientRects().length === 0) continue;
+      const raw = labelFor(el, false) || el.closest("fieldset")?.querySelector("legend")?.innerText || "";
+      const label = String(raw).replace(/\s+/g, " ").trim().slice(0, 120);
+      if (!label) { labels.add("Unlabeled required field"); continue; }
+      if (type === "radio") {
+        const group = el.closest("fieldset")?.querySelector("legend")?.innerText || label || "Unlabeled required choice";
+        const members = el.form && el.name ? controls.filter(control => control.type === "radio" && control.form === el.form && control.name === el.name) : [el];
+        if (!members.some(control => control.checked)) labels.add(String(group).replace(/\s+/g, " ").trim().slice(0, 120));
+      } else if (type === "checkbox") {
+        if (!el.checked) labels.add(label);
+      } else if (type === "file") {
+        if (!el.files?.length) labels.add(label);
+      } else if (!String(el.value || "").trim()) labels.add(label);
+    }
+    return [...labels];
+  }
+  function inspection(context) {
+    const path = location.pathname.toLowerCase();
+    const text = String(document.body?.innerText || "").slice(0, 10000);
+    if (/\/(?:login|log-in|signin|sign-in|register|signup|sign-up)(?:\/|$)/.test(path) ||
+        document.querySelector('input[type="password"]')) return { status: "blocked", reason: "Application requires sign-in or an account." };
+    if (/\b(?:captcha|verify you are human|two.factor authentication|multi.factor authentication|access denied)\b/i.test(text) ||
+        document.querySelector('[class*="captcha" i],[id*="captcha" i],iframe[src*="recaptcha" i]'))
+      return { status: "blocked", reason: "Application has a challenge or access gate." };
+    if (/\b(?:job is closed|position is closed|no longer accepting applications|job posting has expired|this job is no longer available)\b/i.test(text))
+      return { status: "blocked", reason: "Listing is closed or unavailable." };
+    const pageWords = normalized(text);
+    if (!context?.title || !context?.company ||
+        !pageWords.includes(normalized(context.title)) || !pageWords.includes(normalized(context.company)))
+      return { status: "manual", reason: "Selected job title or company is not visible on the destination. Review the route manually." };
+    if (/(^|\.)ingamejob\.com$/i.test(location.hostname))
+      return { status: "manual", reason: "This listing does not expose a verified application form. Open its application route manually." };
+    const adapter = core.detectAdapter(location.hostname);
+    const fields = allFields();
+    const profileCount = Object.keys(profileTerms).filter(key => candidateFor(adapter, key, fields)).length;
+    const knownFile = fileCandidate(adapter, "resume") || fileCandidate(adapter, "coverLetter");
+    const known = knownFile || profileCount >= (adapter.id === "generic" ? 2 : 1);
+    return known ? { status: "ready" } : { status: "manual", reason: "No recognized application controls. Open the application route manually, then retry Prepare." };
+  }
   function valueFor(profile, key) { return key === "fullName" ? profile.fullName || [profile.firstName, profile.lastName].filter(Boolean).join(" ") : profile[key] || ""; }
   function matchesTerms(el, terms) {
-    const label = normalized(labelFor(el));
+    const label = normalized(labelFor(el, false));
     if (terms === profileTerms.fullName) return label === "name" || label === "full name";
     if (terms === profileTerms.address1 && /\b(address line 2|apartment|suite)\b/.test(label)) return false;
     return label && terms.some(term => label.includes(normalized(term)));
   }
   function candidateFor(adapter, key, fields) {
-    for (const selector of core.selectorsFor(adapter, "profile", key)) {
+    for (const selector of adapter?.id !== "generic" ? (adapter?.profile?.[key] || []) : []) {
       try {
         const el = document.querySelector(selector);
         if (el && fields.includes(el) && safeControl(el) && !sensitive(el, labelFor(el))) return el;
+      } catch {}
+    }
+    for (const selector of core.GENERIC.profile?.[key] || []) {
+      try {
+        const el = document.querySelector(selector);
+        if (el && fields.includes(el) && safeControl(el) && !sensitive(el, labelFor(el)) && matchesTerms(el, profileTerms[key])) return el;
       } catch {}
     }
     return fields.find(el => safeControl(el) && !sensitive(el, labelFor(el)) && matchesTerms(el, profileTerms[key])) || null;
@@ -75,7 +129,7 @@
   function isExcludedUpload(el) { return /\b(autofill|auto fill|import from|parse resume)\b/i.test(labelFor(el)) || sensitive(el, labelFor(el)); }
   function fileCandidate(adapter, key) {
     const fields = [...document.querySelectorAll('input[type="file"]')];
-    for (const selector of core.selectorsFor(adapter, "files", key)) {
+    for (const selector of adapter?.id !== "generic" ? (adapter?.files?.[key] || []) : []) {
       try {
         const matches = document.querySelectorAll(selector);
         for (const el of matches) {
@@ -125,12 +179,13 @@
     const fields = allFields();
     const used = new Set();
     const filled = [];
-    const missing = [];
+    const requested = new Set();
     for (const key of Object.keys(profileTerms)) {
       const value = valueFor(packet.profile || {}, key);
       if (!value) continue;
       const el = candidateFor(adapter, key, fields);
-      if (!el || !safeControl(el) || sensitive(el, labelFor(el))) { missing.push(key); continue; }
+      if (!el || !safeControl(el) || sensitive(el, labelFor(el))) continue;
+      requested.add(key);
       if (used.has(el) || !setValue(el, value)) continue;
       used.add(el); filled.push(key);
     }
@@ -139,43 +194,55 @@
       const label = labelFor(el);
       if (!safeControl(el) || sensitive(el, label)) continue;
       const answer = packet.answers?.[normalized(label)];
-      if (answer == null || !String(answer).trim() || !Object.values(profileTerms).some(terms => terms.some(term => normalized(label).includes(normalized(term))))) continue;
+      if (answer == null || !String(answer).trim() || !Object.values(profileTerms).some(terms => terms.some(term => normalized(label) === normalized(term)))) continue;
       if (setValue(el, answer)) filled.push("remembered answer");
     }
     const attached = [];
     const selected = [];
-    const missingFiles = [];
+    const notRequested = [];
     const [resumeResult, coverResult] = await Promise.all([attach(packet, "resume"), attach(packet, "coverLetter")]);
     for (const [key, value] of [["resume", resumeResult], ["coverLetter", coverResult]]) {
       if (value.accepted) attached.push(key);
       if (value.selected) selected.push(key);
-      if (!value.selected) missingFiles.push(key);
+      if (!fileCandidate(adapter, key)) notRequested.push(key);
     }
-    if (filled.includes("fullName")) {
-      for (const key of ["firstName", "lastName"]) { const index = missing.indexOf(key); if (index >= 0) missing.splice(index, 1); }
-    }
-    const result = { filled, attached, selected, missing: [...missing, ...missingFiles] };
+    for (const key of Object.keys(profileTerms)) if (!requested.has(key) && !candidateFor(adapter, key, fields)) notRequested.push(key);
+    const selectedUnconfirmed = selected.filter(key => !attached.includes(key));
+    const requiredUnanswered = requiredLabels();
+    const result = { filled, attached, selected, selectedUnconfirmed, notRequested, requiredUnanswered };
     const filledText = filled.length ? filled.join(", ") : "none";
     const attachedText = attached.length ? attached.join(", ") : "none confirmed";
-    const unconfirmedText = selected.some(key => !attached.includes(key)) ? " Selected, upload not confirmed: " + selected.filter(key => !attached.includes(key)).join(", ") + "." : "";
-    const missingText = result.missing.length ? " Missing: " + [...new Set(result.missing)].join(", ") + "." : "";
-    banner("Raven prepared this application. Fields filled: " + filledText + ". PDFs accepted by form: " + attachedText + "." + unconfirmedText + " Review every field and attachment, then submit manually." + missingText);
+    const unconfirmedText = selectedUnconfirmed.length ? " Selected, upload not confirmed: " + selectedUnconfirmed.join(", ") + "." : "";
+    const requiredText = requiredUnanswered.length ? " Required fields for you: " + requiredUnanswered.join(", ") + "." : "";
+    const absentDocuments = notRequested.filter(key => key === "resume" || key === "coverLetter");
+    const absentText = absentDocuments.length ? " No upload field for: " + absentDocuments.map(key => key === "coverLetter" ? "cover letter" : "resume").join(", ") + "." : "";
+    banner("Raven prepared this application. Fields filled: " + filledText + ". PDFs accepted by form: " + attachedText + "." + unconfirmedText + requiredText + absentText + " Review every field and attachment, then submit manually.");
     chrome.runtime.sendMessage({ type: "raven-prepare-result", result });
   }
-  const adapter = core.detectAdapter(location.hostname);
   if (location.protocol !== "https:") return;
-  chrome.runtime.sendMessage({ type: "raven-prepare-ready", url: location.href }, response => {
+  let delivered = false;
+  chrome.runtime.onMessage.addListener((message, sender, respond) => {
+    if (message?.type !== "raven-prepare-deliver") return false;
+    if (delivered || !message.packet || message.packet.version !== 2 || message.packet.mode !== "prepare" ||
+        !message.preflightId || !message.expectedUrl) { respond({ accepted: false }); return false; }
+    try {
+      const here = new URL(location.href), expected = new URL(message.expectedUrl);
+      here.hash = expected.hash = "";
+      if (here.href !== expected.href || inspection({ title: message.packet.title, company: message.packet.company }).status !== "ready") { respond({ accepted: false }); return false; }
+    } catch { respond({ accepted: false }); return false; }
+    delivered = true;
+    respond({ accepted: true });
+    void run(message.packet);
+    return false;
+  });
+  const deadline = Date.now() + 10000;
+  const inspectWhenReady = context => {
+    const result = inspection(context);
+    if (result.status === "manual" && Date.now() < deadline) return setTimeout(() => inspectWhenReady(context), 250);
+    chrome.runtime.sendMessage({ type: "raven-preflight-result", url: location.href, ...result }, () => void chrome.runtime.lastError);
+  };
+  chrome.runtime.sendMessage({ type: "raven-preflight-context", url: location.href }, context => {
     void chrome.runtime.lastError;
-    if (!response?.packet || response.packet.version !== 2 || response.packet.mode !== "prepare") return;
-    const deadline = Date.now() + 10_000;
-    const waitForForm = () => {
-      const fields = allFields();
-      const foundProfile = Object.keys(profileTerms).some(key => candidateFor(adapter, key, fields));
-      const foundUpload = fileCandidate(adapter, "resume") || fileCandidate(adapter, "coverLetter");
-      if (foundProfile || foundUpload) return run(response.packet);
-      if (Date.now() < deadline) return setTimeout(waitForForm, 250);
-      run(response.packet);
-    };
-    waitForForm();
+    if (context) inspectWhenReady(context);
   });
 })();
