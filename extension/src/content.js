@@ -25,6 +25,24 @@
   }
 
   if(location.hostname===RAVEN_HOST){
+    const prepareBridge=document.getElementById("ravenExtensionBridge");
+    if(prepareBridge){
+      prepareBridge.dataset.prepareCapability="1";
+      prepareBridge.dispatchEvent(new CustomEvent("raven-prepare-capability"));
+      prepareBridge.addEventListener("raven-prepare-probe",()=>{
+        prepareBridge.dataset.prepareCapability="1";
+        prepareBridge.dispatchEvent(new CustomEvent("raven-prepare-capability"));
+      });
+      prepareBridge.addEventListener("raven-prepare-application",()=>{
+        let request;
+        try{request=JSON.parse(prepareBridge.dataset.prepareRequest||"");}catch{return;}
+        chrome.runtime.sendMessage({type:"raven-prepare-application",...request},response=>{
+          const error=chrome.runtime.lastError;
+          prepareBridge.dataset.prepareResponse=JSON.stringify(response||{requestId:request.requestId,ok:false,error:error?.message||"Extension did not respond."});
+          prepareBridge.dispatchEvent(new CustomEvent("raven-prepare-response"));
+        });
+      });
+    }
     document.addEventListener("raven-chatgpt-request",()=>{
       const value=document.getElementById("ravenExtensionBridge")?.dataset.chatgptRequest;
       try{chrome.runtime.sendMessage({type:"raven-chatgpt-request",...JSON.parse(value)},()=>void chrome.runtime.lastError);}catch{}
@@ -52,6 +70,7 @@
       if(!bridge?.dataset.packet) return;
       try{
         const packet=JSON.parse(bridge.dataset.packet);
+        if(packet?.version!==1||packet?.mode==="prepare")return;
         chrome.storage.local.set({[PACKET_KEY]:packet},()=>banner("Raven application packet sent to extension."));
       }catch{}
     });
@@ -264,9 +283,12 @@
   }
 
   chrome.storage.local.get([PACKET_KEY,SESSION_KEY],async(values)=>{
+    chrome.runtime.sendMessage({type:"raven-prepare-status"},status=>{
+    void chrome.runtime.lastError;
+    if(status?.prepared)return;
     let session=values[SESSION_KEY]||null;
     const packet=values[PACKET_KEY];
-    if(packet?.jobUrl){
+    if(packet?.version===1&&packet?.jobUrl){
       let target;
       try{target=new URL(packet.jobUrl);}catch{target=null;}
       const age=Date.now()-Date.parse(packet.createdAt||0);
@@ -291,5 +313,6 @@
       }
     }
     watchCompletion(session);
+    });
   });
 })();

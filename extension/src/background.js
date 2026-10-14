@@ -1,5 +1,6 @@
 const RAVEN_URL = "https://shipitmyguy-ux.github.io/raven/";
 const RAVEN_MATCH = "https://shipitmyguy-ux.github.io/raven/*";
+importScripts("prepare-background.js");
 
 const trustedRaven=sender=>sender?.tab?.url?.startsWith(RAVEN_URL);
 let transferQueue=Promise.resolve();

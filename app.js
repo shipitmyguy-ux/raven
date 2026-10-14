@@ -1300,6 +1300,9 @@
             expanded.querySelectorAll("[data-generate-both]").forEach(button=>{
               button.addEventListener("click",event=>{event.stopPropagation();generateBothForJob(job);});
             });
+            expanded.querySelectorAll("[data-prepare-application]").forEach(button=>{
+              button.addEventListener("click",event=>{event.stopPropagation();prepareApplication(job,button);});
+            });
             expanded.querySelectorAll("[data-chatgpt-prompt]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
@@ -1507,6 +1510,7 @@
     const lifecycleControl='<div class="job-lifecycle-row"><label class="lifecycle-control"><span>Status</span><select data-lifecycle-status aria-label="Job status">'+lifecycleOptions+'</select></label>'+
       followUpControl+(nextAction?'<span class="next-action">'+escapeHtml(nextAction)+'</span>':'')+'</div>';
     const docsReady=documentsReadyForApplication(job);
+    const prepareBusy=activeApplicationPrepares.has(String(job.id||job.url));
     const bothBusy=oneClickSession(job,"both");
     const generateBoth=(!job.resume||!job.coverLetter)&&featureEnabled("resume-generation")&&featureEnabled("cover-letter-generation")
       ? '<button class="workflow-action" type="button" data-generate-both'+(generationSession(job)||bothBusy?' disabled aria-busy="true"':'')+'><span>'+(bothBusy?escapeHtml(bothBusy.label):generationSession(job)?'Creating documents…':job.resume||job.coverLetter?'Finish documents':'Generate both')+'</span></button>':"";
@@ -1517,6 +1521,9 @@
     const statusLower=currentStatus.toLowerCase();
     const postApplication=["applied","interview","offer","rejected"].includes(statusLower);
     const applyGate=job.url&&job.listing_state!=="closed"&&!postApplication?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply aria-label="Open application with approved documents" title="'+(docsReady?'Open application':'Approve resume and cover letter first')+'"><span class="workflow-icon" aria-hidden="true">↗</span><span>'+(docsReady?'Apply with docs':'Approve docs')+'</span></button>':"";
+    const isAppliedJob=statusLower==="applied";
+    const prepareAction=state.runtime?.settings?.["chatgpt-one-click"]===true&&job.url&&job.listing_state!=="closed"&&statusLower!=="closed"&&(!postApplication||isAppliedJob)
+      ? '<button class="workflow-action" type="button" data-prepare-application'+(prepareBusy?' disabled aria-busy="true"':'')+'><span>'+(prepareBusy?'Preparing application…':isAppliedJob?'Prepare again for review':'Prepare application')+'</span></button>':"";
     const appliedAction=!["interview","offer","rejected","ignored"].includes(statusLower)?'<button class="workflow-action'+(isApplied?' is-applied':'')+'" type="button" data-apply-status="'+(isApplied?'saved':'applied')+'" aria-pressed="'+String(isApplied)+'" aria-label="'+(isApplied?'Unmark as applied':'Mark as applied')+'" title="'+(isApplied?'Unmark as applied':'Mark as applied')+'"><span class="workflow-icon" aria-hidden="true">✓</span><span>Applied</span></button>':"";
     const postingUrl=/^https?:\/\//i.test(String(job.url||""))?job.url:"";
     const actions=postingUrl
@@ -1536,7 +1543,7 @@
       '</section>'+
       '<dl>'+detailHtml+'</dl>'+
       '<div class="detail-actions">'+
-        '<div class="workflow-actions" aria-label="Application actions">'+generateBoth+chatGptBoth+actions+applyGate+appliedAction+'</div>'+
+        '<div class="workflow-actions" aria-label="Application actions">'+generateBoth+chatGptBoth+actions+prepareAction+applyGate+appliedAction+'</div>'+
       '</div>'+
       renderCoverage(job)+
       renderJobActivity(job)+
@@ -1743,6 +1750,7 @@
   }
 
   async function generateBothForJob(job){
+    if(activeApplicationPrepares.has(String(job.id||job.url))){setStatus("This application is being prepared. Wait for it to finish before generating documents.");return;}
     if(state.runtime?.settings?.["chatgpt-one-click"]===true)return generateOneClick(job,"both",null);
     if(generationSession(job))return;
     const missing=["resume","coverLetter"].filter(type=>!job[type]);
@@ -1774,6 +1782,7 @@
   }
 
   async function generateForJob(job,type,button=null,options={}) {
+    if(activeApplicationPrepares.has(String(job.id||job.url))){setStatus("This application is being prepared. Wait for it to finish before generating documents.");return;}
     if(state.runtime?.settings?.["chatgpt-one-click"]===true&&!options.force){
       if(job[type])return openDocumentReview(job,type);
       return generateOneClick(job,type,button,{autoOpen:options.autoOpen!==false});
@@ -1937,35 +1946,45 @@
   }
 
   const activeOneClickJobs=new Map();
+  const activeApplicationPrepares=new Map();
+  let localPreparationClient;
   function oneClickSession(job,type){
     const key=String(job.id||job.url);
     return type==="both"?(activeOneClickJobs.get(key+":resume")||activeOneClickJobs.get(key+":coverLetter")):activeOneClickJobs.get(key+":"+type);
   }
   let oneClickClient;
-  async function generateOneClick(job,type,button,{autoOpen=true}={}){
+  async function generateOneClick(job,type,button,{autoOpen=true,propagateErrors=false,forceLocal=false}={}){
     let key=String(job.id||job.url);
     const kinds=type==="both"?["resume","coverLetter"]:[type];
     if(kinds.some(kind=>activeOneClickJobs.has(key+":"+kind))){setStatus("This document is already queued or being generated. The other document can be queued separately.");return;}
     const session={label:"Preparing…",autoOpen:autoOpen&&state.selectedId===job.id};
     kinds.forEach(kind=>activeOneClickJobs.set(key+":"+kind,session));
     try{
+      let client=oneClickClient;
       setGenerationButton(button,true,"Preparing…");
       render();
       setStatus("Preparing your job for one-click generation…");
       await prepareJobForGeneration(job);
       const savedKey=String(job.id||job.url);
       if(savedKey!==key){kinds.forEach(kind=>{activeOneClickJobs.delete(key+":"+kind);activeOneClickJobs.set(savedKey+":"+kind,session);});key=savedKey;}
-      if(!oneClickClient){
+      if(forceLocal){
+        if(!localPreparationClient){
+          const {createOneClickClient}=await import("./oneclick-client.mjs?v=2");
+          localPreparationClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
+        }
+        client=localPreparationClient;
+      }else if(!oneClickClient){
         const {PAIR_KEY,createRemoteWriterClient}=await import("./remote-writer-client.mjs?v=1");
         const pairedToken=localStorage.getItem(PAIR_KEY);
         if(pairedToken)oneClickClient=createRemoteWriterClient({token:pairedToken});
         else{
-          const {createOneClickClient}=await import("./oneclick-client.mjs?v=1");
+          const {createOneClickClient}=await import("./oneclick-client.mjs?v=2");
           oneClickClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
         }
       }
       const labels={offline:"Queued · waiting for your computer to come online…",queued:"Queued · waiting for writer…",writing:"Writing from verified facts…",saving:"Saving in Raven…",pdf:"Creating PDF…",uploading:"Saving PDF to Drive…",recording:"Confirming saved links…",complete:"Verifying saved documents…"};
-      const result=await oneClickClient.run({job_id:String(job.id),document_type:type},stage=>{
+      client=client||oneClickClient;
+      const result=await client.run({job_id:String(job.id),document_type:type},stage=>{
         session.label=labels[stage]||"Generating…";render();setStatus(session.label);
       });
       // Read the canonical data directly: loadJobs deliberately tolerates offline
@@ -1977,8 +1996,37 @@
       await loadJobActivity(saved,true);render();
       setStatus(result.documents.some(doc=>doc.reused_existing)?"Existing Raven document preserved and copied to Drive · review required":"Saved in Raven and copied to Drive · review required");
       if(session.autoOpen&&state.selectedId===saved.id&&!document.querySelector("dialog[open]"))await openDocumentReview(saved,type==="both"?"resume":type);
-    }catch(error){setStatus("One-click generation: "+error.message);}
+      return {job:saved,result};
+    }catch(error){setStatus("One-click generation: "+error.message);if(propagateErrors)throw error;}
     finally{kinds.forEach(kind=>activeOneClickJobs.delete(key+":"+kind));setGenerationButton(button,false);render();}
+  }
+  async function prepareApplication(job,button){
+    const key=String(job.id||job.url);
+    if(activeApplicationPrepares.has(key)||activeOneClickJobs.has(key+":resume")||activeOneClickJobs.has(key+":coverLetter")){setStatus("This job is already being prepared or generated. Wait for it to finish, then try again.");return;}
+    const busy={label:"Preparing application…"};activeApplicationPrepares.set(key,busy);
+    try{
+      const {probePreparationExtension,dispatchPreparedApplication}=await import("./application-prepare.mjs?v=1");
+      await probePreparationExtension();
+      if(!localPreparationClient){
+        const {createOneClickClient}=await import("./oneclick-client.mjs?v=2");
+        localPreparationClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
+      }
+      await localPreparationClient.ensureApplicationPreparation();
+      setStatus("Preparing saved resume and cover letter…");
+      let {job:saved,result}=await generateOneClick(job,"both",button,{autoOpen:false,propagateErrors:true,forceLocal:true});
+      const expected=new Map(result.documents.map(doc=>[doc.document_type,doc]));
+      if(!expected.has("resume")||!expected.has("coverLetter"))throw Error("Raven could not confirm both saved documents.");
+      const freshJobs=normalizeJobs(await window.RavenAPI.listJobs());
+      const canonical=freshJobs.find(item=>String(item.id)===String(job.id));
+      if(!canonical||expected.get("resume").document_url!==canonical.resume||expected.get("coverLetter").document_url!==canonical.coverLetter)throw Error("The saved documents changed before preparation. Refresh Raven and try again.");
+      const prepared=await localPreparationClient.prepareApplicationDocuments({job_id:String(job.id),documents:["resume","coverLetter"].map(type=>({document_type:type,document_sha256:expected.get(type).document_sha256}))});
+      const packet={version:2,mode:"prepare",createdAt:new Date().toISOString(),jobId:String(job.id),jobUrl:canonical.url||"",title:canonical.title||"",company:canonical.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory()};
+      for(const doc of prepared.documents)packet[doc.document_type==="resume"?"resume":"coverLetter"]=doc.data_url;
+      if(typeof packet.resume!=="string"||typeof packet.coverLetter!=="string")throw Error("The writer did not return both verified PDFs.");
+      await dispatchPreparedApplication(packet);
+      setStatus("Application opened for preparation—review fields and attachments in Chrome");
+    }catch(error){setStatus("Prepare application: "+(error?.message||"Unexpected error"));}
+    finally{activeApplicationPrepares.delete(key);setGenerationButton(button,false);render();}
   }
   async function launchChatGptPrompt(job,type,button=null){
     if(state.runtime.settings["chatgpt-one-click"]===true)return generateOneClick(job,type,button);
@@ -2611,6 +2659,9 @@
     const fileLabel=String(label||"file").toLowerCase();
     const generating=generationSession(job);
     const oneClickBusy=oneClickSession(job,key);
+    if(activeApplicationPrepares.has(String(job.id||job.url))){
+      return '<span class="document-control is-empty is-generating"><button class="document-primary is-generating" type="button" disabled aria-busy="true" data-generate="'+escapeAttr(key)+'"><span class="generation-spinner" aria-hidden="true"></span><span>Preparing application…</span></button></span>';
+    }
     if(oneClickBusy){
       return '<span class="document-control is-empty is-generating"><button class="document-primary is-generating" type="button" disabled aria-busy="true" data-generate="'+escapeAttr(key)+'"><span class="generation-spinner" aria-hidden="true"></span><span>'+escapeHtml(oneClickBusy.label)+'</span></button></span>';
     }

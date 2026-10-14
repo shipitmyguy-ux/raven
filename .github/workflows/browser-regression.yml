@@ -5,6 +5,7 @@ on:
     paths:
       - "app.js"
       - "oneclick-client.mjs"
+      - "application-prepare.mjs"
       - "document-revision.mjs"
       - "index.html"
       - "raven-api.js"
@@ -20,6 +21,7 @@ on:
     paths:
       - "app.js"
       - "oneclick-client.mjs"
+      - "application-prepare.mjs"
       - "document-revision.mjs"
       - "index.html"
       - "raven-api.js"

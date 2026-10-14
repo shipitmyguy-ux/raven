@@ -55,3 +55,6 @@ When the user types `d`, interpret it as “do it” for the current proposed ac
 
 ## Reaffirmed push authorization (2026-10-11)
 The user explicitly stated: “Standing order: you never ever need confirmation to push.” Routine Raven pushes are authorized without another confirmation. This instruction does not authorize unrelated destructive actions.
+
+## Worker model selection (2026-10-14)
+The user authorizes automatic model selection when assigning worker agents. Prefer lower-cost models for routine implementation and checks; use stronger models when task complexity or debugging warrants them. This does not itself authorize delegation for otherwise unrelated tasks.
