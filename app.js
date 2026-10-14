@@ -1716,6 +1716,11 @@
         if(!saved?.id) throw new Error("The job could not be saved. Please retry.");
         const normalized=window.RavenCore?.fromApiJob?window.RavenCore.fromApiJob(saved):saved;
         Object.assign(job,normalized,{_discovered:false});
+        const previousPrepareKey=String(previousId||job.url),savedPrepareKey=String(job.id||job.url);
+        if(previousPrepareKey!==savedPrepareKey&&activeApplicationPrepares.has(previousPrepareKey)){
+          activeApplicationPrepares.set(savedPrepareKey,activeApplicationPrepares.get(previousPrepareKey));
+          activeApplicationPrepares.delete(previousPrepareKey);
+        }
         const session=activeGeneration.get(String(previousId));
         if(session){
           activeGeneration.delete(String(previousId));
@@ -2001,7 +2006,7 @@
     finally{kinds.forEach(kind=>activeOneClickJobs.delete(key+":"+kind));setGenerationButton(button,false);render();}
   }
   async function prepareApplication(job,button){
-    const key=String(job.id||job.url);
+    let key=String(job.id||job.url);
     if(activeApplicationPrepares.has(key)||activeOneClickJobs.has(key+":resume")||activeOneClickJobs.has(key+":coverLetter")){setStatus("This job is already being prepared or generated. Wait for it to finish, then try again.");return;}
     const busy={label:"Preparing application…"};activeApplicationPrepares.set(key,busy);
     try{
@@ -2014,6 +2019,7 @@
       await localPreparationClient.ensureApplicationPreparation();
       setStatus("Preparing saved resume and cover letter…");
       let {job:saved,result}=await generateOneClick(job,"both",button,{autoOpen:false,propagateErrors:true,forceLocal:true});
+      key=String(saved.id||saved.url);
       const expected=new Map(result.documents.map(doc=>[doc.document_type,doc]));
       if(!expected.has("resume")||!expected.has("coverLetter"))throw Error("Raven could not confirm both saved documents.");
       const freshJobs=normalizeJobs(await window.RavenAPI.listJobs());
@@ -2026,7 +2032,10 @@
       await dispatchPreparedApplication(packet);
       setStatus("Application opened for preparation—review fields and attachments in Chrome");
     }catch(error){setStatus("Prepare application: "+(error?.message||"Unexpected error"));}
-    finally{activeApplicationPrepares.delete(key);setGenerationButton(button,false);render();}
+    finally{
+      for(const [activeKey,active] of activeApplicationPrepares)if(active===busy)activeApplicationPrepares.delete(activeKey);
+      setGenerationButton(button,false);render();
+    }
   }
   async function launchChatGptPrompt(job,type,button=null){
     if(state.runtime.settings["chatgpt-one-click"]===true)return generateOneClick(job,type,button);

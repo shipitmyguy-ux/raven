@@ -6,13 +6,14 @@ const savedJob={id:"job-1",track:"Professional",title:"Implementation Project Ma
 const generatedResume={name:"Test Candidate",headline:"Project & Implementation Leader",contact:"candidate@example.com",summary:"Experienced delivery leader.",skills:["Project delivery","Team leadership"],experience:[{role:"Environment Artist",company:"Example Studio",dates:"2020–2025",bullets:["Led delivery across internal teams."]}],education:[{degree:"Bachelor's Degree",school:"Example University",location:"",dates:""}],additional:[]};
 const generatedLetter={greeting:"Dear Hiring Manager,",paragraphs:["I am applying for the Implementation Project Manager role.","My background includes project delivery and internal team leadership."],closing:"Sincerely,",signature:"Test Candidate"};
 
-async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJob=null,dataDelayMs=0,discoveredJob=null,availabilityResponse=null}={}){
+async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJob=null,dataDelayMs=0,discoveredJob=null,availabilityResponse=null,savedDiscoveryId=null}={}){
   // These fixtures exercise the remote-provider workflow. One-click cases
   // explicitly override this route and install their own helper fixtures.
   await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=false;await route.fulfill({json:config});});
   let job={...savedJob,...(initialJob||{})};
   let persisted=!discoveredJob;
   let generationCalls=0;
+  let addJobCalls=0;
   const generationBodies=[];
   const searchTracks=[];
   const listTracks=[];
@@ -71,8 +72,9 @@ async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJo
       return route.fulfill({json:{...job,ok:true}});
     }
     if(action==="addJob"){
+      addJobCalls++;
       persisted=true;
-      job={...job,...body,id:body.id||job.id||"job-added"};delete job.action;
+      job={...job,...body,id:body.id||savedDiscoveryId||job.id||"job-added"};delete job.action;
       return route.fulfill({json:{...job,ok:true}});
     }
     if(action==="transitionJob"){
@@ -145,6 +147,7 @@ async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJo
   });
   return {
     getJob:()=>job,
+    getAddJobCalls:()=>addJobCalls,
     getGenerationCalls:()=>generationCalls,
     getGenerationBodies:()=>generationBodies.slice(),
     getSearchTracks:()=>searchTracks.slice(),
@@ -1266,6 +1269,41 @@ test("generators save discovery jobs and recover descriptions before generating 
   await page.locator(".job-card-summary").first().click();
   await expect(page.locator('[data-generate="resume"]')).toHaveText("Review");
   await expect(page.locator('[data-generate="coverLetter"]')).toHaveText("Review");
+});
+
+test("application preparation reservation follows a discovered job when it receives its saved id",async({page})=>{
+ let releaseDescription;
+ const descriptionGate=new Promise(resolve=>{releaseDescription=resolve;});
+ const discovery={id:"DISC-prepare-race",track:"Professional",title:savedJob.title,company:savedJob.company,location:"Remote",remote:true,url:savedJob.url,source:"Mock",snippet:""};
+ const api=await mockRaven(page,{discoveredJob:discovery,savedDiscoveryId:"JT-prepare-race"});
+ let descriptionCalls=0;
+ await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=true;await route.fulfill({json:config});});
+ await page.route('**/functions/v1/raven-enrich-v1**',async route=>{
+  descriptionCalls++;
+  await descriptionGate;
+  await route.fulfill({status:503,json:{ok:false,error:"fixture stopped before generation"}});
+ });
+ await page.route('http://127.0.0.1:8766/**',route=>route.fulfill({json:{application_prepare_supported:true}}));
+ await page.addInitScript(()=>{
+  const attach=bridge=>{
+   bridge.addEventListener('raven-prepare-probe',()=>{bridge.dataset.prepareCapability='1';bridge.dispatchEvent(new Event('raven-prepare-capability'));});
+  };
+  const observer=new MutationObserver(()=>{const bridge=document.getElementById('ravenExtensionBridge');if(bridge){observer.disconnect();attach(bridge);}});observer.observe(document,{childList:true,subtree:true});
+ });
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+ await page.locator('[data-prepare-application]').click();
+ await expect.poll(()=>api.getJob().id).toBe("JT-prepare-race");
+ await expect.poll(()=>descriptionCalls).toBe(1);
+ // Collapse/reopen forces a render from the saved ID. The live reservation must
+ // still disable the control while the original preparation is waiting.
+ await page.locator('.job-card-summary').first().click();
+ await page.locator('.job-card-summary').first().click();
+ await expect(page.locator('[data-prepare-application]')).toBeDisabled();
+ expect(api.getAddJobCalls()).toBe(1);expect(descriptionCalls).toBe(1);
+ releaseDescription();
+ await expect(page.locator('#syncStatus')).toContainText('fixture stopped before generation');
+ await expect(page.locator('[data-prepare-application]')).toBeEnabled();
+ expect(api.getAddJobCalls()).toBe(1);expect(descriptionCalls).toBe(1);
 });
 
 for (const track of ["Games / 3D", "Professional", "Labor", "Wildcard"]) {
