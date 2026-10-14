@@ -826,7 +826,7 @@ test('both reserves each document and overlapping duplicate requests show visibl
  // A stale control event cannot bypass the reservation, even if delivered after re-render.
  await page.evaluate(()=>{window.staleResume.click();window.staleBoth.click();});
  await expect(page.locator('#syncStatus')).toContainText('already queued or being generated');
- expect(helper.requests).toHaveLength(1);helper.release();await expect(page.locator('#syncStatus')).toContainText('copied to Drive');expect(helper.requests).toHaveLength(1);
+ await expect.poll(()=>helper.requests.length).toBe(1);helper.release();await expect(page.locator('#syncStatus')).toContainText('copied to Drive');expect(helper.requests).toHaveLength(1);
 });
 
 test('one-click completion does not open review after the user leaves the job',async({page})=>{
