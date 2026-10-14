@@ -104,7 +104,7 @@
     const input = fileCandidate(core.detectAdapter(location.hostname), key);
     if (!input || input.files?.length || !core.acceptsFile(input.accept, file.name, file.type)) return { accepted: false, selected: false };
     try {
-      const container = input.closest("[data-testid],.ashby-application-form,.application-form") || input.parentElement;
+      const container = input.closest(".ashby-file-upload,.file-upload,.upload-field,[data-testid*='resume' i],[data-testid*='cover' i]") || input.parentElement;
       const transfer = new DataTransfer(); transfer.items.add(file); input.files = transfer.files;
       input.dispatchEvent(new Event("input", { bubbles: true })); input.dispatchEvent(new Event("change", { bubbles: true }));
       const selected = [...(input.files || [])].some(attached => attached.name === file.name && attached.type === "application/pdf");
