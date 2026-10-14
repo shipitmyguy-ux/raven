@@ -1,17 +1,19 @@
 import { test, expect } from "@playwright/test";
+import { createHash } from "node:crypto";
 import { classifyApplicationMessage } from "../supabase/functions/raven-backend-v3/signal-classifier.mjs";
 
 const savedJob={id:"job-1",track:"Professional",title:"Implementation Project Manager",company:"Acme Health",location:"Remote",remote:true,salary_text:"$90,000",url:"https://example.com/job/1?utm_source=test",source:"Mock",status:"Saved",notes:"Lead implementation projects, coordinate internal teams, manage schedules and stakeholder communication.",added:new Date().toISOString(),resume:"",cover_letter:""};
 const generatedResume={name:"Test Candidate",headline:"Project & Implementation Leader",contact:"candidate@example.com",summary:"Experienced delivery leader.",skills:["Project delivery","Team leadership"],experience:[{role:"Environment Artist",company:"Example Studio",dates:"2020–2025",bullets:["Led delivery across internal teams."]}],education:[{degree:"Bachelor's Degree",school:"Example University",location:"",dates:""}],additional:[]};
 const generatedLetter={greeting:"Dear Hiring Manager,",paragraphs:["I am applying for the Implementation Project Manager role.","My background includes project delivery and internal team leadership."],closing:"Sincerely,",signature:"Test Candidate"};
 
-async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJob=null,dataDelayMs=0,discoveredJob=null,availabilityResponse=null}={}){
+async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJob=null,dataDelayMs=0,discoveredJob=null,availabilityResponse=null,savedDiscoveryId=null}={}){
   // These fixtures exercise the remote-provider workflow. One-click cases
   // explicitly override this route and install their own helper fixtures.
   await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=false;await route.fulfill({json:config});});
   let job={...savedJob,...(initialJob||{})};
   let persisted=!discoveredJob;
   let generationCalls=0;
+  let addJobCalls=0;
   const generationBodies=[];
   const searchTracks=[];
   const listTracks=[];
@@ -70,8 +72,9 @@ async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJo
       return route.fulfill({json:{...job,ok:true}});
     }
     if(action==="addJob"){
+      addJobCalls++;
       persisted=true;
-      job={...job,...body,id:body.id||job.id||"job-added"};delete job.action;
+      job={...job,...body,id:body.id||savedDiscoveryId||job.id||"job-added"};delete job.action;
       return route.fulfill({json:{...job,ok:true}});
     }
     if(action==="transitionJob"){
@@ -144,6 +147,7 @@ async function mockRaven(page,{generatorFails=false,generatorDelayMs=0,initialJo
   });
   return {
     getJob:()=>job,
+    getAddJobCalls:()=>addJobCalls,
     getGenerationCalls:()=>generationCalls,
     getGenerationBodies:()=>generationBodies.slice(),
     getSearchTracks:()=>searchTracks.slice(),
@@ -821,6 +825,51 @@ test('one-click stopped helper reports recovery action without opening ChatGPT o
   await expect(page.locator('[data-chatgpt-prompt="resume"]')).not.toHaveAttribute('aria-busy','true');
 });
 
+test('Prepare application opens verified attachments for an Applied job without changing its status',async({page})=>{
+ const api=await mockRaven(page,{initialJob:{...savedJob,status:'Applied',resume:'',cover_letter:''}});
+ const htmlResume='data:text/html;charset=utf-8,'+encodeURIComponent('<html><body><h1>Verified resume</h1></body></html>');
+ const htmlCover='data:text/html;charset=utf-8,'+encodeURIComponent('<html><body><p>Verified cover letter</p></body></html>');
+ const runId='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',pdf=Buffer.from('%PDF-1.4\nfixture\n%%EOF'),pdfHash=createHash('sha256').update(pdf).digest('hex');
+ let runCalls=0,documentCalls=0;
+ await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=true;await route.fulfill({json:config});});
+ await page.route('http://127.0.0.1:8766/**',async route=>{
+  const path=new URL(route.request().url()).pathname;
+  if(path==='/health')return route.fulfill({json:{application_prepare_supported:true}});
+  if(path==='/session')return route.fulfill({json:{token:'fixture-token'}});
+  expect(route.request().headers().authorization).toBe('Bearer fixture-token');
+  if(path==='/runs'){
+   runCalls++;expect(route.request().postDataJSON()).toEqual({job_id:'job-1',document_type:'both'});
+   const documents=[
+    {document_type:'resume',document_url:htmlResume,document_sha256:'a'.repeat(64),file_id:'resume1234567890',drive_url:'https://drive.google.com/file/d/resume1234567890/view'},
+    {document_type:'coverLetter',document_url:htmlCover,document_sha256:'b'.repeat(64),file_id:'cover1234567890',drive_url:'https://drive.google.com/file/d/cover1234567890/view'}
+   ];
+   api.getJob().resume=htmlResume;api.getJob().cover_letter=htmlCover;
+   for(const doc of documents)await page.evaluate(async data=>window.RavenAPI.addJobEvent('job-1',{eventType:'document_drive_export',metadata:data}),doc);
+   return route.fulfill({json:{run_id:runId,job_id:'job-1',stage:'complete',documents}});
+  }
+  if(path==='/application-documents'){
+   documentCalls++;expect(route.request().postDataJSON()).toEqual({job_id:'job-1',documents:[{document_type:'resume',document_sha256:'a'.repeat(64)},{document_type:'coverLetter',document_sha256:'b'.repeat(64)}]});
+   return route.fulfill({json:{job_id:'job-1',documents:['resume','coverLetter'].map((document_type,i)=>({document_type,document_sha256:(i?'b':'a').repeat(64),pdf_sha256:pdfHash,file_name:document_type+'.pdf',data_url:'data:application/pdf;base64,'+pdf.toString('base64')}))}});
+  }
+  throw new Error('Unexpected local writer request '+path);
+ });
+ await page.addInitScript(()=>{
+  window.preparedPacket=null;
+  const attach=bridge=>{
+   bridge.addEventListener('raven-prepare-probe',()=>{bridge.dataset.prepareCapability='1';bridge.dispatchEvent(new Event('raven-prepare-capability'));});
+   bridge.addEventListener('raven-prepare-application',()=>{const req=JSON.parse(bridge.dataset.prepareRequest);window.preparedPacket=req.packet;bridge.dataset.prepareResponse=JSON.stringify({requestId:req.requestId,ok:true,tabId:19});bridge.dispatchEvent(new Event('raven-prepare-response'));});
+  };
+  const observer=new MutationObserver(()=>{const bridge=document.getElementById('ravenExtensionBridge');if(bridge){observer.disconnect();attach(bridge);}});observer.observe(document,{childList:true,subtree:true});
+ });
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+ await expect(page.getByRole('button',{name:'Prepare again for review'})).toBeVisible();
+ await page.getByRole('button',{name:'Prepare again for review'}).click();
+ await expect(page.locator('#syncStatus')).toHaveText('Application opened for preparation—review fields and attachments in Chrome');
+ const packet=await page.evaluate(()=>window.preparedPacket);
+ expect(packet.version).toBe(2);expect(packet.mode).toBe('prepare');expect(packet.jobId).toBe('job-1');expect(packet.resume).toMatch(/^data:application\/pdf;base64,/);expect(packet.coverLetter).toMatch(/^data:application\/pdf;base64,/);
+ expect(runCalls).toBe(1);expect(documentCalls).toBe(1);expect(api.getJob().status).toBe('Applied');
+});
+
 test('saved resume Drive action requests exact PDF export to configured folder and preserves resume',async({page})=>{
   await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=false;await route.fulfill({json:config});});
   const resume='data:text/html;charset=utf-8,'+encodeURIComponent('<!doctype html><html><body><h1>Test Candidate</h1><p>Saved verified resume.</p></body></html>');
@@ -1220,6 +1269,41 @@ test("generators save discovery jobs and recover descriptions before generating 
   await page.locator(".job-card-summary").first().click();
   await expect(page.locator('[data-generate="resume"]')).toHaveText("Review");
   await expect(page.locator('[data-generate="coverLetter"]')).toHaveText("Review");
+});
+
+test("application preparation reservation follows a discovered job when it receives its saved id",async({page})=>{
+ let releaseDescription;
+ const descriptionGate=new Promise(resolve=>{releaseDescription=resolve;});
+ const discovery={id:"DISC-prepare-race",track:"Professional",title:savedJob.title,company:savedJob.company,location:"Remote",remote:true,url:savedJob.url,source:"Mock",snippet:""};
+ const api=await mockRaven(page,{discoveredJob:discovery,savedDiscoveryId:"JT-prepare-race"});
+ let descriptionCalls=0;
+ await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=true;await route.fulfill({json:config});});
+ await page.route('**/functions/v1/raven-enrich-v1**',async route=>{
+  descriptionCalls++;
+  await descriptionGate;
+  await route.fulfill({status:503,json:{ok:false,error:"fixture stopped before generation"}});
+ });
+ await page.route('http://127.0.0.1:8766/**',route=>route.fulfill({json:{application_prepare_supported:true}}));
+ await page.addInitScript(()=>{
+  const attach=bridge=>{
+   bridge.addEventListener('raven-prepare-probe',()=>{bridge.dataset.prepareCapability='1';bridge.dispatchEvent(new Event('raven-prepare-capability'));});
+  };
+  const observer=new MutationObserver(()=>{const bridge=document.getElementById('ravenExtensionBridge');if(bridge){observer.disconnect();attach(bridge);}});observer.observe(document,{childList:true,subtree:true});
+ });
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+ await page.locator('[data-prepare-application]').click();
+ await expect.poll(()=>api.getJob().id).toBe("JT-prepare-race");
+ await expect.poll(()=>descriptionCalls).toBe(1);
+ // Collapse/reopen forces a render from the saved ID. The live reservation must
+ // still disable the control while the original preparation is waiting.
+ await page.locator('.job-card-summary').first().click();
+ await page.locator('.job-card-summary').first().click();
+ await expect(page.locator('[data-prepare-application]')).toBeDisabled();
+ expect(api.getAddJobCalls()).toBe(1);expect(descriptionCalls).toBe(1);
+ releaseDescription();
+ await expect(page.locator('#syncStatus')).toContainText('fixture stopped before generation');
+ await expect(page.locator('[data-prepare-application]')).toBeEnabled();
+ expect(api.getAddJobCalls()).toBe(1);expect(descriptionCalls).toBe(1);
 });
 
 for (const track of ["Games / 3D", "Professional", "Labor", "Wildcard"]) {

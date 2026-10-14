@@ -34,11 +34,39 @@ test('helper restart renews the in-memory session once after unauthorized respon
  await client.run({job_id:'JT-test',document_type:'resume'});
  assert.equal(sessions,2);assert.deepEqual(tokens,['Bearer token-1','Bearer token-2']);
 });
+test('application preparation requires backend readiness and verifies returned PDF bytes',async()=>{
+ const bytes=Buffer.from('%PDF-test'),pdfHash=await crypto.subtle.digest('SHA-256',bytes),hex=Array.from(new Uint8Array(pdfHash),b=>b.toString(16).padStart(2,'0')).join('');
+ const source=[{document_type:'resume',document_sha256:'a'.repeat(64)},{document_type:'coverLetter',document_sha256:'b'.repeat(64)}],calls=[];
+ const client=createOneClickClient({fetchImpl:async(url,options)=>{
+  calls.push({url,options});let payload;
+  if(url.endsWith('/health'))payload={application_prepare_supported:true};
+  else if(url.endsWith('/session'))payload={token:'secret'};
+  else payload={job_id:'JT-test',documents:source.map(d=>({...d,pdf_sha256:hex,file_name:d.document_type+'.pdf',data_url:'data:application/pdf;base64,'+bytes.toString('base64')}))};
+  return {ok:true,json:async()=>payload};
+ }});
+ const result=await client.prepareApplicationDocuments({job_id:'JT-test',documents:source});
+ assert.equal(result.documents.length,2);assert.equal(calls[0].url.endsWith('/health'),true);
+ assert.deepEqual(JSON.parse(calls.at(-1).options.body),{job_id:'JT-test',documents:source});
+});
+test('application preparation rejects unsupported backend and altered PDF bytes',async()=>{
+ const client=createOneClickClient({fetchImpl:async(url)=>({ok:true,json:async()=>url.endsWith('/health')?{application_prepare_supported:false}:{}})});
+ await assert.rejects(client.ensureApplicationPreparation(),/does not support preparing/);
+ const pdf=Buffer.from('%PDF-x'),good=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',pdf)),b=>b.toString(16).padStart(2,'0')).join('');
+ const docs=['resume','coverLetter'].map((document_type,i)=>({document_type,document_sha256:String(i).repeat(64)}));
+ const bad=createOneClickClient({fetchImpl:async(url)=>{
+  let payload;
+  if(url.endsWith('/health'))payload={application_prepare_supported:true};
+  else if(url.endsWith('/session'))payload={token:'t'};
+  else payload={job_id:'JT-test',documents:docs.map((d,i)=>({...d,pdf_sha256:i?'f'.repeat(64):good,file_name:'doc.pdf',data_url:'data:application/pdf;base64,'+pdf.toString('base64')}))};
+  return {ok:true,json:async()=>payload};
+ }});
+ await assert.rejects(bad.prepareApplicationDocuments({job_id:'JT-test',documents:docs}),/failed its byte and digest check/);
+});
 function appFixture({persisted=true}={}){
  const source=fs.readFileSync('app.js','utf8');
  const start=source.indexOf('  const activeOneClickJobs=');
  const end=source.indexOf('  function parseChatGptPayload(');
- const handler=source.slice(start,end).replace('await import("./oneclick-client.mjs?v=1")','clientModule').replace('await import("./remote-writer-client.mjs?v=1")','remoteModule');
+ const handler=source.slice(start,end).replaceAll('await import("./oneclick-client.mjs?v=2")','clientModule').replaceAll('await import("./remote-writer-client.mjs?v=1")','remoteModule');
  let opened=0,status='',review=0,runs=0,prepared=0;
  const job={id:'JT-test',resume:'saved-html'};
  const ctx={localStorage:{getItem:()=>null},remoteModule:{PAIR_KEY:'pair'},state:{selectedId:'JT-test',runtime:{settings:{'chatgpt-one-click':true}},jobs:[]},clientModule:{createOneClickClient:()=>({run:async(input,onStage)=>{runs++;onStage('writing');await Promise.resolve();return {documents:[doc]};}})},window:{open:()=>{opened++;throw Error('must not open');},RavenAPI:{listJobs:async()=>[job],listJobEvents:async()=>({events:persisted?[{event_type:'document_drive_export',metadata:doc}]:[]})}},prepareJobForGeneration:async()=>{prepared++;},setGenerationButton:()=>{},setStatus:value=>status=value,normalizeJobs:v=>v,mergePendingDocuments:v=>v,writeCache:()=>{},CACHE_JOBS_KEY:'jobs',loadJobActivity:async()=>{},render:()=>{},document:{querySelector:()=>null},openDocumentReview:async()=>{review++;}};

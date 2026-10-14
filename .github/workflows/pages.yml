@@ -8,6 +8,7 @@ on:
       - "studio-directory.html"
       - "app.js"
       - "oneclick-client.mjs"
+      - "application-prepare.mjs"
       - "remote-writer-client.mjs"
       - "pair-writer.*"
       - "document-revision.mjs"

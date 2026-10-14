@@ -1,5 +1,11 @@
 # Raven Status
 
+## Application preparation first version — October 14, 2026
+
+Implemented Prepare application / Prepare again for review: existing local writer generates or reuses both documents, canonical readback verifies saved Raven/Drive records, authenticated serialized export returns exact PDFs, and the desktop Chrome extension opens a job-bound form, fills recognized fields and selects PDFs. Human review and submission remain manual; document approvals and Applied history are preserved. Ashby UUID postings open the same job's application route. Unsupported navigation, legal answers, location autocomplete and unknown fields remain manual.
+
+Validation: 65 core workflow commands were checked; the single extracted test-harness dependency failure was repaired and focused rerun passes. Full local Edge browser suite passed 134/134 before the final bounded-upload/race hardening; final targeted Node tests passed 29/29. Extension 2.3.0 package prepared. Live acceptance is pending updated extension loading, helper activation and publication. Believer selected by user for fresh generation; its original job/documents backed up locally and not yet cleared. Random active 3D sample: HyperHug 3D Environment & Prop Artist, Values Value Level Artist, Values Value Lead Level Artist. No employer submission. See docs/PREPARE_APPLICATION.md.
+
 ## Always-on local writer and paired phone queue — October 14, 2026
 
 Implemented current-user Windows logon startup, crash recovery, and AC-only idle-sleep prevention. Added revocable/expiring device pairing, an authenticated bounded Supabase queue, outbound local polling, and the existing Generate-button route for paired browsers. Existing local-only use remains available. Document authoring/save/PDF/Drive verification stays in the existing serialized local workflow. Cloud-hosted writer recorded as future feature, not provisioned.

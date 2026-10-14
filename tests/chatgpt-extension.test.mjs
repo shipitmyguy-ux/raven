@@ -7,11 +7,11 @@ async function background({sender='https://shipitmyguy-ux.github.io/raven/',url=
  const messages=[],storage={},downloads=[];let changed,fetches=0;
  const context={URL,console,fetch:async()=>{fetches++;return {ok:true,text:async()=>JSON.stringify({raven_format:'raven-chatgpt-v1',request_id:payloadId,resume:{}})};},chrome:{
   runtime:{onInstalled:{addListener(){}},onMessage:{addListener:fn=>messages.push(fn)}},
-  contextMenus:{onClicked:{addListener(){}}},tabs:{query(){}},
+  contextMenus:{onClicked:{addListener(){}}},tabs:{query(){},onUpdated:{addListener(){}},onRemoved:{addListener(){}}},
   storage:{local:{get:async keys=>Object.fromEntries((Array.isArray(keys)?keys:[keys]).map(key=>[key,storage[key]])),set:async value=>Object.assign(storage,value)}},
   downloads:{onChanged:{addListener:fn=>changed=fn},search:async()=>downloads}
  }};
- vm.createContext(context);vm.runInContext(fs.readFileSync(new URL('../extension/src/background.js',import.meta.url),'utf8'),context);
+ vm.createContext(context);context.importScripts=path=>vm.runInContext(fs.readFileSync(new URL('../extension/src/'+path,import.meta.url),'utf8'),context);vm.runInContext(fs.readFileSync(new URL('../extension/src/background.js',import.meta.url),'utf8'),context);
  messages.forEach(fn=>fn({type:'raven-chatgpt-request',requestId:id},{tab:{url:sender}}));await vm.runInContext('transferQueue',context);
  downloads.push({filename:'C:/Downloads/raven-'+id+'.json',finalUrl:url,fileSize:100});
  changed({id:1,state:{current:'complete'}});await vm.runInContext('transferQueue',context);

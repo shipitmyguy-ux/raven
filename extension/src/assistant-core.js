@@ -64,7 +64,7 @@
       host: /(^|\.)jobs\.ashbyhq\.com$/i,
       profile: {},
       files: {
-        resume: ['input[type="file"][name*="resume" i]'],
+        resume: ['input[type="file"][id="_systemfield_resume"]','input[type="file"][name*="resume" i]'],
         coverLetter: ['input[type="file"][name*="cover" i]']
       },
       successSelectors: ['[data-testid*="application-success" i]','[data-testid*="confirmation" i]']
