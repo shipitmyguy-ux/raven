@@ -104,6 +104,15 @@
       return false;
     });
   }
+  function visibleCompanyLabel(company) {
+    const expected = normalized(company);
+    if (!expected) return false;
+    return [...document.querySelectorAll('a[aria-label],img[alt],[role="img"][aria-label]')].some(el => {
+      if (!visibleGateElement(el)) return false;
+      const label = el.getAttribute("aria-label") || el.getAttribute("alt") || "";
+      return normalized(label).includes(expected);
+    });
+  }
   function inspection(context) {
     const path = location.pathname.toLowerCase();
     const text = String(document.body?.innerText || "").slice(0, 10000);
@@ -116,7 +125,8 @@
       return { status: "blocked", reason: "Listing is closed or unavailable." };
     const pageWords = normalized(text);
     if (!context?.title || !context?.company ||
-        !pageWords.includes(normalized(context.title)) || !pageWords.includes(normalized(context.company)))
+        !pageWords.includes(normalized(context.title)) ||
+        !(pageWords.includes(normalized(context.company)) || visibleCompanyLabel(context.company)))
       return { status: "manual", retryable: true, reason: "Selected job title or company is not visible on the destination. Review the route manually." };
     if (/(^|\.)ingamejob\.com$/i.test(location.hostname))
       return { status: "manual", reason: "This listing does not expose a verified application form. Open its application route manually." };

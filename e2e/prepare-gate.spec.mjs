@@ -9,12 +9,17 @@ const form = `
   <label>Email <input type="email" name="email"></label>
   <label>Resume <input type="file" name="resume"></label></form>`;
 
-async function inspect(page, extra, url = applicationUrl) {
+async function inspect(page, extra, {url = applicationUrl, formHtml = form, fastRetry = false} = {}) {
   await page.route('**/*', route => route.request().isNavigationRequest() && route.request().frame() === page.mainFrame()
-    ? route.fulfill({status: 200, contentType: 'text/html', body: `<html><body>${form}${extra}</body></html>`})
+    ? route.fulfill({status: 200, contentType: 'text/html', body: `<html><body>${formHtml}${extra}</body></html>`})
     : route.abort());
   await page.goto(url);
-  await page.evaluate(() => {
+  await page.evaluate(fastRetry => {
+    if (fastRetry) {
+      const start = Date.now();
+      let checks = 0;
+      Date.now = () => start + checks++ * 11000;
+    }
     window.__preflight = [];
     globalThis.RavenAssistantCore = {
       normalizeQuestion: value => String(value || '').toLowerCase().replace(/\s+/g, ' ').trim(),
@@ -28,7 +33,7 @@ async function inspect(page, extra, url = applicationUrl) {
         if (message.type === 'raven-preflight-result') window.__preflight.push(message);
       }
     }};
-  });
+  }, fastRetry);
   await page.evaluate(source);
   await expect.poll(() => page.evaluate(() => window.__preflight.at(-1) || null), {timeout: 12000}).not.toBeNull();
   return page.evaluate(() => window.__preflight.at(-1));
@@ -77,4 +82,26 @@ test('visible password gate requires manual handling', async ({page}) => {
 test('hidden password field leaves the application ready', async ({page}) => {
   const result = await inspect(page, '<div style="display:none"><input type="password"></div>');
   expect(result.status).toBe('ready');
+});
+
+test('visible logo alt identifies a company absent from body text', async ({page}) => {
+  const result = await inspect(page, '<img alt="HyperHug" width="100" height="40" src="/company-logo.png">',
+    {formHtml: form.replace('<p>HyperHug</p>', '')});
+  expect(result.status).toBe('ready');
+});
+
+test('visible back link accessible label identifies a company absent from body text', async ({page}) => {
+  const result = await inspect(page, '<a href="/hyperhug" aria-label="Back to HyperHug’s Job Listings" style="display:inline-block;width:100px;height:40px"></a>',
+    {formHtml: form.replace('<p>HyperHug</p>', '')});
+  expect(result.status).toBe('ready');
+});
+
+test('hidden or mismatched company labels cannot satisfy identity', async ({page}) => {
+  const result = await inspect(page, `
+    <a aria-label="Back to HyperHug’s Job Listings" hidden></a>
+    <img alt="HyperHug" style="display:none" width="100" height="40">
+    <a aria-label="Back to Another Studio’s Job Listings" style="display:inline-block;width:100px;height:40px"></a>`,
+    {formHtml: form.replace('<p>HyperHug</p>', ''), fastRetry: true});
+  expect(result.status).toBe('manual');
+  expect(result.reason).toMatch(/title or company is not visible/);
 });
