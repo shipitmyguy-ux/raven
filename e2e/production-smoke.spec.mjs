@@ -189,6 +189,8 @@ test.describe("Deployed Raven App Production Smoke Tests", () => {
   test("bookmarking a job persists state across page reloads", async ({ page }) => {
     const api = await mockRavenBackend(page);
     await page.goto(RAVEN_PROD_URL, { waitUntil: "domcontentloaded" });
+    // Jobs and runtime settings load independently; bookmark transitions require configured statuses.
+    await expect(page.locator('#statusFilter option[value="Interested"]')).toHaveCount(1);
 
     await page.locator('.track-tab[data-track="Professional"]').click();
     const card = page.locator(`.job-card[data-job-id="${syntheticTestJob.id}"]`);

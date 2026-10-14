@@ -46,19 +46,32 @@ test('preflight requires a ready destination and keeps its token with the final 
  assert.deepEqual(JSON.parse(bridge.dataset.prepareRequest).preflightId,preflightId);
  assert.equal(JSON.parse(bridge.dataset.prepareRequest).requestId,requestId);
 });
-test('blocked preflight stops before any prepared application packet',async()=>{
+test('manual preflight resolves for document preparation without a packet',async()=>{
  const bridge=new Bridge();let packets=0;
  bridge.dispatchEvent=event=>{
   if(event.type==='raven-preflight-application'){
    const {requestId}=JSON.parse(bridge.dataset.preparePreflightRequest);
-   bridge.dataset.preparePreflightResponse=JSON.stringify({requestId,ok:false,status:'blocked',reason:'Employer sign-in required'});
+   bridge.dataset.preparePreflightResponse=JSON.stringify({requestId,ok:false,status:'manual',reason:'Employer sign-in required'});
    EventTarget.prototype.dispatchEvent.call(bridge,new Event('raven-preflight-response'));
   }
   if(event.type==='raven-prepare-application')packets++;
   return EventTarget.prototype.dispatchEvent.call(bridge,event);
  };
- await assert.rejects(preflightPreparationApplication({jobId:'JT-test',jobUrl:'https://example.com/jobs/1'},{documentRef:documentFor(bridge)}),/Employer sign-in required/);
+ const result=await preflightPreparationApplication({jobId:'JT-test',jobUrl:'https://example.com/jobs/1'},{documentRef:documentFor(bridge)});
+ assert.deepEqual(result,{status:'manual',reason:'Employer sign-in required'});
  assert.equal(packets,0);
+});
+test('hard blocked preflight still rejects before writer work',async()=>{
+ const bridge=new Bridge();
+ bridge.dispatchEvent=event=>{
+  if(event.type==='raven-preflight-application'){
+   const {requestId}=JSON.parse(bridge.dataset.preparePreflightRequest);
+   bridge.dataset.preparePreflightResponse=JSON.stringify({requestId,ok:false,status:'blocked',reason:'This request ID belongs to a different application.'});
+   EventTarget.prototype.dispatchEvent.call(bridge,new Event('raven-preflight-response'));
+  }
+  return EventTarget.prototype.dispatchEvent.call(bridge,event);
+ };
+ await assert.rejects(preflightPreparationApplication({jobId:'JT-test',jobUrl:'https://example.com/jobs/1'},{documentRef:documentFor(bridge)}),/different application/);
 });
 test('preparation reload reads metadata only and retains a stable extension request ID',async()=>{
  const values=new Map(),storage={getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key)};
@@ -110,4 +123,55 @@ test('already prepared destination skips writer, PDF, receipt and packet dispatc
  const ctx={URL,job,state:{runtime:{settings:{}},preparationFeedback:null},activeApplicationPrepares:new Map(),activeOneClickJobs:new Map(),localPreparationClient:helper,getPreparationRecovery:async()=>recovery,prepareJobForGeneration:async()=>job,prepareModule:{probePreparationExtension:async()=>true,preflightPreparationApplication:async()=>{preflights++;return {alreadyPrepared:true,tabId:42};},dispatchPreparedApplication:async()=>{dispatch++;}},generateOneClick:async()=>{writer++;},setStatus:value=>status=value,setGenerationButton:()=>{},render:()=>{},updatePreparationRecoveryBanner:()=>{},console};
  vm.createContext(ctx);await vm.runInContext(code+'\nprepareApplication(job,null)',ctx);
  assert.equal(preflights,1);assert.equal(writer,0);assert.equal(pdfs,0);assert.equal(receipts,0);assert.equal(dispatch,0);assert.equal(cleared,1);assert.match(status,/already opened/);
+});
+
+function preparationHarness({pdfFailure=false,writerFailure=false}={}){
+ const source=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
+ const code=source.slice(source.indexOf('  async function prepareApplication('),source.indexOf('  async function launchChatGptPrompt(')).replaceAll(/await import\("\.\/application-prepare\.mjs\?v=\d+"\)/g,'prepareModule');
+ const job={id:'JT-test',url:'https://example.test/apply',title:'Artist',company:'Acme'};
+ const docs=['resume','coverLetter'].map((document_type,i)=>({document_type,document_url:'data:text/html,document-'+document_type,document_sha256:(i?'b':'a').repeat(64),file_id:document_type+'1234567890',drive_url:'https://drive.google.com/file/d/'+document_type+'1234567890/view'}));
+ const counts={writer:0,receipts:0,pdfs:0,dispatch:0,preflights:0,cleared:0};
+ let intent=null,status='',manual=true;
+ const recovery={load:()=>intent,start:()=>{intent={preparationId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',extensionRequestId:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',jobId:job.id,jobUrl:job.url,state:'generating',expired:false};return intent;},update:(_id,patch)=>{intent={...intent,...patch};return intent;},clear:()=>{counts.cleared++;intent=null;},withLease:async(_id,action)=>action()};
+ const helper={ensureApplicationPreparation:async()=>({}),verifyApplicationReceipts:async input=>{counts.receipts++;assert.deepEqual(input.documents.map(doc=>doc.document_sha256),docs.map(doc=>doc.document_sha256));},prepareApplicationDocuments:async input=>{counts.pdfs++;if(pdfFailure)throw Error('PDF byte verification failed');return {documents:input.documents.map(doc=>({...doc,data_url:'data:application/pdf;base64,JVBERi0='}))};}};
+ const ctx={URL,job,state:{runtime:{settings:{}},preparationFeedback:null},activeApplicationPrepares:new Map(),activeOneClickJobs:new Map(),localPreparationClient:helper,getPreparationRecovery:async()=>recovery,prepareJobForGeneration:async()=>job,prepareModule:{probePreparationExtension:async()=>true,preflightPreparationApplication:async()=>{counts.preflights++;return manual?{status:'manual',reason:'Application requires sign-in or an account.'}:{status:'ready',preflightId:'cccccccc-cccc-4ccc-8ccc-cccccccccccc'};},dispatchPreparedApplication:async()=>{counts.dispatch++;}},generateOneClick:async(_job,_type,_button,options)=>{counts.writer++;options.onAccepted({run_id:'dddddddd-dddd-4ddd-8ddd-dddddddddddd'});if(writerFailure)throw Error('Writer could not save the resume');return {job,result:{documents:docs}};},verifiedPreparationDocuments:async(_jobId,expectedHashes)=>{if(expectedHashes)for(const doc of docs)assert.equal(expectedHashes[doc.document_type].documentSha256,doc.document_sha256);return {job,result:{documents:docs}};},setStatus:value=>status=value,setGenerationButton:()=>{},render:()=>{},updatePreparationRecoveryBanner:()=>{},readCache:()=>({name:'Private profile'}),readAnswerMemory:()=>({}),APPLICATION_PROFILE_KEY:'profile',console};
+ vm.createContext(ctx);vm.runInContext(code,ctx);
+ return {job,counts,recovery,ctx,prepare:()=>vm.runInContext('prepareApplication(job,null)',ctx),setManual:value=>manual=value,getStatus:()=>status};
+}
+
+test('access gate still verifies and saves both documents, then explicit retry reuses them',async()=>{
+ const flow=preparationHarness();
+ await flow.prepare();
+ const saved=flow.recovery.load();
+ assert.equal(saved.state,'documents-ready');
+ assert.match(saved.reason,/sign-in/);
+ assert.equal(saved.runId,'dddddddd-dddd-4ddd-8ddd-dddddddddddd');
+ assert.deepEqual(Object.keys(saved.documents).sort(),['coverLetter','resume']);
+ assert.deepEqual(flow.counts,{writer:1,receipts:1,pdfs:1,dispatch:0,preflights:1,cleared:0});
+ assert.match(flow.getStatus(),/Documents ready; employer form needs manual access/);
+ assert.equal(flow.ctx.state.preparationFeedback.kind,'success');
+ flow.setManual(false);
+ await flow.prepare();
+ assert.deepEqual(flow.counts,{writer:1,receipts:2,pdfs:2,dispatch:1,preflights:2,cleared:1});
+ assert.equal(flow.recovery.load(),null);
+});
+
+test('a PDF verification failure after an access gate cannot claim documents ready',async()=>{
+ const flow=preparationHarness({pdfFailure:true});
+ await flow.prepare();
+ assert.equal(flow.recovery.load().state,'needs-review');
+ assert.match(flow.recovery.load().reason,/PDF byte verification failed/);
+ assert.equal(flow.counts.dispatch,0);
+ assert.equal(flow.ctx.state.preparationFeedback.kind,'error');
+ assert.doesNotMatch(flow.getStatus(),/Documents ready; employer form needs manual access/);
+});
+
+test('a failed writer after an access gate cannot claim documents ready',async()=>{
+ const flow=preparationHarness({writerFailure:true});
+ await flow.prepare();
+ assert.equal(flow.recovery.load().state,'needs-review');
+ assert.match(flow.recovery.load().reason,/Writer could not save/);
+ assert.equal(flow.counts.receipts,0);assert.equal(flow.counts.pdfs,0);assert.equal(flow.counts.dispatch,0);
+ assert.equal(flow.ctx.state.preparationFeedback.kind,'error');
+ assert.doesNotMatch(flow.getStatus(),/Documents ready; employer form needs manual access/);
 });

@@ -1,5 +1,8 @@
 # Application preparation: prevention and recovery plan
 
+Current correction (October 14): a genuine login/challenge destination pauses form delivery only. Prepare still generates/reuses and verifies both documents and Drive PDFs, stores documents-ready recovery metadata, and resumes only on an explicit click. Hidden/passive anti-bot markup is not a gate. Earlier recommendations to stop document generation at a login/challenge are superseded by this user requirement.
+
+
 ## Implementation underway — October 14, 2026
 
 Parallel work adds destination inspection before document generation, explicit recovery after reload, distinct saved-document/Drive stages, current-document hash-bound links, and separate required-unanswered versus not-requested reporting. Destination inspection is conservative: exact expected URL and visible title/company must match; sign-in, challenge, closed, redirected, and unrecognized forms stop. It supports the known Ashby application route without guessing other providers’ navigation. Matching PDF receipts are rechecked against live Drive metadata before delivery.

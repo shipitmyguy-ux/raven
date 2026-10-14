@@ -81,20 +81,43 @@
     }
     return [...labels];
   }
+  function visibleGateElement(el) {
+    if (!el || el.closest('[hidden],[inert],[aria-hidden="true"]')) return false;
+    for (let node = el; node instanceof Element; node = node.parentElement) {
+      const style = getComputedStyle(node);
+      if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" || Number(style.opacity) === 0) return false;
+    }
+    return [...el.getClientRects()].some(rect => rect.width > 0 && rect.height > 0);
+  }
+  function activeChallengeFrame() {
+    return [...document.querySelectorAll('iframe[src]')].some(frame => {
+      if (!visibleGateElement(frame)) return false;
+      try {
+        const url = new URL(frame.src, location.href);
+        // Invisible reCAPTCHA anchors and badges can be present on a usable form.
+        if (/(?:^|\.)google\.com$|(?:^|\.)recaptcha\.net$/i.test(url.hostname) &&
+            /\/recaptcha\/(?:api2|enterprise)\/(?:anchor|bframe)(?:\/|$)/i.test(url.pathname))
+          return url.pathname.includes("/bframe") || /^(?:normal|compact)$/i.test(url.searchParams.get("size") || "");
+        if (/(?:^|\.)hcaptcha\.com$/i.test(url.hostname) && /\/captcha\//i.test(url.pathname))
+          return url.searchParams.get("size") !== "invisible";
+      } catch {}
+      return false;
+    });
+  }
   function inspection(context) {
     const path = location.pathname.toLowerCase();
     const text = String(document.body?.innerText || "").slice(0, 10000);
     if (/\/(?:login|log-in|signin|sign-in|register|signup|sign-up)(?:\/|$)/.test(path) ||
-        document.querySelector('input[type="password"]')) return { status: "blocked", reason: "Application requires sign-in or an account." };
-    if (/\b(?:captcha|verify you are human|two.factor authentication|multi.factor authentication|access denied)\b/i.test(text) ||
-        document.querySelector('[class*="captcha" i],[id*="captcha" i],iframe[src*="recaptcha" i]'))
-      return { status: "blocked", reason: "Application has a challenge or access gate." };
+        [...document.querySelectorAll('input[type="password"]')].some(visibleGateElement)) return { status: "manual", reason: "Application requires sign-in or an account." };
+    if (/\b(?:verify you are human|confirm you are human|i am not a robot|i'm not a robot|complete (?:the )?captcha|solve (?:the )?captcha|two.factor authentication|multi.factor authentication|access denied)\b/i.test(text) ||
+        activeChallengeFrame())
+      return { status: "manual", reason: "Application has a challenge or access gate." };
     if (/\b(?:job is closed|position is closed|no longer accepting applications|job posting has expired|this job is no longer available)\b/i.test(text))
       return { status: "blocked", reason: "Listing is closed or unavailable." };
     const pageWords = normalized(text);
     if (!context?.title || !context?.company ||
         !pageWords.includes(normalized(context.title)) || !pageWords.includes(normalized(context.company)))
-      return { status: "manual", reason: "Selected job title or company is not visible on the destination. Review the route manually." };
+      return { status: "manual", retryable: true, reason: "Selected job title or company is not visible on the destination. Review the route manually." };
     if (/(^|\.)ingamejob\.com$/i.test(location.hostname))
       return { status: "manual", reason: "This listing does not expose a verified application form. Open its application route manually." };
     const adapter = core.detectAdapter(location.hostname);
@@ -102,7 +125,7 @@
     const profileCount = Object.keys(profileTerms).filter(key => candidateFor(adapter, key, fields)).length;
     const knownFile = fileCandidate(adapter, "resume") || fileCandidate(adapter, "coverLetter");
     const known = knownFile || profileCount >= (adapter.id === "generic" ? 2 : 1);
-    return known ? { status: "ready" } : { status: "manual", reason: "No recognized application controls. Open the application route manually, then retry Prepare." };
+    return known ? { status: "ready" } : { status: "manual", retryable: true, reason: "No recognized application controls. Open the application route manually, then retry Prepare." };
   }
   function valueFor(profile, key) { return key === "fullName" ? profile.fullName || [profile.firstName, profile.lastName].filter(Boolean).join(" ") : profile[key] || ""; }
   function matchesTerms(el, terms) {
@@ -238,8 +261,9 @@
   const deadline = Date.now() + 10000;
   const inspectWhenReady = context => {
     const result = inspection(context);
-    if (result.status === "manual" && Date.now() < deadline) return setTimeout(() => inspectWhenReady(context), 250);
-    chrome.runtime.sendMessage({ type: "raven-preflight-result", url: location.href, ...result }, () => void chrome.runtime.lastError);
+    if (result.retryable && Date.now() < deadline) return setTimeout(() => inspectWhenReady(context), 250);
+    const { retryable, ...reported } = result;
+    chrome.runtime.sendMessage({ type: "raven-preflight-result", url: location.href, ...reported }, () => void chrome.runtime.lastError);
   };
   chrome.runtime.sendMessage({ type: "raven-preflight-context", url: location.href }, context => {
     void chrome.runtime.lastError;
