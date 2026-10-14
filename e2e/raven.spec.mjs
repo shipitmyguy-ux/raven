@@ -888,9 +888,15 @@ test('Prepare application opens verified attachments for an Applied job without 
  await page.addInitScript(()=>{
   window.preparedPacket=null;
   window.preflightRequest=null;
+  window.extensionSawReadyDocuments=[];
+  const documentsReady=()=>{
+   const intent=JSON.parse(localStorage.getItem('raven.application-preparation.v1')||'null');
+   return intent?.state==='documents-ready'&&!!intent.documents?.resume?.documentSha256&&!!intent.documents?.coverLetter?.documentSha256;
+  };
   const attach=bridge=>{
-   bridge.addEventListener('raven-prepare-probe',()=>{bridge.dataset.prepareCapability='2';bridge.dispatchEvent(new Event('raven-prepare-capability'));});
+   bridge.addEventListener('raven-prepare-probe',()=>{window.extensionSawReadyDocuments.push(documentsReady());bridge.dataset.prepareCapability='2';bridge.dispatchEvent(new Event('raven-prepare-capability'));});
    bridge.addEventListener('raven-preflight-application',()=>{
+    window.preflightSawReadyDocuments=documentsReady();
     const req=JSON.parse(bridge.dataset.preparePreflightRequest);window.preflightRequest=req;
     bridge.dataset.preparePreflightResponse=JSON.stringify({requestId:req.requestId,ok:true,status:'ready',preflightId:'12345678-1234-4234-8234-123456789abc',tabId:19,observedUrl:req.jobUrl});
     bridge.dispatchEvent(new Event('raven-preflight-response'));
@@ -908,6 +914,8 @@ test('Prepare application opens verified attachments for an Applied job without 
  await page.getByRole('button',{name:'Prepare again for review'}).click();
  await expect(page.locator('#syncStatus')).toHaveText('Application opened for preparation—review fields and attachments in Chrome');
  const packet=await page.evaluate(()=>window.preparedPacket);
+ expect(await page.evaluate(()=>window.extensionSawReadyDocuments)).toEqual([true,true]);
+ expect(await page.evaluate(()=>window.preflightSawReadyDocuments)).toBe(true);
  expect(packet.version).toBe(2);expect(packet.mode).toBe('prepare');expect(packet.jobId).toBe('job-1');expect(packet.resume).toMatch(/^data:application\/pdf;base64,/);expect(packet.coverLetter).toMatch(/^data:application\/pdf;base64,/);
  expect(runCalls).toBe(1);expect(documentCalls).toBe(1);expect(api.getJob().status).toBe('Applied');
 });

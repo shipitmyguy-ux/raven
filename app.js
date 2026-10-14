@@ -2151,22 +2151,10 @@
       updatePreparationRecoveryBanner();
       const preparationId=intent.preparationId;
       await recovery.withLease(preparationId,async()=>{
-        let extensionReason="",preflight=null;
-        try{await probePreparationExtension();}catch(error){extensionReason=extensionUnavailableReason(error);if(!extensionReason)throw error;}
-        if(!extensionReason){
-          try{preflight=await preflightPreparationApplication({jobId:String(job.id),jobUrl:job.url,title:job.title||"",company:job.company||""},{requestId:intent.extensionRequestId});}
-          catch(error){extensionReason=extensionUnavailableReason(error);if(!extensionReason)throw error;}
-        }
-        if(preflight?.alreadyPrepared===true){
-          if(!intent.documents?.resume?.documentSha256||!intent.documents?.coverLetter?.documentSha256)throw Error("The saved preparation has no verified document hashes. Review the documents before resuming.");
-          const prior=await verifiedPreparationDocuments(job.id,intent.documents,intent.jobUrl);
-          await localPreparationClient.verifyApplicationReceipts({job_id:String(job.id),documents:prior.result.documents.map(doc=>({document_type:doc.document_type,document_sha256:doc.document_sha256,file_id:doc.file_id,drive_url:doc.drive_url}))});
-          recovery.update(preparationId,{state:"opened"});
-          recovery.clear(preparationId);
-          setStatus("Application was already opened. Review the existing employer tab in Chrome.");
-          state.preparationFeedback={jobId:String(job.id),kind:"success",message:"Application already opened in Chrome. Review the existing employer tab."};
-          return;
-        }
+        // Keep the pre-existing hashes separate: newly finished documents cannot
+        // prove that a previous extension request already delivered a packet.
+        const originalHashes=intent.documents?.resume?.documentSha256&&intent.documents?.coverLetter?.documentSha256
+          ? {resume:intent.documents.resume.documentSha256,coverLetter:intent.documents.coverLetter.documentSha256}:null;
         let verified;
         if(intent.documents&&["documents-ready","dispatching","needs-review"].includes(intent.state)){
           verified=await verifiedPreparationDocuments(job.id,intent.documents,intent.jobUrl);
@@ -2182,6 +2170,7 @@
         }
         await localPreparationClient.verifyApplicationReceipts({job_id:String(job.id),documents:verified.result.documents.map(doc=>({document_type:doc.document_type,document_sha256:doc.document_sha256,file_id:doc.file_id,drive_url:doc.drive_url}))});
         const hashes=Object.fromEntries(verified.result.documents.map(doc=>[doc.document_type,{documentSha256:doc.document_sha256}]));
+        intent=recovery.update(preparationId,{state:"documents-ready",documents:hashes,reason:"",reasonType:"manual-access"});
         const retainDocumentsReady=(reason,reasonType)=>{
           intent=recovery.update(preparationId,{state:"documents-ready",documents:hashes,reason,reasonType});
           const message=reasonType==="extension-unavailable"
@@ -2191,6 +2180,21 @@
           state.preparationFeedback={jobId:String(job.id),kind:"success",message};
           updatePreparationRecoveryBanner();
         };
+        let extensionReason="",preflight=null;
+        try{await probePreparationExtension();}catch(error){extensionReason=extensionUnavailableReason(error);if(!extensionReason)throw error;}
+        if(!extensionReason){
+          try{preflight=await preflightPreparationApplication({jobId:String(job.id),jobUrl:job.url,title:job.title||"",company:job.company||""},{requestId:intent.extensionRequestId});}
+          catch(error){extensionReason=extensionUnavailableReason(error);if(!extensionReason)throw error;}
+        }
+        if(preflight?.alreadyPrepared===true){
+          if(!originalHashes)throw Error("The saved preparation has no prior verified document hashes. Review the documents before resuming.");
+          if(originalHashes.resume!==hashes.resume?.documentSha256||originalHashes.coverLetter!==hashes.coverLetter?.documentSha256)throw Error("The saved document hashes changed. Review them before resuming.");
+          recovery.update(preparationId,{state:"opened"});
+          recovery.clear(preparationId);
+          setStatus("Application was already opened. Review the existing employer tab in Chrome.");
+          state.preparationFeedback={jobId:String(job.id),kind:"success",message:"Application already opened in Chrome. Review the existing employer tab."};
+          return;
+        }
         if(extensionReason){retainDocumentsReady(extensionReason,"extension-unavailable");return;}
         try{await probePreparationExtension();}
         catch(error){const reason=extensionUnavailableReason(error);if(!reason)throw error;retainDocumentsReady(reason,"extension-unavailable");return;}
@@ -2200,7 +2204,6 @@
           retainDocumentsReady(preflight.reason,"manual-access");
           return;
         }
-        intent=recovery.update(preparationId,{state:"documents-ready",documents:hashes,reason:"",reasonType:"manual-access"});
         const canonical=verified.job;
         const packet={version:2,mode:"prepare",createdAt:new Date().toISOString(),jobId:String(job.id),jobUrl:canonical.url||"",title:canonical.title||"",company:canonical.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory()};
         for(const doc of prepared.documents)packet[doc.document_type==="resume"?"resume":"coverLetter"]=doc.data_url;
