@@ -29,7 +29,7 @@ test("Ashby prepare fills known fields and reports delayed accepted or rejected 
     contentType: "text/html",
     body: `<!doctype html><html><body>
       <form id="application" onsubmit="window.__submitted=(window.__submitted||0)+1;event.preventDefault()">
-        <label for="_systemfield_name">Name</label><input id="_systemfield_name" type="text">
+        <label for="_systemfield_name">Name</label><input id="_systemfield_name" type="text" placeholder="Type here...">
         <label for="_systemfield_email">Email</label><input id="_systemfield_email" type="email">
         <label for="portfolio-field">Portfolio/website</label><input id="portfolio-field" type="text">
         <label for="sponsorship">Will you need sponsorship?</label><input id="sponsorship" type="radio" value="No">

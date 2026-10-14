@@ -62,7 +62,9 @@
     {
       id: "ashby",
       host: /(^|\.)jobs\.ashbyhq\.com$/i,
-      profile: {},
+      profile: {
+        fullName: ['#_systemfield_name']
+      },
       files: {
         resume: ['input[type="file"][id="_systemfield_resume"]','input[type="file"][name*="resume" i]'],
         coverLetter: ['input[type="file"][name*="cover" i]']
