@@ -1,5 +1,13 @@
 # Raven Tasks
 
+## Keep awake only during jobs - October 14, 2026
+
+Implemented and activated in the existing local helper. A pipe-owned Windows sleep request is acquired only for accepted local/phone document runs (including locally queued work), PDF preparation and Drive receipt verification. It covers durable success/failure saves and overlapping work; the last completed/failed task releases it. Helper exit/crash closes the pipe. Supervisor idle polling no longer holds the system awake. Active jobs request wakefulness on AC or battery; Windows display, lid, explicit sleep and power-plan settings are unchanged.
+
+Manual Status/Stop controls are in scripts/control-oneclick-awake.ps1, with user-facing launchers in this chat's outputs. Stop releases the hold without cancelling jobs and keeps it released for that overlapping batch; the next batch enables it again. A sleeping laptop cannot claim phone requests until it wakes.
+
+Verified 47 focused helper/client/workflow/security/power tests, including real Windows native acquire/release and manual Status/Stop, parallel/queued jobs, failure persistence, secret scan and clean diff. Restarted the verified idle helper using its existing protected launcher; live health confirms job_scoped_awake:true and active_tasks:0. No personal generation, employer submission, extension update, startup-task installation or Windows sleep-plan change. No existing Raven scheduled task/supervisor was found running; activation applies to the manually launched helper. Preserve the existing protected config and receipts outside this checkout.
+
 ## Document preparation without the extension — October 14, 2026
 
 The owner authorized decoupling combined Prepare from the Chrome extension. The web-only implementation finishes both canonical documents and live Drive PDF receipt checks before any extension probe or employer preflight, including when the extension is compatible. A missing, unresponsive or outdated bridge cannot block document preparation. Raven retains Documents ready with an explicit Resume action and an extension-setup reason. That deferred path does not retrieve attachment bytes, read applicant profile/answers, inspect the employer page or send an application packet.

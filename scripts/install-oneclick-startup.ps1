@@ -22,7 +22,7 @@ $trigger=New-ScheduledTaskTrigger -AtLogOn -User $identity
 $principal=New-ScheduledTaskPrincipal -UserId $identity -LogonType Interactive -RunLevel Limited
 $settings=New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
 if($PSCmdlet.ShouldProcess($taskName,'Install current-user startup and start Raven')){
- Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'Raven local writer; starts after owner sign-in, recovers crashes, keeps AC-powered computer awake.' -Force | Out-Null
+ Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'Raven local writer; starts after owner sign-in, recovers crashes, prevents idle sleep only during document jobs.' -Force | Out-Null
  Start-ScheduledTask -TaskName $taskName
  Write-Host 'Raven automatic startup installed. Starts after Windows sign-in. Plug in the computer; closing the lid or signing out can stop processing.'
 }

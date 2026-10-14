@@ -5,6 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createOneClickServer,createReceiptJournal,createWriterScheduler,createDocumentLock,serializePrivateDispatch} from '../scripts/oneclick-server.mjs';
 import {verifiedDriveReceipt} from '../scripts/oneclick-codex.mjs';
+import {createJobActivity} from '../scripts/oneclick-power.mjs';
 const origin='https://shipitmyguy-ux.github.io';
 function within(promise,label){
  let timer;return Promise.race([promise,new Promise((_,reject)=>timer=setTimeout(()=>reject(Error(label+' did not start concurrently')),1500))]).finally(()=>clearTimeout(timer));
@@ -61,6 +62,21 @@ test('workflow failure is durable and cannot become complete',async()=>{
  const f=await fixture(async()=>{throw Error('FACTUAL_REVIEW_BLOCKED');});
  try{const run=await (await f.request('/runs',{job_id:'one',document_type:'resume'})).json();await f.runtime.drain();const result=await (await f.request('/runs/'+run.run_id)).json();assert.equal(result.stage,'failed');assert.match(result.error,/factual review/);assert.equal(f.writes.at(-1).metadata.stage,'failed');}
  finally{await f.cleanup();}
+});
+
+test('job sleep hold covers queued work and durable failure writes but not idle health polling',async()=>{
+ const events=[];let release,started;const gate=new Promise(r=>release=r),begun=new Promise(r=>started=r);
+ const activity=createJobActivity({startHold(){events.push('hold');return ()=>events.push('release');}});
+ const f=await fixture(async()=>{started();await gate;throw Error('FACTUAL_REVIEW_BLOCKED');},{activity});
+ try{
+  assert.equal((await (await f.request('/health')).json()).active_tasks,0);assert.deepEqual(events,[]);
+  for(const job_id of ['one','two','three'])await f.request('/runs',{job_id,document_type:'resume'});
+  await begun;assert.equal(activity.active,3);assert.deepEqual(events,['hold']);
+  const health=await (await f.request('/health')).json();assert.equal(health.active_tasks,3);
+  release();await f.runtime.drain();await new Promise(r=>setImmediate(r));
+  assert.equal(f.writes.filter(row=>row.metadata.stage==='failed').length,3);
+  assert.equal(activity.active,0);assert.deepEqual(events,['hold','release']);
+ }finally{release();await f.cleanup();}
 });
 test('receipt journal survives process recreation with exact PDF hash',async()=>{
  const dir=await mkdtemp(join(tmpdir(),'raven-receipt-test-'));

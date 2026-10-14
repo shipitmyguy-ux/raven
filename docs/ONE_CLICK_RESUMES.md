@@ -46,7 +46,9 @@ This session cannot install the task or verify personal generation on the owner'
 
 ### Startup and power behavior
 
-The current-user scheduled task starts after Windows sign-in, runs with limited privileges, and restarts its supervisor after failure. The supervisor restarts the helper after process failure and avoids duplicate helper processes. While plugged in, it requests system wakefulness without keeping the display on. It releases the sleep request on battery and on exit. It does not change lid-close behavior, disable explicit sleep, bypass Windows sign-in, or keep a signed-out session alive. Keep the laptop plugged in, signed in, and ventilated with the lid open. Windows restart requires signing in again.
+The current-user scheduled task starts after Windows sign-in, runs with limited privileges, and restarts its supervisor after failure. The supervisor restarts the helper after process failure and avoids duplicate helper processes. The helper prevents idle sleep only while document jobs are queued locally or running, including saving, PDF uploads and receipt checks. Overlapping jobs share one hold until the final job completes or fails. This applies on AC and battery without keeping the display on. Idle polling, pairing and phone heartbeat do not hold the laptop awake. Helper completion or crash releases the request. No Windows power-plan, explicit sleep or lid setting is changed. Windows restart requires signing in again. While asleep, the laptop cannot claim phone requests; they wait until it wakes.
+
+Run `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\control-oneclick-awake.ps1 -Action Status` to check the current Raven sleep hold. Use `-Action Stop` to release it without cancelling jobs. The hold stays off for the remainder of that overlapping batch; the next batch enables it again. Normal sleep may pause unfinished work after a manual stop.
 
 Remove startup using `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-oneclick-startup.ps1 -Remove`. A manually started helper is not owned or stopped by that task.
 

@@ -104,7 +104,7 @@ jobs:
         run: |
           node --test tests/application-pdf.test.mjs tests/application-prepare.test.mjs tests/extension-prepare.test.mjs
           node --test tests/local-writer-queue.test.mjs
-          node --test tests/oneclick-client.test.mjs tests/oneclick-workflow.test.mjs tests/oneclick-server.test.mjs tests/oneclick-security.test.mjs
+          node --test tests/oneclick-client.test.mjs tests/oneclick-workflow.test.mjs tests/oneclick-server.test.mjs tests/oneclick-security.test.mjs tests/oneclick-power.test.mjs
           node --test tests/private-mcp-stdio.test.mjs
           node --test tests/mcp-bridge.test.mjs tests/mcp-oauth.test.mjs tests/apply-resume.test.mjs
           node --test tests/chatgpt-direct.test.mjs tests/chatgpt-handoff.test.mjs tests/resume-transfer.test.mjs tests/chatgpt-extension.test.mjs

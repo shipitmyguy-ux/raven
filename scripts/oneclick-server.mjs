@@ -7,6 +7,7 @@ import {createPrivateDispatcher} from './private-mcp-stdio.mjs';
 import {createApplicationReceiptVerifier,createOneClickWorkflow} from './oneclick-workflow.mjs';
 import {prepareRemoteWorker,createRemotePump} from './oneclick-remote.mjs';
 import {createCodexAdapters} from './oneclick-codex.mjs';
+import {createJobActivity,createWindowsJobActivity} from './oneclick-power.mjs';
 
 export async function atomicJson(path,value){
  const temporary=path+'.'+randomUUID()+'.tmp';await writeFile(temporary,JSON.stringify(value));await rename(temporary,path);
@@ -54,7 +55,7 @@ const safeError=error=>({
  UNAUTHORIZED:'The private Raven connection expired. Restart it with a renewed local grant.'
 }[error.message]||'The request did not complete. Your saved documents are preserved; retry to resume the remaining steps.');
 
-export async function createOneClickServer({runWorkflow,rest,authorizeJob,pairRemote,prepareApplicationDocuments,verifyApplicationReceipts,writerConcurrency=2,stateDir=resolve('private/oneclick/runs'),allowedOrigin='https://shipitmyguy-ux.github.io',refererPrefix='https://shipitmyguy-ux.github.io/raven/'}){
+export async function createOneClickServer({runWorkflow,rest,authorizeJob,pairRemote,prepareApplicationDocuments,verifyApplicationReceipts,activity=createJobActivity(),writerConcurrency=2,stateDir=resolve('private/oneclick/runs'),allowedOrigin='https://shipitmyguy-ux.github.io',refererPrefix='https://shipitmyguy-ux.github.io/raven/'}){
  if(![runWorkflow,rest,authorizeJob].every(value=>typeof value==='function'))throw Error('ONE_CLICK_NOT_CONFIGURED');
  if(writerConcurrency!==2)throw Error('INVALID_WRITER_CONCURRENCY');
  await mkdir(stateDir,{recursive:true});
@@ -77,7 +78,7 @@ export async function createOneClickServer({runWorkflow,rest,authorizeJob,pairRe
   if(overlapping.length){if(overlapping.every(run=>run===overlapping[0])&&overlapping[0].document_type===input.document_type)return overlapping[0];throw Error('WORK_ALREADY_ACTIVE');}
   const state={run_id:randomUUID(),job_id:input.job_id,document_type:input.document_type,stage:'queued',created_at:new Date().toISOString()};
   runs.set(state.run_id,state);for(const key of keys)active.set(key,state);
-  void scheduler.schedule(async()=>{
+  void activity.run(()=>scheduler.schedule(async()=>{
    let writes=Promise.resolve();
    try{
     await persist(state);
@@ -94,7 +95,7 @@ export async function createOneClickServer({runWorkflow,rest,authorizeJob,pairRe
     await writes.catch(()=>{});state.stage='failed';state.error=safeError(error);state.documents=error.partial_documents||state.documents||[];
     await persist(state).catch(()=>save(state));
    }finally{for(const key of keys)if(active.get(key)===state)active.delete(key);}
-  },input.document_type==='both'?2:1).catch(()=>{});
+  },input.document_type==='both'?2:1)).catch(()=>{});
   return state;
  }
  const server=http.createServer(async(req,res)=>{
@@ -106,7 +107,7 @@ export async function createOneClickServer({runWorkflow,rest,authorizeJob,pairRe
   if(origin===allowedOrigin){Object.assign(headers,{'Access-Control-Allow-Origin':origin,'Vary':'Origin','Access-Control-Allow-Headers':'Authorization,Content-Type,X-Raven-Local-Client','Access-Control-Allow-Methods':'GET,POST,OPTIONS','Access-Control-Allow-Private-Network':'true'});}
   if(req.method==='OPTIONS')return origin===allowedOrigin?send(204,{}):send(403,{error:'Untrusted Raven origin.'});
   const path=new URL(req.url,'http://127.0.0.1').pathname;
-  if(req.method==='GET'&&path==='/health')return send(200,{app:'raven-one-click',ready:true,writer_concurrency:writerConcurrency,phone_queue_supported:Boolean(pairRemote),application_prepare_supported:typeof prepareApplicationDocuments==='function',application_receipts_supported:typeof verifyApplicationReceipts==='function'});
+  if(req.method==='GET'&&path==='/health')return send(200,{app:'raven-one-click',ready:true,active_tasks:activity.active,job_scoped_awake:true,writer_concurrency:writerConcurrency,phone_queue_supported:Boolean(pairRemote),application_prepare_supported:typeof prepareApplicationDocuments==='function',application_receipts_supported:typeof verifyApplicationReceipts==='function'});
   if(origin!==allowedOrigin||req.headers['x-raven-local-client']!=='raven-web-v1'||!String(req.headers.referer||'').startsWith(refererPrefix))return send(403,{error:'Open this action from the Raven website.'});
   try{
    let body;
@@ -131,13 +132,13 @@ export async function createOneClickServer({runWorkflow,rest,authorizeJob,pairRe
     if(!body||Object.keys(body).sort().join(',')!=='documents,job_id'||!/^[A-Za-z0-9_-]{1,160}$/.test(body.job_id||'')||!Array.isArray(body.documents)||body.documents.length!==2||body.documents.some(d=>!d||Object.keys(d).sort().join(',')!=='document_sha256,document_type'||!['resume','coverLetter'].includes(d.document_type)||!/^[a-f0-9]{64}$/.test(d.document_sha256||''))||new Set(body.documents.map(d=>d.document_type)).size!==2)return send(400,{error:'Invalid application documents request.'});
     try{
      await authorizeJob(body.job_id);
-     return send(200,await prepareApplicationDocuments(body));
+     return send(200,await activity.run(()=>prepareApplicationDocuments(body)));
     }catch(error){return send(error.message==='NOT_FOUND'?404:error.message==='UNAUTHORIZED'?403:error.message==='VERSION_CONFLICT'?409:error.message==='INVALID_APPLICATION_DOCUMENTS'?400:422,{error:safeError(error)});}
    }
    if(req.method==='POST'&&path==='/application-receipts'){
     if(typeof verifyApplicationReceipts!=='function')return send(503,{error:'Application receipt verification is not configured.'});
     if(!body||Object.keys(body).sort().join(',')!=='documents,job_id'||!/^[A-Za-z0-9_-]{1,160}$/.test(body.job_id||'')||!Array.isArray(body.documents)||body.documents.length!==2||body.documents.some(d=>!d||Object.keys(d).sort().join(',')!=='document_sha256,document_type,drive_url,file_id'||!['resume','coverLetter'].includes(d.document_type)||!/^[a-f0-9]{64}$/.test(d.document_sha256||'')||!/^[A-Za-z0-9_-]{10,160}$/.test(d.file_id||'')||d.drive_url!==`https://drive.google.com/file/d/${d.file_id}/view`)||new Set(body.documents.map(d=>d.document_type)).size!==2)return send(400,{error:'Invalid application receipts request.'});
-    try{await authorizeJob(body.job_id);return send(200,await verifyApplicationReceipts(body));}
+    try{await authorizeJob(body.job_id);return send(200,await activity.run(()=>verifyApplicationReceipts(body)));}
     catch(error){return send(error.message==='NOT_FOUND'?404:error.message==='UNAUTHORIZED'?403:error.message==='VERSION_CONFLICT'?409:422,{error:safeError(error)});}
    }
    if(req.method==='POST'&&path==='/runs'){
@@ -177,7 +178,7 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
   const prepareApplicationDocuments=body=>withDocumentLock(body.job_id,'resume',()=>withDocumentLock(body.job_id,'coverLetter',()=>preparePdf(body)));
   const verifyApplicationReceipts=createApplicationReceiptVerifier({dispatch:serialDispatch,rest,verifyUpload:adapters.verifyUpload,config});
   let remote,pump;
-  const runtime=await createOneClickServer({runWorkflow,rest,authorizeJob,prepareApplicationDocuments,verifyApplicationReceipts,pairRemote:async()=>{if(!remote)throw Error('QUEUE_NOT_READY');return remote.pair();}});
+  const runtime=await createOneClickServer({runWorkflow,rest,authorizeJob,prepareApplicationDocuments,verifyApplicationReceipts,activity:createWindowsJobActivity(),pairRemote:async()=>{if(!remote)throw Error('QUEUE_NOT_READY');return remote.pair();}});
   const {server}=runtime;
   server.listen(8766,'127.0.0.1',async()=>{
    process.stdout.write('Raven one-click helper ready on this computer.\n');
