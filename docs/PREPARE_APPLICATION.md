@@ -1,6 +1,6 @@
 # Prepare application — independent documents, optional form filling
 
-The Prepare application button generates or reuses both canonical documents through the existing local signed-in Codex writer, verifies saved Raven/Drive records, renders the exact saved versions to PDF, then sends their bytes and the browser-local applicant profile to the Raven Chrome extension. The extension opens a tab for that job, fills recognized fields, selects the PDFs in matching upload controls, and stops for human review. It never submits, grants document approval, or changes the application status. Applied jobs offer Prepare again for review.
+Prepare application first generates or reuses both canonical documents through the existing local signed-in Codex writer and verifies their saved hashes and live Drive PDF receipts. This finishes independently of the Chrome extension. When a compatible extension is available, Raven can then inspect the employer destination, retrieve verified attachment bytes, and send the browser-local applicant profile and PDFs to that inspected tab. The extension fills recognized fields, selects PDFs in matching upload controls, and stops for human review. It never submits, grants document approval, or changes the application status. Applied jobs offer Prepare again for review.
 
 ## Employer access gates
 
