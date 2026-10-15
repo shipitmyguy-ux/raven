@@ -827,12 +827,14 @@ test('cover can queue while resume writes and reservations remain busy through r
 test('both reserves each document and overlapping duplicate requests show visible feedback',async({page})=>{
  const api=await mockRaven(page),helper=await mockOneClickQueue(page,api,{delayResume:true});
  await page.goto('/');await helper.ready();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
- await page.evaluate(()=>{window.staleResume=document.querySelector('[data-generate="resume"]');window.staleBoth=document.querySelector('[data-generate-both]');});
+ await page.evaluate(()=>{window.staleResume=document.querySelector('[data-generate="resume"]');window.staleCover=document.querySelector('[data-generate="coverLetter"]');window.staleBoth=document.querySelector('[data-generate-both]');});
  await openDetailSection(page,"Job details");await jobDetail(page, "[data-generate-both]").click();await expect(page.locator('[data-generate="resume"]')).toBeDisabled();await expect(page.locator('[data-generate="coverLetter"]')).toBeDisabled();
  // A stale control event cannot bypass the reservation, even if delivered after re-render.
- await page.evaluate(()=>{window.staleResume.click();window.staleBoth.click();});
+ await page.evaluate(()=>{for(let i=0;i<8;i++){window.staleResume.click();window.staleCover.click();window.staleBoth.click();}});
  await expect(page.locator('#syncStatus')).toContainText('already queued or being generated');
  await expect.poll(()=>helper.requests.length).toBe(1);helper.release();await expect(page.locator('#syncStatus')).toContainText('copied to Drive');expect(helper.requests).toHaveLength(1);
+ await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+ await expect(page.getByRole('link',{name:'Current PDF'})).toHaveCount(2);expect(helper.requests).toHaveLength(1);
 });
 
 test('one-click completion does not open review after the user leaves the job',async({page})=>{

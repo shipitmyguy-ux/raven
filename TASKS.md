@@ -1,3 +1,9 @@
+## Document request concurrency regressions — October 14, 2026 MDT
+
+Added three real-helper process cases: repeated Generate both, resume-first overlap, and cover-letter-first overlap for the same synthetic job. Eight simultaneous duplicate requests share each active run; paired/single conflicts return409 while independent resume and cover-letter work proceeds. Deterministic IPC writing gates hold the race window open. Each case asserts exactly two total generations, saves, renders, uploads, physical Drive fixture PDFs and canonical export records; one per document, correct job/hash/file links, unchanged control job, reuse after completion and fresh-client refresh readback. Browser coverage now sends eight bursts across stale Generate both/resume/cover controls and checks two saved links after refresh.
+
+Local document suite62/62 and focused recovery/concurrency suite9/9 passed. Core and browser/CI results pending. Local browser execution cannot launch because the expected Playwright Chromium binary is absent; CI installs its pinned browser. No production runtime, live Drive or extension changes. Existing required Linux/Windows recovery matrix runs all nine cases automatically with explicit concurrency labeling.
+
 ## Nex controlled city menu correction - October 14, 2026 MDT
 
 Owner requested a real Nex form diagnosis/fix and both-attachment retest, avoiding extension reload if possible. Read the actual employer script using the browser developer debugger: installed prepare-content includes2.4.5, so this is not stale activation. Greenhouse shared Select controls menuIsOpen in its Control onMouseUp/onKeyUp wrapper; Raven emitted only mousedown before querying. City input updates search state independently of this closed menu. City onSelect also awaits resultSelected before committing display, while Raven checked after150ms. No private runtime state, credentials or employer API keys extracted.

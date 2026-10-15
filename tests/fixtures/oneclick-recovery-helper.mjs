@@ -10,7 +10,7 @@ import {createOneClickWorkflow} from '../../scripts/oneclick-workflow.mjs';
 const [root,mode,documentType,port="0"]=process.argv.slice(2);
 assert.ok(Number(port)===0||(Number(port)>1024&&![8766,8767].includes(Number(port))));
 assert.ok(root&&resolve(root).startsWith(resolve(tmpdir())+sep)&&basename(root).startsWith('raven-recovery-'),'Fixture requires its own temporary directory');
-assert.ok(['fail-once','crash','normal'].includes(mode));
+assert.ok(['fail-once','crash','normal','hold-writing'].includes(mode));
 const kinds=documentType==='both'?['resume','coverLetter']:[documentType];
 assert.ok(kinds.every(k=>['resume','coverLetter'].includes(k)));
 const folderId='recovery_fixture_folder',jobId='recovery-job',sha=value=>createHash('sha256').update(value).digest('hex');
@@ -83,7 +83,7 @@ const baseDispatch=serializePrivateDispatch(async line=>{
 });
 const dispatch=async line=>{
  const request=JSON.parse(line),{name,arguments:a={}}=request.params;
- if(name==='record_drive_export'&&mode!=='normal'&&!blocked.has(a.document_type)){
+ if(name==='record_drive_export'&&['fail-once','crash'].includes(mode)&&!blocked.has(a.document_type)){
   await waiters.get(a.document_type).promise;
   const receipt=await receiptStore.get([jobId,a.document_type,a.document_sha256,folderId].join('|'));
   assert.ok(receipt,'Crash must follow durable receipt write');assert.equal(receipt.file_id,a.file_id);
@@ -101,8 +101,14 @@ const dispatch=async line=>{
  }
  return baseDispatch(line);
 };
+const writingGates=new Map(['resume','coverLetter'].map(kind=>{let release;const promise=new Promise(resolve=>release=resolve);return [kind,{promise,release}];}));
+process.on('message',message=>{if(message.type==='release')writingGates.get(message.document_type)?.release();});
 const workflow=createOneClickWorkflow({dispatch,rest,config:{driveFolderId:folderId},receiptStore,withDocumentLock:createDocumentLock(),
- generateDraft:async({documentType})=>update(()=>{db.counts.generate++;return {body:'Fresh synthetic '+documentType};}),
+ generateDraft:async({documentType})=>{
+  const draft=await update(()=>{db.counts.generate++;return {body:'Fresh synthetic '+documentType};});
+  if(mode==='hold-writing'){process.send?.({type:'writing-'+documentType});await writingGates.get(documentType).promise;}
+  return draft;
+ },
  uploadPdf:async({pdf,folderId:parent,fileName})=>update(async()=>{
   assert.equal(parent,folderId);db.counts.upload++;
   const file_id='recovery_file_'+String(db.counts.upload).padStart(6,'0');
