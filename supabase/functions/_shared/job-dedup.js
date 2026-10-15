@@ -185,8 +185,13 @@ function sameJob(a,b) {
   const au=canonicalUrl(a.url),bu=canonicalUrl(b.url);
   if(au&&au===bu)return true;
   const company=employer(a.company);
-  if(!company||company!==employer(b.company)||!titleKey(a.title)||titleKey(a.title)!==titleKey(b.title))return false;
+  if(!company||company!==employer(b.company))return false;
   const ak=postingKeys(a),bk=postingKeys(b);
+  // The exact employer requisition remains the same vacancy when a board
+  // translates or abbreviates its title. Unverified board aliases do not gain
+  // a key when their verified employer/title evidence fails above.
+  if([...ak].some(key=>!key.startsWith('linkedin:')&&bk.has(key)))return true;
+  if(!titleKey(a.title)||titleKey(a.title)!==titleKey(b.title))return false;
   // Exact employer posting identity is stronger than board location labels.
   if(ak.size&&bk.size)return [...ak].some(key=>bk.has(key));
   if(a.track&&b.track&&normalize(a.track)!==normalize(b.track))return false;

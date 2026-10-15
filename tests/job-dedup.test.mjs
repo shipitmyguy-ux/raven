@@ -63,6 +63,12 @@ assert.equal(sameJob(mob,{...mob,url:'https://hitmarker.net/jobs/mob-entertainme
 const sameLinkedin={...weak,source:'LinkedIn',url:'https://www.linkedin.com/jobs/view/environment-artist-at-actual-studio-1234567890'};
 assert.equal(sameJob(sameLinkedin,{...sameLinkedin,url:'https://www.linkedin.com/jobs/view/1234567890?trk=feed'}),true);
 assert.equal(sameJob(sameLinkedin,{...sameLinkedin,url:'https://www.linkedin.com/jobs/view/1234567891'}),false,'different LinkedIn posting IDs are not title-only duplicates');
+const bilingual={...old,company:'People Can Fly',title:'Artiste de niveau senior/Senior Level Artist - Remote, Canada',url:'https://jobs.smartrecruiters.com/PeopleCanFly/744000151377560-artiste-de-niveau-senior'};
+const englishCopy={...bilingual,status:'Discovered',_discovered:true,title:'Senior Level Artist',url:'https://example.com/new-board-posting',notes:'Application URL: https://jobs.smartrecruiters.com/PeopleCanFly/744000151377560-senior-level-artist'};
+assert.equal(sameJob(bilingual,englishCopy),true,'exact employer requisition survives translated board title');
+assert.deepEqual(deduplicateJobs([englishCopy,bilingual]),[bilingual],'existing applied documents and history win over translated discovery');
+assert.equal(sameJob(bilingual,{...englishCopy,notes:englishCopy.notes.replace('744000151377560','744000139313759')}),false,'distinct employer requisitions remain separate');
+assert.equal(sameJob(bilingual,{...englishCopy,company:'Different Studio'}),false,'same-number evidence cannot cross company identity');
 const crossContext={...ctx,state:{activeTrack:'Professional',jobs:[old],discovered:{Professional:[{...discovered,track:'Professional'}]}}};
 vm.runInNewContext(combined+';globalThis.results=combinedJobs();',crossContext);
 assert.equal(crossContext.results.length,0,'a saved job assigned to another tab is not displayed as a new discovery');

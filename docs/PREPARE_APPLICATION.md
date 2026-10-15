@@ -1,6 +1,6 @@
 # Prepare application — independent documents, optional form filling
 
-Prepare application first generates or reuses both canonical documents through the existing local signed-in Codex writer and verifies their saved hashes and live Drive PDF receipts. This finishes independently of the Chrome extension. When a compatible extension is available, Raven can then inspect the employer destination, retrieve verified attachment bytes, and send the browser-local applicant profile and PDFs to that inspected tab. The extension fills recognized fields, selects PDFs in matching upload controls, and stops for human review. It never submits, grants document approval, or changes the application status. Applied jobs offer Prepare again for review.
+Prepare application first generates or reuses both canonical documents through the existing local signed-in Codex writer and verifies their saved hashes and live Drive PDF receipts. Once both documents are saved, the primary action is labelled Apply job and uses this same verified flow. This finishes independently of the Chrome extension. When a compatible extension is available, Raven can then inspect the employer destination, retrieve verified attachment bytes, and send the browser-local applicant profile and PDFs to that inspected tab. The extension fills recognized fields, selects PDFs in matching upload controls, and stops for human review. It never submits, grants document approval, or changes the application status. Applied jobs offer Prepare again for review.
 
 ## Employer access gates
 
@@ -18,7 +18,7 @@ Verified career evidence goes to the existing document-writing process. Contact/
 
 The authenticated helper PDF endpoint accepts only a job ID and exactly two canonical document hashes. It authorizes the job, serializes export with writing, checks both documents before and after rendering, confines reads to the export directory, and limits each PDF to 2 MiB, and verifies PDF headers and byte hashes. No client-supplied paths or arbitrary download URLs are accepted. The client verifies PDF hashes again.
 
-The extension binds the packet to a single newly created tab and exact target URL with a short lifetime. Ashby UUID posting URLs map to the same job's /application route. Other direct forms are attempted without inferring redirects. It fills only supported controls with known values and leaves legal, sponsorship, demographic, salary, CAPTCHA and unknown questions for the user. Automatic next-page navigation is not part of this version.
+The extension binds the packet to a single newly created tab and exact target URL with a short lifetime. Ashby UUID posting URLs map to the same job's /application route. The web client maps only exact HTTPS jobs.lever.co employer-slug/UUID posting URLs to that same job's /apply route; canonical document verification and recovery retain the original saved URL, while preflight and delivery bind to the exact application target. Other direct forms are attempted without inferring redirects. It fills only supported controls with known values and leaves legal, sponsorship, demographic, salary, CAPTCHA and unknown questions for the user. Arbitrary next-page clicks, login bypass and generic board-to-employer navigation are not supported. Manual gates stop before PDF-byte retrieval or applicant-profile access.
 
 ## Verification limits
 
@@ -32,6 +32,7 @@ Synthetic browser tests establish button routing, canonical readback, actual Fil
 - Unsupported/redirected form: leave manual completion to the user and record the observed URL and fields before adding a narrow adapter.
 - Upload failure: show the specific missing attachment; retain the generated document and Drive copy.
 - A repeated click must not start overlapping preparation for the same job.
+- If another job has a paused preparation, its metadata is preserved. The new job shows Review paused preparation and names the paused role; that action closes the drawer and focuses the existing Resume/Dismiss banner. Only an explicit owner Dismiss clears it before a different form is prepared. Standalone document generation remains independent of this gate.
 
 
 ## Reducing extension reloads — owner direction, October 14

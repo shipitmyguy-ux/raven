@@ -1422,6 +1422,16 @@
             expanded.querySelectorAll("[data-prepare-application]").forEach(button=>{
               button.addEventListener("click",event=>{event.stopPropagation();prepareApplication(job,button);});
             });
+            expanded.querySelectorAll("[data-review-paused-preparation]").forEach(button=>{
+              button.addEventListener("click",event=>{
+                event.stopPropagation();
+                closeJobDetail();
+                requestAnimationFrame(()=>{
+                  const banner=document.getElementById("preparationRecoveryBanner");
+                  if(banner&&!banner.hidden){banner.scrollIntoView({block:"center"});banner.querySelector("[data-resume-preparation]:not([hidden]),[data-clear-preparation]")?.focus();}
+                });
+              });
+            });
             expanded.querySelectorAll("[data-chatgpt-prompt]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
@@ -1563,16 +1573,20 @@
     const followUpValue=String(job.followUp||"").slice(0,10);
     const lifecycleControl='<div class="job-lifecycle-row"><label class="lifecycle-control"><span>Stage</span><select data-lifecycle-status aria-label="Job stage">'+lifecycleOptions+'</select></label></div>';
     const docsReady=documentsReadyForApplication(job);
+    const bothDocumentsSaved=Boolean(job.resume&&job.coverLetter);
     const prepareBusy=activeApplicationPrepares.has(String(job.id||job.url));
     const bothBusy=oneClickSession(job,"both");
     const statusLower=currentStatus.toLowerCase();
     const postApplication=["applied","interview","offer","rejected"].includes(statusLower);
-    const applyGate=job.url&&job.listing_state!=="closed"&&!postApplication?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply><span>'+(docsReady?'Open with approved documents':'Approve documents for application')+'</span></button>':"";
     const isAppliedJob=statusLower==="applied";
     const savedPreparation=preparationRecovery?.load();
+    const pausedElsewhere=savedPreparation&&!savedPreparation.expired&&savedPreparation.state!=="opened"&&String(savedPreparation.jobId)!==String(job.id);
+    const pausedJobTitle=pausedElsewhere?(knownJobById(savedPreparation.jobId)?.title||"another job"):"";
+    const applyGate=job.url&&job.listing_state!=="closed"&&!postApplication&&!pausedElsewhere?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply><span>'+(docsReady?'Open with approved documents':'Approve documents for application')+'</span></button>':"";
     const resumePreparation=savedPreparation&&!savedPreparation.expired&&savedPreparation.state!=="opened"&&String(savedPreparation.jobId)===String(job.id);
     const prepareAction=state.runtime?.settings?.["chatgpt-one-click"]===true&&job.url&&job.listing_state!=="closed"&&statusLower!=="closed"&&(!postApplication||isAppliedJob)
-      ? '<button class="workflow-action'+(isAppliedJob?' is-secondary':' is-primary')+'" type="button" data-prepare-application'+(prepareBusy?' disabled aria-busy="true"':'')+'><span>'+(resumePreparation?'Resume preparation':isAppliedJob?'Prepare again for review':'Prepare application')+'</span></button>':"";
+      ? pausedElsewhere?'<button class="workflow-action is-secondary" type="button" data-review-paused-preparation>Review paused preparation</button>'
+        : '<button class="workflow-action'+(isAppliedJob?' is-secondary':' is-primary')+'" type="button" data-prepare-application'+(prepareBusy?' disabled aria-busy="true"':'')+'><span>'+(resumePreparation?'Resume preparation':isAppliedJob?'Prepare again for review':bothDocumentsSaved?'Apply job':'Prepare application')+'</span></button>':"";
     const postingUrl=/^https?:\/\//i.test(String(job.url||""))?job.url:"";
     const actions=postingUrl
       ? '<a class="employer-link" data-employer-link href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener">Open employer listing ↗</a>'
@@ -1601,7 +1615,7 @@
     const nextStep=isApplied
       ? '<div class="job-next-step"><h3>Next step</h3><p class="next-action">'+escapeHtml(nextAction||'Set a follow-up date')+'</p><label class="follow-up-control"><span>Follow up</span><input type="date" data-follow-up-date value="'+escapeAttr(followUpValue)+'" aria-label="Follow-up date"></label>'+prepareAction+'</div>'
       : '<div class="job-next-step"><h3>Next step</h3>'+(prepareAction||createDocuments||'<p>Review this role and choose its stage.</p>')+
-        (prepareAction?'<p class="next-step-help">Creates any missing documents and, when available, prepares the employer form for review. It does not submit the application.</p>':'')+'</div>';
+        (prepareAction?'<p class="next-step-help">'+(pausedElsewhere?'Preparation for '+escapeHtml(pausedJobTitle)+' is paused. Resume or dismiss it above before starting this application.':(bothDocumentsSaved?'Opens the employer application in a new tab when available, fills recognized fields, and attaches verified PDFs for your review.':'Creates any missing documents and, when available, opens the employer application for review.')+' It never submits the application.')+'</p>':'')+'</div>';
     return '<section class="inline-job-detail">'+
       lifecycleControl+
       '<p class="job-detail-summary">'+escapeHtml(summary)+'</p>'+progressHtml+nextStep+
@@ -2019,7 +2033,7 @@
   let preparationRecovery;
   async function getPreparationRecovery(){
     if(!preparationRecovery){
-      const {createPreparationRecovery}=await import("./application-prepare.mjs?v=5");
+      const {createPreparationRecovery}=await import("./application-prepare.mjs?v=6");
       preparationRecovery=createPreparationRecovery();
     }
     return preparationRecovery;
@@ -2130,7 +2144,7 @@
     try{
       if(job.listing_state==="closed")throw Error("This listing is source-confirmed closed. Review the employer link before preparing documents.");
       if(!/^https:\/\//i.test(String(job.url||"")))throw Error("A secure employer listing URL is required to prepare this application.");
-      const {probePreparationExtension,preflightPreparationApplication,dispatchPreparedApplication,extensionUnavailableReason}=await import("./application-prepare.mjs?v=5");
+      const {applicationTargetUrl,probePreparationExtension,preflightPreparationApplication,dispatchPreparedApplication,extensionUnavailableReason}=await import("./application-prepare.mjs?v=6");
       const recovery=await getPreparationRecovery();
       const savedIntent=recovery.load();
       if(savedIntent&&!savedIntent.expired&&savedIntent.state!=="opened"&&String(savedIntent.jobId)!==String(job.id))throw Error("Another application preparation is saved. Resume or dismiss it before starting this role.");
@@ -2180,10 +2194,12 @@
           state.preparationFeedback={jobId:String(job.id),kind:"success",message};
           updatePreparationRecoveryBanner();
         };
+        const canonical=verified.job;
+        const targetUrl=applicationTargetUrl(canonical.url);
         let extensionReason="",preflight=null;
         try{await probePreparationExtension();}catch(error){extensionReason=extensionUnavailableReason(error);if(!extensionReason)throw error;}
         if(!extensionReason){
-          try{preflight=await preflightPreparationApplication({jobId:String(job.id),jobUrl:job.url,title:job.title||"",company:job.company||""},{requestId:intent.extensionRequestId});}
+          try{preflight=await preflightPreparationApplication({jobId:String(job.id),jobUrl:targetUrl,title:canonical.title||"",company:canonical.company||""},{requestId:intent.extensionRequestId});}
           catch(error){extensionReason=extensionUnavailableReason(error);if(!extensionReason)throw error;}
         }
         if(preflight?.alreadyPrepared===true){
@@ -2198,14 +2214,13 @@
         if(extensionReason){retainDocumentsReady(extensionReason,"extension-unavailable");return;}
         try{await probePreparationExtension();}
         catch(error){const reason=extensionUnavailableReason(error);if(!reason)throw error;retainDocumentsReady(reason,"extension-unavailable");return;}
-        const prepared=await localPreparationClient.prepareApplicationDocuments({job_id:String(job.id),documents:verified.result.documents.map(doc=>({document_type:doc.document_type,document_sha256:doc.document_sha256}))});
-        if(!Array.isArray(prepared.documents)||prepared.documents.length!==2||!["resume","coverLetter"].every(kind=>prepared.documents.some(doc=>doc.document_type===kind&&doc.document_sha256===hashes[kind].documentSha256&&typeof doc.data_url==="string")))throw Error("The writer did not return both verified PDFs.");
         if(preflight.status==="manual"){
           retainDocumentsReady(preflight.reason,"manual-access");
           return;
         }
-        const canonical=verified.job;
-        const packet={version:2,mode:"prepare",createdAt:new Date().toISOString(),jobId:String(job.id),jobUrl:canonical.url||"",title:canonical.title||"",company:canonical.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory()};
+        const prepared=await localPreparationClient.prepareApplicationDocuments({job_id:String(job.id),documents:verified.result.documents.map(doc=>({document_type:doc.document_type,document_sha256:doc.document_sha256}))});
+        if(!Array.isArray(prepared.documents)||prepared.documents.length!==2||!["resume","coverLetter"].every(kind=>prepared.documents.some(doc=>doc.document_type===kind&&doc.document_sha256===hashes[kind].documentSha256&&typeof doc.data_url==="string")))throw Error("The writer did not return both verified PDFs.");
+        const packet={version:2,mode:"prepare",createdAt:new Date().toISOString(),jobId:String(job.id),jobUrl:targetUrl,title:canonical.title||"",company:canonical.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory()};
         for(const doc of prepared.documents)packet[doc.document_type==="resume"?"resume":"coverLetter"]=doc.data_url;
         if(typeof packet.resume!=="string"||typeof packet.coverLetter!=="string")throw Error("The writer did not return both verified PDFs.");
         intent=recovery.update(preparationId,{state:"dispatching"});

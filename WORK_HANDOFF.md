@@ -15,6 +15,16 @@ Remaining: GitHub issues #85 (official studio feeds) and #86 (cross-source text 
 
 # Raven execution handoff
 
+## Bulk 3D preparation and Apply action - October 14, 2026
+
+The owner authorized read-only Raven/email application-history checks and document preparation for remaining active 3D roles, with helpers in parallel and no submissions. Audit and batch results remain private outside Git. Confirmed applied/ignored/expired roles are excluded; original application records, snapshots and existing documents are preserved. Bulk generation and current-export readback are still in progress; do not mark queued work complete.
+
+Web app96/module6 now labels the verified primary action Apply job when both documents are saved. Exact Lever HTTPS employer-slug/UUID postings map to the same job /apply route while canonical verification/recovery retain the saved URL; Ashby keeps its existing mapping. Unknown destinations and login gates remain manual. Manual preflight stops before PDF-byte/profile retrieval. A different paused job is named explicitly with Review paused preparation, retaining its metadata and linking to the existing Resume/Dismiss choices rather than silently replacing it.
+
+The shared duplicate comparison now recognizes an exact employer ATS requisition despite translated/shortened titles, retaining same-employer, distinct-requisition and unverified-alias safeguards. This web deployment updates browser suppression; no backend function deployment is claimed. Existing saved exclusions suppress the specifically reviewed mirrors without inventing new Applied history.
+
+Validation: all38 local core groups, all157 local Edge browser cases,45 preparation Node cases, secret scan and clean diff passed. A Windows control-test isolation issue was found while work was active: tests now pass their own holder PID and prove another hold survives. A private temporary batch sleep guard protects ongoing work until the helper drains; it changes no Windows power-plan settings and is not a permanent service. Verify its release at final completion. Extension and running writer source are unchanged; no extension reload or helper restart is required. Publication pending.
+
 ## Live keep-awake acceptance - October 14, 2026
 
 Completed the owner-authorized real 3D-job test with a Blackbird Interactive Environment and Prop Artist role missing both documents. Used published Raven Generate controls in two sequential runs. No existing document was deleted or replaced. The job remains Saved; no employer form, upload or submission was attempted.

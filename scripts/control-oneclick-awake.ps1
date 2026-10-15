@@ -1,7 +1,7 @@
-param([ValidateSet('Status','Stop')][string]$Action='Status')
+param([ValidateSet('Status','Stop')][string]$Action='Status',[ValidateRange(0,2147483647)][int]$HolderProcessId=0)
 $ErrorActionPreference='Stop'
 $scriptPath=Join-Path $PSScriptRoot 'oneclick-awake.ps1'
-$holders=@(Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" | Where-Object { $_.CommandLine -and $_.CommandLine.Contains($scriptPath) })
+$holders=@(Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" | Where-Object { $_.CommandLine -and $_.CommandLine.Contains($scriptPath) -and (!$HolderProcessId -or $_.ProcessId -eq $HolderProcessId) })
 $active=0
 foreach($holder in $holders){
  try{$event=[Threading.EventWaitHandle]::OpenExisting(('Local\RavenJobAwake-'+$holder.ProcessId))}catch [Threading.WaitHandleCannotBeOpenedException]{continue}

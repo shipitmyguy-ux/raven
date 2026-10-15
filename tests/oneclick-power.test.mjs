@@ -59,16 +59,21 @@ test('Windows native hold starts and releases on pipe closure',{skip:process.pla
 
 test('owner control reports and gracefully stops a real Windows hold',{skip:process.platform!=='win32',timeout:15000},async()=>{
  const child=spawn('powershell.exe',['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',fileURLToPath(new URL('../scripts/oneclick-awake.ps1',import.meta.url))],{windowsHide:true,stdio:['pipe','pipe','pipe']});
+ const other=spawn('powershell.exe',['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',fileURLToPath(new URL('../scripts/oneclick-awake.ps1',import.meta.url))],{windowsHide:true,stdio:['pipe','pipe','pipe']});
  const exited=new Promise((resolve,reject)=>{child.once('error',reject);child.once('exit',resolve);});
- const control=action=>new Promise((resolve,reject)=>{
-  const proc=spawn('powershell.exe',['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',fileURLToPath(new URL('../scripts/control-oneclick-awake.ps1',import.meta.url)),'-Action',action],{windowsHide:true});let output='';
+ const otherExited=new Promise((resolve,reject)=>{other.once('error',reject);other.once('exit',resolve);});
+ const control=(action,pid=child.pid)=>new Promise((resolve,reject)=>{
+  const proc=spawn('powershell.exe',['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',fileURLToPath(new URL('../scripts/control-oneclick-awake.ps1',import.meta.url)),'-Action',action,'-HolderProcessId',String(pid)],{windowsHide:true});let output='';
   proc.stdout.on('data',chunk=>output+=chunk);proc.once('error',reject);proc.once('exit',code=>code===0?resolve(output):reject(Error('Control failed')));
  });
  try{
-  await new Promise((resolve,reject)=>{child.stdout.once('data',resolve);child.once('error',reject);child.stderr.once('data',chunk=>reject(Error(String(chunk))));});
+  await Promise.all([child,other].map(proc=>new Promise((resolve,reject)=>{proc.stdout.once('data',resolve);proc.once('error',reject);proc.stderr.once('data',chunk=>reject(Error(String(chunk))));})));
   assert.match(await control('Status'),/keeping the laptop awake while jobs run/);
   assert.match(await control('Stop'),/keep-awake stopped/);
   assert.equal(await exited,0);child.stdin.end();
   assert.match(await control('Status'),/not keeping the laptop awake/);
- }finally{if(child.exitCode===null)child.kill();}
+  assert.equal(other.exitCode,null,'targeted test Stop must not release another job hold');
+  assert.match(await control('Status',other.pid),/keeping the laptop awake while jobs run/);
+  other.stdin.end();assert.equal(await otherExited,0);
+ }finally{if(child.exitCode===null)child.kill();if(other.exitCode===null)other.kill();}
 });

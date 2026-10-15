@@ -2,6 +2,18 @@ export function extensionUnavailableReason(error){
   return error?.code==='PREPARATION_EXTENSION_UNAVAILABLE'?String(error.message||'The Raven Chrome extension is unavailable.'):null;
 }
 
+// Lever's posting and application are two routes for the same bounded job ID.
+// Leave every other destination unchanged for the extension's exact-URL check.
+export function applicationTargetUrl(jobUrl){
+  const url=new URL(jobUrl);
+  if(url.protocol==='https:'&&url.hostname==='jobs.lever.co'&&!url.port&&!url.username&&!url.password&&
+      /^\/[a-z0-9-]{1,100}\/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\/?$/i.test(url.pathname)){
+    url.pathname=url.pathname.replace(/\/$/,'')+'/apply';
+    return url.href;
+  }
+  return jobUrl;
+}
+
 function unavailable(message){
   return Object.assign(Error(message),{code:'PREPARATION_EXTENSION_UNAVAILABLE'});
 }

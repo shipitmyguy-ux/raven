@@ -852,6 +852,39 @@ test('one-click stopped helper reports recovery action without opening ChatGPT o
   await expect(page.locator('[data-chatgpt-prompt="resume"]')).not.toHaveAttribute('aria-busy','true');
 });
 
+test('saved documents show an Apply job action that stops at review',async({page})=>{
+ await mockRaven(page,{initialJob:{...savedJob,resume:'data:text/html,Resume',cover_letter:'data:text/html,Cover'}});
+ await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=true;await route.fulfill({json:config});});
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+ await expect(jobDetail(page,'[data-prepare-application]')).toHaveText('Apply job');
+ await expect(jobDetail(page,'.next-step-help')).toContainText('It never submits the application.');
+});
+
+test('another paused preparation is explicit and preserved until the user dismisses it',async({page})=>{
+ const current={...savedJob,resume:'data:text/html,Resume',cover_letter:'data:text/html,Cover'};
+ const paused={...savedJob,id:'paused-job',title:'Material Artist',company:"Fool's Theory",url:'https://example.com/material-artist',resume:'data:text/html,Paused resume',cover_letter:'data:text/html,Paused cover'};
+ const api=await mockRaven(page,{initialJob:current});
+ await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=true;await route.fulfill({json:config});});
+ await page.route('**/functions/v1/raven-backend-v3**',route=>new URL(route.request().url()).searchParams.get('action')==='jobs'?route.fulfill({json:{ok:true,jobs:[current,paused]}}):route.fallback());
+ let helperCalls=0;await page.route('http://127.0.0.1:8766/**',route=>{helperCalls++;return route.abort();});
+ const now=new Date().toISOString();
+ const intent={version:1,preparationId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',extensionRequestId:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',jobId:paused.id,jobUrl:paused.url,createdAt:now,updatedAt:now,state:'documents-ready',reason:'Application requires sign-in.',reasonType:'manual-access',documents:{resume:{documentSha256:'a'.repeat(64)},coverLetter:{documentSha256:'b'.repeat(64)}}};
+ await page.addInitScript(value=>localStorage.setItem('raven.application-preparation.v1',JSON.stringify(value)),intent);
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').filter({hasText:current.title}).click();
+ await expect(jobDetail(page,'[data-review-paused-preparation]')).toHaveText('Review paused preparation');
+ await expect(jobDetail(page,'[data-prepare-application]')).toHaveCount(0);
+ await expect(jobDetail(page,'.next-step-help')).toContainText('Material Artist');
+ await jobDetail(page,'[data-review-paused-preparation]').click();
+ await expect(page.locator('#jobDetailPanel')).toBeHidden();
+ await expect(page.locator('#preparationRecoveryBanner [data-resume-preparation]')).toBeFocused();
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('raven.application-preparation.v1')))).toEqual(intent);
+ await page.locator('#preparationRecoveryBanner [data-clear-preparation]').click();
+ await expect(page.locator('#preparationRecoveryBanner')).toBeHidden();
+ await page.locator('.job-card-summary').filter({hasText:current.title}).click();
+ await expect(jobDetail(page,'[data-prepare-application]')).toHaveText('Apply job');
+ expect(helperCalls).toBe(0);expect(api.getGenerationCalls()).toBe(0);
+});
+
 test('Prepare application opens verified attachments for an Applied job without changing its status',async({page})=>{
  const api=await mockRaven(page,{initialJob:{...savedJob,status:'Applied',resume:'',cover_letter:''}});
  const htmlResume='data:text/html;charset=utf-8,'+encodeURIComponent('<html><body><h1>Verified resume</h1></body></html>');
@@ -983,14 +1016,14 @@ test('access-gated Prepare saves verified PDFs and explicit Resume reuses them w
  const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('raven.application-preparation.v1')));
  expect(saved.state).toBe('documents-ready');expect(saved.documents.resume.documentSha256).toBe(resumeSha);expect(saved.documents.coverLetter.documentSha256).toBe(coverSha);
  expect(await page.evaluate(()=>window.preparedPackets.length)).toBe(0);
- expect(runCalls).toBe(1);expect(receiptCalls).toBe(1);expect(pdfCalls).toBe(1);
+ expect(runCalls).toBe(1);expect(receiptCalls).toBe(1);expect(pdfCalls).toBe(0);
  await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
  await expect(jobDetail(page,'[data-prepare-application]')).toHaveText('Resume preparation');
  expect(runCalls).toBe(1);expect(await page.evaluate(()=>window.preparedPackets.length)).toBe(0);
  await page.evaluate(()=>{window.gateOpen=false;});
  await jobDetail(page,'[data-prepare-application]').click();
  await expect(page.locator('#syncStatus')).toContainText('Application opened for preparation');
- expect(runCalls).toBe(1);expect(receiptCalls).toBe(2);expect(pdfCalls).toBe(2);
+ expect(runCalls).toBe(1);expect(receiptCalls).toBe(2);expect(pdfCalls).toBe(1);
  expect(await page.evaluate(()=>window.preparedPackets.length)).toBe(1);
  expect(api.getJob().status).toBe('Saved');
 });

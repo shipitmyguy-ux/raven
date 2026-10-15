@@ -2,7 +2,17 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {createPreparationRecovery,dispatchPreparedApplication,extensionUnavailableReason,preflightPreparationApplication,probePreparationExtension} from '../application-prepare.mjs';
+import {applicationTargetUrl,createPreparationRecovery,dispatchPreparedApplication,extensionUnavailableReason,preflightPreparationApplication,probePreparationExtension} from '../application-prepare.mjs';
+
+test('only a bounded Lever posting gains its same-job application route',()=>{
+ const posting='https://jobs.lever.co/blackbirdinteractive/98050e1b-0adb-4842-96e9-a6b9c987b799';
+ assert.equal(applicationTargetUrl(posting),posting+'/apply');
+ assert.equal(applicationTargetUrl(posting+'/?lever-source=Raven'),posting+'/apply?lever-source=Raven');
+ for(const url of [posting+'/apply',posting.replace('jobs.lever.co','jobs.lever.co.evil.example'),
+   'https://jobs.lever.co/blackbirdinteractive/another-job',
+   'https://jobs.lever.co/blackbirdinteractive/98050e1b-0adb-4842-96e9-a6b9c987b799/other',
+   'https://ingamejob.com/example'])assert.equal(applicationTargetUrl(url),url);
+});
 
 class Bridge extends EventTarget{
   dataset={};
@@ -208,7 +218,7 @@ test('already prepared destination verifies saved hashes and receipts but skips 
  let intent={preparationId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',extensionRequestId:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',jobId:job.id,jobUrl:job.url,state:'dispatching',documents:{resume:{documentSha256:'a'.repeat(64)},coverLetter:{documentSha256:'b'.repeat(64)}},expired:false};
  const recovery={load:()=>intent,start:()=>{throw Error('duplicate intent');},update:(_id,patch)=>{intent={...intent,...patch};return intent;},clear:()=>{cleared++;intent=null;},withLease:async(_id,action)=>action()};
  const helper={ensureApplicationPreparation:async()=>({}),verifyApplicationReceipts:async()=>{receipts++;},prepareApplicationDocuments:async()=>{pdfs++;}};
- const ctx={URL,job,state:{runtime:{settings:{}},preparationFeedback:null},activeApplicationPrepares:new Map(),activeOneClickJobs:new Map(),localPreparationClient:helper,getPreparationRecovery:async()=>recovery,prepareJobForGeneration:async()=>job,verifiedPreparationDocuments:async(_jobId,expected)=>{assert.equal(expected.resume.documentSha256,docs[0].document_sha256);return {job,result:{documents:docs}};},prepareModule:{probePreparationExtension:async()=>true,extensionUnavailableReason,preflightPreparationApplication:async()=>{preflights++;return {alreadyPrepared:true,tabId:42};},dispatchPreparedApplication:async()=>{dispatch++;}},generateOneClick:async()=>{writer++;},setStatus:value=>status=value,setGenerationButton:()=>{},render:()=>{},updatePreparationRecoveryBanner:()=>{},console};
+ const ctx={URL,job,state:{runtime:{settings:{}},preparationFeedback:null},activeApplicationPrepares:new Map(),activeOneClickJobs:new Map(),localPreparationClient:helper,getPreparationRecovery:async()=>recovery,prepareJobForGeneration:async()=>job,verifiedPreparationDocuments:async(_jobId,expected)=>{assert.equal(expected.resume.documentSha256,docs[0].document_sha256);return {job,result:{documents:docs}};},prepareModule:{applicationTargetUrl,probePreparationExtension:async()=>true,extensionUnavailableReason,preflightPreparationApplication:async()=>{preflights++;return {alreadyPrepared:true,tabId:42};},dispatchPreparedApplication:async()=>{dispatch++;}},generateOneClick:async()=>{writer++;},setStatus:value=>status=value,setGenerationButton:()=>{},render:()=>{},updatePreparationRecoveryBanner:()=>{},console};
  vm.createContext(ctx);await vm.runInContext(code+'\nprepareApplication(job,null)',ctx);
  assert.equal(preflights,1);assert.equal(writer,0);assert.equal(pdfs,0);assert.equal(receipts,1);assert.equal(dispatch,0);assert.equal(cleared,1);assert.match(status,/already opened/);
 });
@@ -222,7 +232,7 @@ for(const caseName of ['missing','changed'])test('already prepared destination w
  if(caseName==='changed')intent.documents={resume:{documentSha256:'a'.repeat(64)},coverLetter:{documentSha256:'b'.repeat(64)}};
  let cleared=0,receipts=0,writer=0,pdfs=0,dispatch=0;
  const recovery={load:()=>intent,update:(_id,patch)=>{intent={...intent,...patch};return intent;},clear:()=>{cleared++;intent=null;},withLease:async(_id,action)=>action()};
- const ctx={URL,job,state:{runtime:{settings:{}},preparationFeedback:null},activeApplicationPrepares:new Map(),activeOneClickJobs:new Map(),localPreparationClient:{ensureApplicationPreparation:async()=>({}),verifyApplicationReceipts:async()=>{receipts++;},prepareApplicationDocuments:async()=>{pdfs++;}},getPreparationRecovery:async()=>recovery,prepareJobForGeneration:async()=>job,verifiedPreparationDocuments:async()=>{if(caseName==='changed')throw Error('A saved document changed. Review it before preparing the employer form.');return {job,result:{documents:docs}};},prepareModule:{probePreparationExtension:async()=>true,extensionUnavailableReason,preflightPreparationApplication:async()=>({alreadyPrepared:true,tabId:42}),dispatchPreparedApplication:async()=>{dispatch++;}},generateOneClick:async()=>{writer++;return {job,result:{documents:docs}};},setStatus:()=>{},setGenerationButton:()=>{},render:()=>{},updatePreparationRecoveryBanner:()=>{},console};
+ const ctx={URL,job,state:{runtime:{settings:{}},preparationFeedback:null},activeApplicationPrepares:new Map(),activeOneClickJobs:new Map(),localPreparationClient:{ensureApplicationPreparation:async()=>({}),verifyApplicationReceipts:async()=>{receipts++;},prepareApplicationDocuments:async()=>{pdfs++;}},getPreparationRecovery:async()=>recovery,prepareJobForGeneration:async()=>job,verifiedPreparationDocuments:async()=>{if(caseName==='changed')throw Error('A saved document changed. Review it before preparing the employer form.');return {job,result:{documents:docs}};},prepareModule:{applicationTargetUrl,probePreparationExtension:async()=>true,extensionUnavailableReason,preflightPreparationApplication:async()=>({alreadyPrepared:true,tabId:42}),dispatchPreparedApplication:async()=>{dispatch++;}},generateOneClick:async()=>{writer++;return {job,result:{documents:docs}};},setStatus:()=>{},setGenerationButton:()=>{},render:()=>{},updatePreparationRecoveryBanner:()=>{},console};
  vm.createContext(ctx);await vm.runInContext(code+'\nprepareApplication(job,null)',ctx);
  assert.equal(intent.state,'needs-review');assert.equal(cleared,0);assert.equal(receipts,caseName==='missing'?1:0);assert.equal(writer,caseName==='missing'?1:0);assert.equal(pdfs,0);assert.equal(dispatch,0);
  if(caseName==='missing')assert.deepEqual(Object.keys(intent.documents).sort(),['coverLetter','resume']);
@@ -230,27 +240,40 @@ for(const caseName of ['missing','changed'])test('already prepared destination w
  assert.match(intent.reason,caseName==='missing'?/no prior verified document hashes/:/saved document changed/);
 });
 
-function preparationHarness({pdfFailure=false,writerFailure=false,receiptFailure=false,extensionMode='manual'}={}){
+function preparationHarness({pdfFailure=false,writerFailure=false,receiptFailure=false,extensionMode='manual',jobUrl='https://example.test/apply'}={}){
  const source=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
  const code=source.slice(source.indexOf('  async function prepareApplication('),source.indexOf('  async function launchChatGptPrompt(')).replaceAll(/await import\("\.\/application-prepare\.mjs\?v=\d+"\)/g,'prepareModule');
- const job={id:'JT-test',url:'https://example.test/apply',title:'Artist',company:'Acme'};
+ const job={id:'JT-test',url:jobUrl,title:'Artist',company:'Acme'};
  const docs=['resume','coverLetter'].map((document_type,i)=>({document_type,document_url:'data:text/html,document-'+document_type,document_sha256:(i?'b':'a').repeat(64),file_id:document_type+'1234567890',drive_url:'https://drive.google.com/file/d/'+document_type+'1234567890/view'}));
  const counts={writer:0,receipts:0,pdfs:0,dispatch:0,preflights:0,cleared:0};
- let intent=null,status='',mode=extensionMode,probes=0,profileReads=0,answerReads=0;const steps=[];
- const recovery={load:()=>intent,start:()=>{intent={preparationId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',extensionRequestId:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',jobId:job.id,jobUrl:job.url,state:'generating',expired:false};return intent;},update:(_id,patch)=>{intent={...intent,...patch};return intent;},clear:()=>{counts.cleared++;intent=null;},withLease:async(_id,action)=>action()};
+ let intent=null,status='',mode=extensionMode,probes=0,profileReads=0,answerReads=0,preflightInput=null,packet=null,startedUrl=null;const steps=[];
+ const recovery={load:()=>intent,start:()=>{startedUrl=job.url;intent={preparationId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',extensionRequestId:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',jobId:job.id,jobUrl:job.url,state:'generating',expired:false};return intent;},update:(_id,patch)=>{intent={...intent,...patch};return intent;},clear:()=>{counts.cleared++;intent=null;},withLease:async(_id,action)=>action()};
  const missing=()=>Object.assign(Error('The Raven Chrome extension is unavailable. Install or enable it, then refresh Raven.'),{code:'PREPARATION_EXTENSION_UNAVAILABLE'});
  const old=()=>Object.assign(Error('The Raven Chrome extension needs the latest preparation update. Update or reload it in Chrome, then refresh Raven.'),{code:'PREPARATION_EXTENSION_UNAVAILABLE'});
  const helper={ensureApplicationPreparation:async()=>({}),verifyApplicationReceipts:async input=>{steps.push('receipts');counts.receipts++;if(receiptFailure)throw Error('Drive receipt could not be verified');assert.deepEqual(input.documents.map(doc=>doc.document_sha256),docs.map(doc=>doc.document_sha256));},prepareApplicationDocuments:async input=>{steps.push('pdf');counts.pdfs++;if(pdfFailure)throw Error('PDF byte verification failed');return {documents:input.documents.map(doc=>({...doc,data_url:'data:application/pdf;base64,JVBERi0='}))};}};
  const assertDocumentsReady=()=>{assert.equal(intent.state,'documents-ready');assert.ok(intent.documents?.resume?.documentSha256);assert.ok(intent.documents?.coverLetter?.documentSha256);};
- const ctx={URL,job,state:{runtime:{settings:{}},preparationFeedback:null},activeApplicationPrepares:new Map(),activeOneClickJobs:new Map(),localPreparationClient:helper,getPreparationRecovery:async()=>recovery,prepareJobForGeneration:async()=>job,prepareModule:{probePreparationExtension:async()=>{assertDocumentsReady();steps.push('probe');probes++;if(mode==='missing')throw missing();if(mode==='old')throw old();if(mode==='disappeared'&&probes===2)throw missing();return true;},extensionUnavailableReason,preflightPreparationApplication:async()=>{assertDocumentsReady();steps.push('preflight');counts.preflights++;if(mode==='preflight-disappeared')throw missing();if(mode==='blocked')throw Error('This request ID belongs to a different application.');return mode==='manual'?{status:'manual',reason:'Application requires sign-in or an account.'}:{status:'ready',preflightId:'cccccccc-cccc-4ccc-8ccc-cccccccccccc'};},dispatchPreparedApplication:async()=>{steps.push('dispatch');counts.dispatch++;if(mode==='dispatch-disappeared')throw missing();}},generateOneClick:async(_job,_type,_button,options)=>{steps.push('writer');counts.writer++;options.onAccepted({run_id:'dddddddd-dddd-4ddd-8ddd-dddddddddddd'});if(writerFailure)throw Error('Writer could not save the resume');return {job,result:{documents:docs}};},verifiedPreparationDocuments:async(_jobId,expectedHashes)=>{if(expectedHashes)for(const doc of docs)assert.equal(expectedHashes[doc.document_type].documentSha256,doc.document_sha256);return {job,result:{documents:docs}};},setStatus:value=>status=value,setGenerationButton:()=>{},render:()=>{},updatePreparationRecoveryBanner:()=>{},readCache:()=>{profileReads++;return {name:'Private profile'};},readAnswerMemory:()=>{answerReads++;return {};},APPLICATION_PROFILE_KEY:'profile',console};
+ const ctx={URL,job,state:{runtime:{settings:{}},preparationFeedback:null},activeApplicationPrepares:new Map(),activeOneClickJobs:new Map(),localPreparationClient:helper,getPreparationRecovery:async()=>recovery,prepareJobForGeneration:async()=>job,prepareModule:{applicationTargetUrl,probePreparationExtension:async()=>{assertDocumentsReady();steps.push('probe');probes++;if(mode==='missing')throw missing();if(mode==='old')throw old();if(mode==='disappeared'&&probes===2)throw missing();return true;},extensionUnavailableReason,preflightPreparationApplication:async input=>{preflightInput=input;assertDocumentsReady();steps.push('preflight');counts.preflights++;if(mode==='preflight-disappeared')throw missing();if(mode==='blocked')throw Error('This request ID belongs to a different application.');return mode==='manual'?{status:'manual',reason:'Application requires sign-in or an account.'}:{status:'ready',preflightId:'cccccccc-cccc-4ccc-8ccc-cccccccccccc'};},dispatchPreparedApplication:async input=>{packet=input;steps.push('dispatch');counts.dispatch++;if(mode==='dispatch-disappeared')throw missing();}},generateOneClick:async(_job,_type,_button,options)=>{steps.push('writer');counts.writer++;options.onAccepted({run_id:'dddddddd-dddd-4ddd-8ddd-dddddddddddd'});if(writerFailure)throw Error('Writer could not save the resume');return {job,result:{documents:docs}};},verifiedPreparationDocuments:async(_jobId,expectedHashes)=>{if(expectedHashes)for(const doc of docs)assert.equal(expectedHashes[doc.document_type].documentSha256,doc.document_sha256);return {job,result:{documents:docs}};},setStatus:value=>status=value,setGenerationButton:()=>{},render:()=>{},updatePreparationRecoveryBanner:()=>{},readCache:()=>{profileReads++;return {name:'Private profile'};},readAnswerMemory:()=>{answerReads++;return {};},APPLICATION_PROFILE_KEY:'profile',console};
  vm.createContext(ctx);vm.runInContext(code,ctx);
- return {job,counts,recovery,ctx,prepare:()=>vm.runInContext('prepareApplication(job,null)',ctx),setMode:value=>mode=value,setManual:value=>mode=value?'manual':'ready',getStatus:()=>status,getSteps:()=>steps,getPrivateReads:()=>({profileReads,answerReads}),mutateResumeHash:()=>{docs[0].document_sha256='c'.repeat(64);}};
+ return {job,counts,recovery,ctx,prepare:()=>vm.runInContext('prepareApplication(job,null)',ctx),setMode:value=>mode=value,setManual:value=>mode=value?'manual':'ready',getStatus:()=>status,getSteps:()=>steps,getStartedUrl:()=>startedUrl,getPreflight:()=>preflightInput,getPacket:()=>packet,getPrivateReads:()=>({profileReads,answerReads}),mutateResumeHash:()=>{docs[0].document_sha256='c'.repeat(64);}};
 }
 
 test('canonical documents and live receipts finish before browser capability or destination inspection',async()=>{
  const flow=preparationHarness({extensionMode:'ready'});
  await flow.prepare();
  assert.deepEqual(flow.getSteps(),['writer','receipts','probe','preflight','probe','pdf','dispatch']);
+});
+
+test('verified Lever job keeps the saved posting URL while binding form delivery to its application route',async()=>{
+ const posting='https://jobs.lever.co/blackbirdinteractive/98050e1b-0adb-4842-96e9-a6b9c987b799';
+ const flow=preparationHarness({extensionMode:'ready',jobUrl:posting});
+ await flow.prepare();
+ assert.equal(flow.getStartedUrl(),posting);
+ assert.equal(flow.getPreflight().jobUrl,posting+'/apply');
+ assert.equal(flow.getPacket().jobUrl,posting+'/apply');
+ assert.equal(flow.getPacket().jobId,flow.job.id);
+ assert.equal(flow.getPacket().title,flow.job.title);
+ assert.equal(flow.getPacket().company,flow.job.company);
+ assert.equal(flow.counts.dispatch,1);
 });
 
 test('access gate still verifies and saves both documents, then explicit retry reuses them',async()=>{
@@ -261,12 +284,13 @@ test('access gate still verifies and saves both documents, then explicit retry r
  assert.match(saved.reason,/sign-in/);
  assert.equal(saved.runId,'dddddddd-dddd-4ddd-8ddd-dddddddddddd');
  assert.deepEqual(Object.keys(saved.documents).sort(),['coverLetter','resume']);
- assert.deepEqual(flow.counts,{writer:1,receipts:1,pdfs:1,dispatch:0,preflights:1,cleared:0});
+ assert.deepEqual(flow.counts,{writer:1,receipts:1,pdfs:0,dispatch:0,preflights:1,cleared:0});
+ assert.deepEqual(flow.getPrivateReads(),{profileReads:0,answerReads:0});
  assert.match(flow.getStatus(),/Documents ready; employer form needs manual access/);
  assert.equal(flow.ctx.state.preparationFeedback.kind,'success');
  flow.setManual(false);
  await flow.prepare();
- assert.deepEqual(flow.counts,{writer:1,receipts:2,pdfs:2,dispatch:1,preflights:2,cleared:1});
+ assert.deepEqual(flow.counts,{writer:1,receipts:2,pdfs:1,dispatch:1,preflights:2,cleared:1});
  assert.equal(flow.recovery.load(),null);
 });
 
@@ -330,14 +354,14 @@ test('unavailable extension cannot turn a failed Drive receipt into success',asy
  assert.doesNotMatch(flow.getStatus(),/Documents ready; form filling is unavailable/);
 });
 
-test('a PDF verification failure after an access gate cannot claim documents ready',async()=>{
- const flow=preparationHarness({pdfFailure:true});
+test('a PDF verification failure before delivery cannot claim the application was opened',async()=>{
+ const flow=preparationHarness({pdfFailure:true,extensionMode:'ready'});
  await flow.prepare();
  assert.equal(flow.recovery.load().state,'needs-review');
  assert.match(flow.recovery.load().reason,/PDF byte verification failed/);
  assert.equal(flow.counts.dispatch,0);
  assert.equal(flow.ctx.state.preparationFeedback.kind,'error');
- assert.doesNotMatch(flow.getStatus(),/Documents ready; employer form needs manual access/);
+ assert.doesNotMatch(flow.getStatus(),/Application opened/);
 });
 
 test('a failed writer after an access gate cannot claim documents ready',async()=>{
