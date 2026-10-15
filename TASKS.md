@@ -1,3 +1,13 @@
+## Visa-only screening change — October 14, 2026 MDT
+
+- [x] Implement owner policy: no automatic exclusion for GMT/UTC/CET offsets, Canada/Europe labels or timezone overlap. Filter geographic/legal eligibility only when the posting explicitly requires a work visa or work permit.
+- [x] Preserve visa sponsorship questions, no-sponsorship language and general right-to-work statements as non-proof of mandatory visa.
+- [x] Apply policy to live spreadsheet collector, studio provider scanner and canonical Games / 3D ATS search, without touching unrelated remote-versus-onsite screening.
+- [x] Restore eight wrongly marked spreadsheet discoveries (three GMT and five Canada); preserve original geographic metadata, availability notes, saved jobs and application histories.
+- [x] Deploy studio scanner v20 and main backend v72; verify health, run 38664934829 core/Windows/browser checks passing, production smoke success.
+- [x] Record the standing instruction in AGENTS.md and job-search-config.json so future agents do not reinstate offset or country-based screening.
+- [ ] Verify next scheduled `tim-ploeger-remote-games` run successfully scans with revised eligibility and does not reapply geography-only exclusions; source set due on October 15 01:22 UTC.
+
 ## October 14, 2026 — Cross-source dedup & studio expansion
 
 - [x] Deploy conservative URL/ATS/title/description candidate comparison in the studio scanner **v19** and broad Games / 3D search backend **v71**.
