@@ -572,6 +572,7 @@ test("review preserves approved document and revision invalidates approval",asyn
   await expect.poll(()=>api.getGenerationCalls()).toBe(1);
   expect(api.getGenerationBodies()[0].currentDocument).toBe("resume-v1");
   expect(api.getGenerationBodies()[0].instructions).toBe("Make the summary shorter.");
+  await expect(page.locator("#reviewFeedback")).toContainText("Changes saved");
   await expect(page.locator("#reviewApprove")).toHaveText("OK");
 
   const approvals=await page.evaluate(()=>JSON.parse(localStorage.getItem("ravenDocumentApprovalsV1")||"{}"));
