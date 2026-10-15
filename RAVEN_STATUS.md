@@ -1,3 +1,9 @@
+## Document routing and stage diagnostics — October 14, 2026 MDT
+
+Consolidated Generate, paired generation, ChatGPT, and Save PDF to Drive selection in routeDocumentRequest. Preserved current concurrent writers, prepare-application guard, phone resume behavior, explicit revisions, saved-document reuse and verified export readback. App98/client5. Durable helper state and resume_workflow metadata now retain request ID, failed stage/document, safe allowlisted error code, stage timestamps, elapsed time and per-document stage durations. Parallel sibling failures retain their own stage. Browser failures show request ID and failed stage. No extension changes.
+
+Verified: all71 current core workflow commands passed; focused Edge suite8 cases passed against synthetic local APIs, including paired outputs/reload, overlapping requests, stopped helper, retained Drive links and new failure recovery. Additional parallel-failure regression passes. npm run test:documents provides the focused local suite; existing CI invokes these test files. No live generation, saved-job changes, Drive uploads, helper restart or production rollout performed for this task. GitHub PR/CI status recorded below when available.
+
 ## Visa-only geographic eligibility correction — October 14, 2026 MDT
 
 Owner explicitly directs: **do not exclude or hide any listings based on GMT/UTC/CET offsets or Canada/Europe/other geographic labels alone.** Exclude from Games / 3D geographic/legal screening only when posting text affirmatively requires a work visa or work permit. Lack of sponsorship, right-to-work wording, and sponsorship application questions are not by themselves proof of mandatory visa. Keep original location and working-hour information; ordinary role fit and genuine remote/onsite evidence remain separate checks. Durable standing instruction recorded in `AGENTS.md` and `job-search-config.json`.
@@ -771,3 +777,5 @@ PR71 merged; hostedfrontend82 confirmed. Latest132/102 Mercury Generateboth save
 
 
 Final publication check: location commit 69ae634 Pages, core tests and both production smoke runs passed; hosted filter4 and backend56 verified. Full browser regression remained in progress at handoff.
+PR: https://github.com/shipitmyguy-ux/raven/pull/87. Integrated code8f77fcc: GitHub core/Windows/safety run38669009869 passed all three jobs. Full browser run38669009827 is still running at this handoff. Final focused document suite50/50 passes;8 focused Edge cases pass. Production/helper activation remains unperformed.
+

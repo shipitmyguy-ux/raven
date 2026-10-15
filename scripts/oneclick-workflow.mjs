@@ -50,7 +50,14 @@ export function createOneClickWorkflow({dispatch,rest,generateDraft,uploadPdf,ve
  return async function run({jobId,documentType='resume'},onProgress=()=>{}){
   if(!idPattern.test(jobId||'')||!['resume','coverLetter','both'].includes(documentType))throw Error('INVALID_ARGUMENTS');
   const documents=[];
-  const progress=(stage,kind)=>onProgress({job_id:jobId,stage,document_type:kind,documents:[...documents]});
+  const started=Date.now(),activeStages=new Map(),timings=[];
+  const progress=(stage,kind)=>{
+   const now=Date.now(),key=kind||'run',previous=activeStages.get(key);
+   if(previous)timings.push({stage:previous.stage,document_type:kind||null,duration_ms:Math.max(0,now-previous.started)});
+   activeStages.set(key,{stage,started:now});
+   const snapshot={job_id:jobId,stage,document_type:kind||documentType,stage_started_at:new Date(now).toISOString(),elapsed_ms:Math.max(0,now-started),stage_timings:[...timings],documents:[...documents]};
+   onProgress(snapshot);return snapshot;
+  };
   const read=(kind)=>call('get_document',{job_id:jobId,document_type:kind});
   const assertDoc=(doc,kind)=>{
    if(doc.job_id!==jobId||doc.document_type!==kind||!doc.document_url||digest(doc.document_url)!==doc.document_sha256)throw Error('DOCUMENT_READBACK_NOT_CONFIRMED');
@@ -58,12 +65,14 @@ export function createOneClickWorkflow({dispatch,rest,generateDraft,uploadPdf,ve
   };
    const kinds=documentType==='both'?['resume','coverLetter']:[documentType];
    const processKind=kind=>withDocumentLock(jobId,kind,async()=>{
+    try{
     let current;
     let namingJob;
      progress('checking_saved_state',kind);
     try{current=assertDoc(await read(kind),kind);}catch(error){if(error.message!=='DOCUMENT_UNAVAILABLE')throw error;}
     const reusedExisting=Boolean(current);
     if(!current){
+     progress('context',kind);
      const {job,writing_prompt}=await call('get_job',{job_id:jobId});
      namingJob=job;
      const {profile}=await call('get_verified_profile');
@@ -81,6 +90,7 @@ export function createOneClickWorkflow({dispatch,rest,generateDraft,uploadPdf,ve
             (kind==='resume'?fresh.job?.has_resume:fresh.job?.has_cover_letter))throw Error('VERSION_CONFLICT');
          try{await read(kind);throw Error('VERSION_CONFLICT');}catch(error){if(error.message!=='DOCUMENT_UNAVAILABLE')throw error;}
          const saved=await call('save_generated_document',{job_id:jobId,document_type:kind,expected_version:fresh.job.expected_version,document:draft});
+         progress('confirming',kind);
          const readback=assertDoc(await read(kind),kind);
          if(!saved?.saved||saved.document_url!==readback.document_url||saved.expected_version!==readback.expected_version)throw Error('DOCUMENT_READBACK_NOT_CONFIRMED');
          return readback;
@@ -110,6 +120,7 @@ export function createOneClickWorkflow({dispatch,rest,generateDraft,uploadPdf,ve
      const pdf=receipt?.pdf||await call('export_document_pdf',{job_id:jobId,document_type:kind,document_sha256:current.document_sha256});
      if(pdf.document_sha256!==current.document_sha256||!/^[a-f0-9]{64}$/.test(pdf.pdf_sha256||'')||!pdf.file_path||!pdf.file_name)throw Error('PDF_READBACK_NOT_CONFIRMED');
      if(receipt){
+      progress('verifying',kind);
       const observed=verified(await verifyUpload({fileId:receipt.file_id,folderId:config.driveFolderId}),config.driveFolderId);
       if(observed.file_id!==receipt.file_id)throw Error('DRIVE_UPLOAD_NOT_VERIFIED');
       receipt={...observed,pdf};
@@ -124,6 +135,7 @@ export function createOneClickWorkflow({dispatch,rest,generateDraft,uploadPdf,ve
       receipts.set(key,receipt);
       await receiptStore?.set(key,receipt);
      }
+     progress('confirming',kind);
      if(assertDoc(await read(kind),kind).document_sha256!==current.document_sha256)throw Error('VERSION_CONFLICT');
      progress('recording',kind);
      const recorded=await call('record_drive_export',{job_id:jobId,document_type:kind,document_sha256:current.document_sha256,pdf_sha256:pdf.pdf_sha256,file_id:receipt.file_id,folder_id:config.driveFolderId,file_name:receipt.file_name});
@@ -131,16 +143,18 @@ export function createOneClickWorkflow({dispatch,rest,generateDraft,uploadPdf,ve
      const persisted=await rest(path);
      if(!persisted?.some(row=>row.metadata?.file_id===receipt.file_id&&row.metadata.document_sha256===current.document_sha256))throw Error('EXPORT_RECORD_NOT_CONFIRMED');
     }
+    progress('confirming',kind);
     if(assertDoc(await read(kind),kind).document_sha256!==current.document_sha256)throw Error('VERSION_CONFLICT');
     documents.push({document_type:kind,document_url:current.document_url,document_sha256:current.document_sha256,drive_url:receipt.drive_url,file_id:receipt.file_id,reused_existing:reusedExisting});
+    progress('document_complete',kind);
+    }catch(error){error.failed_stage=activeStages.get(kind)?.stage;error.failed_document_type=kind;progress('document_failed',kind);throw error;}
    });
    try{
     progress('queued');
     const settled=await Promise.allSettled(kinds.map(processKind));
     const failure=settled.find(result=>result.status==='rejected');
     if(failure)throw failure.reason;
-   progress('complete');
-    return {job_id:jobId,stage:'complete',documents:kinds.map(kind=>documents.find(doc=>doc.document_type===kind))};
-  }catch(error){progress('failed');error.partial_documents=documents;throw error;}
+    return {...progress('complete'),documents:kinds.map(kind=>documents.find(doc=>doc.document_type===kind))};
+  }catch(error){error.diagnostics=progress('failed');error.partial_documents=documents;throw error;}
  };
 }

@@ -161,3 +161,31 @@ test('private grant dispatch is isolated across concurrent jobs',async()=>{
  assert.deepEqual(await Promise.all([dispatch(JSON.stringify({job:'A'})),dispatch(JSON.stringify({job:'B'}))]),['A','B']);
  assert.deepEqual(seen,[['A','A'],['B','B']]);assert.equal(maximum,1);
 });
+
+test('stage diagnostics survive disk reload and event readback; unknown errors are redacted',async()=>{
+ for(const message of ['EXPORT_RECORD_NOT_CONFIRMED','PRIVATE_SECRET_VALUE']){
+  const f=await fixture(async(input,onProgress)=>{onProgress({stage:'recording',document_type:'resume',elapsed_ms:42,stage_timings:[{stage:'uploading',document_type:'resume',duration_ms:20}]});throw Error(message);});
+  try{
+   const run=await (await f.request('/runs',{job_id:'one',document_type:'resume'})).json();await f.runtime.drain();
+   const result=await (await f.request('/runs/'+run.run_id)).json();
+   assert.equal(result.failed_stage,'recording');assert.equal(result.failed_document_type,'resume');
+   assert.equal(result.error_code,message==='PRIVATE_SECRET_VALUE'?'WORKFLOW_FAILED':message);
+   assert.equal(f.writes.at(-1).metadata.elapsed_ms,42);assert.equal(f.writes.at(-1).metadata.stage_timings[0].duration_ms,20);
+   assert.ok(!JSON.stringify(f.writes).includes('PRIVATE_SECRET_VALUE'));
+   const reloaded=await createOneClickServer({stateDir:f.dir,runWorkflow:async()=>{},rest:async()=>[],authorizeJob:async()=>{}});
+   const {readFile}=await import('node:fs/promises');
+   const disk=JSON.parse(await readFile(join(f.dir,run.run_id+'.json'),'utf8'));
+   assert.equal(disk.failed_stage,'recording');assert.equal(disk.run_id,run.run_id);
+   assert.equal(reloaded.server.listening,false);
+  }finally{await f.cleanup();}
+ }
+});
+
+test('durable progress write failure identifies persistence and never publishes success',async()=>{
+ let writes=0;
+ const f=await fixture(async(input,progress)=>{progress({stage:'writing',document_type:'resume'});return {job_id:input.jobId,stage:'complete',documents:[]};},{rest:async()=>{if(++writes===2)throw Error('DATABASE_UNAVAILABLE');return [];}});
+ try{
+  const run=await (await f.request('/runs',{job_id:'one',document_type:'resume'})).json();await f.runtime.drain();
+  const result=await (await f.request('/runs/'+run.run_id)).json();assert.equal(result.stage,'failed');assert.equal(result.failed_stage,'persisting');assert.equal(result.error_code,'DATABASE_UNAVAILABLE');
+ }finally{await f.cleanup();}
+});
