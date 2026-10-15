@@ -10,3 +10,23 @@ test('cache before fetch, 12 detail cap, concurrency 2 and cursor progression',a
 test('budget defers without silently complete descriptions; empty verified feed completes',async()=>{const r=await collectBreezy(source,{fetchJson:async()=>[row()],fetchText:async()=>{throw Error('not called');},deadline:Date.now()+3000});assert.equal(r.details.status,'failed');assert.equal(r.details.attempted,0);assert.equal(r.details.deferred,1);const e=await collectBreezy(source,{fetchJson:async()=>[],fetchText:async()=>'<title>Openings at Playdead</title><div class="no-positions-container"></div>'});assert.equal(e.fetched,0);assert.equal(e.details.status,'complete');});
 
 test("unconfirmed empty feed fails closed",async()=>{await assert.rejects(collectBreezy(source,{fetchJson:async()=>[],fetchText:async()=>"<html>blocked</html>"}),/empty feed unconfirmed/);});
+
+test('IllFonic officially linked US-remote Breezy board is pinned to correct host and employer',()=>{
+ const studio={provider:'breezy',board_key:'illfonic',studio_name:'IllFonic'};
+ assert.equal(breezyEndpoint(studio),'https://illfonic.breezy.hr/json');
+ const id='5c1600aa06b4';
+ const [job]=parseBreezyList(studio,[{
+  id,friendly_id:id+'-principal-environment-artist',name:'Principal Environment Artist',
+  url:'https://illfonic.breezy.hr/p/'+id+'-principal-environment-artist',
+  published_date:'2026-09-29T19:23:21.730Z',
+  company:{name:'IllFonic',friendly_id:'illfonic'},
+  location:{name:'United States',is_remote:true}
+ }]);
+ assert.equal(job.remote,true);assert.equal(job.location,'United States');
+ assert.throws(()=>parseBreezyList(studio,[{
+  id,friendly_id:id+'-principal-environment-artist',name:'Principal Environment Artist',
+  url:'https://foreign.breezy.hr/p/'+id+'-principal-environment-artist',
+  company:{name:'IllFonic',friendly_id:'illfonic'},
+  location:{name:'United States',is_remote:true}
+ }]),/Invalid Breezy job URL/);
+});
