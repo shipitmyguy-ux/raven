@@ -1,3 +1,16 @@
+## Latest handoff — Raven cross-source studio/ATS safeguards (October 14, 2026 MDT)
+
+GitHub repo `shipitmyguy-ux/raven`; Supabase project `umvmilulnqnmeqvfoxxc`.
+
+- Live functions: `raven-studio-scan` v19 and `raven-backend-v3` v71. Both were deployed with existing security/JWT configuration unchanged, validated by public read-only GET (scanner directory and backend health/listResults).
+- Shared pure helpers: `supabase/functions/_shared/studio-ingest-dedup.mjs`, `studio-us-eligibility.mjs`, `job-duplicate-evidence.mjs`. Both studio scanner and broad Games / 3D ATS ingestion compare against existing discovery plus saved jobs. Do not auto-merge text-only candidates. Near matches are held for private review. Source URL observations that identify exact matches or genuinely new vacancies now write `raven_job_source_links` after ingestion succeeds.
+- Private RLS tables: `raven_job_duplicate_reviews` and `raven_job_source_links`. No anon/authenticated read permissions, service role writes only; table link count was 0 when inspected shortly after deployment (no new scan yet).
+- Live studio source registry total 373, verified enabled 86, pending verification 257. Newly verified: IllFonic/Breezy (successful first scan 1 eligible); Mob Entertainment/Greenhouse (successful first scan 0 eligible); ArenaNet/Ashby and Cinnamon/Teamtailor (both pending first scheduled scan at last observation 2026-10-15 01:07 UTC). First-party official site links were checked. Cinnamon Roblox Environment Artist position is explicitly an ongoing talent pool, not urgent.
+- Source update migrations: `20261015005500_sheet_official_illfonic_mob.sql`, `20261015012500_arena_cinnamon_sources.sql`. RLS queue migrations `20261015010500_job_duplicate_review_queue.sql`, `20261015013500_game_job_source_provenance.sql`. Geo-review migration `20261015011000_sheet_geo_review_cleanup.sql` flagged 8 incompatible Canada/GMT rows, no saved job deletions.
+- CI pass **38663769368**: core, Windows, browser safety; includes new provenance and duplicate-handling tests. Both Supabase Edge endpoints returned `ok:true` and backend `healthy:true`.
+- Database audit: 836 discovery URLs, all unique; 8 GeoReview. A zero-result current unsaved Games / 3D list is expected under saved-job suppression and role filter, not loss of stored data.
+- Remaining: confirm real scheduled runs for ArenaNet/Cinnamon and that source provenance/review queue populate correctly. Review job boards for official studio endpoints without guessing, and consider controlled duplicate-adjudication UI. GitHub issues #85, #86 remain open. No helper agent launched, no resume/application changes.
+
 ## Current handoff — remote games spreadsheet ingestion (October 14, 2026 MDT)
 
 Raven Supabase project `umvmilulnqnmeqvfoxxc`; GitHub `shipitmyguy-ux/raven`. The spreadsheet URL is `https://docs.google.com/spreadsheets/d/1Kue4iGy1WNpItNyCpaMT9__A_228NmbQ9s_uUcc3wb8/edit`. Source is user-supplied public job leads.
