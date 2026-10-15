@@ -74,3 +74,27 @@ test('unknown-employer job board matches cannot establish cross-source identity'
  const result=planStudioIngestion([next],[prior],'Studio:ashby');
  assert.equal(result.inserts.length,1);
 });
+
+test('exact alternate URL retains canonical job ID and records both sources',()=>{
+ const existing=row({url:'https://jobs.ashbyhq.com/example/3ef83988-cada-403f-ac1d-96e81f6b62b7',source:'Studio:ashby',status:'Interview'});
+ const second=row({url:'https://jobs.ashbyhq.com/example/3ef83988-cada-403f-ac1d-96e81f6b62b7?utm_source=other'});
+ const result=planStudioIngestion([second],[existing],'Tim Ploeger Remote Games Sheet',{isSheet:true});
+ assert.equal(result.inserts.length,0);
+ assert.deepEqual(result.sourceLinks,[{
+  source_name:'Tim Ploeger Remote Games Sheet',
+  observed_url:second.url,canonical_url:existing.url
+ }]);
+ assert.equal(existing.status,'Interview');
+});
+test('new job records origin; held near-match does not assert canonical identity',()=>{
+ const prior=row({url:'https://example.org/old'});
+ const candidate=row({url:'https://example.org/new'});
+ const uncertain=planStudioIngestion([candidate],[prior],'Studio:greenhouse');
+ assert.equal(uncertain.sourceLinks.length,0);
+ const fresh=planStudioIngestion([candidate],[],'Studio:greenhouse');
+ assert.deepEqual(fresh.sourceLinks,[{
+  source_name:'Studio:greenhouse',
+  observed_url:candidate.url,
+  canonical_url:candidate.url
+ }]);
+});
