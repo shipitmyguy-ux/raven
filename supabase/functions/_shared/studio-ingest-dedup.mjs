@@ -45,7 +45,7 @@ function exactIdentity(a,b){
  * rows are not mutated here. Caller persists ambiguous pairs for review.
  */
 export function planStudioIngestion(incoming,existing,sourceLabel,{isSheet=false}={}){
- const known=[...(existing||[])],inserts=[],refresh=[],updates=[],reviews=[];
+ const known=[...(existing||[])],inserts=[],refresh=[],updates=[],reviews=[],sourceLinks=[];
  let skippedExact=0,heldForReview=0;
  for(const job of incoming||[]){
   if(!job?.url||!job?.title||!job?.company)continue;
@@ -62,6 +62,7 @@ export function planStudioIngestion(incoming,existing,sourceLabel,{isSheet=false
   if(exact){
    skippedExact++;
    const row=exact.row;
+   sourceLinks.push({source_name:sourceLabel,observed_url:String(job.url),canonical_url:String(row.url)});
    if(row.source===sourceLabel&&row.status==='Discovered'&&row.url===job.url){
     if(isSheet)refresh.push(job.url);
     else updates.push(job);
@@ -80,6 +81,7 @@ export function planStudioIngestion(incoming,existing,sourceLabel,{isSheet=false
    continue;
   }
   inserts.push(job);known.push(proposal);
+  sourceLinks.push({source_name:sourceLabel,observed_url:String(job.url),canonical_url:String(job.url)});
  }
- return {inserts,updates,refresh,reviews,skippedExact,heldForReview};
+ return {inserts,updates,refresh,reviews,sourceLinks,skippedExact,heldForReview};
 }
