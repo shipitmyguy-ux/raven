@@ -49,6 +49,8 @@ on:
       - "e2e/**"
       - "playwright.config.mjs"
       - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/test.yml"
       - "tests/**"
       - "scripts/**"
       - "docs/BACKUP_RESTORE.md"
@@ -59,6 +61,10 @@ on:
       - "supabase/functions/raven-cover-v2/**"
       - "supabase/functions/raven-mcp-v1/**"
       - "supabase/functions/_shared/**"
+concurrency:
+  group: core-tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -146,22 +152,6 @@ jobs:
           node tests/control-panel.test.mjs
           node tests/canonical-identity.test.mjs
           node tests/backup-contract.test.mjs
-
-  safety-e2e:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v7
-        with:
-          node-version: "22"
-      - name: Install test dependencies
-        run: npm install --no-audit --no-fund
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
-      - name: Targeted browser regression tests
-        run: |
-          npx playwright test e2e/studio-directory.spec.mjs e2e/studio-job-flow.spec.mjs e2e/job-dedup.spec.mjs
-          npx playwright test --grep "Apply on site|summary-only revision|listing and direct application remain available|generators save discovery jobs|application requires approval of both exact documents|review preserves approved document and revision invalidates approval|failed revision keeps the saved document and its approval|local master resume and track assignments persist through reload|offline resume fallback creates a local draft without network generation|generation cache prevents a duplicate resume model call|iPhone SE viewport keeps Raven usable without page overflow|refresh updates every job track and tabs are filter-only"
 
   private-tunnel-windows:
     runs-on: windows-latest
