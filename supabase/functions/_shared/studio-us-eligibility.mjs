@@ -24,13 +24,18 @@ export function requiresVisaOrWorkPermit(job) {
  // Test each sentence/line separately, not across unrelated statements in
  // company boilerplate. A sponsorship question or "no sponsorship offered"
  // is NOT evidence that the job requires a visa.
- const clauses=text.split(/[\n.!?;]+/).map(s=>s.trim()).filter(Boolean);
+ const sentences=text.match(/[^.!?;\n]+(?:[.!?;]|$)/g)||[];
+ const clauses=sentences.flatMap(s=>s.split(/\b(?:but|however|although|except)\b/i))
+   .map(s=>s.trim()).filter(Boolean);
  for(const clause of clauses){
-   if(!/\b(?:visa|visas|work\s+permit|work\s+permits)\b/i.test(clause))continue;
-   if(negatedRequirement.some(re=>re.test(clause)))continue;
-   if(/\b(?:visa|visas|work\s+permit)\s+sponsorship\b/i.test(clause)
-      && !/\b(?:work\s+visa|visa|work\s+permit)\s+(?:required|mandatory)\b/i.test(clause))continue;
-   if(requirementPatterns.some(re=>re.test(clause)))return true;
+   // Application questions are not evidence that a visa is mandatory.
+   if(/\?\s*$/.test(clause))continue;
+   // Sponsorship availability or absence cannot prove a work visa is required.
+   // Remove that noun phrase while preserving an independent actual requirement.
+   const requirement=clause.replace(/\b(?:work\s+|employment\s+)?visa\s+sponsorship\b/gi,'sponsorship');
+   if(!/\b(?:visa|visas|work\s+permit|work\s+permits)\b/i.test(requirement))continue;
+   if(negatedRequirement.some(re=>re.test(requirement)))continue;
+   if(requirementPatterns.some(re=>re.test(requirement)))return true;
  }
  return false;
 }
