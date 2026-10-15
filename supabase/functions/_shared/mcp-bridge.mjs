@@ -94,7 +94,7 @@ export function createMcpHandler({getEnv,fetchImpl=fetch,now=()=>Date.now(),veri
    requireValue(draft&&typeof draft==='object'&&!Array.isArray(draft),'INVALID_DOCUMENT');
   }
   const profile=await getProfile();let document;
-  try{document=validateDraft(kind,draft,profile,{target});}catch{throw new BridgeError('INVALID_DOCUMENT');}
+  try{document=validateDraft(kind,draft,profile,{target,shortCover:true});}catch{throw new BridgeError('INVALID_DOCUMENT');}
   const review=reviewDocument(kind,document,{profile,target});requireValue(review.status==='passed','FACTUAL_REVIEW_BLOCKED');
   let html=kind==='resume'?generatedResumeHtml(job,document):generatedCoverLetterHtml(job,document);
   const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
