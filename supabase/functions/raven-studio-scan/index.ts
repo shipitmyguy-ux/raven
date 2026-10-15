@@ -1,7 +1,6 @@
 import "../_shared/track-filter.js";
 import {collectRemoteGameSheet, spreadsheetArtRoleAllowed} from "../_shared/studio-sheet-feed.mjs";
-import {duplicateEvidence} from "../_shared/job-duplicate-evidence.mjs";
-import {sameJob} from "../_shared/studio-result-dedup.mjs";
+import {planStudioIngestion} from "../_shared/studio-ingest-dedup.mjs";
 import {MAX_STUDIO_JOBS, providerEndpoint, providerRecords, normalizeStudioJobs, deduplicateStudioJobs} from "../_shared/studio-providers.mjs";
 import {fetchStudioJson, fetchStudioText, enrichStudioDetails, reuseFreshStudioDescriptions} from "../_shared/studio-collector.mjs";
 import {collectIcims} from "../_shared/studio-icims.mjs";
@@ -25,8 +24,8 @@ const {gameArtRoleAllowed,jobLocationAllowed}=(globalThis as any).RavenTrackFilt
 const base=Deno.env.get("SUPABASE_URL")||"",key=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
 const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"content-type,x-raven-studio-secret","Access-Control-Allow-Methods":"GET,POST,OPTIONS"};
 const json=(v:unknown,status=200)=>new Response(JSON.stringify(v),{status,headers:{...cors,"Content-Type":"application/json"}});
-async function db(path:string,method="GET",body?:unknown){
- const r=await fetch(base+"/rest/v1/"+path,{method,headers:{"apikey":key,"Authorization":"Bearer "+key,"Content-Type":"application/json","Prefer":method==="GET"?"return=representation":"resolution=merge-duplicates,return=minimal"},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(8000)});
+async function db(path:string,method="GET",body?:unknown,prefer?:string){
+ const r=await fetch(base+"/rest/v1/"+path,{method,headers:{"apikey":key,"Authorization":"Bearer "+key,"Content-Type":"application/json","Prefer":method==="GET"?"return=representation":(prefer||"resolution=merge-duplicates,return=minimal")},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(8000)});
  if(!r.ok)throw new Error("DB "+r.status+" "+(await r.text()).slice(0,200));
  const text=await r.text();return text?JSON.parse(text):[];
 }
@@ -92,32 +91,31 @@ async function sourceJobs(s:any,deadline:number){
 }
 
 const SHEET_SOURCE="Tim Ploeger Remote Games Sheet";
-async function deduplicateSheetResults(jobs:any[]) {
- // Read-only cross-source comparison, including descriptions where available.
- // Preserve saved application records; only insert genuinely new discoveries.
+async function prepareCrossSource(jobs:any[],sourceName:string,isSheet:boolean){
+ if(!jobs.length)return {inserts:[],updates:[],refresh:[],reviews:[],skippedExact:0,heldForReview:0};
  const known:any[]=[];
  for(let offset=0;offset<5000;offset+=500){
   const rows=await db("raven_search_results?select=url,title,company,location,remote,snippet,source,track,status&track=eq."+encodeURIComponent("Games / 3D")+"&limit=500&offset="+offset);
-  if(!Array.isArray(rows))throw Error("Invalid existing game-job records");
+  if(!Array.isArray(rows))throw Error("Invalid existing game discovery records");
   known.push(...rows);
   if(rows.length<500)break;
-  if(offset>=4500)throw Error("Existing game-job lookup exceeded safe bounds");
+  if(offset>=4500)throw Error("Game discovery comparison exceeds safe bounds");
  }
- const fresh:any[]=[],refresh:string[]=[];
- let skippedExact=0,heldForReview=0;
- for(const job of jobs){
-  const proposed={...job,source:SHEET_SOURCE,track:"Games / 3D",status:"Discovered"};
-  const match=known.find(row=>sameJob(proposed,row)||duplicateEvidence(proposed,row).decision==="duplicate");
-  if(match){
-   skippedExact++;
-   if(match.source===SHEET_SOURCE&&match.url===job.url&&match.status==="Discovered")refresh.push(job.url);
-   continue;
-  }
-  const review=known.some(row=>duplicateEvidence(proposed,row).decision==="review");
-  if(review){heldForReview++;continue;}
-  fresh.push(job);known.push(proposed);
+ // Read saved application identities to avoid rediscovering them as new leads.
+ for(let offset=0;offset<2000;offset+=500){
+  const saved=await db("raven_jobs?select=url,title,company,location,remote,notes,source,track,status&track=eq."+encodeURIComponent("Games / 3D")+"&limit=500&offset="+offset);
+  if(!Array.isArray(saved))throw Error("Invalid saved game job lookup");
+  known.push(...saved.map((job:any)=>({...job,snippet:job.notes||""})));
+  if(saved.length<500)break;
+  if(offset>=1500)throw Error("Saved job comparison exceeds safe bounds");
  }
- return {jobs:fresh,refresh,skippedExact,heldForReview};
+ const plan=planStudioIngestion(jobs,known,sourceName,{isSheet});
+ // Ambiguities stay out of search until adjudicated. The queue is private
+ // and idempotent; repeated scans do not reset a human review decision.
+ for(let i=0;i<plan.reviews.length;i+=25)await db(
+  "raven_job_duplicate_reviews?on_conflict=candidate_url,existing_url","POST",
+  plan.reviews.slice(i,i+25),"resolution=ignore-duplicates,return=minimal");
+ return plan;
 }
 async function refreshExistingSheetRows(urls:string[],now:string){
  for(let i=0;i<urls.length;i+=25){
@@ -135,21 +133,24 @@ async function check(s:any,tickDeadline:number){
   const selected=jobs.filter((j:any)=>(sheet?spreadsheetArtRoleAllowed(j):gameArtRoleAllowed(j))&&jobLocationAllowed(j));
   eligible=selected.length;
   const seen=new Date().toISOString();
-  let candidates=selected,skippedExact=0,heldForReview=0;
+  let candidates=selected,plan:any;
   if(sheet){
-   const distinct=await deduplicateSheetResults(selected);
-   candidates=distinct.jobs;skippedExact=distinct.skippedExact;heldForReview=distinct.heldForReview;
-   await refreshExistingSheetRows(distinct.refresh,seen);
+   plan=await prepareCrossSource(selected,SHEET_SOURCE,true);
+   candidates=plan.inserts;
+   await refreshExistingSheetRows(plan.refresh,seen);
+   details=collected.details||await enrichStudioDetails(s,candidates,{deadline});
   }else{
-   // Official providers keep their existing description cache and update path.
+   // Collect descriptions first so near-duplicates are compared with real text.
    await preparePortalDetails(selected.filter((j:any)=>!j.snippet),deadline);
+   details=collected.details||await enrichStudioDetails(s,selected,{deadline});
+   plan=await prepareCrossSource(selected,"Studio:"+s.provider,false);
+   candidates=[...plan.inserts,...plan.updates];
   }
-  details=collected.details||await enrichStudioDetails(s,candidates,{deadline});
   for(const group of [candidates.filter((j:any)=>!!j.snippet),candidates.filter((j:any)=>!j.snippet)])for(let i=0;i<group.length;i+=35)await db("raven_search_results?on_conflict=url","POST",group.slice(i,i+35).map((j:any)=>({
    track:"Games / 3D",title:j.title,company:j.company,location:j.location,remote:j.remote,
    url:j.url,...(j.snippet?{snippet:j.snippet,studio_description_updated_at:j.studio_description_updated_at||seen}:{}),source:sheet?SHEET_SOURCE:"Studio:"+s.provider,score:sheet?8:12,status:"Discovered",last_seen:seen
   })));
-  if(sheet)details={...details,skipped_exact:skippedExact,held_for_review:heldForReview,imported:candidates.length};
+  details={...details,skipped_exact:plan.skippedExact,held_for_review:plan.heldForReview,imported:plan.inserts.length,queued_reviews:plan.reviews.length};
  }catch(e){status="failed";error=String(e instanceof Error?e.message:e);}
  const checked=new Date().toISOString();
  await db("raven_studio_sources?id=eq."+s.id,"PATCH",{
