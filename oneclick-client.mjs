@@ -54,7 +54,7 @@ export function createOneClickClient({baseUrl='http://127.0.0.1:8766',fetchImpl=
   return {async resolveApplicationDestination(job){
     if(!isApplicationBoardUrl(job.url))return job.url;
     await session();
-    const result=await request('/application-destination',{job_id:String(job.id)});
+    const result=await request('/application-destination',{job_id:String(job.id)},true,30000);
     if(result?.job_id!==String(job.id)||result.source_url!==job.url||typeof result.destination_url!=='string')throw Error('The employer destination changed. Review the saved listing.');
     const url=new URL(result.destination_url);if(url.protocol!=='https:'||url.port||url.username||url.password)throw Error('Invalid employer destination.');
     return result.destination_url;

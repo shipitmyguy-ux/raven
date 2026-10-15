@@ -183,3 +183,12 @@ test('unknown progress and cross-document identity remain rejected',async()=>{
   await assert.rejects(client.run({job_id:'JT-test',document_type:'resume'}),/invalid status/);
  }
 });
+
+test('board resolution binds response to the saved job and direct destinations skip the endpoint',async()=>{
+ const job={id:'JT-test',url:'https://hitmarker.net/jobs/example-1234567'},calls=[];
+ const result={job_id:job.id,source_url:job.url,destination_url:'https://example.breezy.hr/p/job'};
+ const client=createOneClickClient({fetchImpl:async(url,options)=>{calls.push(url);if(url.endsWith('/session'))return {ok:true,json:async()=>({token:'fixture'})};assert.deepEqual(JSON.parse(options.body),{job_id:job.id});return {ok:true,json:async()=>result};}});
+ assert.equal(await client.resolveApplicationDestination(job),result.destination_url);
+ result.job_id='other';await assert.rejects(client.resolveApplicationDestination(job),/destination changed/);
+ const before=calls.length;assert.equal(await client.resolveApplicationDestination({...job,url:'https://example.breezy.hr/p/job'}),'https://example.breezy.hr/p/job');assert.equal(calls.length,before);
+});
