@@ -33,6 +33,7 @@
   function packetCheck(packet) {
     if (packet?.version !== 2 || packet.mode !== "prepare") throw Error("Invalid prepare packet.");
     targetOf(packet);
+    if(packet.coverLetterText !== undefined && (typeof packet.coverLetterText !== "string" || packet.coverLetterText.length > 20000))throw Error("Invalid saved cover-letter text.");
     const age = Date.now() - Date.parse(packet.createdAt);
     if (!Number.isFinite(age) || age < -30000 || age > 300000) throw Error("Prepare packet expired.");
     if (!packet.profile || typeof packet.profile !== "object" || Array.isArray(packet.profile) ||

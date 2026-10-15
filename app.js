@@ -2257,7 +2257,16 @@
         }
         const prepared=await localPreparationClient.prepareApplicationDocuments({job_id:String(job.id),documents:verified.result.documents.map(doc=>({document_type:doc.document_type,document_sha256:doc.document_sha256}))});
         if(!Array.isArray(prepared.documents)||prepared.documents.length!==2||!["resume","coverLetter"].every(kind=>prepared.documents.some(doc=>doc.document_type===kind&&doc.document_sha256===hashes[kind].documentSha256&&typeof doc.data_url==="string")))throw Error("The writer did not return both verified PDFs.");
-        const packet={version:2,mode:"prepare",createdAt:new Date().toISOString(),jobId:String(job.id),jobUrl:targetUrl,title:canonical.title||"",company:canonical.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory()};
+        let coverLetterText='';
+        if(/^data:text\/html(?:;charset=utf-8)?,/i.test(canonical.coverLetter||'')){
+          const html=decodeURIComponent(canonical.coverLetter.slice(canonical.coverLetter.indexOf(',')+1));
+          const parsed=new DOMParser().parseFromString(html,'text/html');
+          parsed.querySelectorAll('script,style,noscript').forEach(el=>el.remove());
+          parsed.querySelectorAll('br').forEach(el=>el.replaceWith('\n'));
+          parsed.querySelectorAll('p,h1,h2,h3,div,li').forEach(el=>el.append('\n'));
+          coverLetterText=(parsed.body.textContent||'').replace(/[ \t]+/g,' ').replace(/\n[ \t]+/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+        }
+        const packet={version:2,mode:"prepare",createdAt:new Date().toISOString(),jobId:String(job.id),jobUrl:targetUrl,title:canonical.title||"",company:canonical.company||"",...(coverLetterText&&coverLetterText.length<=20000?{coverLetterText}:{}),profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory()};
         for(const doc of prepared.documents)packet[doc.document_type==="resume"?"resume":"coverLetter"]=doc.data_url;
         if(typeof packet.resume!=="string"||typeof packet.coverLetter!=="string")throw Error("The writer did not return both verified PDFs.");
         intent=recovery.update(preparationId,{state:"dispatching",lastStage:"form_delivery"});
