@@ -1,3 +1,18 @@
+## Remote games spreadsheet integration — October 14, 2026 (MDT)
+
+- [x] Verify public spreadsheet export, complete 656-row CSV and metadata.
+- [x] Create GitHub snapshot backup and daily refresh workflow; confirm actual Actions run succeeds.
+- [x] Deploy fixed-source sheet collector in Supabase `raven-studio-scan` v15; register verified 24-hour scheduled source.
+- [x] Verify first scheduled scan: 656 rows fetched, 28 eligible, healthy/no errors.
+- [x] Confirm Games / 3D live API includes sheet leads and no duplicate URLs in displayed response.
+- [x] Add 204 sheet-derived company candidates to studio directory without turning on unverified web crawls.
+- [x] Add cross-source duplicate evidence helper and regression tests; spreadsheet scanner now uses it to hold ambiguous matching vacancies for review.
+- [ ] Validate full CI suite containing `tests/studio-sheet-scan-handler.test.mjs` and track production smoke tests after latest changes.
+- [ ] Extend text-similarity review/audit across **other** studio feeds and broad ATS discovery; do not auto-merge on description alone or alter saved application IDs.
+- [ ] Verify individual official website/ATS endpoints for 204 pending studio candidates, and activate supported sources incrementally (GitHub issue #85). No helper agent has been launched from this chat.
+- [ ] Review stale or geographically incompatible records from the earlier manual sheet import without deleting saved jobs or application history.
+- [ ] Consider a persistent duplicate-review queue for same-company near matches and provenance from multiple feed URLs.
+
 # Raven Tasks
 
 ## Live keep-awake acceptance - October 14, 2026
