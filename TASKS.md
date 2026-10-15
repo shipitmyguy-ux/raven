@@ -7,7 +7,7 @@
 - [x] Confirm Games / 3D live API includes sheet leads and no duplicate URLs in displayed response.
 - [x] Add 204 sheet-derived company candidates to studio directory without turning on unverified web crawls.
 - [x] Add cross-source duplicate evidence helper and regression tests; spreadsheet scanner now uses it to hold ambiguous matching vacancies for review.
-- [ ] Validate full CI suite containing `tests/studio-sheet-scan-handler.test.mjs` and track production smoke tests after latest changes.
+- [x] Full core CI (run 38660556057), including spreadsheet collector, scan-handler and duplicate-evidence tests; Windows and browser safety jobs passed. Production smoke (38660555953) and snapshot refresh (38660555783) passed.
 - [ ] Extend text-similarity review/audit across **other** studio feeds and broad ATS discovery; do not auto-merge on description alone or alter saved application IDs.
 - [ ] Verify individual official website/ATS endpoints for 204 pending studio candidates, and activate supported sources incrementally (GitHub issue #85). No helper agent has been launched from this chat.
 - [ ] Review stale or geographically incompatible records from the earlier manual sheet import without deleting saved jobs or application history.
