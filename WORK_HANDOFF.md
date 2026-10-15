@@ -1,5 +1,17 @@
 # Raven execution handoff
 
+## Dutchie Apply acceptance blocked by closed role — October 15, 2026 MDT
+
+Owner requested a focused live Apply job test using the exact two existing Dutchie PDFs. Current saved Jobicy listing explicitly says Closed / Applications closed and provides no form. The exact Dutchie official role URL now redirects to general careers; the current employer Greenhouse board lists eight openings and omits this role. Search snippets still referenced the old role, but current browser observations supersede that cached evidence. No alternate role or guessed application form was substituted.
+
+Raven initially showed Review paused preparation for another job rather than Apply job. Its metadata-only recovery record was backed up privately before a normal UI Dismiss. A concurrent chat then started Nex preparation and acquired a live lease; that newer state was left untouched. Original metadata remains in this chat's private output; no document, employer draft, application status or profile was deleted. Do not restore the older pointer over the newer Nex work.
+
+Verified with a read-only canonical audit and independent connected Drive folder search: exactly one resume PDF68492bytes and one cover PDF30822bytes, original file IDs/creation/modification identity unchanged, exactly two canonical exports linked to the correct saved documents/job, status Saved. No Dutchie generation, PDF render/upload, applicant packet, employer upload or submission was attempted. The Apply/form/attachment acceptance is BLOCKED, not passed: there is no live form for this closed role. QA remained focused: live availability and file/link identity checks only, no synthetic suites or CI dispatch. Private closed-listing screenshot saved in the chat visualization output. No product changes.
+
+## Concurrent/prior execution context
+
+# Raven execution handoff
+
 ## Approved live retry and stale-run recovery — October 15, 2026 MDT
 
 Owner d explicitly approved missing Fair Play Labs cover save/export. Actual helper pair retry completed: existing resume/PDF reused; missing cover saved, exact PDF uploaded and export event confirmed. Fresh Raven drawer shows both documents ready; full-chain document creation passed. Owner then reported next step still blocked. Fresh UI confirms stale original validation failure persisted: Resume preparation always polls its original failed run even after an independent successful pair request. Added canonical current-document/export verification before polling an old run when both documents now exist; final live Drive receipt, hash, job URL, lease, extension preflight and no-submit safeguards retained. App101 invalidates web cache; no extension update.
