@@ -38,7 +38,7 @@ const fakeFetch=async(url,opts={})=>{
  return new Response(null,{status:204});
 };
 let handler;
-vm.runInNewContext(source,{...providers,...collector,...schedule,...sheet,...evidence,sameJob,
+vm.runInNewContext(source,{...providers,...collector,...schedule,...sheet,collectRemoteGameSheet:async()=>({jobs:collected,fetched:656,details:{status:'not_needed',error:null,attempted:0,completed:0,deferred:0}}),...evidence,sameJob,
  fetch:fakeFetch,globalThis:{RavenTrackFilter:globalThis.RavenTrackFilter},
  Deno:{env:{get:k=>k==='SUPABASE_URL'?'https://db.example':'local-test-key'},serve:fn=>{handler=fn;}},
  crypto,Response,TextEncoder,TextDecoder,Uint8Array,AbortSignal,URL});
