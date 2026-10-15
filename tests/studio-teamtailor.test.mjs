@@ -45,3 +45,12 @@ for(const [studio_name,board_key,host] of [['Fatshark','fatshark','jobs.fatshark
  assert.throws(()=>parseTeamtailorList(s,html.replaceAll(host,'careers.embark-studios.com')));
  assert.throws(()=>parseTeamtailorList(s,'<script>teamtailor</script><turbo-frame id="jobs_list"><div>Jobs</div></turbo-frame>'));
 }
+
+const cinnamon={provider:'teamtailor',board_key:'cinnamon',studio_name:'Cinnamon'};
+assert.equal(teamtailorEndpoint(cinnamon),'https://cinnamonsoftware.teamtailor.com/jobs');
+const cinnamonList=list().replaceAll('careers.embark-studios.com','cinnamonsoftware.teamtailor.com');
+const cinnamonJob=parseTeamtailorList(cinnamon,cinnamonList).jobs[0];
+assert.equal(cinnamonJob.company,'Cinnamon');
+assert.equal(parseTeamtailorDetail(cinnamon,cinnamonJob,detail(1,{hiringOrganization:{name:'Cinnamon'}})).snippet,'Build worlds & skies');
+assert.throws(()=>parseTeamtailorDetail(cinnamon,cinnamonJob,detail()));
+assert.throws(()=>teamtailorEndpoint({...cinnamon,board_key:'evil-site'}));
