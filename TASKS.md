@@ -1,3 +1,18 @@
+## October 14, 2026 — Cross-source dedup & studio expansion
+
+- [x] Deploy conservative URL/ATS/title/description candidate comparison in the studio scanner **v19** and broad Games / 3D search backend **v71**.
+- [x] Enforce explicit US geographic eligibility in both ingestion paths, and flag 8 earlier Canada/GMT-only spreadsheet discoveries `GeoReview` without deletion.
+- [x] Create service-role-only RLS `raven_job_duplicate_reviews` for ambiguous matches; never auto-merge on text similarity.
+- [x] Create service-role-only RLS `raven_job_source_links` for durable canonical-source mapping and wire both backend ingestors to it (new table awaiting first ingestion).
+- [x] Add official studio source integrations for IllFonic/Breezy, Mob/Greenhouse, ArenaNet/Ashby, Cinnamon/Teamtailor; no unsupported ATS hosts accepted.
+- [x] Verify first IllFonic scan (1 eligible) and Mob scan (0 eligible, healthy).
+- [x] Verify GitHub Actions core, Windows and safety browser tests pass on run **38663769368**, and smoke-check both deployed APIs.
+- [ ] Verify actual first scheduled ArenaNet and Cinnamon scans, diagnose any provider-format errors and check their eligible counts.
+- [ ] Verify provenance links and duplicate review queue are populated correctly on a subsequent real scan; do not invent rows before observed.
+- [ ] Build a controlled review/approval mechanism for held duplicate candidates, with protected access and source proof, if useful.
+- [ ] Continue verifying official careers links and provider bindings for remaining studio directory candidates (GitHub #85).
+- [ ] Confirm post-deployment production smoke/Pages checks on the final GitHub commits if a new commit is made.
+
 ## Remote games spreadsheet integration — October 14, 2026 (MDT)
 
 - [x] Verify public spreadsheet export, complete 656-row CSV and metadata.
