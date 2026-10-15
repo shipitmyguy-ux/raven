@@ -6,7 +6,7 @@ Implemented source:
 - `supabase/functions/_shared/studio-us-eligibility.mjs` now exports a narrowly grounded `requiresVisaOrWorkPermit` test; `usStudioScopeAllowed` excludes only confirmed required visa/permit.
 - `supabase/functions/_shared/studio-sheet-feed.mjs` uses same filter to retain foreign/GMT spreadsheet rows, still handling shared careers-page URL dedup separately.
 - `tests/studio-us-eligibility.test.mjs`, `tests/studio-sheet-feed.test.mjs`, and `tests/backend-game-ingestion.test.mjs` updated to reflect owner policy, with positive mandatory-visa and negative sponsorship/question examples.
-- CI run **38664934829** passed all core regressions, Windows and browser safety. Production smoke on last code/status changes passed.
+- CI runs **38664934829** and final **38665523993** passed core regressions, Windows and browser safety; latest Production Smoke Tests passed as well. Production smoke on last code/status changes passed.
 - Live Supabase studio scanner **v20** and `raven-backend-v3` **v72** deployed. Both responded successfully on read-only health checks.
 - Reversal migration `supabase/migrations/20261015012100_restore_timezone_country_leads.sql` applied successfully; verified all eight prior GeoReview spreadsheet listings now `Discovered`, `listing_state=null`, including three GMT and five Canada. One unrelated listing availability note was preserved.
 - Studio spreadsheet source `tim-ploeger-remote-games` marked `next_check_at=now()` on 2026-10-15 01:22 UTC to prompt the existing 15-minute cron. **Next run not yet confirmed.** Check `raven_studio_sources` and `raven_studio_checks` before claiming success, and verify no visa-unproven listings are suppressed.
