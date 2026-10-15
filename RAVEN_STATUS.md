@@ -777,3 +777,5 @@ PR71 merged; hostedfrontend82 confirmed. Latest132/102 Mercury Generateboth save
 
 
 Final publication check: location commit 69ae634 Pages, core tests and both production smoke runs passed; hosted filter4 and backend56 verified. Full browser regression remained in progress at handoff.
+PR: https://github.com/shipitmyguy-ux/raven/pull/87. Integrated code8f77fcc: GitHub core/Windows/safety run38669009869 passed all three jobs. Full browser run38669009827 is still running at this handoff. Final focused document suite50/50 passes;8 focused Edge cases pass. Production/helper activation remains unperformed.
+

@@ -1,4 +1,6 @@
 # Document routing execution summary — October 14, 2026 MDT
+PR: https://github.com/shipitmyguy-ux/raven/pull/87. Integrated code8f77fcc: GitHub core/Windows/safety run38669009869 passed all three jobs. Full browser run38669009827 is still running at this handoff. Final focused document suite50/50 passes;8 focused Edge cases pass. Production/helper activation remains unperformed.
+
 
 Implemented unified browser document dispatch and per-document stage diagnostics in PR #87. Integrated latest main8275750, preserving prepared-job visibility and completed 3D batch state below. Local verification:71 core commands,8 focused Edge cases,50 document tests passed. New diagnostics include request ID, failed stage/document, safe error code, timestamps and durations, plus distinct persistence failure reporting. Final GitHub checks pending after main integration. No live generation, helper restart, extension update or production publication performed. Original checkout and unrelated local work preserved.
 

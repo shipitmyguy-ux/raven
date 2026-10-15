@@ -752,3 +752,5 @@ Remaining:90 catalog entries still unverified or unsupported; one WWI listing de
 - [x] Deploy catalog taxonomy/pagination and fair bounded scheduling.
 - [ ] Expand verified indie coverage toward250–500 using90 recorded source blockers/candidates.
 - [ ] Investigate one unreadable WWI detail and future candidate-window underfill.
+PR: https://github.com/shipitmyguy-ux/raven/pull/87. Integrated code8f77fcc: GitHub core/Windows/safety run38669009869 passed all three jobs. Full browser run38669009827 is still running at this handoff. Final focused document suite50/50 passes;8 focused Edge cases pass. Production/helper activation remains unperformed.
+
