@@ -33,13 +33,26 @@ test('shared careers-home URL does not conflate separate vacancies',()=>{
  const result=parseRemoteGameSheet(source,rows.join('\n'));
  assert.equal(result.skippedSharedUrls,2);assert.equal(result.jobs.length,98);
 });
-test('geography excludes Canada-only, Europe-only and restrictive GMT hours',()=>{
- assert.equal(usCompatibleScope('USA / Canada'),true);
- assert.equal(usCompatibleScope('Worldwide'),true);
- assert.equal(usCompatibleScope('Within 4 hours of Pacific Time'),true);
- assert.equal(usCompatibleScope('Canada (Ontario)'),false);
- assert.equal(usCompatibleScope('Europe only'),false);
- assert.equal(usCompatibleScope('Worldwide (+/- 2h from GMT+1)'),false);
+test('regional and GMT-restricted remote scope is retained unless visa required',()=>{
+ for(const scope of [
+  'USA / Canada','Worldwide','Within 4 hours of Pacific Time',
+  'Canada (Ontario)','Europe only','Worldwide (+/- 2h from GMT+1)',
+  'Worldwide (-/+ 2h from GMT+1)','Asia / Europe','UK',''
+ ])assert.equal(usCompatibleScope(scope),true,scope);
+ assert.equal(usCompatibleScope('Visa required for this role'),false);
+ assert.equal(usCompatibleScope('Canada - no visa required'),true);
+});
+test('sheet parser preserves GMT and Canada job rows, still prevents shared-URL conflation',()=>{
+ const rows=csvRows();
+ rows[4]='Studio,Developer,3D Art,Senior Environment Artist,Full-Time,Worldwide (-/+ 2h from GMT+1),https://example.org/jobs/0,10.10.2026';
+ rows[5]='Other Studio,Developer,3D Art,Prop Artist,Full-Time,Canada (Ontario),https://example.org/jobs/1,10.10.2026';
+ rows[6]='Third Studio,Developer,3D Art,World Artist,Contract,Visa required,https://example.org/jobs/2,10.10.2026';
+ const result=parseRemoteGameSheet(source,rows.join('\n'));
+ assert.equal(result.fetched,100);
+ assert.equal(result.jobs.length,99);
+ assert.equal(result.jobs[0].location,'Worldwide (-/+ 2h from GMT+1)');
+ assert.equal(result.jobs[1].location,'Canada (Ontario)');
+ assert.equal(result.jobs.some(j=>j.url==='https://example.org/jobs/2'),false);
 });
 test('quoted multiline descriptions do not corrupt rows',()=>{
  const rows=csvRows();
