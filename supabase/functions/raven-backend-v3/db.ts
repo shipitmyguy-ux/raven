@@ -2,6 +2,8 @@ import {candidateAllowedForTrack} from "./utils.ts";
 import type { Candidate, Track } from "./types.ts";
 import {deduplicateStudioResults,deduplicateJobs,findExistingJob,sameJob} from "../_shared/studio-result-dedup.mjs";
 import { validAtsRow } from "./csv-records.mjs";
+import {planStudioIngestion} from "../_shared/studio-ingest-dedup.mjs";
+import {usStudioScopeAllowed} from "../_shared/studio-us-eligibility.mjs";
 
 function isPersistableCandidate(c:Candidate){
   const title=String(c?.title||"").trim();
@@ -32,33 +34,69 @@ async function rest(path:string,init:RequestInit={}){
   return r;
 }
 
-export async function upsertResults(rows:Candidate[]){
-  const validRows=rows.filter(isPersistableCandidate);
-  if(!validRows.length) return;
-  const now=new Date().toISOString();
-  const body=validRows.map(c=>({
-    track:c.track||"Professional",
-    title:c.title||"",
-    company:c.company||null,
-    location:c.location||null,
-    remote:Boolean(c.remote),
-    salary_text:c.salary_text||null,
-    url:c.url||"",
-    source:c.source||null,
-    snippet:c.snippet||null,
-    score:Number.isFinite(Number(c.score))?Number(c.score):0,
-    status:"Discovered",
-    last_seen:now
-  }));
-  const r=await rest("raven_search_results?on_conflict=url",{
-    method:"POST",
-    headers:{Prefer:"resolution=merge-duplicates,return=minimal"},
-    body:JSON.stringify(body)
+async function gameDiscoveryLookup(path:string){
+ const result=await rest(path,{method:"GET"});
+ if(!result.ok)throw Error("Game discovery read failed ("+result.status+")");
+ const rows=await result.json();
+ if(!Array.isArray(rows))throw Error("Unexpected game discovery rows");
+ return rows;
+}
+async function filterGameDiscovery(rows:Candidate[]){
+ const existing:any[]=[];
+ for(let offset=0;offset<5000;offset+=500){
+  const batch=await gameDiscoveryLookup("raven_search_results?select=url,title,company,location,remote,snippet,source,track,status&track=eq."+encodeURIComponent("Games / 3D")+"&limit=500&offset="+offset);
+  existing.push(...batch);
+  if(batch.length<500)break;
+  if(offset>=4500)throw Error("Game discovery dedup window exceeded");
+ }
+ for(let offset=0;offset<2000;offset+=500){
+  const saved=await gameDiscoveryLookup("raven_jobs?select=url,title,company,location,remote,notes,source,track,status&track=eq."+encodeURIComponent("Games / 3D")+"&limit=500&offset="+offset);
+  existing.push(...saved.map((j:any)=>({...j,snippet:j.notes||""})));
+  if(saved.length<500)break;
+  if(offset>=1500)throw Error("Saved game-job dedup window exceeded");
+ }
+ const safe:Candidate[]=[],review:any[]=[];
+ for(const row of rows){
+  if(!usStudioScopeAllowed(row))continue;
+  const plan=planStudioIngestion([row],existing,String(row.source||"Discovery"),{isSheet:false});
+  safe.push(...plan.inserts as Candidate[],...plan.updates as Candidate[]);
+  review.push(...plan.reviews);
+  for(const inserted of plan.inserts)existing.push({...inserted,status:"Discovered",track:"Games / 3D"});
+ }
+ for(let i=0;i<review.length;i+=25){
+  const response=await rest("raven_job_duplicate_reviews?on_conflict=candidate_url,existing_url",{
+   method:"POST",headers:{Prefer:"resolution=ignore-duplicates,return=minimal"},
+   body:JSON.stringify(review.slice(i,i+25))
   });
-  if(!r.ok){
-    const detail=await r.text().catch(()=>"");
-    throw new Error("Database write failed ("+r.status+"): "+detail.slice(0,1200));
-  }
+  if(!response.ok)throw Error("Duplicate review queue write failed ("+response.status+")");
+ }
+ return safe;
+}
+export async function upsertResults(rows:Candidate[]){
+ const validRows=rows.filter(isPersistableCandidate);
+ if(!validRows.length)return;
+ const games=validRows.filter(c=>c.track==="Games / 3D");
+ const filtered=games.length
+  ?[...validRows.filter(c=>c.track!=="Games / 3D"),...await filterGameDiscovery(games)]
+  :validRows;
+ if(!filtered.length)return;
+ const now=new Date().toISOString();
+ const body=filtered.map(c=>({
+  track:c.track||"Professional",title:c.title||"",company:c.company||null,
+  location:c.location||null,remote:Boolean(c.remote),salary_text:c.salary_text||null,
+  url:c.url||"",source:c.source||null,snippet:c.snippet||null,
+  score:Number.isFinite(Number(c.score))?Number(c.score):0,
+  status:"Discovered",last_seen:now
+ }));
+ const r=await rest("raven_search_results?on_conflict=url",{
+  method:"POST",
+  headers:{Prefer:"resolution=merge-duplicates,return=minimal"},
+  body:JSON.stringify(body)
+ });
+ if(!r.ok){
+  const detail=await r.text().catch(()=>"");
+  throw new Error("Database write failed ("+r.status+"): "+detail.slice(0,1200));
+ }
 }
 
 export async function listResults(track:Track){
