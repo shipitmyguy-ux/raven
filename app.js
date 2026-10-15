@@ -1583,7 +1583,7 @@
     const savedPreparation=preparationRecovery?.load();
     const pausedElsewhere=savedPreparation&&!savedPreparation.expired&&savedPreparation.state!=="opened"&&String(savedPreparation.jobId)!==String(job.id);
     const pausedJobTitle=pausedElsewhere?(knownJobById(savedPreparation.jobId)?.title||"another job"):"";
-    const applyGate=job.url&&job.listing_state!=="closed"&&!postApplication&&!pausedElsewhere?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply><span>'+(docsReady?'Open with approved documents':'Approve documents for application')+'</span></button>':"";
+    const applyGate=job.url&&job.listing_state!=="closed"&&!postApplication&&!pausedElsewhere?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply><span>'+(docsReady?'Continue with documents':'Prepare documents')+'</span></button>':"";
     const resumePreparation=savedPreparation&&!savedPreparation.expired&&savedPreparation.state!=="opened"&&String(savedPreparation.jobId)===String(job.id);
     const prepareAction=state.runtime?.settings?.["chatgpt-one-click"]===true&&job.url&&job.listing_state!=="closed"&&statusLower!=="closed"&&(!postApplication||isAppliedJob)
       ? pausedElsewhere?'<button class="workflow-action is-secondary" type="button" data-review-paused-preparation>Review paused preparation</button>'
@@ -2190,7 +2190,7 @@
         const safeBeforeDelivery=intent.lastStage!=="form_delivery"&&!["dispatching","needs-review"].includes(intent.state);
         const originalHashes=intent.documents?.resume?.documentSha256&&intent.documents?.coverLetter?.documentSha256
           ? {resume:intent.documents.resume.documentSha256,coverLetter:intent.documents.coverLetter.documentSha256}:null;
-        let verified;
+        let verified,refreshSavedExports=false;
         if(intent.documents&&["documents-ready","dispatching","needs-review"].includes(intent.state)){
           verified=await verifiedPreparationDocuments(job.id,intent.documents,intent.jobUrl);
         }
@@ -2198,11 +2198,11 @@
         // failed. Verify canonical documents/exports before replaying that run.
         if(!verified&&intent.runId&&job.resume&&job.coverLetter){
           try{verified=await verifiedPreparationDocuments(job.id,null,intent.jobUrl);}
-          catch(error){if(!/has no matching verified Drive export/.test(error.message))throw error;}
+          catch(error){if(!/has no matching verified Drive export/.test(error.message))throw error;refreshSavedExports=true;}
         }
         if(!verified){
           const generated=await generateOneClick(job,"both",button,{autoOpen:false,propagateErrors:true,forceLocal:true,skipJobPreparation:true,
-            resumeRunId:intent.runId||null,
+            resumeRunId:refreshSavedExports?null:intent.runId||null,
             onAccepted:run=>{intent=recovery.update(preparationId,{runId:run.run_id,state:"generating"});updatePreparationRecoveryBanner();},
             onStage:stage=>{busy.label=stage.replace(/_/g," ");intent=recovery.update(preparationId,{lastStage:stage});}
           });
@@ -2628,15 +2628,10 @@
     render();
   }
   function documentsReadyForApplication(job){
-    return Boolean(job.resume&&job.coverLetter&&isDocumentApproved(job,"resume")&&isDocumentApproved(job,"coverLetter"));
+    return Boolean(job.resume&&job.coverLetter);
   }
   function beginApprovedApplication(job){
-    if(!documentsReadyForApplication(job)){ setStatus("Approve the resume and cover letter before applying"); return; }
-    const packet={version:1,createdAt:new Date().toISOString(),jobId:job.id||"",jobUrl:job.url||"",title:job.title||"",company:job.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory(),resume:job.resume,coverLetter:job.coverLetter};
-    const bridge=document.getElementById("ravenExtensionBridge");
-    if(bridge){ bridge.dataset.packet=JSON.stringify(packet); document.dispatchEvent(new CustomEvent("raven-application-packet")); }
-    setTimeout(()=>window.open(job.url,"_blank","noopener"),120);
-    setStatus("Approved documents locked · Raven assistant prepared · review before submitting");
+    return prepareApplication(job,null);
   }
 
   function previewableDocumentUrl(value) {
@@ -2659,7 +2654,7 @@
     document.getElementById("reviewInstructions").value="";
     const feedback=document.getElementById("reviewFeedback");
     if(feedback) feedback.textContent="";
-    const approve=document.getElementById("reviewApprove"); if(approve){ approve.textContent=isDocumentApproved(job,type)?"Approved ✓":"Approve document"; approve.classList.toggle("is-approved",isDocumentApproved(job,type)); }
+    const approve=document.getElementById("reviewApprove"); if(approve){ approve.textContent="OK"; approve.classList.remove("is-approved"); }
     document.getElementById("documentReviewDialog").showModal();
   }
   function closeDocumentReview() {
@@ -2727,10 +2722,10 @@
       document.getElementById("reviewFrame").src=previewableDocumentUrl(value);
       document.getElementById("reviewInstructions").value="";
       const approve=document.getElementById("reviewApprove");
-      if(approve){ approve.textContent="Approve document"; approve.classList.remove("is-approved"); }
+      if(approve){ approve.textContent="OK"; approve.classList.remove("is-approved"); }
       if(feedback){
         feedback.classList.remove("is-processing");
-        feedback.textContent="Updated draft saved. Please review it before approving.";
+        feedback.textContent="Changes saved. Review the result, adjust it again, or select OK.";
       }
       setStatus(documentLabel(type)[0].toUpperCase()+documentLabel(type).slice(1)+" changes applied");
       render();
@@ -3254,7 +3249,7 @@
     });
     document.getElementById("chatGptImportDialog")?.addEventListener("close",()=>{if(state.manualImportJob)closeChatGptImport();});
     document.getElementById("documentReviewDialog")?.addEventListener("close",()=>{if(state.generatorJob)closeDocumentReview();});
-    document.getElementById("reviewApprove")?.addEventListener("click",()=>{ const job=state.generatorJob,type=state.generatorType; if(!job||!type)return; setDocumentApproved(job,type,true); const button=document.getElementById("reviewApprove"); button.textContent="Approved ✓"; button.classList.add("is-approved"); setStatus(documentLabel(type)+" approved"); render(); });
+    document.getElementById("reviewApprove")?.addEventListener("click",()=>closeDocumentReview());
     document.querySelectorAll("[data-review-close]").forEach((button)=>{
       button.addEventListener("click",closeDocumentReview);
     });
