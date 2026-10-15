@@ -1,6 +1,4 @@
 import {createHash} from 'node:crypto';
-import {open,realpath} from 'node:fs/promises';
-import {basename,resolve,sep} from 'node:path';
 
 const kinds=['resume','coverLetter'];
 const sha=value=>createHash('sha256').update(value).digest('hex');
@@ -8,8 +6,8 @@ const idPattern=/^[A-Za-z0-9_-]{1,160}$/;
 const hashPattern=/^[a-f0-9]{64}$/;
 const MAX_PDF_BYTES=2*1024*1024;
 
-export function createApplicationDocumentPreparer({dispatch,exportDirectory=resolve('private/exports'),readBytes=readPdfSafely}){
- if(typeof dispatch!=='function'||typeof readBytes!=='function')throw Error('APPLICATION_PREPARE_NOT_CONFIGURED');
+export function createApplicationDocumentPreparer({dispatch,rest,downloadPdf,config}){
+ if(![dispatch,rest,downloadPdf].every(value=>typeof value==='function')||!idPattern.test(config?.driveFolderId||''))throw Error('APPLICATION_PREPARE_NOT_CONFIGURED');
  const call=async(name,args)=>{
   const payload=JSON.parse(await dispatch(JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/call',params:{name,arguments:args}})));
   if(payload.error||!payload.result||payload.result.isError)throw Error(payload.result?.content?.[0]?.text||'PRIVATE_TOOL_FAILED');
@@ -33,29 +31,17 @@ export function createApplicationDocumentPreparer({dispatch,exportDirectory=reso
   const result=[];
   for(const kind of kinds){
    const doc=initial[kind];
-   const exported=await call('export_document_pdf',{job_id,document_type:kind,document_sha256:doc.document_sha256});
-   if(exported.job_id!==job_id||exported.document_type!==kind||exported.document_sha256!==doc.document_sha256||exported.file_name!==`${job_id}-${kind}-${doc.document_sha256.slice(0,12)}.pdf`)throw Error('PDF_READBACK_NOT_CONFIRMED');
-   const bytes=await readBytes(exported.file_path,{exportDirectory,expectedName:exported.file_name});
+   // Resolve canonical export history; callers cannot select URLs or local paths.
+   const events=await rest('raven_job_events?job_id=eq.'+encodeURIComponent(job_id)+'&event_type=eq.document_drive_export&metadata->>document_type=eq.'+kind+'&metadata->>document_sha256=eq.'+doc.document_sha256+'&metadata->>folder_id=eq.'+encodeURIComponent(config.driveFolderId)+'&select=metadata&limit=20');
+   const exported=events?.[0]?.metadata;
+   if(!exported||exported.document_type!==kind||exported.document_sha256!==doc.document_sha256||exported.folder_id!==config.driveFolderId||!/^[A-Za-z0-9_-]{10,160}$/.test(exported.file_id||'')||exported.drive_url!=='https://drive.google.com/file/d/'+exported.file_id+'/view'||!hashPattern.test(exported.pdf_sha256||''))throw Error('EXPORT_RECORD_NOT_CONFIRMED');
+   const bytes=await downloadPdf({fileId:exported.file_id,folderId:config.driveFolderId});
    if(!Buffer.isBuffer(bytes)||bytes.length===0||bytes.length>MAX_PDF_BYTES||!bytes.subarray(0,5).equals(Buffer.from('%PDF-')))throw Error('PDF_EXPORT_INVALID');
    const pdf_sha256=sha(bytes);
    if(exported.pdf_sha256!==pdf_sha256)throw Error('PDF_READBACK_NOT_CONFIRMED');
-   result.push({document_type:kind,document_sha256:doc.document_sha256,pdf_sha256,file_name:exported.file_name,data_url:`data:application/pdf;base64,${bytes.toString('base64')}`});
+   result.push({document_type:kind,document_sha256:doc.document_sha256,pdf_sha256,file_name:`${job_id}-${kind}-${doc.document_sha256.slice(0,12)}.pdf`,data_url:`data:application/pdf;base64,${bytes.toString('base64')}`});
   }
   for(const kind of kinds)if((await current(job_id,kind)).document_sha256!==initial[kind].document_sha256)throw Error('VERSION_CONFLICT');
   return {job_id,documents:result};
  };
-}
-
-async function readPdfSafely(filePath,{exportDirectory,expectedName}){
- if(typeof filePath!=='string'||basename(filePath)!==expectedName||basename(expectedName)!==expectedName)throw Error('PDF_PATH_INVALID');
- const root=await realpath(exportDirectory),file=await realpath(filePath);
- if(!file.startsWith(root+sep))throw Error('PDF_PATH_INVALID');
- const handle=await open(file,'r');
- try{
-  const info=await handle.stat();
-  if(!info.isFile()||info.size<=0||info.size>MAX_PDF_BYTES)throw Error('PDF_EXPORT_INVALID');
-  const bytes=Buffer.alloc(info.size);let offset=0;
-  while(offset<bytes.length){const {bytesRead}=await handle.read(bytes,offset,bytes.length-offset,offset);if(!bytesRead)throw Error('PDF_EXPORT_INVALID');offset+=bytesRead;}
-  return bytes;
- }finally{await handle.close();}
 }

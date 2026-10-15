@@ -28,7 +28,7 @@ export function verifiedDriveReceipt(items,{fileId,folderId,pdfPath,fileName}){
 
 export function createCodexAdapters({codexPath,workDir=resolve('private/oneclick/model'),spawnImpl=spawn,timeoutMs=300000}){
  if(!codexPath)throw Error('CODEX_NOT_CONFIGURED');
- async function execute(prompt,schema,{apps=false,allowUpload=false}={}){
+ async function execute(prompt,schema,{apps=false,allowUpload=false,allowDownload=false}={}){
   const dir=join(workDir,randomUUID());await mkdir(dir,{recursive:true});
   const schemaPath=join(dir,'schema.json'),outputPath=join(dir,'result.json');
   await writeFile(schemaPath,JSON.stringify(schema));
@@ -37,6 +37,7 @@ export function createCodexAdapters({codexPath,workDir=resolve('private/oneclick
   if(!apps)args.push('--disable','apps');
   else{
    args.push('-c','apps._default.enabled=false','-c',driveApp+'.enabled=true','-c',driveApp+'.default_tools_enabled=false','-c',driveApp+'.tools.get_file_metadata.enabled=true');
+   if(allowDownload)args.push('-c',driveApp+'.tools.fetch.enabled=true');
    if(allowUpload)args.push('-c',driveApp+'.tools.upload_file.enabled=true','-c',driveApp+'.tools.upload_file.approval_mode="approve"');
   }
   args.push('-');
@@ -84,10 +85,29 @@ export function createCodexAdapters({codexPath,workDir=resolve('private/oneclick
    const {items}=await execute(prompt,uploadSchema,{apps:true,allowUpload:true});
    return verifiedDriveReceipt(items,{folderId,pdfPath:pdf.file_path,fileName});
   },
+  async downloadPdf({fileId,folderId}){
+   const url='https://drive.google.com/file/d/'+fileId+'/view';
+   const prompt='Read the existing Raven PDF only. First call Google Drive get_file_metadata with fileId '+JSON.stringify(fileId)+' and fields "id,name,mimeType,parents,size,webViewLink". Then call Google Drive fetch with exactly '+JSON.stringify({url,download_raw_file:true,include_base64:true})+'. This bounded legacy binary consumer needs the raw base64 response. Return observed metadata only; do not copy binary into your answer. Do not upload, render, generate, modify or read other files.';
+   const {items}=await execute(prompt,uploadSchema,{apps:true,allowDownload:true});
+   verifiedDriveReceipt(items,{fileId,folderId});
+   return observedDrivePdf(items,{fileId,folderId});
+  },
   async verifyUpload({fileId,folderId}){
    const prompt=`Read-only verification for the human user's Raven PDF copy. Use Google Drive get_file_metadata for exactly fileId ${JSON.stringify(fileId)} with fields "id,name,mimeType,parents,size,webViewLink". Confirm PDF and folder parent ${JSON.stringify(folderId)}. Do not upload, change, share, delete, inspect credentials, or use other tools. Return only observed metadata in the output schema.`;
    const {items}=await execute(prompt,uploadSchema,{apps:true});
    return verifiedDriveReceipt(items,{fileId,folderId});
   }
  };
+}
+
+// Bounded legacy raw-file consumer: use authenticated tool output, never model prose.
+export function observedDrivePdf(items,{fileId,folderId}){
+ const url='https://drive.google.com/file/d/'+fileId+'/view';
+ const event=items.find(item=>toolIs(item,'fetch')&&item.arguments?.url===url&&item.arguments?.download_raw_file===true&&item.arguments?.include_base64===true);
+ const raw=event&&(event.result?.structured_content||event.result?.structuredContent);
+ const data=raw&&{...raw,...raw.structuredContent,b64_string:raw.b64_string??raw.structuredContent?.b64_string};
+ if(data?.id!==fileId||data.mime_type!=='application/pdf'||!data.parent_ids?.includes(folderId)||typeof data.b64_string!=='string'||!data.b64_string.length||data.b64_string.length>Math.ceil(2*1024*1024/3)*4||!/^[A-Za-z0-9+/]*={0,2}$/.test(data.b64_string))throw Error('DRIVE_DOWNLOAD_NOT_CONFIRMED');
+ const bytes=Buffer.from(data.b64_string,'base64');
+ if(!bytes.length||bytes.length>2*1024*1024||bytes.toString('base64')!==data.b64_string||!bytes.subarray(0,5).equals(Buffer.from('%PDF-')))throw Error('PDF_EXPORT_INVALID');
+ return bytes;
 }

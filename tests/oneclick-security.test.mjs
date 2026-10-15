@@ -5,7 +5,7 @@ import {PassThrough} from 'node:stream';
 import {mkdtemp,writeFile,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
-import {createCodexAdapters,verifiedDriveReceipt} from '../scripts/oneclick-codex.mjs';
+import {createCodexAdapters,verifiedDriveReceipt,observedDrivePdf} from '../scripts/oneclick-codex.mjs';
 
 const metadata={id:'file1234567890',mime_type:'application/pdf',parent_ids:['folder12345'],title:'resume.pdf'};
 const readEvent={type:'mcp_tool_call',tool:'google_drive.get_file_metadata',status:'completed',arguments:{fileId:metadata.id},result:{structured_content:metadata}};
@@ -75,13 +75,19 @@ test('metadata verification exposes only the registered Drive read tool, while u
    child.stdin.on('finish',async()=>{
     await writeFile(args[args.indexOf('-o')+1],JSON.stringify(metadata));
     if(args.includes(drive+'.tools.upload_file.enabled=true'))child.stdout.write(JSON.stringify({type:'item.completed',item:{type:'mcp_tool_call',tool:'google_drive.upload_file',status:'completed',arguments:{file_uri:pdfPath,parent_folder_id:'folder12345',file_name:'resume.pdf'},result:{structured_content:{success:true,id:metadata.id}}}})+'\n');
+    if(args.includes(drive+'.tools.fetch.enabled=true'))child.stdout.write(JSON.stringify({type:'item.completed',item:{type:'mcp_tool_call',tool:'google_drive.fetch',status:'completed',arguments:{url:'https://drive.google.com/file/d/'+metadata.id+'/view',download_raw_file:true,include_base64:true},result:{structured_content:{...metadata,b64_string:Buffer.from('%PDF-1.7 original').toString('base64')}}}})+'\n');
     child.stdout.write(JSON.stringify({type:'item.completed',item:readEvent})+'\n');
     child.emit('close',0);
    });return child;
   }});
   await adapters.verifyUpload({fileId:metadata.id,folderId:'folder12345'});
   await adapters.uploadPdf({pdf:{file_path:pdfPath},folderId:'folder12345',fileName:'resume.pdf'});
-  const [readArgs,uploadArgs]=invocations;
+  assert.deepEqual(await adapters.downloadPdf({fileId:metadata.id,folderId:'folder12345'}),Buffer.from('%PDF-1.7 original'));
+  const [readArgs,uploadArgs,downloadArgs]=invocations;
+  assert.ok(downloadArgs.includes(drive+'.tools.fetch.enabled=true'));
+  assert.equal(downloadArgs.some(arg=>arg.includes('.tools.upload_file.')),false);
+  assert.equal(readArgs.some(arg=>arg.includes('.tools.fetch.')),false);
+  assert.equal(uploadArgs.some(arg=>arg.includes('.tools.fetch.')),false);
   for(const args of invocations){
    assert.ok(args.includes('apps._default.enabled=false'));
    assert.ok(args.includes(drive+'.enabled=true'));
@@ -94,4 +100,12 @@ test('metadata verification exposes only the registered Drive read tool, while u
   assert.ok(uploadArgs.includes(drive+'.tools.upload_file.approval_mode="approve"'));
   assert.equal(uploadArgs.some(arg=>arg.includes('default_tools_approval_mode')),false);
  }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('Drive binary reuse accepts only exact authenticated raw tool bytes, never model text or another file',()=>{
+ const bytes=Buffer.from('%PDF-1.7 original');const fileId=metadata.id,folderId='folder12345';
+ const event={type:'mcp_tool_call',tool:'google_drive.fetch',status:'completed',arguments:{url:'https://drive.google.com/file/d/'+fileId+'/view',download_raw_file:true,include_base64:true},result:{structured_content:{id:fileId,mime_type:'application/pdf',parent_ids:[folderId],b64_string:bytes.toString('base64')}}};
+ assert.deepEqual(observedDrivePdf([event],{fileId,folderId}),bytes);
+ assert.deepEqual(observedDrivePdf([{...event,result:{structured_content:{...event.result.structured_content,structuredContent:{...metadata,id:fileId}}}}],{fileId,folderId}),bytes);
+ for(const changed of [{...event,type:'agent_message'},{...event,status:'failed'},{...event,arguments:{...event.arguments,url:'https://drive.google.com/file/d/other/view'}},{...event,result:{structured_content:{...event.result.structured_content,id:'other'}}},{...event,result:{structured_content:{...event.result.structured_content,parent_ids:['other']}}},{...event,result:{structured_content:{...event.result.structured_content,b64_string:'a'.repeat(3000000)}}}])assert.throws(()=>observedDrivePdf([changed],{fileId,folderId}),/DRIVE_DOWNLOAD_NOT_CONFIRMED/);
 });
