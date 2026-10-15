@@ -1,3 +1,15 @@
+# Raven execution handoff
+
+## Post-upload failure recovery acceptance — October 14, 2026 MDT
+
+User explicitly requested post-upload/pre-link failure injection and retry. Tested existing Saved Verra Mobility / Project Manager resume and cover letter with no Drive exports or receipts. A separate, one-job-scoped process used the actual workflow, protected private dispatcher, PDF renderer, Drive adapters and production receipt directory; it rejected each record_drive_export only after successful upload and durable receipt write. Both failed at recording; canonical export event count stayed0. No existing helper code/configuration or service was modified or restarted. Existing document hashes stayed unchanged; initial generation/save counts0, intended upload count2.
+
+Retried both through published app99 and unchanged normal helper, exercising cross-process disk-receipt recovery. Both completed with the original file IDs and document hashes. Retry stage histories contain no writing/saving/uploading. Worker audit confirms two target metadata-only workers,0draft-generation workers and0upload tools; one concurrent unrelated metadata-only worker was excluded by its different file ID. Local PDF bytes and modification times unchanged, proving no rerender. Independent Drive membership:0before,2after injected failures,2after retries; identical IDs,0duplicates. Exactly one export event per document was added to the correct job. Full reload shows both Current PDF links; job remains Saved, no approvals/submissions performed. Normal helper healthy/idle at final check. Evidence docs/qa/2026-10-14-document-failure-recovery.md; detailed private baseline/injection/retry/Drive/worker reports remain ignored under managed worktree private/failure-recovery-*. No application code changes required.
+
+Completed: actual post-upload failures, durable receipt recovery through normal UI, zero retry generation/uploads/duplicates, correct-job linkage and refresh. Fault injection process has exited; no fault hook was installed in the running service. Preserve the two recovered PDF links for owner review. Carry forward separate extension-reload follow-up and visa policy from prior context below.
+
+## Prior execution context
+
 ## Apply status and attachment-warning correction - October 14, 2026
 
 Owner requested fixing helper status rejection and the false missing-attachment warning, then retesting without submission. Prior app98 could retain helper client v4, which omitted confirming/document_complete progress stages now emitted by the writer. The already-published app99 aligns all consumers on client v5. Added a both-document progress-sequence regression plus rejection cases for unknown stages and mismatched document identity; no weakening of completion/hash/Drive guards or helper restart. Fresh live Nex Apply completed on its first click after Raven refresh, with no invalid-status error or Resume retry. Correct known fields and both employer filename/removal confirmations observed. Existing documents reused; Saved status preserved.
