@@ -65,3 +65,11 @@ test('Professional ingestion does not invoke game-only privacy and dedup reads',
  assert.equal(h.reads.length,0);
  assert.equal(h.writes.filter(w=>w.path.startsWith('raven_search_results')).length,1);
 });
+
+test('previously geo-reviewed discovery cannot be reactivated by another provider',async()=>{
+ const held=job({url:'https://example.org/restricted',source:'Tim Ploeger Remote Games Sheet',status:'GeoReview',listing_state:'geo_ineligible'});
+ const h=harness([held]);
+ await h.upsertResults([job({url:'https://example.org/restricted',source:'ATS:Greenhouse'})]);
+ assert.equal(h.writes.some(w=>w.path.startsWith('raven_search_results?on_conflict')),false);
+ assert.equal(held.status,'GeoReview');
+});
