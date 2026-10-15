@@ -28,7 +28,8 @@ for(const direct of [false,true])test(`studio discovery preserves complete publi
    return route.fulfill({json:{ok:true,jobs:[],results:[],events:[],snapshots:[]}});
   }
   if(url.pathname.endsWith('/raven-generate-v1')){
-   requests.push(body);expect(body.promptOnly).toBe(true);
+   if(body.promptOnly!==true)return route.fulfill({status:503,json:{error:'Background generation is intentionally unavailable in this handoff fixture.'}});
+   requests.push(body);
    return route.fulfill({json:{prompt:'Fixture prompt\n'+body.jobDescription}});
   }
   if(url.pathname.endsWith('/raven-enrich-v1'))throw Error('Unexpected refetch of full studio description');

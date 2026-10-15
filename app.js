@@ -1619,13 +1619,13 @@
     const nextStep=isApplied
       ? '<div class="job-next-step"><h3>Next step</h3><p class="next-action">'+escapeHtml(nextAction||'Set a follow-up date')+'</p><label class="follow-up-control"><span>Follow up</span><input type="date" data-follow-up-date value="'+escapeAttr(followUpValue)+'" aria-label="Follow-up date"></label>'+prepareAction+'</div>'
       : '<div class="job-next-step"><h3>Next step</h3>'+(applyAction||'<p>Review this role and choose its stage.</p>')+
-        (applyAction?'<p class="next-step-help">Opens the employer application and fills recognized fields using available documents. It never submits automatically; complete the employer form when you are ready.</p>':'')+prepareAction+'</div>';
+        (applyAction?'<p class="next-step-help">Opens the employer application and fills recognized fields using available documents. It never submits automatically; complete the employer form when you are ready.'+(pausedElsewhere?' Optional verified-PDF preparation for '+escapeHtml(pausedJobTitle)+' is paused; Apply job remains available.':'')+'</p>':'')+prepareAction+createDocuments+'</div>';
     return '<section class="inline-job-detail">'+
       lifecycleControl+
       '<p class="job-detail-summary">'+escapeHtml(summary)+'</p>'+progressHtml+nextStep+
       '<section class="document-checklist" aria-label="Application documents"><h3>Documents</h3>'+documentRows+'</section>'+
       '<div class="job-detail-actions">'+actions+'</div>'+
-      '<details class="job-detail-disclosure"><summary>Job details</summary><div class="job-detail-disclosure-content"><dl>'+detailHtml+'</dl><h3>Full posting</h3><p class="job-description-text full-description">'+escapeHtml(fullDescription)+'</p>'+(applyGate||prepareAction&&createDocuments?'<div class="advanced-application-actions"><h3>Other application actions</h3>'+applyGate+(prepareAction?createDocuments:'')+'</div>':'')+'</div></details>'+
+      '<details class="job-detail-disclosure"><summary>Job details</summary><div class="job-detail-disclosure-content"><dl>'+detailHtml+'</dl><h3>Full posting</h3><p class="job-description-text full-description">'+escapeHtml(fullDescription)+'</p>'+(applyGate||prepareAction?'<div class="advanced-application-actions"><h3>Other application actions</h3>'+applyGate+prepareAction+'</div>':'')+'</div></details>'+
       '<details class="job-detail-disclosure"><summary>Evidence</summary><div class="job-detail-disclosure-content">'+renderCoverage(job)+'</div></details>'+
       '<details class="job-detail-disclosure"><summary>Activity</summary><div class="job-detail-disclosure-content">'+renderJobActivity(job)+'</div></details>'+
     '</section>';
@@ -1873,7 +1873,8 @@
     if(markPending){
       for(const job of rows||[]){
         const key=normalizeComparableUrl(job?.url);
-        if(key&&job.listing_state!=="closed")pending.add(key);
+        const alreadySaved=state.jobs.some(saved=>normalizeComparableUrl(saved.url)===key||window.RavenJobDedup.sameJob(saved,job));
+        if(key&&!alreadySaved&&job.listing_state!=="closed")pending.add(key);
       }
       writeCache(AUTO_GENERATION_QUEUE_KEY,[...pending]);
     }
