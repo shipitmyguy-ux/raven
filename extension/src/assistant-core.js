@@ -37,7 +37,9 @@
         firstName: ['#first_name','input[name="job_application[first_name]"]'],
         lastName: ['#last_name','input[name="job_application[last_name]"]'],
         email: ['#email','input[name="job_application[email]"]'],
-        phone: ['#phone','input[name="job_application[phone]"]']
+        phone: ['#phone','input[name="job_application[phone]"]'],
+        country: ['#country'],
+        city: ['#candidate-location']
       },
       files: {
         resume: ['#resume','input[type="file"][name*="resume" i]'],

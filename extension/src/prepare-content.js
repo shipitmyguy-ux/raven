@@ -39,8 +39,9 @@
     if (el.tagName !== "INPUT") return false;
     return ["text", "email", "tel", "url"].includes(String(el.type || "text").toLowerCase());
   }
-  function setValue(el, value) {
+  function setValue(el, value, comboSearch = false) {
     if (!safeControl(el) || el.value || value == null || String(value).trim() === "") return false;
+    if (el.getAttribute("role") === "combobox" && !comboSearch) return false;
     if (el.tagName === "SELECT") {
       const key = normalized(value);
       const option = [...el.options].find(item => normalized(item.textContent) === key || normalized(item.value) === key);
@@ -54,6 +55,58 @@
     el.dispatchEvent(new Event("input", { bubbles: true }));
     el.dispatchEvent(new Event("change", { bubbles: true }));
     return true;
+  }
+  function countryNames(value) {
+    const name = normalized(value);
+    if (["us", "usa", "united states", "united states of america"].includes(name)) return ["united states", "united states of america", "usa", "us"];
+    return [name];
+  }
+  function selectedLocation(el) {
+    return el.closest(".select__control")?.querySelector(".select__single-value")?.textContent?.trim() || "";
+  }
+  async function setLocationCombo(el, key, value, profile) {
+    // Only these two known Greenhouse contact controls may select options. Legal choices stay manual.
+    if (!((key === "country" && el.id === "country") || (key === "city" && el.id === "candidate-location")) ||
+        el.getAttribute("role") !== "combobox" || el.value || selectedLocation(el) || !safeControl(el) || sensitive(el, labelFor(el))) return false;
+    const countries = countryNames(profile.country);
+    const query = key === "country" && countries.includes("united states") ? "United States" : key === "city" ? [value, profile.region, profile.country].filter(Boolean).join(", ") : value;
+    const matches = text => {
+      if (key === "country") return countries.includes(normalized(text.replace(/\s*\+[\d\s()-]+$/, "")));
+      const parts = text.split(",").map(normalized);
+      const city = normalized(value);
+      const region = normalized(profile.region);
+      return normalized(text) === normalized(query) ||
+        (parts[0] === city && (!region || parts.includes(region)) && countries.some(country => country && parts.includes(country)));
+    };
+    el.focus();
+    if (!setValue(el, query, true)) return false;
+    // React Select opens on text input; the mousedown also supports its non-search-triggered menu.
+    if (el.getAttribute("aria-expanded") !== "true") el.dispatchEvent(new MouseEvent("mousedown", {bubbles: true, button: 0}));
+    const deadline = Date.now() + 6000;
+    while (Date.now() < deadline && el.isConnected && el.value === query) {
+      const list = document.getElementById(el.getAttribute("aria-controls") || "");
+      const options = list?.getAttribute("role") === "listbox" ? [...list.querySelectorAll('[role="option"]')].filter(option =>
+        option.getAttribute("aria-disabled") !== "true" && option.getClientRects().length && matches(option.innerText || "")) : [];
+      if (options.length === 1) {
+        const option = options[0];
+        option.dispatchEvent(new MouseEvent("mousedown", {bubbles: true, button: 0}));
+        option.dispatchEvent(new MouseEvent("mouseup", {bubbles: true, button: 0}));
+        option.dispatchEvent(new MouseEvent("click", {bubbles: true, button: 0}));
+        await new Promise(resolve => setTimeout(resolve, 150));
+        if (el.getAttribute("aria-expanded") === "false" && matches(selectedLocation(el))) return true;
+        break;
+      }
+      if (options.length > 1) break;
+      await new Promise(resolve => setTimeout(resolve, 150));
+    }
+    // A typed query is not a committed city/country. Clear only our own unfinished search.
+    if (el.isConnected && el.value === query && !selectedLocation(el)) {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(el, "");
+      el.dispatchEvent(new Event("input", {bubbles: true}));
+      el.dispatchEvent(new Event("change", {bubbles: true}));
+      el.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
+    }
+    return false;
   }
   function allFields() { return [...document.querySelectorAll('input:not([type="file"]):not([type="hidden"]),textarea,select')]; }
   function requiredLabels() {
@@ -77,7 +130,7 @@
         if (!el.checked) labels.add(label);
       } else if (type === "file") {
         if (!el.files?.length) labels.add(label);
-      } else if (!String(el.value || "").trim()) labels.add(label);
+      } else if (!String(el.value || "").trim() && !(el.getAttribute("role") === "combobox" && selectedLocation(el))) labels.add(label);
     }
     return [...labels];
   }
@@ -213,13 +266,17 @@
     const used = new Set();
     const filled = [];
     const requested = new Set();
-    for (const key of Object.keys(profileTerms)) {
+    const profileKeys = adapter.id === "greenhouse" ? ["country", "city", ...Object.keys(profileTerms).filter(key => !["country", "city"].includes(key))] : Object.keys(profileTerms);
+    for (const key of profileKeys) {
       const value = valueFor(packet.profile || {}, key);
       if (!value) continue;
-      const el = candidateFor(adapter, key, fields);
+      const el = candidateFor(adapter, key, allFields());
       if (!el || !safeControl(el) || sensitive(el, labelFor(el))) continue;
       requested.add(key);
-      if (used.has(el) || !setValue(el, value)) continue;
+      if (used.has(el)) continue;
+      const changed = adapter.id === "greenhouse" && ["country", "city"].includes(key) && el.getAttribute("role") === "combobox"
+        ? await setLocationCombo(el, key, value, packet.profile || {}) : setValue(el, value);
+      if (!changed) continue;
       used.add(el); filled.push(key);
     }
     // Remembered answers are only applied when their exact label is one of the known profile fields.

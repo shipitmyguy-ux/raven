@@ -50,3 +50,7 @@ Unknown or explicitly rejected protocol/identity responses remain hard failures 
 All browser helper consumers must use the same versioned client. Valid per-document progress (including confirming and document_complete) retains the requested run/job/document identity; unknown stages and identity mismatches remain failures. Completion still requires both exact canonical documents and verified Drive receipts.
 
 Upload availability is observed before file dispatch. A successful employer confirmation may replace its file input with a filename/removal control; that does not mean the upload field was absent. Selected-but-unconfirmed uploads retain their warning, and genuinely missing controls are reported separately.
+
+## Profile contact dropdowns
+
+Country, phone and city require non-empty values in the device Application profile. Greenhouse country/city searchable dropdowns select only a unique option matching the profile; city includes profile region/country for disambiguation. A typed query is not accepted as a committed location. Unknown/ambiguous results remain manual and unfinished searches are cleared; existing selections are preserved. Authorization, sponsorship and salary are never inferred or filled by this adapter. An owner-authorized one-off salary draft entered during a supervised test does not become a reusable automatic answer.

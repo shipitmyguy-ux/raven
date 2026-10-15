@@ -1,3 +1,11 @@
+## Profile contact dropdowns - October 14, 2026
+
+Owner requested country, phone and city from the device application profile, preserving manual work authorization/sponsorship and no submission. Those three fields were blank; owner supplied values and they were saved through Raven's Application profile UI, with country code and separate city/region. Private contact values are deliberately excluded from Git. Owner also authorized a one-off editable salary estimate for the Nex test; this is not a permanent automatic salary profile answer. No legal-answer inference added.
+
+Extension2.4.4 adds bounded Greenhouse contact dropdown selection for #country and #candidate-location. Country names/US aliases are matched exactly (ignoring the displayed dialing-code suffix). City must match a unique profile-qualified city/region/country option; missing/ambiguous choices are cleared and left for review. Selection is verified from committed React Select display, not typed search text. Country and city precede phone; profile candidates are refreshed after re-render. Existing values are preserved. Other comboboxes remain manual, and authorization/sponsorship/salary blockers are unchanged. Required-field summary recognizes committed contact selections. No permission/protocol expansion or remote executable code.
+
+Tests: 13 focused Node cases, nine focused Edge cases and all44 core command groups passed. All164 Edge browser cases passed. Final live contact/attachment acceptance awaits activation and retest. Same loaded output extension folder will receive only the three changed packaged files after checks; one reload required for new DOM behavior, no writer restart.
+
 # Raven execution handoff
 
 ## Post-upload failure recovery acceptance — October 14, 2026 MDT
