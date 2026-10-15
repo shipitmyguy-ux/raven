@@ -1184,7 +1184,7 @@ for(const extensionMode of ['missing','outdated'])test(`Prepare finishes documen
  await jobDetail(page,'[data-prepare-application]').click();
 
  if(extensionMode==='stale-persistent'){
-  await expect.poll(()=>page.evaluate(()=>Number(sessionStorage.getItem('fixtureVisits')))).toBe(2);
+  await expect.poll(async()=>{try{return await page.evaluate(()=>Number(sessionStorage.getItem('fixtureVisits')));}catch(error){if(/Execution context was destroyed/.test(error.message))return 0;throw error;}}).toBe(2);
   await expect(page.locator('#syncStatus')).toContainText('Documents ready; form filling is unavailable');
   expect(runCalls).toBe(1);expect(pdfCalls).toBe(0);expect(receiptCalls).toBe(2);
   await page.waitForTimeout(250);expect(await page.evaluate(()=>sessionStorage.getItem('fixtureVisits'))).toBe('2');
