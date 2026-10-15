@@ -7,7 +7,8 @@
     "backup:raven": "node scripts/export-raven.mjs",
     "verify:backup": "node scripts/verify-raven-backup.mjs",
     "restore:raven": "node scripts/restore-raven.mjs",
-    "test:documents": "node --test tests/oneclick-client.test.mjs tests/oneclick-workflow.test.mjs tests/oneclick-server.test.mjs tests/oneclick-security.test.mjs"
+    "test:documents": "node --test tests/oneclick-client.test.mjs tests/oneclick-workflow.test.mjs tests/oneclick-server.test.mjs tests/oneclick-security.test.mjs tests/oneclick-recovery.test.mjs",
+    "test:document-recovery": "node --test tests/oneclick-recovery.test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

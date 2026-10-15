@@ -35,3 +35,7 @@ An explicit retry through the published site's normal resume-export control comp
 No duplicate PDF was created. The normal helper finished healthy and idle, with phone queue and application preparation capabilities restored. The temporary listener is gone; no persistent fault hook, production code/configuration change, extension update, approval or submission was left behind.
 
 Detailed private evidence is ignored in the managed document-routing-integration worktree under private/restart-recovery-*: baseline, checkpoint, initial UI report, process transitions, retry report, independent Drive audit and screenshot. Personal document contents, private IDs, hashes, cloud links and credentials are omitted from this public record.
+
+## Automated coverage
+
+This scenario is now covered for resume, cover letter and paired requests by tests/oneclick-recovery.test.mjs. Run `npm run test:document-recovery`; the existing core CI workflow runs the same cases on Linux and Windows without credentials or live data. See docs/ONE_CLICK_RESUMES.md for fixture boundaries and assertions.

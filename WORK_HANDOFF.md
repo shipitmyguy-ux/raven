@@ -1,5 +1,18 @@
 # Raven execution handoff
 
+## Automated document recovery regression suite — October 14, 2026 MDT
+
+Added six credential-free integration cases: post-upload link-write failure and actual forced helper termination, each for resume, cover letter and paired requests. Real production helper/workflow/client/receipt-journal modules run in child processes against temporary file-backed synthetic services on isolated ports. Tests prove durable receipts exist before interruption, failed recording/restart diagnostics, session renewal, unchanged document hashes/PDF bytes/mtime, zero generation/render/upload on retry, exact canonical job/link identity, one physical Drive file per document, idempotent second retry, and fresh-process/session completed-output readback. A control application and approvals remain unchanged. No real helper, private credentials, PDFs or Drive files used.
+
+Local validation: all six new cases passed; full document suite59/59 and all71 core workflow commands passed. A temporary mutation ignoring disk receipts correctly caused all three restart cases to fail; fixture restored. Added npm run test:document-recovery, included cases in npm run test:documents, and mandatory Linux/Windows jobs in existing reusable core CI. GitHub checks pending publication. No production implementation or extension changes.
+
+Current work is tests/CI only. The prior live failure/restart acceptance and unrelated extension/contact-field follow-ups remain below. Production helper and user data were not touched by this implementation.
+
+
+## Concurrent and prior execution context
+
+# Raven execution handoff
+
 ## Activated 2.4.5 city retest - October 14, 2026 MDT
 
 Owner confirmed reload and requested automatic-city/attachment retest without submission. Refreshed hosted Raven, opened existing Saved Nex role and clicked Apply job once. Fresh employer tab completed without Resume retry or helper status error. Both PDF filenames and removal controls confirm accepted resume and cover letter attachments; no false missing-attachment warning. Existing profile name/email/phone/portfolio/LinkedIn filled and country displayed US flag/+1. Automatic city still FAILED: city remained blank, with Location (City) explicitly listed for review. No manual city selection or attachment replacement performed in this run. Eligibility, sponsorship and salary remain blank on the new test tab; earlier manually completed review draft remains separate. Saved status preserved; no submission.
