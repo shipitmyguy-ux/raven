@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 import fs from 'node:fs';
 const packet={version:2,mode:'prepare',createdAt:new Date().toISOString(),jobId:'JT-contact',jobUrl:'https://job-boards.greenhouse.io/studio/jobs/123',title:'Artist',company:'Studio',profile:{country:'USA',city:'Example City',region:'Sample State',phone:'+12025550123'},answers:{'are you authorized to work':'Yes','will you require sponsorship':'No','salary requirements':'120000'}};
-for(const mode of ['accepted','reset-on-open','ambiguous','missing','prefilled'])test(`Greenhouse contact selects committed location only: ${mode}`,async({page})=>{
+for(const mode of ['accepted','reset-on-open','nex-controlled','ambiguous','missing','prefilled'])test(`Greenhouse contact selects committed location only: ${mode}`,async({page})=>{
  await page.addInitScript(packet=>{
   window.messages=[];let listener;
   window.deliver=()=>listener({type:'raven-prepare-deliver',packet,preflightId:'11111111-1111-4111-8111-111111111111',expectedUrl:location.href},{},()=>{});
@@ -25,23 +25,26 @@ for(const mode of ['accepted','reset-on-open','ambiguous','missing','prefilled']
      document.getElementById(input.id+'-list')?.remove();
      const list=document.createElement('div');list.id=input.id+'-list';list.setAttribute('role','listbox');input.setAttribute('aria-controls',list.id);
      const labels=input.id==='country'?['United States +1','United States Minor Outlying Islands +1']:mode==='missing'?['Different City, Sample State, United States']:['Example City, Sample State, United States',...(mode==='ambiguous'?['Example City, Sample State, USA']:[])];
-     for(const label of labels){const option=document.createElement('div');option.setAttribute('role','option');option.textContent=label;option.addEventListener('click',()=>{window.selections.push(input.id);input.parentElement.querySelector('span').innerHTML=input.id==='country'&&mode==='reset-on-open'?'<i class="iti__us"></i>+1':label;input.value='';input.setAttribute('aria-expanded','false');list.remove();});list.append(option);}
+     for(const label of labels){const option=document.createElement('div');option.setAttribute('role','option');option.textContent=label;option.addEventListener('click',()=>{window.selections.push(input.id);input.value='';input.setAttribute('aria-expanded','false');list.remove();const commit=()=>{input.parentElement.querySelector('span').innerHTML=input.id==='country'&&['reset-on-open','nex-controlled'].includes(mode)?'<i class="iti__us"></i>+1':label;};mode==='nex-controlled'&&input.id==='candidate-location'?setTimeout(commit,600):commit();});list.append(option);}
      input.parentElement.append(list);
     },150);
    };
-   input.addEventListener('input',()=>{if(mode!=='reset-on-open'||input.getAttribute('aria-expanded')==='true')open();});input.addEventListener('mousedown',()=>{if(mode==='reset-on-open')input.value='';open();});
+   // Nex explicitly controls menuIsOpen via Control.onMouseUp. Input alone cannot open it.
+   input.addEventListener('input',()=>{if(!['reset-on-open','nex-controlled'].includes(mode)||input.getAttribute('aria-expanded')==='true')open();});
+   input.addEventListener('mousedown',()=>{if(mode==='nex-controlled')return;if(mode==='reset-on-open')input.value='';open();});
+   input.addEventListener('mouseup',()=>{if(mode==='nex-controlled')open();});
    input.addEventListener('keydown',e=>{if(e.key==='Escape'){input.setAttribute('aria-expanded','false');document.getElementById(input.id+'-list')?.remove();}});
   }
  },mode);
  await page.addScriptTag({content:fs.readFileSync(new URL('../extension/src/assistant-core.js',import.meta.url),'utf8')});
  await page.addScriptTag({content:fs.readFileSync(new URL('../extension/src/prepare-content.js',import.meta.url),'utf8')});
  await page.evaluate(()=>window.deliver());
- await expect.poll(()=>page.evaluate(()=>window.messages.find(x=>x.type==='raven-prepare-result')?.result),{timeout:10000}).toBeTruthy();
+ await expect.poll(()=>page.evaluate(()=>window.messages.find(x=>x.type==='raven-prepare-result')?.result),{timeout:18000}).toBeTruthy();
  const result=await page.evaluate(()=>window.messages.find(x=>x.type==='raven-prepare-result').result);
  await expect(page.locator('#phone')).toHaveValue(packet.profile.phone);
  for(const id of ['authorized','sponsor','salary'])await expect(page.locator('#'+id)).toHaveValue('');
  expect(await page.evaluate(()=>Boolean(window.submitted))).toBe(false);
- if(mode==='accepted'||mode==='reset-on-open'){
+ if(['accepted','reset-on-open','nex-controlled'].includes(mode)){
   expect(result.filled).toEqual(expect.arrayContaining(['country','city','phone']));
   expect(result.requiredUnanswered).not.toContain('Country');expect(result.requiredUnanswered).not.toContain('Location (City)');
  }else if(mode==='prefilled'){

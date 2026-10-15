@@ -82,9 +82,11 @@
         (parts[0] === city && (!region || parts.includes(region)) && countries.some(country => country && parts.includes(country)));
     };
     el.focus();
-    // Open before typing: React Select may reset its query when opening a closed menu.
+    // Greenhouse controls menuIsOpen through its Control onMouseUp, not onMouseDown.
+    // Complete that bounded input gesture before typing so the controlled menu can render.
     if (el.getAttribute("aria-expanded") !== "true") {
       el.dispatchEvent(new MouseEvent("mousedown", {bubbles: true, button: 0}));
+      el.dispatchEvent(new MouseEvent("mouseup", {bubbles: true, button: 0}));
       await new Promise(resolve => setTimeout(resolve, 150));
     }
     if (!setValue(el, query, true)) return false;
@@ -98,8 +100,12 @@
         option.dispatchEvent(new MouseEvent("mousedown", {bubbles: true, button: 0}));
         option.dispatchEvent(new MouseEvent("mouseup", {bubbles: true, button: 0}));
         option.dispatchEvent(new MouseEvent("click", {bubbles: true, button: 0}));
-        await new Promise(resolve => setTimeout(resolve, 150));
-        if (el.getAttribute("aria-expanded") === "false" && matches(selectedLocation(el))) return true;
+        // City selection resolves location details asynchronously before rendering its value.
+        const commitDeadline = Date.now() + 6000;
+        while (Date.now() < commitDeadline && el.isConnected) {
+          if (el.getAttribute("aria-expanded") === "false" && matches(selectedLocation(el))) return true;
+          await new Promise(resolve => setTimeout(resolve, 150));
+        }
         break;
       }
       if (options.length > 1) break;
