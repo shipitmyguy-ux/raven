@@ -122,6 +122,7 @@ jobs:
           node --test tests/studio-sheet-scan-handler.test.mjs
           node --test tests/studio-ingest-dedup.test.mjs
           node --test tests/studio-us-eligibility.test.mjs
+          node --test tests/backend-game-ingestion.test.mjs
           node tests/assistant-core.test.mjs
           node tests/ats-csv.test.mjs
           node tests/drive-source.test.mjs
