@@ -1,3 +1,4 @@
+import {usStudioScopeAllowed} from './studio-us-eligibility.mjs';
 // Tim Plöger's public game-industry remote-job sheet.
 // Fixed source only; never fetch URLs from spreadsheet cells or follow application redirects.
 export const REMOTE_GAME_SHEET_KEY='tim-ploeger-remote-games';
@@ -17,18 +18,10 @@ function parseCSV(csv) {
  if(cell||row.length){row.push(cell);rows.push(row);}
  return rows;
 }
+// The sheet is already a remote-jobs source. Keep its regional and GMT
+// restrictions as visible metadata rather than inferring visa ineligibility.
 export function usCompatibleScope(value) {
- const scope=String(value||'').trim();
- if(!scope||/\b(?:onsite|on-site|hybrid)\b/i.test(scope))return false;
- if(/\b(?:USA|U\.S\.A\.|United States|North America|Americas|US)\b/i.test(scope))return true;
- if(/within\s+\d+\s+hours?\s+of\s+Pacific\s+Time/i.test(scope))return true;
- if(/\bworldwide\b/i.test(scope)){
-  // Worldwide roles may still specify binding incompatible working hours.
-  if(/\b(?:required|must be|only|within|strictly)\b.*\b(?:GMT|UTC|CET|CEST|Europe|EMEA)\b/i.test(scope))return false;
-  if(/(?:\+\/-\s*\d+\s*h|-\s*\+\/-\s*\d+\s*h)\s*(?:from\s*)?(?:GMT|UTC|CET)/i.test(scope))return false;
-  return true;
- }
- return false;
+ return usStudioScopeAllowed({location:String(value??'')});
 }
 export function spreadsheetArtRoleAllowed(job) {
  return /environment artist|world artist|level artist|prop artist|3d artist|world build|material artist|texture artist|hard.surface|asset artist|lighting artist/i.test(String(job?.title||''));
