@@ -96,5 +96,21 @@
       "refresh_workflow": ".github/workflows/refresh-remote-games-sheet.yml (snapshot backup only)",
       "live_import_owner": "Supabase Edge Function raven-studio-scan, provider remotegamessheet; cron every 15 minutes, source interval 24 hours"
     }
-  ]
+  ],
+  "game_art_geographic_screening": {
+    "policy_effective": "2026-10-14",
+    "exclusion": "Only an explicit requirement to obtain or hold a work visa or work permit, as established in the listing text.",
+    "never_exclude_for": [
+      "GMT, UTC, CET or other working-hour offsets",
+      "Canada, UK, EMEA, Europe or other country/region labels alone",
+      "General legal right-to-work language without a mandatory visa/permit",
+      "Visa sponsorship not offered, available, or asked as an application question"
+    ],
+    "display_original_geography_and_working_hours": true,
+    "non_geography_controls": "Normal remote-versus-onsite, role fit, listing availability and deduplication checks remain independent.",
+    "source_modules": [
+      "supabase/functions/_shared/studio-us-eligibility.mjs",
+      "supabase/functions/_shared/studio-sheet-feed.mjs"
+    ]
+  }
 }
