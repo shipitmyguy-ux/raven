@@ -1,0 +1,25 @@
+name: Refresh Remote Games Spreadsheet
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 11 * * *'
+permissions:
+  contents: write
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/refresh-remote-games-sheet.mjs
+      - name: Commit refreshed snapshot
+        run: |
+          if ! git diff --quiet -- data/remote-games-sheet-jobs.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/remote-games-sheet-jobs.json
+            git commit -m "Refresh remote games spreadsheet snapshot"
+            git push
+          fi
