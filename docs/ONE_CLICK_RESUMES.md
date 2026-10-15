@@ -67,3 +67,11 @@ Database tables have RLS enabled, no client-role grants, and no public policies.
 ### Future feature: cloud-hosted writer
 
 Backlog only: move the same writer to an owner-controlled always-on host so the laptop can be off. Preserve the queue, factual checks, create-only saves, receipts, and Drive readback. Before enabling, verify ChatGPT-plan eligibility for the exact hosting arrangement, protected authentication/refresh, Drive/PDF runtime support, costs, and worker ownership/failover. Do not turn on a separately billed model fallback without explicit authorization. No cloud generation host has been provisioned.
+
+## Routing and diagnostics (October 14, 2026)
+
+All browser document actions select their adapter through routeDocumentRequest. Explicit revisions retain the existing revision writer; configured one-click generation/export uses the existing helper. Application preparation retains its extension-independent orchestration and blocks competing document actions. No extension reload is needed for this change.
+
+Run `npm run test:documents` for the focused synthetic client/workflow/server/security suite. Existing core CI invokes these files, and full browser CI includes request/stage failure recovery. Local server tests need loopback HTTP and temporary-file rename permissions.
+
+For a failed run, use the request ID shown in Raven to find `private/oneclick/runs/<run_id>.json` or the matching `resume_workflow` job event. Diagnostics contain `failed_stage`, `failed_document_type`, `error_code`, `stage_started_at`, `elapsed_ms`, and `stage_timings` (stage/document/duration_ms). Unknown error messages map to WORKFLOW_FAILED; raw tool errors, prompts and credentials are not added to diagnostics. Timings for concurrent documents overlap and must not be summed as wall-clock duration. Existing upload receipts and canonical readback still govern retries. The local helper needs a normal restart to load changed server code; frontend publication alone cannot update a running helper.

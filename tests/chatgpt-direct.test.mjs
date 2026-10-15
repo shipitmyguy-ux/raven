@@ -21,8 +21,8 @@ test('actual button direct route saves discovery job before launch and never req
  const handler=source.slice(source.indexOf('  async function launchChatGptPrompt('),source.indexOf('  function parseChatGptPayload(')).replace('await import("./chatgpt-direct.mjs?v=1")','directModule');
  let prepared=false,url='',status='';
  const tab={document:{body:{}},location:{replace:value=>url=value}};
- const context={state:{runtime:{settings:{'chatgpt-direct-save':true}}},directModule:{directPrompt},window:{open:()=>tab},prepareJobForGeneration:async()=>{prepared=true;},requestChatGptPrompt:()=>{throw Error('legacy JSON path');},copyTextToClipboard:async()=>true,setGenerationButton:()=>{},setStatus:s=>status=s,encodeURIComponent};
- vm.createContext(context);await vm.runInContext(handler+'\nlaunchChatGptPrompt({id:"JT-test"},"resume")',context);
+ const context={activeApplicationPrepares:new Map(),state:{runtime:{settings:{'chatgpt-direct-save':true}}},directModule:{directPrompt},window:{open:()=>tab},prepareJobForGeneration:async()=>{prepared=true;},requestChatGptPrompt:()=>{throw Error('legacy JSON path');},copyTextToClipboard:async()=>true,setGenerationButton:()=>{},setStatus:s=>status=s,encodeURIComponent};
+ vm.createContext(context);vm.runInContext(source.slice(source.indexOf("  // All document actions"),source.indexOf("  const activeOneClickJobs=")),context);await vm.runInContext(handler+'\nlaunchChatGptPrompt({id:"JT-test"},"resume")',context);
  assert.equal(prepared,true);assert.match(new URL(url).searchParams.get('q'),/save_generated_document/);assert.match(status,/saves directly/);
 });
 const sha='a'.repeat(64),pdfsha='b'.repeat(64);

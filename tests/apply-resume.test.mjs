@@ -9,7 +9,7 @@ function harness(job,writer){
  const statuses=[],activeGeneration=new Map(),generationErrors=new Map();let writes=0,reviews=0;
  const context={job,setStatus:s=>statuses.push(s),console:{error(){}},Date,state:{selectedId:job.id,runtime:{settings:{'chatgpt-one-click':false}}},activeGeneration,activeApplicationPrepares:new Map(),generationErrors,generationKey:j=>String(j.id),generationSession:j=>activeGeneration.get(String(j.id)),documentApprovalKey:(j,t)=>j.id+t,setGenerationButton(){},render(){},documentLabel:()=>"Resume",openDocumentReview:()=>reviews++,generateDocumentForJob:async(j,t,instructions,options)=>{writes++;assert.equal(t,'resume');assert.equal(options.refreshDescription,true);await writer?.(j);j.resume='data:text/html,saved';}};
  const cache=new Map();context.GENERATION_ERRORS_KEY='ravenGenerationErrorsV1';context.writeCache=(key,value)=>cache.set(key,JSON.stringify(value));
- vm.createContext(context);vm.runInContext(persistErrors+generate,context);
+ vm.createContext(context);vm.runInContext(source.slice(source.indexOf("  // All document actions"),source.indexOf("  const activeOneClickJobs=")),context);vm.runInContext(persistErrors+generate,context);
  context.persistedErrors=()=>JSON.parse(cache.get(context.GENERATION_ERRORS_KEY)||'{}');
  return {generate:()=>context.generateForJob(job,'resume',null,{refreshDescription:true,autoOpen:false}),statuses,activeGeneration,generationErrors,persistedErrors:context.persistedErrors,writes:()=>writes,reviews:()=>reviews};
 }

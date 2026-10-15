@@ -112,3 +112,27 @@ test('resume receipt check requires exact canonical hash, saved event and live D
  await assert.rejects(verifier({job_id:'JT-1',documents:[{...documents[0],document_sha256:'f'.repeat(64)},documents[1]]}),/VERSION_CONFLICT/);
  failFolder=true;await assert.rejects(verifier({job_id:'JT-1',documents}),/DRIVE_UPLOAD_NOT_VERIFIED/);
 });
+
+test('diagnostics record stage timing, document kind and the exact failed stage',async()=>{
+ for(const [options,stage] of [[{uploadFailure:true},'uploading'],[{recordFailure:true},'recording'],[{conflict:true},'saving'],[{changed:true},'confirming']]){
+  const f=fixture(options);
+  await assert.rejects(f.run({jobId:'JT-1'}),error=>{
+   assert.equal(error.failed_stage,stage);assert.equal(error.failed_document_type,'resume');
+   assert.equal(error.diagnostics.stage_timings.find(t=>t.document_type==='resume'&&t.stage===stage)?.stage,stage);
+   assert.ok(error.diagnostics.stage_timings.every(t=>Number.isFinite(t.duration_ms)&&t.duration_ms>=0));return true;
+  });
+ }
+ const f=fixture();const result=await f.run({jobId:'JT-1',documentType:'both'});
+ for(const kind of ['resume','coverLetter'])for(const stage of ['checking_saved_state','context','writing','saving','pdf','uploading','recording','confirming'])assert.ok(result.stage_timings.some(t=>t.document_type===kind&&t.stage===stage),kind+': '+stage);
+ assert.ok(Number.isFinite(Date.parse(result.stage_started_at)));
+ assert.equal(result.documents.length,2);
+});
+
+test('parallel sibling completion cannot overwrite the failed document stage',async()=>{
+ const f=fixture({rejectCover:true});
+ await assert.rejects(f.run({jobId:'JT-1',documentType:'both'}),error=>{
+  assert.equal(error.failed_document_type,'coverLetter');assert.equal(error.failed_stage,'saving');
+  assert.deepEqual(error.partial_documents.map(doc=>doc.document_type),['resume']);
+  assert.ok(error.diagnostics.stage_timings.some(t=>t.document_type==='coverLetter'&&t.stage==='saving'));return true;
+ });
+});
