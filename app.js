@@ -2033,7 +2033,7 @@
   let preparationRecovery;
   async function getPreparationRecovery(){
     if(!preparationRecovery){
-      const {createPreparationRecovery}=await import("./application-prepare.mjs?v=6");
+      const {createPreparationRecovery}=await import("./application-prepare.mjs?v=7");
       preparationRecovery=createPreparationRecovery();
     }
     return preparationRecovery;
@@ -2144,7 +2144,7 @@
     try{
       if(job.listing_state==="closed")throw Error("This listing is source-confirmed closed. Review the employer link before preparing documents.");
       if(!/^https:\/\//i.test(String(job.url||"")))throw Error("A secure employer listing URL is required to prepare this application.");
-      const {applicationTargetUrl,probePreparationExtension,preflightPreparationApplication,dispatchPreparedApplication,extensionUnavailableReason}=await import("./application-prepare.mjs?v=6");
+      const {applicationTargetUrl,probePreparationExtension,preflightPreparationApplication,dispatchPreparedApplication,extensionUnavailableReason}=await import("./application-prepare.mjs?v=7");
       const recovery=await getPreparationRecovery();
       const savedIntent=recovery.load();
       if(savedIntent&&!savedIntent.expired&&savedIntent.state!=="opened"&&String(savedIntent.jobId)!==String(job.id))throw Error("Another application preparation is saved. Resume or dismiss it before starting this role.");

@@ -2,16 +2,20 @@ export function extensionUnavailableReason(error){
   return error?.code==='PREPARATION_EXTENSION_UNAVAILABLE'?String(error.message||'The Raven Chrome extension is unavailable.'):null;
 }
 
-// Lever's posting and application are two routes for the same bounded job ID.
+// These posting/application pairs retain the same bounded job ID and host.
 // Leave every other destination unchanged for the extension's exact-URL check.
 export function applicationTargetUrl(jobUrl){
   const url=new URL(jobUrl);
-  if(url.protocol==='https:'&&url.hostname==='jobs.lever.co'&&!url.port&&!url.username&&!url.password&&
-      /^\/[a-z0-9-]{1,100}\/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\/?$/i.test(url.pathname)){
+  if(url.protocol!=='https:'||url.port||url.username||url.password)return jobUrl;
+  if(url.hostname==='jobs.lever.co'&&/^\/[a-z0-9-]{1,100}\/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\/?$/i.test(url.pathname))
     url.pathname=url.pathname.replace(/\/$/,'')+'/apply';
-    return url.href;
-  }
-  return jobUrl;
+  else if(url.hostname==='jobs.gusto.com'&&/^\/postings\/[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\/?$/i.test(url.pathname))
+    url.pathname=url.pathname.replace(/\/$/,'')+'/applicants/new';
+  else if(/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.breezy\.hr$/i.test(url.hostname)&&
+      /^\/p\/[0-9a-f]{12}-[a-z0-9](?:[a-z0-9-]{0,158}[a-z0-9])?\/?$/i.test(url.pathname))
+    url.pathname=url.pathname.replace(/\/$/,'')+'/apply';
+  else return jobUrl;
+  return url.href;
 }
 
 function unavailable(message){

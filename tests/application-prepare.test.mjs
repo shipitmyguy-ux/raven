@@ -4,13 +4,23 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import {applicationTargetUrl,createPreparationRecovery,dispatchPreparedApplication,extensionUnavailableReason,preflightPreparationApplication,probePreparationExtension} from '../application-prepare.mjs';
 
-test('only a bounded Lever posting gains its same-job application route',()=>{
- const posting='https://jobs.lever.co/blackbirdinteractive/98050e1b-0adb-4842-96e9-a6b9c987b799';
- assert.equal(applicationTargetUrl(posting),posting+'/apply');
- assert.equal(applicationTargetUrl(posting+'/?lever-source=Raven'),posting+'/apply?lever-source=Raven');
- for(const url of [posting+'/apply',posting.replace('jobs.lever.co','jobs.lever.co.evil.example'),
-   'https://jobs.lever.co/blackbirdinteractive/another-job',
-   'https://jobs.lever.co/blackbirdinteractive/98050e1b-0adb-4842-96e9-a6b9c987b799/other',
+test('only bounded same-job posting routes gain their verified application paths',()=>{
+ const lever='https://jobs.lever.co/blackbirdinteractive/98050e1b-0adb-4842-96e9-a6b9c987b799';
+ const gusto='https://jobs.gusto.com/postings/dlvr-3d-artist-68896d07-c740-4488-83bc-8bbbd5fcfffc';
+ const breezy='https://illfonic.breezy.hr/p/5c1600aa06b4-principal-environment-artist';
+ for(const [posting,suffix] of [[lever,'/apply'],[gusto,'/applicants/new'],[breezy,'/apply']]){
+  assert.equal(applicationTargetUrl(posting),posting+suffix);
+  assert.equal(applicationTargetUrl(posting+'/?source=Raven'),posting+suffix+'?source=Raven');
+  assert.equal(applicationTargetUrl(posting+suffix),posting+suffix);
+ }
+ for(const url of [lever.replace('jobs.lever.co','jobs.lever.co.evil.example'),
+   'https://jobs.lever.co/blackbirdinteractive/another-job',lever+'/other',
+   gusto.replace('jobs.gusto.com','jobs.gusto.com.evil.example'),
+   gusto.replace('jobs.gusto.com','jobs.gusto.com:8443'),
+   gusto.replace('jobs.gusto.com','user:pass@jobs.gusto.com'),
+   'https://jobs.gusto.com/postings/dlvr-3d-artist-no-job-id',gusto+'/other',
+   breezy.replace('illfonic.breezy.hr','team.illfonic.breezy.hr'),
+   breezy.replace('5c1600aa06b4','5c1600aa06b'),breezy+'/other',
    'https://ingamejob.com/example'])assert.equal(applicationTargetUrl(url),url);
 });
 
@@ -263,13 +273,16 @@ test('canonical documents and live receipts finish before browser capability or 
  assert.deepEqual(flow.getSteps(),['writer','receipts','probe','preflight','probe','pdf','dispatch']);
 });
 
-test('verified Lever job keeps the saved posting URL while binding form delivery to its application route',async()=>{
- const posting='https://jobs.lever.co/blackbirdinteractive/98050e1b-0adb-4842-96e9-a6b9c987b799';
+for(const [provider,posting,suffix] of [
+ ['Lever','https://jobs.lever.co/blackbirdinteractive/98050e1b-0adb-4842-96e9-a6b9c987b799','/apply'],
+ ['Gusto','https://jobs.gusto.com/postings/dlvr-3d-artist-68896d07-c740-4488-83bc-8bbbd5fcfffc','/applicants/new'],
+ ['Breezy','https://illfonic.breezy.hr/p/5c1600aa06b4-principal-environment-artist','/apply']
+])test('verified '+provider+' job keeps the saved posting URL while binding form delivery to its application route',async()=>{
  const flow=preparationHarness({extensionMode:'ready',jobUrl:posting});
  await flow.prepare();
  assert.equal(flow.getStartedUrl(),posting);
- assert.equal(flow.getPreflight().jobUrl,posting+'/apply');
- assert.equal(flow.getPacket().jobUrl,posting+'/apply');
+ assert.equal(flow.getPreflight().jobUrl,posting+suffix);
+ assert.equal(flow.getPacket().jobUrl,posting+suffix);
  assert.equal(flow.getPacket().jobId,flow.job.id);
  assert.equal(flow.getPacket().title,flow.job.title);
  assert.equal(flow.getPacket().company,flow.job.company);
