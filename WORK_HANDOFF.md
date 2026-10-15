@@ -1,5 +1,11 @@
 # Raven execution handoff
 
+## Activated 2.4.5 city retest - October 14, 2026 MDT
+
+Owner confirmed reload and requested automatic-city/attachment retest without submission. Refreshed hosted Raven, opened existing Saved Nex role and clicked Apply job once. Fresh employer tab completed without Resume retry or helper status error. Both PDF filenames and removal controls confirm accepted resume and cover letter attachments; no false missing-attachment warning. Existing profile name/email/phone/portfolio/LinkedIn filled and country displayed US flag/+1. Automatic city still FAILED: city remained blank, with Location (City) explicitly listed for review. No manual city selection or attachment replacement performed in this run. Eligibility, sponsorship and salary remain blank on the new test tab; earlier manually completed review draft remains separate. Saved status preserved; no submission.
+
+2.4.5 is not live-accepted for city autofill. Prior synthetic reset-on-open fixture was insufficient to establish real Greenhouse behavior. Keep city review requirement intact; next implementation must reproduce the actual async React Select interaction before staging another extension reload. No new extension changes requested or packaged in this retest. Screenshot saved privately in chat outputs; no private profile data, cloud links or IDs in Git.
+
 ## Actual helper restart after upload — October 14, 2026 MDT
 
 User authorized a helper restart after upload and before link save. Selected existing Saved Mercury / Senior Customer Support Operations Readiness Program Manager resume with no export, receipt or matching Drive PDF. Stopped the normal idle helper; started a temporary one-job-scoped helper on the real loopback port using production workflow/server/Drive modules and protected configuration. Published app99 Review→Save PDF to Drive produced one actual upload. The test paused record_drive_export only after the upload receipt and recording progress were durable, while canonical export count remained zero. Force-stopped that listener process at the pause; no exception-based graceful completion was substituted.
