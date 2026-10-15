@@ -9,3 +9,5 @@ Verified locally: destination tests, preparation/client/server checks and nine p
 Prior name/limit policy PR96 is merged; functions deployed resume136, cover106, MCP5. Helper activation/read-only acceptance pending; no existing documents rewritten.
 
 Text-only cover-letter controls: extension2.4.7 accepts optional bounded saved coverLetterText, fills one unambiguous empty cover-letter textarea only when no file upload exists, respects maxlength and preserves existing text. Uses canonical saved HTML text with paragraph breaks; no regeneration, truncation, legal answers or submission. Four browser regressions cover fill, preservation, cap and ambiguity. Installed extension activation/live acceptance pending.
+
+Breezy adapter recognizes its standard cName/cEmail/cPhoneNumber/cAddress controls and cResume input across tenants; SMS consent and salary remain untouched. Four browser cases verified exact saved text, contact fill, no submit, existing text preservation, maxlength and ambiguous control refusal. Owner identified installed folder under Documents/Codex/2026-10-14/giv/outputs/raven-extension-2.3.0; update/reload pending.

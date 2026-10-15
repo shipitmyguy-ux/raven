@@ -148,12 +148,16 @@ for(const outcome of ['accepted','rejected'])test(`removed upload inputs remain 
 for(const mode of ['empty','existing','too-long','ambiguous'])test('cover-letter text control preserves saved content and limits: '+mode,async({page})=>{
  const value={...packet,coverLetterText:'Dear team,\nSaved cover letter.\nMike Rodriguez'};
  await page.addInitScript(v=>{window.__messages=[];window.__listeners=[];window.chrome={runtime:{onMessage:{addListener:f=>window.__listeners.push(f)},sendMessage:(m,cb)=>{window.__messages.push(m);cb?.(m.type==='raven-preflight-context'?{title:v.title,company:v.company}:{});}}};},value);
- await page.route('https://example.breezy.hr/**',route=>route.fulfill({contentType:'text/html',body:'<h1>Senior Artist</h1><div>Believer</div><form onsubmit="event.preventDefault();window.__submitted=true"><input placeholder="Full Name"><div class="upload-field"><label for="resume">Resume</label><input id="resume" name="resume" type="file" onchange="this.parentElement.append(this.files[0].name)"></div><textarea name="cCoverLetter" '+(mode==='too-long'?'maxlength="10"':'')+'>'+(mode==='existing'?'Keep my edit':'')+'</textarea>'+(mode==='ambiguous'?'<textarea name="cover_letter"></textarea>':'')+'<button type="submit">Submit Application</button></form>'}));
+ await page.route('https://example.breezy.hr/**',route=>route.fulfill({contentType:'text/html',body:'<h1>Senior Artist</h1><div>Believer</div><form onsubmit="event.preventDefault();window.__submitted=true"><input name="cName" placeholder="Full Name"><input name="cEmail" type="email"><input name="cPhoneNumber"><input name="cSalary"><input name="smsConsent" type="checkbox"><div class="upload-field"><label for="resume">Resume</label><input id="resume" name="cResume" type="file" onchange="this.parentElement.append(this.files[0].name)"></div><textarea name="cCoverLetter" '+(mode==='too-long'?'maxlength="10"':'')+'>'+(mode==='existing'?'Keep my edit':'')+'</textarea>'+(mode==='ambiguous'?'<textarea name="cover_letter"></textarea>':'')+'<button type="submit">Submit Application</button></form>'}));
  await page.goto('https://example.breezy.hr/p/job/apply');
  await page.addScriptTag({content:fs.readFileSync(new URL('../extension/src/assistant-core.js',import.meta.url),'utf8')});
  await page.addScriptTag({content:fs.readFileSync(new URL('../extension/src/prepare-content.js',import.meta.url),'utf8')});
  await page.evaluate(v=>window.__listeners.forEach(f=>f({type:'raven-prepare-deliver',packet:v,preflightId:'fixture',expectedUrl:location.href},{},()=>{})),value);
  await expect(page.locator('#raven-assistant-banner')).toBeVisible();
  await expect(page.locator('[name=cCoverLetter]')).toHaveValue(mode==='empty'?value.coverLetterText:mode==='existing'?'Keep my edit':'');
+ await expect(page.locator('[name=cName]')).toHaveValue('Ari Lee');
+ await expect(page.locator('[name=cEmail]')).toHaveValue('ari@example.test');
+ await expect(page.locator('[name=cSalary]')).toHaveValue('');
+ await expect(page.locator('[name=smsConsent]')).not.toBeChecked();
  expect(await page.evaluate(()=>window.__submitted||false)).toBe(false);
 });

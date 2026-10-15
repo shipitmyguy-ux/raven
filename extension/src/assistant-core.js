@@ -31,6 +31,13 @@
 
   const ADAPTERS = [
     {
+      id: "breezy",
+      host: /^[a-z0-9-]+\.breezy\.hr$/i,
+      profile: {fullName:['input[name="cName"]'],email:['input[name="cEmail"]'],phone:['input[name="cPhoneNumber"]'],address1:['input[name="cAddress"]']},
+      files: {resume:['input[type="file"][name="cResume"]'],coverLetter:['input[type="file"][name*="cover" i]']},
+      successSelectors: []
+    },
+    {
       id: "greenhouse",
       host: /(^|\.)(?:job-boards\.)?greenhouse\.io$/i,
       profile: {
