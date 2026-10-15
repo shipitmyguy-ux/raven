@@ -60,3 +60,17 @@ test('two distinct vacant studio roles from one response survive',()=>{
  const result=planStudioIngestion([row({url:'https://example.org/a'}),row({title:'Lead Environment Artist',url:'https://example.org/b'})],[],'Studio:greenhouse');
  assert.equal(result.inserts.length,2);
 });
+
+test('distinct ATS vacancy IDs on one verified provider are not collapsed',()=>{
+ const first=row({source:'Studio:greenhouse',url:'https://job-boards.greenhouse.io/example/jobs/1000001'});
+ const second=row({source:'Studio:greenhouse',url:'https://job-boards.greenhouse.io/example/jobs/1000002'});
+ const result=planStudioIngestion([first,second],[],'Studio:greenhouse');
+ assert.equal(result.inserts.length,2);
+ assert.equal(result.heldForReview,0);
+});
+test('unknown-employer job board matches cannot establish cross-source identity',()=>{
+ const prior=row({company:'Unknown employer',url:'https://example.com/posting-one'});
+ const next=row({company:'Unknown employer',url:'https://example.com/posting-two'});
+ const result=planStudioIngestion([next],[prior],'Studio:ashby');
+ assert.equal(result.inserts.length,1);
+});
