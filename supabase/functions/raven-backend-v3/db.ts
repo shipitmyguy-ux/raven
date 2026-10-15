@@ -55,12 +55,13 @@ async function filterGameDiscovery(rows:Candidate[]){
   if(saved.length<500)break;
   if(offset>=1500)throw Error("Saved game-job dedup window exceeded");
  }
- const safe:Candidate[]=[],review:any[]=[];
+ const safe:Candidate[]=[],review:any[]=[],sourceLinks:any[]=[];
  for(const row of rows){
   if(!usStudioScopeAllowed(row))continue;
   const plan=planStudioIngestion([row],existing,String(row.source||"Discovery"),{isSheet:false});
   safe.push(...plan.inserts,...plan.updates);
   review.push(...plan.reviews);
+  sourceLinks.push(...plan.sourceLinks);
   for(const inserted of plan.inserts)existing.push({...inserted,status:"Discovered",track:"Games / 3D"});
  }
  for(let i=0;i<review.length;i+=25){
@@ -70,16 +71,31 @@ async function filterGameDiscovery(rows:Candidate[]){
   });
   if(!response.ok)throw Error("Duplicate review queue write failed ("+response.status+")");
  }
- return safe;
+ return {safe,sourceLinks};
+}
+async function persistGameSourceLinks(links:any[]){
+ const valid=(links||[]).filter((x:any)=>String(x.observed_url||"").startsWith("https://")&&String(x.canonical_url||"").startsWith("https://"));
+ for(let i=0;i<valid.length;i+=25){
+  const r=await rest("raven_job_source_links?on_conflict=source_name,observed_url",{
+   method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},
+   body:JSON.stringify(valid.slice(i,i+25).map((x:any)=>({...x,last_seen:new Date().toISOString()})))
+  });
+  if(!r.ok){
+   console.warn("Game job source provenance unavailable (HTTP "+r.status+")");
+   break;
+  }
+ }
 }
 export async function upsertResults(rows:Candidate[]){
  const validRows=rows.filter(isPersistableCandidate);
  if(!validRows.length)return;
  const games=validRows.filter(c=>c.track==="Games / 3D");
- const filtered=games.length
-  ?[...validRows.filter(c=>c.track!=="Games / 3D"),...await filterGameDiscovery(games)]
-  :validRows;
- if(!filtered.length)return;
+ const gamePlan=games.length?await filterGameDiscovery(games):null;
+ const filtered=gamePlan?[...validRows.filter(c=>c.track!=="Games / 3D"),...gamePlan.safe]:validRows;
+ if(!filtered.length){
+  if(gamePlan)await persistGameSourceLinks(gamePlan.sourceLinks);
+  return;
+ }
  const now=new Date().toISOString();
  const body=filtered.map(c=>({
   track:c.track||"Professional",title:c.title||"",company:c.company||null,
@@ -97,6 +113,7 @@ export async function upsertResults(rows:Candidate[]){
   const detail=await r.text().catch(()=>"");
   throw new Error("Database write failed ("+r.status+"): "+detail.slice(0,1200));
  }
+ if(gamePlan)await persistGameSourceLinks(gamePlan.sourceLinks);
 }
 
 export async function listResults(track:Track){
