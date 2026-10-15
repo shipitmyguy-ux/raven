@@ -2045,9 +2045,14 @@
   const activeApplicationPrepares=new Map();
   let localPreparationClient;
   let preparationRecovery;
+  let extensionReconnect;
+  async function getExtensionReconnect(){
+    if(!extensionReconnect){const {createExtensionReconnect}=await import("./application-prepare.mjs?v=8");extensionReconnect=createExtensionReconnect();}
+    return extensionReconnect;
+  }
   async function getPreparationRecovery(){
     if(!preparationRecovery){
-      const {createPreparationRecovery}=await import("./application-prepare.mjs?v=7");
+      const {createPreparationRecovery}=await import("./application-prepare.mjs?v=8");
       preparationRecovery=createPreparationRecovery();
     }
     return preparationRecovery;
@@ -2149,19 +2154,20 @@
     });
     return {job:canonical,result:{documents}};
   }
-  async function prepareApplication(job,button){
+  async function prepareApplication(job,button,{automaticReconnect=false}={}){
     let key=String(job.id||job.url);
     if(activeApplicationPrepares.has(key)||activeOneClickJobs.has(key+":resume")||activeOneClickJobs.has(key+":coverLetter")){setStatus("This job is already being prepared or generated. Wait for it to finish, then try again.");return;}
     const busy={label:"Preparing application…"};activeApplicationPrepares.set(key,busy);
     state.preparationFeedback=null;
-    let intent=null;
+    let intent=null,reconnectPage=false;
     try{
       if(job.listing_state==="closed")throw Error("This listing is source-confirmed closed. Review the employer link before preparing documents.");
       if(!/^https:\/\//i.test(String(job.url||"")))throw Error("A secure employer listing URL is required to prepare this application.");
-      const {applicationTargetUrl,probePreparationExtension,preflightPreparationApplication,dispatchPreparedApplication,extensionUnavailableReason}=await import("./application-prepare.mjs?v=7");
+      const {applicationTargetUrl,probePreparationExtension,preflightPreparationApplication,dispatchPreparedApplication,extensionUnavailableReason}=await import("./application-prepare.mjs?v=8");
       const recovery=await getPreparationRecovery();
       const savedIntent=recovery.load();
       if(savedIntent&&!savedIntent.expired&&savedIntent.state!=="opened"&&String(savedIntent.jobId)!==String(job.id))throw Error("Another application preparation is saved. Resume or dismiss it before starting this role.");
+      if(automaticReconnect&&(!savedIntent||savedIntent.expired||savedIntent.state!=="documents-ready"||!savedIntent.documents?.resume||!savedIntent.documents?.coverLetter))throw Error("Connection recovery stopped: review the saved preparation before resuming.");
       await prepareJobForGeneration(job);
       key=String(job.id||job.url);
       for(const [activeKey,active] of activeApplicationPrepares)if(active===busy&&activeKey!==key)activeApplicationPrepares.delete(activeKey);
@@ -2181,6 +2187,7 @@
       await recovery.withLease(preparationId,async()=>{
         // Keep the pre-existing hashes separate: newly finished documents cannot
         // prove that a previous extension request already delivered a packet.
+        const safeBeforeDelivery=intent.lastStage!=="form_delivery"&&!["dispatching","needs-review"].includes(intent.state);
         const originalHashes=intent.documents?.resume?.documentSha256&&intent.documents?.coverLetter?.documentSha256
           ? {resume:intent.documents.resume.documentSha256,coverLetter:intent.documents.coverLetter.documentSha256}:null;
         let verified;
@@ -2214,7 +2221,15 @@
         try{await probePreparationExtension();}catch(error){extensionReason=extensionUnavailableReason(error);if(!extensionReason)throw error;}
         if(!extensionReason){
           try{preflight=await preflightPreparationApplication({jobId:String(job.id),jobUrl:targetUrl,title:canonical.title||"",company:canonical.company||""},{requestId:intent.extensionRequestId});}
-          catch(error){extensionReason=extensionUnavailableReason(error);if(!extensionReason)throw error;}
+          catch(error){
+            extensionReason=extensionUnavailableReason(error);if(!extensionReason)throw error;
+            // Only a silent/stale preflight can renew automatically, never uncertain delivery.
+            const uiSafe=error.reconnectBeforeDelivery===true&&!document.querySelector("dialog[open]")&&!state.generatorJob&&!state.manualImportJob&&activeOneClickJobs.size===0&&Object.keys(pendingDocumentSync()).length===0;
+            if(safeBeforeDelivery&&!automaticReconnect&&uiSafe&&(await getExtensionReconnect()).arm(intent,error)){
+              retainDocumentsReady("Reconnecting to the Chrome extension…","extension-unavailable");
+              reconnectPage=true;return;
+            }
+          }
         }
         if(preflight?.alreadyPrepared===true){
           if(!originalHashes)throw Error("The saved preparation has no prior verified document hashes. Review the documents before resuming.");
@@ -2237,7 +2252,7 @@
         const packet={version:2,mode:"prepare",createdAt:new Date().toISOString(),jobId:String(job.id),jobUrl:targetUrl,title:canonical.title||"",company:canonical.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory()};
         for(const doc of prepared.documents)packet[doc.document_type==="resume"?"resume":"coverLetter"]=doc.data_url;
         if(typeof packet.resume!=="string"||typeof packet.coverLetter!=="string")throw Error("The writer did not return both verified PDFs.");
-        intent=recovery.update(preparationId,{state:"dispatching"});
+        intent=recovery.update(preparationId,{state:"dispatching",lastStage:"form_delivery"});
         try{await dispatchPreparedApplication(packet,{requestId:intent.extensionRequestId,preflightId:preflight.preflightId});}
         catch(error){const reason=extensionUnavailableReason(error);if(!reason)throw error;retainDocumentsReady(reason,"extension-unavailable");return;}
         recovery.update(preparationId,{state:"opened"});
@@ -2254,6 +2269,8 @@
     }finally{
       for(const [activeKey,active] of activeApplicationPrepares)if(active===busy)activeApplicationPrepares.delete(activeKey);
       setGenerationButton(button,false);render();
+      // Release the preparation lease before boot reacquires it.
+      if(reconnectPage)window.location.reload();
     }
   }
   async function launchChatGptPrompt(job,type,button=null){
@@ -3308,6 +3325,13 @@
     const runtimePromise=loadRuntimeConfig();
     const refreshPromise=refreshAllJobs();
     await Promise.allSettled([runtimePromise,refreshPromise]);
+    try{
+      const reconnect=(await getExtensionReconnect()).take(preparationRecovery?.load());
+      if(reconnect){
+        const job=state.jobs.find(item=>String(item.id)===String(reconnect.jobId));
+        if(job&&!job._discovered){state.selectedId=job.id;render();await prepareApplication(job,null,{automaticReconnect:true});}
+      }
+    }catch(error){console.warn("Extension connection recovery stopped",error);}
 
     let lastRefresh=Date.now();
     document.addEventListener("visibilitychange",()=>{

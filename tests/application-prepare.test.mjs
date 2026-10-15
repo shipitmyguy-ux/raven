@@ -387,3 +387,35 @@ test('a failed writer after an access gate cannot claim documents ready',async()
  assert.equal(flow.getSteps().includes('probe'),false);
  assert.doesNotMatch(flow.getStatus(),/Documents ready; employer form needs manual access/);
 });
+
+
+test('automatic reconnect is tab-local, one-shot, identity/hash bound and expires',async()=>{
+ const {createExtensionReconnect}=await import('../application-prepare.mjs');
+ const values=new Map(),storage={getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,value),removeItem:key=>values.delete(key)};let time=1000;
+ const options={storage,now:()=>time};
+ const reconnect=createExtensionReconnect(options);
+ const intent={state:'documents-ready',preparationId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',extensionRequestId:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',jobId:'JT-test',jobUrl:'https://example.test/job',documents:{resume:{documentSha256:'a'.repeat(64)},coverLetter:{documentSha256:'b'.repeat(64)}}};
+ const silent=Object.assign(Error('silent preflight'),{code:'PREPARATION_EXTENSION_UNAVAILABLE',reconnectBeforeDelivery:true});
+ assert.equal(reconnect.arm(intent,Error('wrong identity')),false);
+ assert.equal(reconnect.arm({...intent,state:'dispatching'},silent),false);
+ assert.equal(reconnect.arm(intent,silent),true);
+ assert.deepEqual(createExtensionReconnect(options).take(intent),{preparationId:intent.preparationId,jobId:intent.jobId});
+ assert.equal(reconnect.take(intent),null);assert.equal(reconnect.arm(intent,silent),false);
+ for(const change of [{jobId:'other'},{jobUrl:'https://other.test/job'},{extensionRequestId:'cccccccc-cccc-4ccc-8ccc-cccccccccccc'},{documents:{...intent.documents,resume:{documentSha256:'c'.repeat(64)}}},{expired:true}]){
+  storage.removeItem('raven.extension-reconnect.v1');assert.equal(reconnect.arm(intent,silent),true);assert.equal(reconnect.take({...intent,...change}),null);
+ }
+ storage.removeItem('raven.extension-reconnect.v1');reconnect.arm(intent,silent);time+=120001;assert.equal(reconnect.take(intent),null);
+});
+
+for(const unsafe of ['dispatching','form_delivery','dialog','pending-sync'])test('automatic recovery does not replay '+unsafe,async()=>{
+ const flow=preparationHarness({extensionMode:'preflight-disappeared'});
+ const original=flow.ctx.prepareModule.preflightPreparationApplication;
+ flow.ctx.prepareModule.preflightPreparationApplication=async input=>{try{return await original(input);}catch(error){error.reconnectBeforeDelivery=true;throw error;}};
+ flow.ctx.document={querySelector:()=>unsafe==='dialog'?{}:null};
+ flow.ctx.pendingDocumentSync=()=>unsafe==='pending-sync'?{other:{}}:{};
+ let armed=0;flow.ctx.getExtensionReconnect=async()=>({arm(){armed++;return false;}});
+ if(unsafe==='dispatching'||unsafe==='form_delivery'){
+  await flow.prepare();const saved=flow.recovery.load();flow.recovery.update(saved.preparationId,unsafe==='dispatching'?{state:'dispatching'}:{lastStage:'form_delivery'});armed=0;
+ }
+ await flow.prepare();assert.equal(armed,0);assert.equal(flow.counts.dispatch,0);assert.equal(flow.counts.pdfs,0);
+});
