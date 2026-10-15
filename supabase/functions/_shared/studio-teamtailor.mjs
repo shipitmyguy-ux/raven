@@ -13,6 +13,7 @@ const BOARDS=Object.freeze({
  'awaceb':{host:'awaceb.teamtailor.com',studio:'Awaceb',org:'Awaceb'},
  'kepler-interactive':{host:'careers.kepler-interactive.com',studio:'Kepler Interactive',org:'Kepler Interactive',childHosts:['tacticaladventures.teamtailor.com','careers.shapefarm.net','awaceb.teamtailor.com']},
  'io-interactive':{host:'apply.ioi.dk',studio:'IO Interactive',org:'IOI'},
+ 'cinnamon':{host:'cinnamonsoftware.teamtailor.com',studio:'Cinnamon',org:'Cinnamon'},
 });
 const entities=s=>String(s??'').replace(/&(?:amp|lt|gt|quot|apos|nbsp|middot);|&#(?:x[0-9a-f]+|\d+);/gi,e=>{const map={'&amp;':'&','&lt;':'<','&gt;':'>','&quot;':'"','&apos;':"'",'&nbsp;':' ','&middot;':'·'};if(map[e.toLowerCase()])return map[e.toLowerCase()];const n=e[2].toLowerCase()==='x'?parseInt(e.slice(3,-1),16):parseInt(e.slice(2,-1),10);return n>0&&n<=0x10ffff?String.fromCodePoint(n):'';});
 const clean=(s,n=20000)=>entities(entities(s)).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,n);
