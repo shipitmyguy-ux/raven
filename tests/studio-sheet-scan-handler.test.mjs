@@ -8,6 +8,7 @@ import * as schedule from '../supabase/functions/_shared/studio-schedule.mjs';
 import * as providers from '../supabase/functions/_shared/studio-providers.mjs';
 import * as sheet from '../supabase/functions/_shared/studio-sheet-feed.mjs';
 import * as evidence from '../supabase/functions/_shared/job-duplicate-evidence.mjs';
+import {planStudioIngestion} from '../supabase/functions/_shared/studio-ingest-dedup.mjs';
 import {sameJob} from '../supabase/functions/_shared/studio-result-dedup.mjs';
 import '../supabase/functions/_shared/track-filter.js';
 const source=stripTypeScriptTypes(fs.readFileSync('supabase/functions/raven-studio-scan/index.ts','utf8').replace(/^import .*;\r?\n/gm,''));
@@ -32,13 +33,14 @@ const fakeFetch=async(url,opts={})=>{
   if(path.startsWith('raven_studio_cron_auth'))return Response.json([{token_hash:hash}]);
   if(path.includes('enabled=eq.true'))return Response.json([due]);
   if(path.startsWith('raven_search_results'))return Response.json(existing);
+  if(path.startsWith('raven_jobs'))return Response.json([]);
   throw Error('Unexpected lookup '+path);
  }
  writes.push({path,body:JSON.parse(opts.body),method:opts.method});
  return new Response(null,{status:204});
 };
 let handler;
-vm.runInNewContext(source,{...providers,...collector,...schedule,...sheet,collectRemoteGameSheet:async()=>({jobs:collected,fetched:656,details:{status:'not_needed',error:null,attempted:0,completed:0,deferred:0}}),...evidence,sameJob,
+vm.runInNewContext(source,{...providers,...collector,...schedule,...sheet,collectRemoteGameSheet:async()=>({jobs:collected,fetched:656,details:{status:'not_needed',error:null,attempted:0,completed:0,deferred:0}}),...evidence,sameJob,planStudioIngestion,
  fetch:fakeFetch,globalThis:{RavenTrackFilter:globalThis.RavenTrackFilter},
  Deno:{env:{get:k=>k==='SUPABASE_URL'?'https://db.example':'local-test-key'},serve:fn=>{handler=fn;}},
  crypto,Response,TextEncoder,TextDecoder,Uint8Array,AbortSignal,URL});
