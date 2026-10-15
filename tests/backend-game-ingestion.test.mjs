@@ -58,6 +58,9 @@ test('saved application is never overwritten by new broad ATS discovery',async()
  await h.upsertResults([job({url:'https://example.org/saved'})]);
  assert.equal(h.writes.some(w=>w.path.startsWith('raven_search_results?on_conflict')),false);
  assert.equal(saved.status,'Interview');
+ const provenance=h.writes.find(w=>w.path.startsWith('raven_job_source_links'));
+ assert.equal(provenance.body.length,1);
+ assert.equal(provenance.body[0].canonical_url,'https://example.org/saved');
 });
 test('Professional ingestion does not invoke game-only privacy and dedup reads',async()=>{
  const h=harness();
