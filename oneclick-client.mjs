@@ -1,3 +1,4 @@
+import {isApplicationBoardUrl} from './scripts/application-destination.mjs?v=1';
 const stages=new Set(['queued','persisting','document_complete','document_failed','context','verifying','confirming','checking_saved_state','checking_drive_receipts','writing','saving','pdf','uploading','recording','complete','failed']);
 const runPattern=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 export function createOneClickClient({baseUrl='http://127.0.0.1:8766',fetchImpl=globalThis.fetch,pollMs=1500,maxWaitMs=600000}={}){
@@ -50,7 +51,14 @@ export function createOneClickClient({baseUrl='http://127.0.0.1:8766',fetchImpl=
     if(typeof value.supported!=='boolean'||!Number.isInteger(value.active_tasks)||value.active_tasks<0||!['idle','starting','awake','stopped','unavailable'].includes(value.state))throw Error('Update and restart the Raven writer to use keep-awake controls.');
     return value;
   }
-  return {async getPowerStatus(){await session();return validatePower(await request('/power'));},async stopKeepingAwake(){await session();return validatePower(await request('/power/stop',{}));},async ensureApplicationPreparation(){return ensureApplicationPreparation();},async verifyApplicationReceipts(input){
+  return {async resolveApplicationDestination(job){
+    if(!isApplicationBoardUrl(job.url))return job.url;
+    await session();
+    const result=await request('/application-destination',{job_id:String(job.id)},true,30000);
+    if(result?.job_id!==String(job.id)||result.source_url!==job.url||typeof result.destination_url!=='string')throw Error('The employer destination changed. Review the saved listing.');
+    const url=new URL(result.destination_url);if(url.protocol!=='https:'||url.port||url.username||url.password)throw Error('Invalid employer destination.');
+    return result.destination_url;
+  },async getPowerStatus(){await session();return validatePower(await request('/power'));},async stopKeepingAwake(){await session();return validatePower(await request('/power/stop',{}));},async ensureApplicationPreparation(){return ensureApplicationPreparation();},async verifyApplicationReceipts(input){
     if(!String(input?.job_id||'')||!Array.isArray(input.documents)||input.documents.length!==2||new Set(input.documents.map(d=>d?.document_type)).size!==2||input.documents.some(d=>!['resume','coverLetter'].includes(d?.document_type)||! /^[a-f0-9]{64}$/.test(d?.document_sha256||'')||! /^[A-Za-z0-9_-]{10,160}$/.test(d?.file_id||'')||d.drive_url!==`https://drive.google.com/file/d/${d.file_id}/view`))throw Error('Both exact application receipts are required.');
     const health=await ensureApplicationPreparation();
     if(health.application_receipts_supported!==true)throw Error('This Raven writer cannot recheck saved Drive receipts. Update and restart the writer before resuming.');

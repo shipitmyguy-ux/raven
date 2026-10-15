@@ -299,6 +299,15 @@
       if (answer == null || !String(answer).trim() || !Object.values(profileTerms).some(terms => terms.some(term => normalized(label) === normalized(term)))) continue;
       if (setValue(el, answer)) filled.push("remembered answer");
     }
+    // Some employers accept cover letters only as text. Use the exact saved
+    // document text supplied by Raven; never infer or generate an answer.
+    const coverFields = [...document.querySelectorAll('textarea')].filter(el => safeControl(el) && !sensitive(el,labelFor(el)) &&
+      (/^cover letter$/i.test(labelFor(el)) || /^(?:cCoverLetter|cover[_-]?letter)$/i.test(el.name) || /^cover[_-]?letter$/i.test(el.id)));
+    let coverTextFilled = false;
+    if (!fileCandidate(adapter,'coverLetter') && coverFields.length === 1 && typeof packet.coverLetterText === 'string' && packet.coverLetterText.trim() && packet.coverLetterText.length <= 20000) {
+      const el=coverFields[0],max=el.maxLength;
+      if ((max < 0 || packet.coverLetterText.length <= max) && setValue(el,packet.coverLetterText)) { filled.push('cover letter');coverTextFilled=true; }
+    }
     const attached = [];
     const selected = [];
     const notRequested = [];
@@ -308,7 +317,7 @@
     for (const [key, value] of [["resume", resumeResult], ["coverLetter", coverResult]]) {
       if (value.accepted) attached.push(key);
       if (value.selected) selected.push(key);
-      if (!availableUploads.has(key) && !value.selected && !value.accepted) notRequested.push(key);
+      if (!availableUploads.has(key) && !value.selected && !value.accepted && !(key === "coverLetter" && coverTextFilled)) notRequested.push(key);
     }
     for (const key of Object.keys(profileTerms)) if (!requested.has(key) && !candidateFor(adapter, key, fields)) notRequested.push(key);
     const selectedUnconfirmed = selected.filter(key => !attached.includes(key));

@@ -189,3 +189,15 @@ test('durable progress write failure identifies persistence and never publishes 
   const result=await (await f.request('/runs/'+run.run_id)).json();assert.equal(result.stage,'failed');assert.equal(result.failed_stage,'persisting');assert.equal(result.error_code,'DATABASE_UNAVAILABLE');
  }finally{await f.cleanup();}
 });
+
+test('destination resolution requires a Raven session, authorized job and canonical server URL',async()=>{
+ let reads=0;
+ const f=await fixture(async()=>{throw Error('writer must not run');},{rest:async path=>{reads++;assert.match(path,/^raven_jobs\?select=id,url,title,company&id=eq.allowed&limit=1$/);return [{id:'allowed',url:'https://example.breezy.hr/p/job',title:'Artist',company:'Example'}];}});
+ try{
+  assert.equal((await f.request('/application-destination',{job_id:'allowed'},{Authorization:''})).status,401);
+  assert.equal((await f.request('/application-destination',{job_id:'forbidden'})).status,403);
+  assert.equal((await f.request('/application-destination',{job_id:'allowed',url:'http://127.0.0.1'})).status,400);
+  const result=await f.request('/application-destination',{job_id:'allowed'});
+  assert.equal(result.status,200);assert.equal((await result.json()).destination_url,'https://example.breezy.hr/p/job');assert.equal(reads,1);
+ }finally{await f.cleanup();}
+});

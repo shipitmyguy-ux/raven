@@ -1,3 +1,4 @@
+import {resolveApplicationDestination} from './application-destination.mjs';
 import http from 'node:http';
 import {randomBytes,randomUUID,createHash} from 'node:crypto';
 import {mkdir,readFile,writeFile,rename,readdir} from 'node:fs/promises';
@@ -132,6 +133,15 @@ export async function createOneClickServer({runWorkflow,rest,authorizeJob,pairRe
    if(req.method==='POST'&&path==='/pair'){
     if(!pairRemote)return send(503,{error:'Phone queue is not configured on this computer.'});
     return send(200,await pairRemote());
+   }
+   if(req.method==='POST'&&path==='/application-destination'){
+    if(!body||Object.keys(body).join(',')!=='job_id'||!/^[A-Za-z0-9_-]{1,160}$/.test(body.job_id||''))return send(400,{error:'Invalid destination request.'});
+    try{
+     await authorizeJob(body.job_id);
+     const jobs=await rest('raven_jobs?select=id,url,title,company&id=eq.'+encodeURIComponent(body.job_id)+'&limit=1');
+     if(!jobs?.[0]||jobs[0].id!==body.job_id)return send(404,{error:'Saved job not found.'});
+     return send(200,await resolveApplicationDestination(jobs[0]));
+    }catch(error){return send(error.message==='UNAUTHORIZED'?403:422,{error:'The employer application destination could not be verified. Open the saved listing for manual review.'});}
    }
    if(req.method==='POST'&&path==='/application-documents'){
     if(typeof prepareApplicationDocuments!=='function')return send(503,{error:'Application document preparation is not configured.'});
