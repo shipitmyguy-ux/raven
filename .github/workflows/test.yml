@@ -120,6 +120,7 @@ jobs:
           node --test tests/job-duplicate-evidence.test.mjs
           node --test tests/studio-sheet-feed.test.mjs
           node --test tests/studio-sheet-scan-handler.test.mjs
+          node --test tests/studio-ingest-dedup.test.mjs
           node tests/assistant-core.test.mjs
           node tests/ats-csv.test.mjs
           node tests/drive-source.test.mjs
