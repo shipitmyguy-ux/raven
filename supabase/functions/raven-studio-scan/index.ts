@@ -126,6 +126,12 @@ async function refreshExistingSheetRows(urls:string[],now:string){
   await db("raven_search_results?url=in."+encodeURIComponent(list)+"&source=eq."+encodeURIComponent(SHEET_SOURCE)+"&status=eq.Discovered","PATCH",{last_seen:now});
  }
 }
+async function persistSourceLinks(links:any[]){
+ const valid=(links||[]).filter((link:any)=>String(link.observed_url||"").startsWith("https://")&&String(link.canonical_url||"").startsWith("https://"));
+ for(let i=0;i<valid.length;i+=25)await db(
+  "raven_job_source_links?on_conflict=source_name,observed_url","POST",
+  valid.slice(i,i+25).map((link:any)=>({...link,last_seen:new Date().toISOString()})));
+}
 async function check(s:any,tickDeadline:number){
  const start=Date.now(),deadline=Math.min(tickDeadline,start+75000);let cursorNext:any;let status="ok",error="",total=0,eligible=0,details:any={status:"not_checked",error:null};
  try{
@@ -151,6 +157,7 @@ async function check(s:any,tickDeadline:number){
    track:"Games / 3D",title:j.title,company:j.company,location:j.location,remote:j.remote,
    url:j.url,...(j.snippet?{snippet:j.snippet,studio_description_updated_at:j.studio_description_updated_at||seen}:{}),source:sheet?SHEET_SOURCE:"Studio:"+s.provider,score:sheet?8:12,status:"Discovered",last_seen:seen
   })));
+  await persistSourceLinks(plan.sourceLinks);
   details={...details,skipped_exact:plan.skippedExact,held_for_review:plan.heldForReview,imported:plan.inserts.length,queued_reviews:plan.reviews.length};
  }catch(e){status="failed";error=String(e instanceof Error?e.message:e);}
  const checked=new Date().toISOString();
