@@ -4,7 +4,7 @@
 const countries=/\b(?:Canada|United Kingdom|UK|Europe|EMEA|European Union|APAC|Australia|New Zealand|India|Poland|Germany|France|Spain|Japan|China|Hong Kong)\b/i;
 const usa=/\b(?:United States(?: of America)?|USA|U\.S\.A\.|North America|Americas|US)\b/i;
 const worldwide=/\b(?:Worldwide|Global|Anywhere in the world)\b/i;
-const narrowGMT=/(?:\+\/-\s*[0-3]\s*h|-\s*\+\/-\s*[0-3]\s*h|within\s*[0-3]\s*hours?)\s*(?:from|of)?\s*(?:GMT|UTC|CET|CEST)\s*\+?\d*/i;
+const narrowGMT=/(?:[+-]\\/[+-]\\s*[0-3]\\s*h|within\\s*[0-3]\\s*hours?)\\s*(?:from|of)?\\s*(?:GMT|UTC|CET|CEST)\\s*\\+?\\d*/i;
 const mandatoryOutsideUS=/\b(?:must (?:be|reside|live|work|be located)|required to (?:be|reside|live|work)|only open to|based (?:in|within))\b.{0,70}\b(?:Canada|United Kingdom|UK|Europe|EMEA|European Union|APAC|Australia|India|Poland|Germany|France|Spain|Japan|China|Hong Kong)\b/i;
 export function usStudioScopeAllowed(job) {
  const location=String(job?.location||'').replace(/\s+/g,' ').trim();
