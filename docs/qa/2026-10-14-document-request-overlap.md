@@ -9,3 +9,5 @@ Three deterministic child-helper cases exercise the production server, scheduler
 - Browser regression dispatches eight stale-control bursts across all three actions, accepts one helper request and retains both Current PDF links after refresh.
 
 Run npm run test:document-recovery (nine cases including six existing recovery scenarios), or npm run test:documents (62 cases). Both Linux and Windows required CI matrix jobs run the expanded suite. Local suites passed. CI evidence will be recorded in the handoff after execution.
+
+PR89 passed all nine process cases on Linux and Windows (run38674565073), and full browser166/166 (run38674565017). Main Windows subsequently exposed a synthetic database read/rename race (EPERM), reproduced locally with child stderr diagnostics. Parent live-database reads now use serialized IPC snapshots, preventing an open Windows reader from denying replacement. Durable receipts/run state remain real on-disk checks. No product transport retries or production changes were added.
