@@ -1,6 +1,7 @@
 import "../_shared/track-filter.js";
 import {collectRemoteGameSheet, spreadsheetArtRoleAllowed} from "../_shared/studio-sheet-feed.mjs";
 import {planStudioIngestion} from "../_shared/studio-ingest-dedup.mjs";
+import {usStudioScopeAllowed} from "../_shared/studio-us-eligibility.mjs";
 import {MAX_STUDIO_JOBS, providerEndpoint, providerRecords, normalizeStudioJobs, deduplicateStudioJobs} from "../_shared/studio-providers.mjs";
 import {fetchStudioJson, fetchStudioText, enrichStudioDetails, reuseFreshStudioDescriptions} from "../_shared/studio-collector.mjs";
 import {collectIcims} from "../_shared/studio-icims.mjs";
@@ -49,7 +50,7 @@ async function preparePortalDetails(jobs:any[],deadline:number,restoreMetadata=f
  }
 }
 async function sourceJobs(s:any,deadline:number){
- const portalOptions={fetchJson:fetchStudioJson,fetchText:fetchStudioText,deadline,jobAllowed:(j:any)=>gameArtRoleAllowed(j)&&jobLocationAllowed(j),detailAllowed:(j:any)=>gameArtRoleAllowed(j),prepareDetails:(jobs:any[])=>preparePortalDetails(jobs,deadline,true)};
+ const portalOptions={fetchJson:fetchStudioJson,fetchText:fetchStudioText,deadline,jobAllowed:(j:any)=>gameArtRoleAllowed(j)&&jobLocationAllowed(j)&&usStudioScopeAllowed(j),detailAllowed:(j:any)=>gameArtRoleAllowed(j),prepareDetails:(jobs:any[])=>preparePortalDetails(jobs,deadline,true)};
  if(s.provider==="remotegamessheet")return collectRemoteGameSheet(s);
  if(s.provider==="ingamejob")return collectInGameJob(s,portalOptions);
  if(s.provider==="gamesjobsdirect")return collectGamesJobsDirect(s,portalOptions);
@@ -130,7 +131,7 @@ async function check(s:any,tickDeadline:number){
  try{
   const collected=await sourceJobs(s,deadline);const jobs=collected.jobs;total=collected.fetched;cursorNext=collected.detail_cursor_next;
   const sheet=s.provider==="remotegamessheet";
-  const selected=jobs.filter((j:any)=>(sheet?spreadsheetArtRoleAllowed(j):gameArtRoleAllowed(j))&&jobLocationAllowed(j));
+  const selected=jobs.filter((j:any)=>(sheet?spreadsheetArtRoleAllowed(j):gameArtRoleAllowed(j))&&jobLocationAllowed(j)&&usStudioScopeAllowed(j));
   eligible=selected.length;
   const seen=new Date().toISOString();
   let candidates=selected,plan:any;
