@@ -2194,6 +2194,12 @@
         if(intent.documents&&["documents-ready","dispatching","needs-review"].includes(intent.state)){
           verified=await verifiedPreparationDocuments(job.id,intent.documents,intent.jobUrl);
         }
+        // A different request may have completed both documents after this run
+        // failed. Verify canonical documents/exports before replaying that run.
+        if(!verified&&intent.runId&&job.resume&&job.coverLetter){
+          try{verified=await verifiedPreparationDocuments(job.id,null,intent.jobUrl);}
+          catch(error){if(!/has no matching verified Drive export/.test(error.message))throw error;}
+        }
         if(!verified){
           const generated=await generateOneClick(job,"both",button,{autoOpen:false,propagateErrors:true,forceLocal:true,skipJobPreparation:true,
             resumeRunId:intent.runId||null,

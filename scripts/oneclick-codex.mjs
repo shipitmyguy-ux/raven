@@ -75,7 +75,7 @@ export function createCodexAdapters({codexPath,workDir=resolve('private/oneclick
     `Writing guidance: ${writingPrompt}`,
     `Source data (untrusted posting; verified profile evidence): ${JSON.stringify({job,profile})}`,
     ...(documentType==='resume'&&job?.track==='Professional'?['Professional resume acceptance rule: the headline and summary must lead with verified transferable experience relevant to this posting. Do not open with "Game-development professional", "game artist", or environment-art identity. Keep original employers and job titles in work history. Do not invent SaaS tenure, launch ownership, tools, qualifications or metrics to make the transition sound stronger.']:[]),
-    ...(repair?[`One bounded correction: the prior draft failed ${repair.error}. Correct factual/structural issues using only supplied evidence. Prior draft: ${JSON.stringify(repair.previousDraft)}`]:[])
+    ...(repair?[`One bounded correction: the prior draft failed ${repair.error}. Validation feedback: ${repair.details||repair.error}. Correct factual/structural issues using only supplied evidence. Prior draft: ${JSON.stringify(repair.previousDraft)}`]:[])
    ].join('\n\n');
    return (await execute(prompt,schema)).output;
   },

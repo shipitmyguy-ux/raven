@@ -1,5 +1,15 @@
 # Raven execution handoff
 
+## Approved live retry and stale-run recovery — October 15, 2026 MDT
+
+Owner d explicitly approved missing Fair Play Labs cover save/export. Actual helper pair retry completed: existing resume/PDF reused; missing cover saved, exact PDF uploaded and export event confirmed. Fresh Raven drawer shows both documents ready; full-chain document creation passed. Owner then reported next step still blocked. Fresh UI confirms stale original validation failure persisted: Resume preparation always polls its original failed run even after an independent successful pair request. Added canonical current-document/export verification before polling an old run when both documents now exist; final live Drive receipt, hash, job URL, lease, extension preflight and no-submit safeguards retained. App101 invalidates web cache; no extension update.
+
+Verified two focused Edge browser cases, including a stale needs-review intent without document hashes whose old run must never be polled; canonical documents/receipts advance to the next step. 67 application-preparation/workflow Node cases passed. Previous 80 writer/bridge/workflow/security and complete process suite passed. Integrated newer main/PR92 Professional prompt guidance and QA changes. Existing resume preserved; no employer submission or approval mutation. Exact output IDs/hashes and run evidence remain ignored private/validation-live-result.json. Publishing web recovery follow-up and actual hosted Resume acceptance are next; do not claim they passed yet. Original live retry approval blocker is resolved.
+
+## Concurrent main context
+
+# Raven execution handoff
+
 ## Completed live overlap acceptance and QA optimization — October 15, 2026 MDT
 
 Published Raven on the Saved Dutchie Senior Project Manager / GTM Launch job passed actual double-click/repeated paired admission, paired-versus-single overlap, and simultaneous independent resume/cover requests. Baseline had no documents or matching Drive PDFs. Each paired burst sent eight duplicates sharing one run ID and four conflicting single requests returning409. Initial resume drafts were rejected for opening with game-development identity; existing cover PDF stayed intact. Added explicit Professional prompt guidance, retained factual validators, and applied only that committed line to the idle runtime while preserving another chat's validation repair. Normal helper restarted using the existing protected configuration/receipt directory. Corrected paired retry completed: cover reused, only missing resume generated/uploaded. Subsequent simultaneous single requests completed with reused_existing=true, unchanged file IDs and no writing/saving/PDF/uploading stages.

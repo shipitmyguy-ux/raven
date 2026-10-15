@@ -73,6 +73,7 @@ test('existing documents are preserved without invoking writer',async()=>{
 test('factual rejection gets exactly one bounded repair',async()=>{
  const f=fixture({reject:true});await f.run({jobId:'JT-1'});assert.equal(f.writes,2);assert.equal(f.calls.filter(c=>c.name==='writer')[1].a.repair.error,'FACTUAL_REVIEW_BLOCKED');
  const bad=fixture({reject:'always'});await assert.rejects(bad.run({jobId:'JT-1'}),/FACTUAL_REVIEW_BLOCKED/);assert.equal(bad.writes,2);assert.equal(bad.uploads,0);
+ assert.match(f.calls.filter(c=>c.name==='writer')[1].a.repair.details,/unverified skill|incomplete document/);
 });
 test('version conflicts do not retry or overwrite',async()=>{
  const f=fixture({conflict:true});await assert.rejects(f.run({jobId:'JT-1'}),/VERSION_CONFLICT/);assert.equal(f.writes,1);assert.equal(f.uploads,0);
