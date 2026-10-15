@@ -7,7 +7,6 @@
     runtime: { theme: {}, settings: {}, ui: [], statuses: [], features: {} },
     discovered: { Professional: [], Labor: [], Wildcard: [], "Games / 3D": [] },
     commutes: {},
-    documentApprovals: {},
     viewedJobs: {},
     jobActivity: {},
     jobCoverage: {},
@@ -29,8 +28,8 @@
 
   const CACHE_JOBS_KEY="ravenJobsCacheV1";
   const CACHE_DISCOVERED_KEY="ravenDiscoveredCacheV1";
-  const DOCUMENT_APPROVALS_KEY="ravenDocumentApprovalsV1";
   const VIEWED_JOBS_KEY="ravenViewedJobsV1";
+  const AUTO_DOCUMENTS_KEY="ravenAutoDocumentsV1";
   const APPLICATION_PROFILE_KEY="ravenApplicationProfileV1";
   const ANSWER_MEMORY_KEY="ravenAnswerMemoryV1";
   const GENERATOR_PREFS_KEY="ravenGeneratorPreferencesV1";
@@ -42,7 +41,7 @@
   const PENDING_DOCUMENT_SYNC_KEY="ravenPendingDocumentSyncV1";
   const DEVICE_BACKUP_KEYS=[
     MASTER_RESUMES_KEY,APPLICATION_PROFILE_KEY,ANSWER_MEMORY_KEY,GENERATOR_PREFS_KEY,
-    USER_SETTINGS_KEY,DOCUMENT_APPROVALS_KEY,VIEWED_JOBS_KEY
+    USER_SETTINGS_KEY,VIEWED_JOBS_KEY
   ];
   const RESUME_TEMPLATE_VERSION="modern-v17-job-evidence-final-review";
   const DEFAULT_FOLLOW_UP_DAYS=7;
@@ -50,6 +49,11 @@
   const GENERATION_ERRORS_KEY="ravenGenerationErrorsV1";
   const generationErrors=new Map(Object.entries(readCache(GENERATION_ERRORS_KEY,{})).filter(([,value])=>typeof value==="string"));
   const saveGenerationErrorState=()=>writeCache(GENERATION_ERRORS_KEY,Object.fromEntries([...generationErrors].slice(-100)));
+  const autoDocumentState=readCache(AUTO_DOCUMENTS_KEY,{})||{};
+  const autoDocumentQueue=[];
+  const autoDocumentQueued=new Set();
+  let autoDocumentQueueRunning=false;
+  let autoDocumentRetryTimer=null;
   let editingMasterResumeId=null;
   let editingAnswerMemoryKey=null;
 
@@ -451,7 +455,6 @@
       state.jobs=normalizeJobs(window.RAVEN_SNAPSHOT.jobs);
       setStatus("Refreshing…");
     }
-    state.documentApprovals=readCache(DOCUMENT_APPROVALS_KEY,{})||{};
     state.viewedJobs=readCache(VIEWED_JOBS_KEY,{})||{};
     const cachedDiscovered=readCache(CACHE_DISCOVERED_KEY,{});
     if(cachedDiscovered && typeof cachedDiscovered==="object"){
@@ -616,6 +619,100 @@
     return loaded;
   }
 
+  function autoDocumentKey(job){
+    return normalizeComparableUrl(job?.url)||String(job?.id||job?.url||"");
+  }
+  function saveAutoDocumentState(key,patch){
+    autoDocumentState[key]={...(autoDocumentState[key]||{}),...patch};
+    writeCache(AUTO_DOCUMENTS_KEY,autoDocumentState);
+  }
+  function scheduleAutoDocumentRetry(){
+    const now=Date.now();
+    const retryAt=Object.values(autoDocumentState).flatMap(record=>[record?.resume?.retryAt,record?.coverLetter?.retryAt])
+      .map(Number).filter(value=>Number.isFinite(value)&&value>now).sort((a,b)=>a-b)[0];
+    if(autoDocumentRetryTimer){window.clearTimeout(autoDocumentRetryTimer);autoDocumentRetryTimer=null;}
+    if(retryAt)autoDocumentRetryTimer=window.setTimeout(()=>{autoDocumentRetryTimer=null;queueDiscoveredDocuments();},Math.min(retryAt-now,2147480000));
+  }
+  function queueDiscoveredDocuments(){
+    if(navigator.onLine===false||!featureEnabled("resume-generation")||!featureEnabled("cover-letter-generation"))return;
+    const seen=new Set();
+    for(const job of JOB_TRACKS.flatMap(track=>state.discovered[track]||[])){
+      const key=autoDocumentKey(job);
+      const url=String(job.url||"");
+      const existing=state.jobs.find(item=>normalizeComparableUrl(item.url)===key);
+      const target=existing||job;
+      const statusLower=String(target.status||job.status||"").toLowerCase();
+      if(!key||!/^https?:\/\//i.test(url)||job.listing_state==="closed"||["applied","interview","offer","rejected","ignored"].includes(statusLower)||seen.has(key))continue;
+      seen.add(key);
+      const record=autoDocumentState[key]||{};
+      const now=Date.now();
+      const missing=["resume","coverLetter"].some(type=>!target[type]&&Number(record[type]?.retryAt||0)<=now);
+      if(!missing||autoDocumentQueued.has(key))continue;
+      autoDocumentQueued.add(key);
+      autoDocumentQueue.push({job:target,key});
+    }
+    scheduleAutoDocumentRetry();
+    if(!autoDocumentQueueRunning&&autoDocumentQueue.length)void processDiscoveredDocumentQueue();
+  }
+  async function processDiscoveredDocumentQueue(){
+    if(autoDocumentQueueRunning)return;
+    autoDocumentQueueRunning=true;
+    try{
+      while(autoDocumentQueue.length){
+        const {job,key}=autoDocumentQueue.shift();
+        const record=autoDocumentState[key]||{};
+        const missing=["resume","coverLetter"].filter(type=>!job[type]&&Number(record[type]?.retryAt||0)<=Date.now());
+        if(!missing.length){autoDocumentQueued.delete(key);continue;}
+        if(generationSession(job)||oneClickSession(job,"resume")||oneClickSession(job,"coverLetter")){
+          autoDocumentQueue.push({job,key});
+          window.setTimeout(()=>{if(!autoDocumentQueueRunning)void processDiscoveredDocumentQueue();},15000);
+          break;
+        }
+        const session={type:missing[0],autoOpen:false,startedAt:Date.now(),phase:"Preparing discovered drafts"};
+        activeGeneration.set(generationKey(job),session);
+        render();
+        let paused=false;
+        try{
+          for(const type of missing){
+            if(job[type])continue;
+            session.type=type;
+            session.phase="Generating discovered draft";
+            const prior=autoDocumentState[key]||{};
+            saveAutoDocumentState(key,{[type]:{...(prior[type]||{}),startedAt:Date.now(),retryAt:Date.now()+30*60*1000}});
+            try{
+              await generateDocumentForJob(job,type,"");
+              const current=autoDocumentState[key]||{};
+              saveAutoDocumentState(key,{[type]:{...(current[type]||{}),generatedAt:Date.now(),retryAt:0,lastError:""}});
+            }catch(error){
+              const delay=error?.code==="LLM_RATE_LIMITED"||error?.code==="LLM_CALL_BUDGET_EXHAUSTED"?6*60*60*1000:60*60*1000;
+              const message=(type==="resume"?"Resume":"Cover letter")+" generation failed: "+String(error?.message||"Generation failed.");
+              generationErrors.set(documentErrorKey(job,type),message);saveGenerationErrorState();
+              const current=autoDocumentState[key]||{};
+              saveAutoDocumentState(key,{[type]:{...(current[type]||{}),retryAt:Date.now()+delay,lastError:String(error?.message||"Generation failed.")}});
+              if(error?.code==="LLM_RATE_LIMITED"||error?.code==="LLM_CALL_BUDGET_EXHAUSTED"){
+                setStatus("Background document generation paused by the AI request limit · applying and autofill remain available");
+                paused=true;
+                break;
+              }
+            }
+          }
+        }finally{
+          activeGeneration.delete(generationKey(job));
+          autoDocumentQueued.delete(key);
+          render();
+        }
+        if(paused){
+          for(const item of autoDocumentQueue)autoDocumentQueued.delete(item.key);
+          autoDocumentQueue.length=0;
+          break;
+        }
+      }
+    }finally{
+      autoDocumentQueueRunning=false;
+      scheduleAutoDocumentRetry();
+    }
+  }
+
   async function runJobSearch() {
     const original=searchJobsButton.textContent;
     searchJobsButton.disabled=true;
@@ -640,6 +737,7 @@
       }
     }
     await checkListingAvailability();
+    queueDiscoveredDocuments();
     searchJobsButton.disabled=false;
     searchJobsButton.textContent=original;
     if(failed.length) setStatus(total+" refreshed · failed: "+failed.join(", "));
@@ -1254,17 +1352,7 @@
             expanded.className="job-card-expanded";
             expanded.innerHTML=renderInlineDetail(job);
             card.appendChild(expanded);
-            expanded.querySelectorAll("[data-resume-apply]").forEach((link)=>{
-              link.addEventListener("click",(event)=>{
-                event.stopPropagation();
-                // Keep native link activation synchronous; begin preparation after navigation opens.
-                setTimeout(()=>{
-                  if(job.resume){setStatus("Opening employer site · existing resume preserved");return;}
-                  void generateForJob(job,"resume",null,{autoOpen:false,refreshDescription:true});
-                },0);
-              });
-            });
-            expanded.querySelectorAll("[data-approved-apply]").forEach((button)=>{ button.addEventListener("click",(event)=>{ event.stopPropagation(); beginApprovedApplication(job); }); });
+            expanded.querySelectorAll("[data-application-start]").forEach((button)=>{ button.addEventListener("click",(event)=>{ event.stopPropagation(); beginApplication(job); }); });
             expanded.querySelectorAll("[data-apply-status]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
@@ -1390,12 +1478,6 @@
                 saveDocumentLink(job,form.dataset.documentForm,form.querySelector("input").value);
               });
             });
-            expanded.querySelectorAll("[data-document-approve]").forEach((button)=>{
-              button.addEventListener("click",(event)=>{
-                event.stopPropagation();
-                toggleDocumentApproval(job,button.dataset.documentApprove);
-              });
-            });
             expanded.querySelectorAll("a").forEach((link)=>link.addEventListener("click",(event)=>event.stopPropagation()));
           }
           const summary=card.querySelector(".job-card-summary");
@@ -1506,7 +1588,6 @@
     const followUpControl=isApplied?'<label class="follow-up-control"><span>Follow up</span><input type="date" data-follow-up-date value="'+escapeAttr(followUpValue)+'" aria-label="Follow-up date"></label>':"";
     const lifecycleControl='<div class="job-lifecycle-row"><label class="lifecycle-control"><span>Status</span><select data-lifecycle-status aria-label="Job status">'+lifecycleOptions+'</select></label>'+
       followUpControl+(nextAction?'<span class="next-action">'+escapeHtml(nextAction)+'</span>':'')+'</div>';
-    const docsReady=documentsReadyForApplication(job);
     const bothBusy=oneClickSession(job,"both");
     const generateBoth=(!job.resume||!job.coverLetter)&&featureEnabled("resume-generation")&&featureEnabled("cover-letter-generation")
       ? '<button class="workflow-action" type="button" data-generate-both'+(generationSession(job)||bothBusy?' disabled aria-busy="true"':'')+'><span>'+(bothBusy?escapeHtml(bothBusy.label):generationSession(job)?'Creating documents…':job.resume||job.coverLetter?'Finish documents':'Generate both')+'</span></button>':"";
@@ -1516,12 +1597,11 @@
       : "";
     const statusLower=currentStatus.toLowerCase();
     const postApplication=["applied","interview","offer","rejected"].includes(statusLower);
-    const applyGate=job.url&&job.listing_state!=="closed"&&!postApplication?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply aria-label="Open application with approved documents" title="'+(docsReady?'Open application':'Approve resume and cover letter first')+'"><span class="workflow-icon" aria-hidden="true">↗</span><span>'+(docsReady?'Apply with docs':'Approve docs')+'</span></button>':"";
+    const applicationAction=job.url&&job.listing_state!=="closed"&&!postApplication?'<button class="workflow-action" type="button" data-application-start aria-label="Open application and autofill with Raven" title="Open employer application and autofill known details"><span class="workflow-icon" aria-hidden="true">↗</span><span>Apply + autofill</span></button>':"";
     const appliedAction=!["interview","offer","rejected","ignored"].includes(statusLower)?'<button class="workflow-action'+(isApplied?' is-applied':'')+'" type="button" data-apply-status="'+(isApplied?'saved':'applied')+'" aria-pressed="'+String(isApplied)+'" aria-label="'+(isApplied?'Unmark as applied':'Mark as applied')+'" title="'+(isApplied?'Unmark as applied':'Mark as applied')+'"><span class="workflow-icon" aria-hidden="true">✓</span><span>Applied</span></button>':"";
     const postingUrl=/^https?:\/\//i.test(String(job.url||""))?job.url:"";
     const actions=postingUrl
-      ? '<a class="workflow-action" href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener" aria-label="View listing"><span class="workflow-icon" aria-hidden="true">↗</span><span>View listing</span></a>'+
-        (!postApplication?'<a class="workflow-action" href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener" aria-label="Apply on site" data-resume-apply><span class="workflow-icon" aria-hidden="true">↗</span><span>Apply on site</span></a>':'')
+      ? '<a class="workflow-action" href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener" aria-label="View listing"><span class="workflow-icon" aria-hidden="true">↗</span><span>View listing</span></a>'
       : '<span class="posting-unavailable">Listing link unavailable</span>';
 
     const fullDescription=cleanJobDescription(job.notes)||"Full job description not yet available.";
@@ -1536,7 +1616,7 @@
       '</section>'+
       '<dl>'+detailHtml+'</dl>'+
       '<div class="detail-actions">'+
-        '<div class="workflow-actions" aria-label="Application actions">'+generateBoth+chatGptBoth+actions+applyGate+appliedAction+'</div>'+
+        '<div class="workflow-actions" aria-label="Application actions">'+generateBoth+chatGptBoth+actions+applicationAction+appliedAction+'</div>'+
       '</div>'+
       renderCoverage(job)+
       renderJobActivity(job)+
@@ -1755,14 +1835,14 @@
     try{
       for(const type of missing){
         session.type=type;
-        generationErrors.delete(documentApprovalKey(job,type)); saveGenerationErrorState();
+        generationErrors.delete(documentErrorKey(job,type)); saveGenerationErrorState();
         render();
         try{
           const document=await generateDocumentForJob(job,type,"");
           completed.push({type,mode:document.generationMode});
         }catch(error){
           failed.push(type);
-          generationErrors.set(documentApprovalKey(job,type),documentLabel(type)+" generation failed: "+error.message); saveGenerationErrorState();
+          generationErrors.set(documentErrorKey(job,type),documentLabel(type)+" generation failed: "+error.message); saveGenerationErrorState();
         }
       }
     }finally{
@@ -1771,7 +1851,7 @@
     }
     const fallback=completed.some(item=>item.mode==="source-facts"||item.mode==="mixed");
     setStatus(failed.length?(completed.length?"Saved "+completed.length+" document(s). Retry the remaining document below.":"No documents created. See the errors below."):
-      "Both documents ready"+(fallback?" · includes verified source wording":"")+" · review required");
+      "Both documents ready"+(fallback?" · includes verified source wording":"")+" · available for application");
     if(completed.length&&session.autoOpen&&state.selectedId===job.id)openDocumentReview(job,completed[0].type);
   }
 
@@ -1785,7 +1865,7 @@
       activeGeneration.delete(generationKey(job));
     }
     try{
-      generationErrors.delete(documentApprovalKey(job,type)); saveGenerationErrorState();
+      generationErrors.delete(documentErrorKey(job,type)); saveGenerationErrorState();
       if(job[type]&&!options.force) return openDocumentReview(job,type);
       const session={type,autoOpen:options.autoOpen!==false&&state.selectedId===job.id,startedAt:Date.now(),phase:"Writing with AI"};
       activeGeneration.set(generationKey(job),session);
@@ -1800,7 +1880,7 @@
     }catch(error){
       activeGeneration.delete(generationKey(job));
       const message=(type==="resume"?"Resume":"Cover letter")+" generation failed: "+error.message;
-      generationErrors.set(documentApprovalKey(job,type),message); saveGenerationErrorState();
+      generationErrors.set(documentErrorKey(job,type),message); saveGenerationErrorState();
       setStatus(message);
       console.error(documentLabel(type)+" generation failed",error);
       setGenerationButton(button,false);
@@ -1824,7 +1904,7 @@
     const {reviewRenderedDocument}=await import("./supabase/functions/_shared/document-review.mjs?v=2");
     const renderedReview=reviewRenderedDocument(type,html,document);
     if(renderedReview.status!=="passed")throw new Error(renderedReview.issues.join(" ")+" Your previous document is unchanged.");
-    if(!document.revisionSection)html=html.replace("</head>",'<meta name="raven-review" content="final-review-v1; factual-and-rendered-checks; human-review-required"></head>');
+    if(!document.revisionSection)html=html.replace("</head>",'<meta name="raven-review" content="final-review-v1; factual-and-rendered-checks; no-user-approval-required"></head>');
     const dataUrl="data:text/html;charset=utf-8,"+encodeURIComponent(html);
     if(!job._discovered){
       job[type]=dataUrl;
@@ -1841,8 +1921,7 @@
         }
       }catch{ rememberPendingDocument(job,type,dataUrl); }
     }
-    setDocumentApproved(job,type,false);
-    generationErrors.delete(documentApprovalKey(job,type)); saveGenerationErrorState();
+    generationErrors.delete(documentErrorKey(job,type)); saveGenerationErrorState();
     return dataUrl;
   }
   async function refreshSavedResumeContact(job){
@@ -1984,7 +2063,7 @@
       if(!saved||!result.documents.every(doc=>saved[doc.document_type]===doc.document_url&&(eventsPayload.events||[]).some(event=>event.event_type==="document_drive_export"&&event.metadata?.document_type===doc.document_type&&event.metadata?.document_sha256===doc.document_sha256&&event.metadata?.file_id===doc.file_id&&event.metadata?.drive_url===doc.drive_url)))throw Error("Generation finished, but Raven could not confirm the saved document and Drive link. Refresh before retrying.");
       state.jobs=mergePendingDocuments(freshJobs);writeCache(CACHE_JOBS_KEY,state.jobs);
       await loadJobActivity(saved,true);render();
-      setStatus(result.documents.some(doc=>doc.reused_existing)?"Existing Raven document preserved and copied to Drive · review required":"Saved in Raven and copied to Drive · review required");
+      setStatus(result.documents.some(doc=>doc.reused_existing)?"Existing Raven document preserved and copied to Drive · available for application":"Saved in Raven and copied to Drive · available for application");
       if(session.autoOpen&&state.selectedId===saved.id&&!document.querySelector("dialog[open]"))await openDocumentReview(saved,type==="both"?"resume":type);
     }catch(error){setStatus("One-click generation: "+error.message);}
     finally{kinds.forEach(kind=>activeOneClickJobs.delete(key+":"+kind));setGenerationButton(button,false);render();}
@@ -2081,7 +2160,7 @@
       for(const item of validated)await saveGeneratedDocument(job,item.type,item.document);
       const remaining=readCache(REQUEST_KEY,{})||{};
       delete remaining[parsed.request_id];writeCache(REQUEST_KEY,remaining);
-      render();setStatus("ChatGPT file imported and fact-checked · review required");
+      render();setStatus("ChatGPT file imported and fact-checked · available for application");
       if(!document.querySelector("dialog[open]"))await openDocumentReview(job,types[0]);
     }finally{activeChatImports.delete(parsed.request_id);}
   }
@@ -2221,7 +2300,7 @@
       state.manualImportJob=null;
       state.manualImportType=null;
       render();
-      setStatus("ChatGPT draft"+(validated.length>1?"s":"")+" imported and fact-checked · review required");
+      setStatus("ChatGPT draft"+(validated.length>1?"s":"")+" imported and fact-checked · available for application");
       if(first) await openDocumentReview(job,first);
     }catch(error){
       if(feedback) feedback.textContent=error.message;
@@ -2303,8 +2382,7 @@
         : await generateDocumentCached(job,masterResume,type);
       if(options.refreshDescription&&job[type]) return {generationMode:"existing"};
       await saveGeneratedDocument(job,type,document);
-      setDocumentApproved(job,type,false);
-      setStatus(label[0].toUpperCase()+label.slice(1)+" draft checked"+(document.generationMode==="source-facts"?" · built from verified facts; AI unavailable":document.generationMode==="mixed"?" · includes verified source wording":"")+" · approval required");
+      setStatus(label[0].toUpperCase()+label.slice(1)+" draft checked"+(document.generationMode==="source-facts"?" · built from verified facts; AI unavailable":document.generationMode==="mixed"?" · includes verified source wording":"")+" · available for application");
       return document;
     }catch(error){
       const failedCache=generationCache();delete failedCache[generationCacheId(job,null,type)];writeCache(GENERATION_CACHE_KEY,failedCache);
@@ -2318,33 +2396,14 @@
     }
   }
 
-  function documentApprovalKey(job,type){ return String(job.id||job.url||"")+"|"+type; }
-  function isDocumentApproved(job,type){
-    const record=state.documentApprovals[documentApprovalKey(job,type)];
-    return Boolean(record&&record.value===String(job[type]||""));
-  }
-  function setDocumentApproved(job,type,approved){
-    const key=documentApprovalKey(job,type);
-    if(approved) state.documentApprovals[key]={value:String(job[type]||""),approvedAt:new Date().toISOString()};
-    else delete state.documentApprovals[key];
-    writeCache(DOCUMENT_APPROVALS_KEY,state.documentApprovals);
-  }
-  function toggleDocumentApproval(job,type){
-    const approved=!isDocumentApproved(job,type);
-    setDocumentApproved(job,type,approved);
-    setStatus(documentLabel(type)+(approved?" approved":" approval removed"));
-    render();
-  }
-  function documentsReadyForApplication(job){
-    return Boolean(job.resume&&job.coverLetter&&isDocumentApproved(job,"resume")&&isDocumentApproved(job,"coverLetter"));
-  }
-  function beginApprovedApplication(job){
-    if(!documentsReadyForApplication(job)){ setStatus("Approve the resume and cover letter before applying"); return; }
-    const packet={version:1,createdAt:new Date().toISOString(),jobId:job.id||"",jobUrl:job.url||"",title:job.title||"",company:job.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory(),resume:job.resume,coverLetter:job.coverLetter};
+  function documentErrorKey(job,type){ return String(job.id||job.url||"")+"|"+type; }
+  function beginApplication(job){
+    if(!job?.url||job.listing_state==="closed"){ setStatus("This application link is unavailable."); return; }
+    const packet={version:1,createdAt:new Date().toISOString(),jobId:job.id||"",jobUrl:job.url||"",title:job.title||"",company:job.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory(),resume:job.resume||"",coverLetter:job.coverLetter||""};
     const bridge=document.getElementById("ravenExtensionBridge");
     if(bridge){ bridge.dataset.packet=JSON.stringify(packet); document.dispatchEvent(new CustomEvent("raven-application-packet")); }
     setTimeout(()=>window.open(job.url,"_blank","noopener"),120);
-    setStatus("Approved documents locked · Raven assistant prepared · review before submitting");
+    setStatus("Employer application opened · Raven will fill known fields and attach any available documents · review before submitting");
   }
 
   function previewableDocumentUrl(value) {
@@ -2367,7 +2426,6 @@
     document.getElementById("reviewInstructions").value="";
     const feedback=document.getElementById("reviewFeedback");
     if(feedback) feedback.textContent="";
-    const approve=document.getElementById("reviewApprove"); if(approve){ approve.textContent=isDocumentApproved(job,type)?"Approved ✓":"Approve document"; approve.classList.toggle("is-approved",isDocumentApproved(job,type)); }
     document.getElementById("documentReviewDialog").showModal();
   }
   function closeDocumentReview() {
@@ -2432,11 +2490,9 @@
       document.getElementById("reviewOpenFile").href=value;
       document.getElementById("reviewFrame").src=previewableDocumentUrl(value);
       document.getElementById("reviewInstructions").value="";
-      const approve=document.getElementById("reviewApprove");
-      if(approve){ approve.textContent="Approve document"; approve.classList.remove("is-approved"); }
       if(feedback){
         feedback.classList.remove("is-processing");
-        feedback.textContent="Updated draft saved. Please review it before approving.";
+        feedback.textContent="Updated draft saved and available for applications.";
       }
       setStatus(documentLabel(type)[0].toUpperCase()+documentLabel(type).slice(1)+" changes applied");
       render();
@@ -2588,8 +2644,7 @@
     const saved=state.jobs.find((item)=>String(item.id)===String(job.id));
     if(saved) saved[key]="";
     writeCache(CACHE_JOBS_KEY,state.jobs);
-    setDocumentApproved(job,key,false);
-    generationErrors.delete(documentApprovalKey(job,key)); saveGenerationErrorState();
+    generationErrors.delete(documentErrorKey(job,key)); saveGenerationErrorState();
     render();
 
     try{
@@ -2618,7 +2673,7 @@
   }
   function documentControl(job,key,label) {
     const value=job[key];
-    const error=generationErrors.get(documentApprovalKey(job,key));
+    const error=generationErrors.get(documentErrorKey(job,key));
     const feedback=error?'<span class="document-generation-error" role="alert">'+escapeHtml(error)+'</span>':"";
     const fileLabel=String(label||"file").toLowerCase();
     const generating=generationSession(job);
@@ -2900,7 +2955,6 @@
     document.querySelectorAll("[data-chatgpt-import-close]").forEach((button)=>{
       button.addEventListener("click",closeChatGptImport);
     });
-    document.getElementById("reviewApprove")?.addEventListener("click",()=>{ const job=state.generatorJob,type=state.generatorType; if(!job||!type)return; setDocumentApproved(job,type,true); const button=document.getElementById("reviewApprove"); button.textContent="Approved ✓"; button.classList.add("is-approved"); setStatus(documentLabel(type)+" approved"); render(); });
     document.querySelectorAll("[data-review-close]").forEach((button)=>{
       button.addEventListener("click",closeDocumentReview);
     });
@@ -2976,12 +3030,13 @@
     const runtimePromise=loadRuntimeConfig();
     const refreshPromise=refreshAllJobs();
     await Promise.allSettled([runtimePromise,refreshPromise]);
+    queueDiscoveredDocuments();
 
     let lastRefresh=Date.now();
     document.addEventListener("visibilitychange",()=>{
       if(!document.hidden && (state.runtime.settings["chatgpt-direct-save"]===true||Date.now()-lastRefresh>60000)){
         lastRefresh=Date.now();
-        refreshAllJobs({includeDiscovered:true});
+        refreshAllJobs({includeDiscovered:true}).then(queueDiscoveredDocuments);
       }
     });
   }

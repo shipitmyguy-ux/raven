@@ -8,8 +8,8 @@ Run automatically after a successful GitHub Pages deployment through `.github/wo
 - Job cards stay within the viewport and malformed ATS rows do not render.
 - Refresh triggers the shared all-track backend path.
 - Bookmark/status state survives a reload.
-- Document review and approval state survives a reload.
-- Application Assistant adapters preserve prefilled values, attach only compatible approved files, skip sensitive questions, and never submit an application.
+- Saved documents and application packets survive a reload without an approval gate.
+- Application Assistant adapters preserve prefilled values, attach any available compatible files, skip sensitive questions, and never submit an application.
 - Core/unit regressions pass before merge.
 - Repository secret scan passes before merge.
 

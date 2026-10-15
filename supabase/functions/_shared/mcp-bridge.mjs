@@ -72,7 +72,7 @@ export function createMcpHandler({getEnv,fetchImpl=fetch,now=()=>Date.now(),veri
   const id=jobId(args.job_id),job=await getJob(grant,id);
   const kind=args.document_type??'resume';requireValue(['resume','coverLetter'].includes(kind),'INVALID_DOCUMENT_TYPE');
   const field=kind==='resume'?'resume':'cover_letter';
-  if(name==='get_document'){requireValue(job[field],'DOCUMENT_UNAVAILABLE',404);return {job_id:id,document_type:kind,document_url:job[field],expected_version:job.last_updated,document_sha256:await sha256(job[field]),review_required:true};}
+  if(name==='get_document'){requireValue(job[field],'DOCUMENT_UNAVAILABLE',404);return {job_id:id,document_type:kind,document_url:job[field],expected_version:job.last_updated,document_sha256:await sha256(job[field]),review_required:false};}
   requireValue(typeof job.notes==='string'&&job.notes.trim().length>=180&&job.notes.length<=60000,'DESCRIPTION_UNAVAILABLE',409);
   const target={track:job.track,title:job.title,company:job.company,description:job.notes};
   requireValue(['Professional','Labor','Wildcard','Games / 3D'].includes(target.track),'INVALID_TRACK',409);
@@ -101,7 +101,7 @@ export function createMcpHandler({getEnv,fetchImpl=fetch,now=()=>Date.now(),veri
    ...document.education.flatMap(e=>[e.degree,e.school,e.location,e.dates]),...document.experience.flatMap(e=>[e.role,e.company,e.dates,...e.bullets])];
   requireValue(expected.filter(Boolean).every(value=>html.includes(escape(value))),'RENDER_INCOMPLETE');
   // This is the same deterministic gate as Raven manual ChatGPT import, not a model review.
-  html=html.replace('</head>','<meta name="raven-review" content="manual-chatgpt; deterministic-validation; human-review-required"></head>');
+  html=html.replace('</head>','<meta name="raven-review" content="manual-chatgpt; deterministic-validation; no-user-approval-required"></head>');
   const dataUrl='data:text/html;charset=utf-8,'+encodeURIComponent(html),version=new Date(Math.max(now(),Date.parse(job.last_updated)+1)).toISOString();
   const rows=job[field]?await rest('rpc/raven_mcp_replace_document',{
    method:'POST',body:JSON.stringify({p_job_id:id,p_document_type:kind,p_expected_version:args.expected_version,p_previous_document:job[field],p_document:dataUrl,p_new_version:version})
@@ -109,7 +109,7 @@ export function createMcpHandler({getEnv,fetchImpl=fetch,now=()=>Date.now(),veri
    method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({[field]:dataUrl,last_updated:version})});
   requireValue(rows?.length===1,'VERSION_CONFLICT',409);
   requireValue(rows[0][field]===dataUrl,'PERSISTENCE_NOT_CONFIRMED',503);
-  return {job_id:id,document_type:kind,expected_version:rows[0].last_updated,saved:true,review_required:true,validation:'deterministic manual-import validation; no model semantic review',document_url:dataUrl};
+  return {job_id:id,document_type:kind,expected_version:rows[0].last_updated,saved:true,review_required:false,validation:'deterministic manual-import validation; no model semantic review',document_url:dataUrl};
  }
  return async req=>{
   const headers={'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'};

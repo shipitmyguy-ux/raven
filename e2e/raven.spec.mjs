@@ -291,7 +291,7 @@ test("shared lifecycle transitions schedule follow-up and handle post-applicatio
   await expect.poll(()=>api.getJob().status).toBe("Interview");
   expect(api.getJob().followUp).toBeNull();
   await expect(page.locator(".next-action")).toHaveCount(0);
-  await expect(page.locator("[data-approved-apply]")).toHaveCount(0);
+  await expect(page.locator("[data-application-start]")).toHaveCount(0);
   await expect(page.getByRole("button",{name:"Mark as applied"})).toHaveCount(0);
 
   await page.locator("[data-lifecycle-status]").selectOption("Rejected");
@@ -486,17 +486,17 @@ test("generation cache prevents a duplicate resume model call",async({page})=>{
   expect(api.getGenerationCalls()).toBe(1);
 });
 
-test("application requires approval of both exact documents",async({page})=>{
-  const resume="data:text/html,resume";
-  const letter="data:text/html,letter";
-  await mockRaven(page,{initialJob:{resume,cover_letter:letter}});
+test("application is available while document generation has not completed",async({page})=>{
+  await page.addInitScript(()=>{window.open=(url)=>{window.ravenOpenedUrl=url;return null;};});
+  await mockRaven(page);
   await page.goto("/");await page.locator('[data-track="Professional"]').click();await page.locator(".job-card-summary").first().click();
-  await expect(page.locator("[data-approved-apply]")).toContainText("Approve docs");
-  await page.evaluate(({resume,letter})=>{
-    localStorage.setItem("ravenDocumentApprovalsV1",JSON.stringify({"job-1|resume":{value:resume},"job-1|coverLetter":{value:letter}}));
-  },{resume,letter});
-  await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator(".job-card-summary").first().click();
-  await expect(page.locator("[data-approved-apply]")).toContainText("Apply");
+  const apply=page.locator("[data-application-start]");
+  await expect(apply).toContainText("Apply + autofill");
+  await apply.click();
+  await expect(page.locator("#syncStatus")).toContainText("opened");
+  await expect.poll(()=>page.evaluate(()=>window.ravenOpenedUrl)).toBe(savedJob.url);
+  const packet=await page.evaluate(()=>JSON.parse(document.getElementById("ravenExtensionBridge").dataset.packet));
+  expect(packet.resume).toBe("");expect(packet.coverLetter).toBe("");expect(packet.profile).toBeTruthy();
 });
 
 test("application profile controls are available",async({page})=>{
@@ -507,14 +507,10 @@ test("application profile controls are available",async({page})=>{
 });
 
 
-test("review preserves approved document and revision invalidates approval",async({page})=>{
+test("document revision remains available without an approval step",async({page})=>{
   const resumeV1="data:text/html;charset=utf-8,"+encodeURIComponent('<p class="summary">resume-v1</p>');
   const letterV1="data:text/html;charset=utf-8,letter-v1";
-  await page.addInitScript(({resumeV1,letterV1})=>{
-    localStorage.setItem("ravenDocumentApprovalsV1",JSON.stringify({
-      "job-1|resume":{value:resumeV1,approvedAt:new Date().toISOString()},
-      "job-1|coverLetter":{value:letterV1,approvedAt:new Date().toISOString()}
-    }));
+  await page.addInitScript(()=>{
     localStorage.setItem("ravenMasterResumesV1",JSON.stringify([{
       id:"master-test",name:"Test master",sourceType:"local",fileName:"master.txt",tracks:["Professional"]
     }]));
@@ -539,7 +535,7 @@ test("review preserves approved document and revision invalidates approval",asyn
 
   await page.locator('[data-track="Professional"]').click();
   await page.locator(".job-card-summary").first().click();
-  await expect(page.locator("[data-approved-apply]")).toContainText("Apply");
+  await expect(page.locator("[data-application-start]")).toContainText("Apply");
 
   await page.locator('[data-generate="resume"]').click();
   await expect(page.locator("#documentReviewDialog")).toBeVisible();
@@ -550,24 +546,16 @@ test("review preserves approved document and revision invalidates approval",asyn
   await expect.poll(()=>api.getGenerationCalls()).toBe(1);
   expect(api.getGenerationBodies()[0].currentDocument).toBe("resume-v1");
   expect(api.getGenerationBodies()[0].instructions).toBe("Make the summary shorter.");
-  await expect(page.locator("#reviewApprove")).toHaveText("Approve document");
-
-  const approvals=await page.evaluate(()=>JSON.parse(localStorage.getItem("ravenDocumentApprovalsV1")||"{}"));
-  expect(approvals["job-1|resume"]).toBeUndefined();
-  expect(approvals["job-1|coverLetter"]?.value).toBe(letterV1);
+  await expect(page.locator("#reviewApprove")).toHaveCount(0);
 
   await page.locator('[data-review-close]').first().click();
-  await expect(page.locator("[data-approved-apply]")).toContainText("Approve docs");
+  await expect(page.locator("[data-application-start]")).toContainText("Apply + autofill");
 });
 
-test("failed revision keeps the saved document and its approval",async({page})=>{
+test("failed revision keeps the saved document and application available",async({page})=>{
   const resumeV1="data:text/html;charset=utf-8,"+encodeURIComponent('<p class="summary">resume-v1</p>');
   const letterV1="data:text/html;charset=utf-8,letter-v1";
-  await page.addInitScript(({resumeV1,letterV1})=>{
-    localStorage.setItem("ravenDocumentApprovalsV1",JSON.stringify({
-      "job-1|resume":{value:resumeV1,approvedAt:new Date().toISOString()},
-      "job-1|coverLetter":{value:letterV1,approvedAt:new Date().toISOString()}
-    }));
+  await page.addInitScript(()=>{
     localStorage.setItem("ravenMasterResumesV1",JSON.stringify([{
       id:"master-test",name:"Test master",sourceType:"local",fileName:"master.txt",tracks:["Professional"]
     }]));
@@ -592,7 +580,7 @@ test("failed revision keeps the saved document and its approval",async({page})=>
 
   await page.locator('[data-track="Professional"]').click();
   await page.locator(".job-card-summary").first().click();
-  await expect(page.locator("[data-approved-apply]")).toContainText("Apply");
+  await expect(page.locator("[data-application-start]")).toContainText("Apply");
 
   await page.locator('[data-generate="resume"]').click();
   await expect(page.locator("#documentReviewDialog")).toBeVisible();
@@ -605,8 +593,7 @@ test("failed revision keeps the saved document and its approval",async({page})=>
   await expect(page.locator("#reviewFeedback")).toContainText("previous document is unchanged");
   await expect(page.locator("#reviewInstructions")).toHaveValue("Make the summary shorter.");
   expect(api.getJob().resume).toBe(resumeV1);
-  const approvals=await page.evaluate(()=>JSON.parse(localStorage.getItem("ravenDocumentApprovalsV1")||"{}"));
-  expect(approvals["job-1|resume"]?.value).toBe(resumeV1);
+  await expect(page.locator("[data-application-start]")).toContainText("Apply + autofill");
   await expect(page.locator("#reviewSubmit")).toBeEnabled();
 });
 
@@ -914,7 +901,7 @@ test("iPhone SE viewport keeps Raven usable without page overflow",async({page})
   await page.locator('[data-track="Professional"]').click();
   await page.locator(".job-card-summary").first().click();
   await expect(page.locator('[data-generate="resume"]')).toBeVisible();
-  await expect(page.locator("[data-approved-apply]")).toBeVisible();
+  await expect(page.locator("[data-application-start]")).toBeVisible();
 
   layout=await page.evaluate(()=>({
     innerWidth:window.innerWidth,
@@ -974,7 +961,7 @@ test("device backup restores profile, answer memory, and local master resume",as
   expect(backupPath).toBeTruthy();
 
   await page.evaluate(async()=>{
-    for(const key of ["ravenApplicationProfileV1","ravenAnswerMemoryV1","ravenMasterResumesV1","ravenGeneratorPreferencesV1","ravenUserSettingsV1","ravenDocumentApprovalsV1","ravenViewedJobsV1"]) localStorage.removeItem(key);
+    for(const key of ["ravenApplicationProfileV1","ravenAnswerMemoryV1","ravenMasterResumesV1","ravenGeneratorPreferencesV1","ravenUserSettingsV1","ravenViewedJobsV1"]) localStorage.removeItem(key);
     await new Promise((resolve)=>{const request=indexedDB.deleteDatabase("ravenMasterResumeFilesV1");request.onsuccess=request.onerror=request.onblocked=()=>resolve();});
   });
   await page.locator("#deviceBackupFile").setInputFiles(backupPath);
@@ -1009,7 +996,7 @@ for(const site of [
   {name:"Lever",url:"https://jobs.lever.co/raven-test/1",resume:'<input name="resume" type="file" accept=".html">',cover:'<input name="cover_letter" type="file" accept=".html">'},
   {name:"Ashby",url:"https://jobs.ashbyhq.com/raven-test/1",resume:'<input name="resume" type="file" accept=".html">',cover:'<input name="cover_letter" type="file" accept=".html">'}
 ]){
-  test(site.name+" assistant attaches exact approved documents without submitting",async({page})=>{
+  test(site.name+" assistant attaches exact available documents without submitting",async({page})=>{
     const resumeValue="data:text/html;charset=utf-8,"+encodeURIComponent("<html><body>APPROVED RESUME EXACT</body></html>");
     const coverValue="data:text/html;charset=utf-8,"+encodeURIComponent("<html><body>APPROVED COVER EXACT</body></html>");
     await page.addInitScript(({url,resumeValue,coverValue})=>{
@@ -1033,7 +1020,7 @@ for(const site of [
     await page.goto(site.url);
     await page.addScriptTag({path:"extension/src/assistant-core.js"});
     await page.addScriptTag({path:"extension/src/content.js"});
-    await expect(page.locator("#raven-assistant-banner")).toContainText("approved document");
+    await expect(page.locator("#raven-assistant-banner")).toContainText("available document");
     const attached=await page.evaluate(async()=>{
       const inputs=[...document.querySelectorAll('input[type="file"]')];
       return Promise.all(inputs.map(async(input)=>({name:input.files?.[0]?.name||"",text:input.files?.[0]?await input.files[0].text():""})));
@@ -1045,19 +1032,18 @@ for(const site of [
   });
 }
 
-test("listing and direct application remain available without approved documents",async({page})=>{
-  await mockRaven(page);
+test("listing and application remain available before either document is generated",async({page})=>{
+  await page.addInitScript(()=>{window.open=(url)=>{window.ravenOpenedUrl=url;return null;};});
+  const api=await mockRaven(page);
   await page.goto("/");
   await page.locator('[data-track="Professional"]').click();
   await page.locator(".job-card-summary").first().click();
-  for(const name of ["View listing","Apply on site"]){
-    const link=page.getByRole("link",{name,exact:true});
-    await expect(link).toBeVisible();
-    await expect(link).toHaveAttribute("href",savedJob.url);
-    await expect(link).toHaveAttribute("target","_blank");
-  }
-  await page.locator("[data-approved-apply]").click();
-  await expect(page.locator("#syncStatus")).toContainText("Approve the resume and cover letter");
+  const listing=page.getByRole("link",{name:"View listing",exact:true});
+  await expect(listing).toBeVisible();await expect(listing).toHaveAttribute("href",savedJob.url);
+  const apply=page.locator("[data-application-start]");await expect(apply).toContainText("Apply + autofill");await apply.click();
+  await expect(page.locator("#syncStatus")).toContainText("opened");
+  await expect.poll(()=>page.evaluate(()=>window.ravenOpenedUrl)).toBe(savedJob.url);
+  expect(api.getGenerationCalls()).toBe(0);
 });
 
 test("remote watermark keeps one visual treatment across card states",async({page})=>{
@@ -1188,12 +1174,7 @@ test("cover letter generation inherits resume progress and nonintrusive completi
   await expect(page.locator('[data-generate="coverLetter"]')).toHaveText("Review");
 });
 
-test("generators save discovery jobs and recover descriptions before generating both documents",async({page})=>{
-  await page.addInitScript(()=>{
-    localStorage.setItem("ravenMasterResumesV1",JSON.stringify([{
-      id:"test-master",name:"Test master",sourceType:"drive",url:"https://drive.google.com/file/d/test/view",tracks:["Professional"]
-    }]));
-  });
+test("new discoveries generate both documents in the background without blocking application",async({page})=>{
   const api=await mockRaven(page,{discoveredJob:{
     id:"discovery-1",track:"Professional",title:savedJob.title,company:savedJob.company,
     location:"Remote",remote:true,url:savedJob.url,source:"Mock",snippet:""
@@ -1201,25 +1182,20 @@ test("generators save discovery jobs and recover descriptions before generating 
   await page.goto("/");
   await page.locator('[data-track="Professional"]').click();
   await page.locator(".job-card-summary").first().click();
-  await page.locator('[data-generate="resume"]').click();
-  await expect(page.locator("#documentReviewDialog")).toBeVisible();
-  await expect(page.frameLocator("#reviewFrame").getByText("Test Candidate",{exact:true})).toBeVisible();
-  await expect(page.frameLocator("#reviewFrame").locator("body")).not.toContainText("Remote");
-  await page.getByRole("button",{name:"Close",exact:true}).click();
-  await page.locator('[data-generate="coverLetter"]').click();
-  await expect(page.locator("#documentReviewDialog")).toBeVisible();
-  await expect(page.frameLocator("#reviewFrame").getByText("Dear Hiring Manager,")).toBeVisible();
-  await page.getByRole("button",{name:"Close",exact:true}).click();
+  await expect.poll(()=>api.getGenerationCalls()).toBe(2);
   expect(api.getGenerationCalls()).toBe(2);
   expect(api.getGenerationBodies().every(body=>body.jobId==="job-1" && body.jobDescription===savedJob.notes)).toBe(true);
   expect(api.getGenerationBodies().every(body=>!("location" in body) && !("jobLocation" in body))).toBe(true);
   expect(api.getJob().resume).toContain("data:text/html");
   expect(api.getJob().coverLetter).toContain("data:text/html");
+  await expect(page.locator("[data-application-start]")).toContainText("Apply + autofill");
+  await expect(page.locator("#documentReviewDialog")).not.toBeVisible();
   await page.reload();
   await page.locator('[data-track="Professional"]').click();
   await page.locator(".job-card-summary").first().click();
   await expect(page.locator('[data-generate="resume"]')).toHaveText("Review");
   await expect(page.locator('[data-generate="coverLetter"]')).toHaveText("Review");
+  expect(api.getGenerationCalls()).toBe(2);
 });
 
 for (const track of ["Games / 3D", "Professional", "Labor", "Wildcard"]) {
@@ -1369,7 +1345,7 @@ test("Generate both creates and persists both documents from one button",async({
 });
 
 test("Finish documents preserves an existing resume",async({page})=>{
-  const prior='data:text/html;charset=utf-8,'+encodeURIComponent('<h1>Prior approved resume</h1>');
+  const prior='data:text/html;charset=utf-8,'+encodeURIComponent('<h1>Prior saved resume</h1>');
   const api=await mockRaven(page,{initialJob:{resume:prior}});
   await page.goto('/');
   await page.getByRole('tab',{name:'Professional',exact:true}).click();
@@ -1512,33 +1488,29 @@ test('confirmed closed discovered row never enters active results',async({page})
  await expect(page.locator('.job-title')).toHaveCount(0);
 });
 
-test("Apply on site opens employer and prepares only one resume that survives reload",async({page})=>{
+test("Apply + autofill opens employer without waiting for generated documents",async({page})=>{
  const api=await mockRaven(page,{generatorDelayMs:250});
  await page.goto("/");await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
- const popup=page.waitForEvent('popup');await page.getByRole('link',{name:'Apply on site',exact:true}).click();
+  const popup=page.waitForEvent('popup');await page.locator('[data-application-start]').click();
  const employer=await popup;await employer.close();
- await expect.poll(()=>api.getGenerationCalls()).toBe(1);
- await expect.poll(()=>api.getJob().resume).toContain('data:text/html');
- expect(api.getJob().coverLetter||api.getJob().cover_letter||'').toBe('');
- expect(api.getGenerationBodies()[0].jobDescription).toBe(savedJob.notes);
+  expect(api.getGenerationCalls()).toBe(0);
+  const packet=await page.evaluate(()=>JSON.parse(document.getElementById('ravenExtensionBridge').dataset.packet));
+  expect(packet.resume).toBe('');expect(packet.coverLetter).toBe('');expect(packet.profile).toBeTruthy();
  await expect(page.locator('#documentReviewDialog')).not.toBeVisible();
- await page.getByRole('link',{name:'Apply on site',exact:true}).click();
- expect(api.getGenerationCalls()).toBe(1);
- await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
- await expect(page.locator('[data-generate="resume"]')).toHaveText('Review');
+  expect(api.getGenerationCalls()).toBe(0);
 });
-test("Apply on site preserves existing resume without generation",async({page})=>{
+test("Apply + autofill attaches a saved resume without requiring approval",async({page})=>{
  const api=await mockRaven(page,{initialJob:{resume:'data:text/html,existing'}});
  await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
- await page.getByRole('link',{name:'Apply on site',exact:true}).click();
- await expect(page.locator('#syncStatus')).toContainText('existing resume preserved');
- expect(api.getGenerationCalls()).toBe(0);expect(api.getJob().resume).toBe('data:text/html,existing');
+  const popup=page.waitForEvent('popup');await page.locator('[data-application-start]').click();await (await popup).close();
+  const packet=await page.evaluate(()=>JSON.parse(document.getElementById('ravenExtensionBridge').dataset.packet));
+  expect(packet.resume).toBe('data:text/html,existing');expect(packet.coverLetter).toBe('');
+  expect(api.getGenerationCalls()).toBe(0);expect(api.getJob().resume).toBe('data:text/html,existing');
 });
-test("Apply on site reports missing listing and does not write a resume",async({page})=>{
+test("Apply + autofill is not affected by missing listing details",async({page})=>{
  const api=await mockRaven(page);await page.route('**/functions/v1/raven-enrich-v1**',r=>r.fulfill({json:{ok:true,description:''}}));
  await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
- await page.getByRole('link',{name:'Apply on site',exact:true}).click();
- await expect(page.locator('#syncStatus')).toContainText('did not provide a job description');
+  const popup=page.waitForEvent('popup');await page.locator('[data-application-start]').click();await (await popup).close();
  expect(api.getGenerationCalls()).toBe(0);expect(api.getJob().resume).toBe('');
 });
 

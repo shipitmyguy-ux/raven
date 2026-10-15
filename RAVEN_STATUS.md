@@ -1,5 +1,9 @@
 # Raven Status
 
+## Discovery-time documents and apply without approval — 2026-10-15
+
+Implemented in branch `codex/raven-autofill-no-document-approval`: every eligible newly discovered feed job is queued for sequential resume and cover-letter generation, with retry timing persisted locally. Apply + autofill opens the employer listing immediately and sends profile/remembered answers plus whichever documents are currently available; the browser extension attaches compatible files without an approval record and never submits. Generation still requires factual and rendered-document checks. Background generation saves discovered jobs through Raven's existing job persistence path, so it can add feed jobs to Saved. Local tests were not run; implementation and fixture changes are under review before push.
+
 ## Approved InGameJob production activation — 2026-10-13
 
 User explicitly approved deployment/activation with d. Deployed collectorv14/backendv69 ACTIVE and applied committed gamesmith_ingamejob_sources migration. Actual Vault-authenticated scan request584 HTTP200 checked1source:37fetched,7details attempted,6complete plus1excluded,0deferred,6eligible. All six full descriptions1549–4639chars persisted and remote/geographic conditions preserved. Public directory confirms enabled/verified/ok/complete and24hour interval with next check October14. Gamesmith remains blocked/disabled/pending provider because publicDNS fails; no successful Gamesmith scan claimed.

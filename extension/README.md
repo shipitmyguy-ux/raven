@@ -3,7 +3,7 @@
 Chrome extension for saving jobs to Raven and assisting with applications.
 
 ## Safety model
-- Raven requires explicit approval of the exact resume and cover letter before Apply unlocks.
+- Applying and autofilling do not wait for resume or cover-letter generation. Raven attaches whichever saved documents are available; review the form and any attachments before submitting.
 - The extension fills only known profile fields.
 - It never clicks Submit and never fills legal attestations, demographic questions, assessments, CAPTCHAs, salary, sponsorship, or unknown questions automatically.
 - The user reviews the employer form before submission.

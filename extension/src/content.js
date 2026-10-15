@@ -196,7 +196,7 @@
     return findByTerms(kind==="resume"?["resume","cv"]:["cover letter","cover"],{files:true});
   }
 
-  function uploadApprovedDocument(packet,kind){
+  function uploadDocument(packet,kind){
     const value=kind==="resume"?packet.resume:packet.coverLetter;
     const file=dataUrlToFile(value,kind,packet);
     if(!file) return {uploaded:false,reason:"unavailable"};
@@ -275,8 +275,8 @@
       }else{
         const profileCount=fillProfile(packet.profile||{});
         const answerCount=fillRememberedAnswers(packet.answers||{});
-        const resumeResult=uploadApprovedDocument(packet,"resume");
-        const coverResult=uploadApprovedDocument(packet,"coverLetter");
+        const resumeResult=uploadDocument(packet,"resume");
+        const coverResult=uploadDocument(packet,"coverLetter");
         const uploadCount=Number(resumeResult.uploaded)+Number(coverResult.uploaded);
         const skippedFormat=[resumeResult,coverResult].filter((result)=>result.reason==="format").length;
         session={version:1,createdAt:new Date().toISOString(),jobId:packet.jobId||"",jobUrl:packet.jobUrl||"",host:location.hostname,adapter:adapter.id};
@@ -284,8 +284,8 @@
         chrome.storage.local.remove(PACKET_KEY);
         const filled=profileCount+answerCount;
         let message="Raven application assistant: "+filled+" known field"+(filled===1?"":"s")+" filled";
-        if(uploadCount) message+=" · "+uploadCount+" approved document"+(uploadCount===1?"":"s")+" attached";
-        if(skippedFormat) message+=" · approved document format not accepted by this upload field";
+        if(uploadCount) message+=" · "+uploadCount+" available document"+(uploadCount===1?"":"s")+" attached";
+        if(skippedFormat) message+=" · a document format is not accepted by this upload field";
         message+=". Review every field and attachment before submitting.";
         banner(message);
       }

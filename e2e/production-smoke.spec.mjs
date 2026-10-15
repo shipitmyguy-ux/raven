@@ -207,16 +207,12 @@ test.describe("Deployed Raven App Production Smoke Tests", () => {
     await expect(reloadedCard.locator("[data-card-bookmark]")).toHaveAttribute("aria-pressed", "true");
   });
 
-  test("document review dialog opens and document approval state survives reload", async ({ page }) => {
+  test("document review dialog opens while application remains available", async ({ page }) => {
     const resumeUrl = syntheticTestJob.resume;
     const coverUrl = syntheticTestJob.coverLetter;
 
     await mockRavenBackend(page);
     await page.addInitScript(({ jobId, resumeUrl, coverUrl }) => {
-      localStorage.setItem("ravenDocumentApprovalsV1", JSON.stringify({
-        [`${jobId}|resume`]: { value: resumeUrl, approvedAt: new Date().toISOString() },
-        [`${jobId}|coverLetter`]: { value: coverUrl, approvedAt: new Date().toISOString() }
-      }));
     }, { jobId: syntheticTestJob.id, resumeUrl, coverUrl });
 
     await page.goto(RAVEN_PROD_URL, { waitUntil: "domcontentloaded" });
@@ -224,8 +220,8 @@ test.describe("Deployed Raven App Production Smoke Tests", () => {
     await page.locator('.track-tab[data-track="Professional"]').click();
     await page.locator(`.job-card[data-job-id="${syntheticTestJob.id}"] .job-card-summary`).click();
 
-    // Verify approved docs state enables Apply button
-    const applyGate = page.locator("[data-approved-apply]");
+    // Applying remains available even if documents are absent or unreviewed.
+    const applyGate = page.locator("[data-application-start]");
     await expect(applyGate).toBeVisible();
     await expect(applyGate).toContainText("Apply");
 
@@ -238,11 +234,11 @@ test.describe("Deployed Raven App Production Smoke Tests", () => {
     await page.locator("[data-review-close]").first().click();
     await expect(page.locator("#documentReviewDialog")).not.toBeVisible();
 
-    // Verify approval survived reload
+    // Verify application remains available after reload.
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.locator('.track-tab[data-track="Professional"]').click();
     await page.locator(`.job-card[data-job-id="${syntheticTestJob.id}"] .job-card-summary`).click();
-    await expect(page.locator("[data-approved-apply]")).toContainText("Apply");
+    await expect(page.locator("[data-application-start]")).toContainText("Apply + autofill");
   });
 });
 
@@ -524,7 +520,7 @@ test.describe("Synthetic Application Assistant Adapter Smoke Tests", () => {
         expect(sensitiveVal).toBe(""); // Sensitive questions must not be auto-filled
       }
 
-      // 5. Verify exact approved files are attached
+      // 5. Verify available compatible files are attached
       const attachedFiles = await page.evaluate(async () => {
         const fileInputs = [...document.querySelectorAll('input[type="file"]')];
         return Promise.all(fileInputs.map(async (input) => ({
@@ -535,13 +531,13 @@ test.describe("Synthetic Application Assistant Adapter Smoke Tests", () => {
 
       const resumeAttachment = attachedFiles.find((f) => f.text.includes(resumeContent));
       const coverAttachment = attachedFiles.find((f) => f.text.includes(coverContent));
-      expect(resumeAttachment, "exact approved resume must be attached").toBeTruthy();
-      expect(coverAttachment, "exact approved cover letter must be attached").toBeTruthy();
+      expect(resumeAttachment, "available resume must be attached").toBeTruthy();
+      expect(coverAttachment, "available cover letter must be attached").toBeTruthy();
       expect(resumeAttachment.name).toMatch(/resume/i);
       expect(coverAttachment.name).toMatch(/cover/i);
 
       // 6. Existing unrelated file input must be preserved, and an incompatible
-      // resume-like .pdf-only input must not receive the approved HTML document.
+      // resume-like .pdf-only input must not receive the incompatible HTML document.
       const safetyFiles = await page.evaluate(async () => {
         const existing = document.querySelector("#existing_attachment");
         const incompatible = document.querySelector("#incompatible_attachment");
