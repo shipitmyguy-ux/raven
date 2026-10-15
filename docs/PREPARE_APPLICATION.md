@@ -34,6 +34,8 @@ Synthetic browser tests establish button routing, canonical readback, actual Fil
 - A repeated click must not start overlapping preparation for the same job.
 - If another job has a paused preparation, its metadata is preserved. The new job shows Review paused preparation and names the paused role; that action closes the drawer and focuses the existing Resume/Dismiss banner. Only an explicit owner Dismiss clears it before a different form is prepared. Standalone document generation remains independent of this gate.
 
+Follow-up: support multiple parked preparations through a versioned per-job recovery store with lossless migration from the single-record format. Preserve uncertain dispatch as exclusive; park only settled document-ready intents when no lease is active. Show every parked job with explicit Resume/Dismiss controls. On resume, recheck the original job URL, canonical document hashes and current receipts before delivery. Keep request IDs and leases isolated per job, including across tabs, crashes and expiry; test migration and concurrent recovery without silently clearing an intent.
+
 
 ## Reducing extension reloads — owner direction, October 14
 
