@@ -923,3 +923,5 @@ Remaining:90 catalog entries still unverified or unsupported; one WWI listing de
 - [ ] Expand verified indie coverage toward250–500 using90 recorded source blockers/candidates.
 - [ ] Investigate one unreadable WWI detail and future candidate-window underfill.
 PR: https://github.com/shipitmyguy-ux/raven/pull/87. Integrated code8f77fcc: GitHub core/Windows/safety run38669009869 passed all three jobs. Full browser run38669009827 is still running at this handoff. Final focused document suite50/50 passes;8 focused Edge cases pass. Production/helper activation remains unperformed.
+
+Final verification: app102 main full browser run38799107396 passed all156 cases. Corrected hosted production smoke38799510505 passed14/14; latest core38799509913 passed. Test-only follow-up full browser runs remain queued/running; no further product changes. Live preview OK, both current PDF links and Application opened in Chrome were observed.
