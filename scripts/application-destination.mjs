@@ -6,6 +6,7 @@ const clean=s=>String(s||'').replace(/<[^>]*>/g,' ').replace(/&amp;/g,'&').repla
 const key=s=>clean(s).normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
 function safe(value){const u=new URL(value);if(u.protocol!=='https:'||u.port||u.username||u.password)throw Error('Unsafe application destination');return u;}
 function employerUrl(value){try{const u=safe(value);return (ats.has(u.hostname)||/^[a-z0-9-]+\.(?:breezy\.hr|bamboohr\.com|recruitee\.com|teamtailor\.com)$/.test(u.hostname))&&u.pathname!=='/';}catch{return false;}}
+export function isApplicationBoardUrl(value){try{return boards.has(safe(value).hostname);}catch{return false;}}
 async function publicHtml(url,fetchImpl){
  const r=await fetchImpl(url,{redirect:'manual',signal:AbortSignal.timeout(12000),headers:{Accept:'text/html'}});
  if(!r.ok||!/^text\/html\b/i.test(r.headers.get('content-type')||''))throw Error('Application page could not be verified');

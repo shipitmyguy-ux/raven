@@ -1,3 +1,4 @@
+import {isApplicationBoardUrl} from './scripts/application-destination.mjs?v=1';
 const stages=new Set(['queued','persisting','document_complete','document_failed','context','verifying','confirming','checking_saved_state','checking_drive_receipts','writing','saving','pdf','uploading','recording','complete','failed']);
 const runPattern=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 export function createOneClickClient({baseUrl='http://127.0.0.1:8766',fetchImpl=globalThis.fetch,pollMs=1500,maxWaitMs=600000}={}){
@@ -51,6 +52,7 @@ export function createOneClickClient({baseUrl='http://127.0.0.1:8766',fetchImpl=
     return value;
   }
   return {async resolveApplicationDestination(job){
+    if(!isApplicationBoardUrl(job.url))return job.url;
     await session();
     const result=await request('/application-destination',{job_id:String(job.id)});
     if(result?.job_id!==String(job.id)||result.source_url!==job.url||typeof result.destination_url!=='string')throw Error('The employer destination changed. Review the saved listing.');
