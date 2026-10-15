@@ -21,16 +21,6 @@ jobs:
         with:
           node-version: '22'
       - run: node scripts/refresh-remote-games-sheet.mjs
-      - name: Import eligible jobs to Raven
-        env:
-          SUPABASE_URL: ${{ secrets.RAVEN_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.RAVEN_SUPABASE_SERVICE_ROLE_KEY }}
-        run: |
-          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
-            echo "::warning::Live import not configured; snapshot refresh only"
-          else
-            node scripts/import-remote-games-sheet.mjs
-          fi
       - name: Commit refreshed snapshot
         run: |
           if ! git diff --quiet -- data/remote-games-sheet-jobs.json; then
