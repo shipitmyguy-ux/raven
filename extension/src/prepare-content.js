@@ -62,7 +62,10 @@
     return [name];
   }
   function selectedLocation(el) {
-    return el.closest(".select__control")?.querySelector(".select__single-value")?.textContent?.trim() || "";
+    const selected = el.closest(".select__control")?.querySelector(".select__single-value");
+    // Greenhouse renders a US flag and dialing code after selecting the country.
+    if (el.id === "country" && selected?.querySelector(".iti__us")) return "United States";
+    return selected?.textContent?.trim() || "";
   }
   async function setLocationCombo(el, key, value, profile) {
     // Only these two known Greenhouse contact controls may select options. Legal choices stay manual.
@@ -79,9 +82,12 @@
         (parts[0] === city && (!region || parts.includes(region)) && countries.some(country => country && parts.includes(country)));
     };
     el.focus();
+    // Open before typing: React Select may reset its query when opening a closed menu.
+    if (el.getAttribute("aria-expanded") !== "true") {
+      el.dispatchEvent(new MouseEvent("mousedown", {bubbles: true, button: 0}));
+      await new Promise(resolve => setTimeout(resolve, 150));
+    }
     if (!setValue(el, query, true)) return false;
-    // React Select opens on text input; the mousedown also supports its non-search-triggered menu.
-    if (el.getAttribute("aria-expanded") !== "true") el.dispatchEvent(new MouseEvent("mousedown", {bubbles: true, button: 0}));
     const deadline = Date.now() + 6000;
     while (Date.now() < deadline && el.isConnected && el.value === query) {
       const list = document.getElementById(el.getAttribute("aria-controls") || "");

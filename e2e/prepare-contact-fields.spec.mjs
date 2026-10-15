@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 import fs from 'node:fs';
 const packet={version:2,mode:'prepare',createdAt:new Date().toISOString(),jobId:'JT-contact',jobUrl:'https://job-boards.greenhouse.io/studio/jobs/123',title:'Artist',company:'Studio',profile:{country:'USA',city:'Example City',region:'Sample State',phone:'+12025550123'},answers:{'are you authorized to work':'Yes','will you require sponsorship':'No','salary requirements':'120000'}};
-for(const mode of ['accepted','ambiguous','missing','prefilled'])test(`Greenhouse contact selects committed location only: ${mode}`,async({page})=>{
+for(const mode of ['accepted','reset-on-open','ambiguous','missing','prefilled'])test(`Greenhouse contact selects committed location only: ${mode}`,async({page})=>{
  await page.addInitScript(packet=>{
   window.messages=[];let listener;
   window.deliver=()=>listener({type:'raven-prepare-deliver',packet,preflightId:'11111111-1111-4111-8111-111111111111',expectedUrl:location.href},{},()=>{});
@@ -25,11 +25,11 @@ for(const mode of ['accepted','ambiguous','missing','prefilled'])test(`Greenhous
      document.getElementById(input.id+'-list')?.remove();
      const list=document.createElement('div');list.id=input.id+'-list';list.setAttribute('role','listbox');input.setAttribute('aria-controls',list.id);
      const labels=input.id==='country'?['United States +1','United States Minor Outlying Islands +1']:mode==='missing'?['Different City, Sample State, United States']:['Example City, Sample State, United States',...(mode==='ambiguous'?['Example City, Sample State, USA']:[])];
-     for(const label of labels){const option=document.createElement('div');option.setAttribute('role','option');option.textContent=label;option.addEventListener('click',()=>{window.selections.push(input.id);input.parentElement.querySelector('span').textContent=label;input.value='';input.setAttribute('aria-expanded','false');list.remove();});list.append(option);}
+     for(const label of labels){const option=document.createElement('div');option.setAttribute('role','option');option.textContent=label;option.addEventListener('click',()=>{window.selections.push(input.id);input.parentElement.querySelector('span').innerHTML=input.id==='country'&&mode==='reset-on-open'?'<i class="iti__us"></i>+1':label;input.value='';input.setAttribute('aria-expanded','false');list.remove();});list.append(option);}
      input.parentElement.append(list);
     },150);
    };
-   input.addEventListener('input',open);input.addEventListener('mousedown',open);
+   input.addEventListener('input',()=>{if(mode!=='reset-on-open'||input.getAttribute('aria-expanded')==='true')open();});input.addEventListener('mousedown',()=>{if(mode==='reset-on-open')input.value='';open();});
    input.addEventListener('keydown',e=>{if(e.key==='Escape'){input.setAttribute('aria-expanded','false');document.getElementById(input.id+'-list')?.remove();}});
   }
  },mode);
@@ -41,7 +41,7 @@ for(const mode of ['accepted','ambiguous','missing','prefilled'])test(`Greenhous
  await expect(page.locator('#phone')).toHaveValue(packet.profile.phone);
  for(const id of ['authorized','sponsor','salary'])await expect(page.locator('#'+id)).toHaveValue('');
  expect(await page.evaluate(()=>Boolean(window.submitted))).toBe(false);
- if(mode==='accepted'){
+ if(mode==='accepted'||mode==='reset-on-open'){
   expect(result.filled).toEqual(expect.arrayContaining(['country','city','phone']));
   expect(result.requiredUnanswered).not.toContain('Country');expect(result.requiredUnanswered).not.toContain('Location (City)');
  }else if(mode==='prefilled'){
