@@ -1,5 +1,17 @@
 # Raven execution handoff
 
+## Automated document recovery regression suite — October 14, 2026 MDT
+
+Added six credential-free integration cases: post-upload link-write failure and actual forced helper termination, each for resume, cover letter and paired requests. Real production helper/workflow/client/receipt-journal modules run in child processes against temporary file-backed synthetic services on isolated ports. Tests prove durable receipts exist before interruption, failed recording/restart diagnostics, session renewal, unchanged document hashes/PDF bytes/mtime, zero generation/render/upload on retry, exact canonical job/link identity, one physical Drive file per document, idempotent second retry, and fresh-process/session completed-output readback. A control application and approvals remain unchanged. No real helper, private credentials, PDFs or Drive files used.
+
+Local validation: all six new cases passed; full document suite59/59 and all71 core workflow commands passed. A temporary mutation ignoring disk receipts correctly caused all three restart cases to fail; fixture restored. Added npm run test:document-recovery, included cases in npm run test:documents, and mandatory Linux/Windows jobs in existing reusable core CI. GitHub checks pending publication. No production implementation or extension changes.
+
+Current work is tests/CI only. The prior live failure/restart acceptance and unrelated extension/contact-field follow-ups remain below. Production helper and user data were not touched by this implementation.
+
+## Prior execution context
+
+# Raven execution handoff
+
 ## Actual helper restart after upload — October 14, 2026 MDT
 
 User authorized a helper restart after upload and before link save. Selected existing Saved Mercury / Senior Customer Support Operations Readiness Program Manager resume with no export, receipt or matching Drive PDF. Stopped the normal idle helper; started a temporary one-job-scoped helper on the real loopback port using production workflow/server/Drive modules and protected configuration. Published app99 Review→Save PDF to Drive produced one actual upload. The test paused record_drive_export only after the upload receipt and recording progress were durable, while canonical export count remained zero. Force-stopped that listener process at the pause; no exception-based graceful completion was substituted.

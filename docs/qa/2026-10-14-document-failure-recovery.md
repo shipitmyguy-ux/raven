@@ -30,3 +30,7 @@ Independent connected-Drive metadata search for the exact two filenames in 1resu
 The same two file IDs, sizes and creation/modification timestamps remained after retry: no duplicate PDF was created.
 
 Private evidence is ignored in the managed document-routing-integration worktree: private/failure-recovery-baseline.json, failure-recovery-injection-report.json, failure-recovery-retry-report.json, failure-recovery-drive-audit.json, failure-recovery-worker-audit.json and failure-recovery-live.png. User document contents, private IDs, hashes, cloud links and credentials are omitted here. No permanent fault hook, code/configuration change, helper restart or extension update was needed. The normal helper ended healthy with zero active tasks.
+
+## Automated coverage
+
+This scenario is now covered for resume, cover letter and paired requests by tests/oneclick-recovery.test.mjs. Run `npm run test:document-recovery`; the existing core CI workflow runs the same cases on Linux and Windows without credentials or live data. See docs/ONE_CLICK_RESUMES.md for fixture boundaries and assertions.
