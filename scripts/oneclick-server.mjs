@@ -82,7 +82,7 @@ export async function createOneClickServer({runWorkflow,rest,authorizeJob,pairRe
   void activity.run(()=>scheduler.schedule(async()=>{
    let writes=Promise.resolve(),failureStage;
    try{
-    await persist(state);
+    failureStage='persisting';await persist(state);failureStage=undefined;
     const result=await runWorkflow({jobId:state.job_id,documentType:state.document_type},progress=>{
      // Complete is published only after the workflow and all durable progress writes finish.
      if(progress.stage==='complete'||progress.stage==='failed')return;
@@ -90,7 +90,7 @@ export async function createOneClickServer({runWorkflow,rest,authorizeJob,pairRe
      Object.assign(state,fields,{current_document_type:currentKind||null});const snapshot={...state};
      writes=writes.then(()=>persist(snapshot));
     });
-    await writes;
+    failureStage='persisting';await writes;
     const complete={...state,...result,stage:'complete'};await persist(complete);Object.assign(state,complete);
    }catch(error){
     await writes.catch(()=>{});if(error.diagnostics){const {document_type,...diagnostics}=error.diagnostics;Object.assign(state,diagnostics);}state.failed_stage=error.failed_stage||failureStage||state.stage;state.failed_document_type=error.failed_document_type||state.current_document_type||state.document_type;state.error_code=diagnosticCodes.has(error.message)?error.message:'WORKFLOW_FAILED';state.stage='failed';state.error=safeError(error);state.documents=error.partial_documents||state.documents||[];
