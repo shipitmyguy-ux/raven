@@ -15,6 +15,17 @@ on:
       - "e2e/**"
       - "playwright.config.mjs"
       - "package.json"
+      - "package-lock.json"
+      - "playwright.production.config.mjs"
+      - "extension/**"
+      - "supabase/functions/raven-backend-v3/**"
+      - "supabase/functions/raven-generate-v1/**"
+      - "supabase/functions/raven-generate-v2/**"
+      - "supabase/functions/raven-cover-v2/**"
+      - "supabase/functions/raven-mcp-v1/**"
+      - "supabase/functions/_shared/**"
+      - "supabase/functions/raven-studio-scan/**"
+      - "scripts/application-pdf.mjs"
       - ".github/workflows/browser-regression.yml"
   push:
     branches: ["main"]
@@ -31,17 +42,35 @@ on:
       - "e2e/**"
       - "playwright.config.mjs"
       - "package.json"
+      - "package-lock.json"
+      - "playwright.production.config.mjs"
+      - "extension/**"
+      - "supabase/functions/raven-backend-v3/**"
+      - "supabase/functions/raven-generate-v1/**"
+      - "supabase/functions/raven-generate-v2/**"
+      - "supabase/functions/raven-cover-v2/**"
+      - "supabase/functions/raven-mcp-v1/**"
+      - "supabase/functions/_shared/**"
+      - "supabase/functions/raven-studio-scan/**"
+      - "scripts/application-pdf.mjs"
       - ".github/workflows/browser-regression.yml"
+# One browser owner per revision; newer PR commits supersede older QA.
+concurrency:
+  group: browser-tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   browser:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: "22"
-      - run: npm install
+      - run: npm ci --no-audit --no-fund
       - name: Cache Playwright browser
         id: playwright-cache
         uses: actions/cache@v6
@@ -52,7 +81,30 @@ jobs:
         run: npx playwright install chromium --with-deps
       - if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
-      - run: npm run test:e2e
+      - name: Select affected browser coverage
+        id: coverage
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          suite=focused
+          if [ "$EVENT" = workflow_dispatch ] || ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+            suite=full
+          elif git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep -Eq '^(app\.js|oneclick-client\.mjs|application-prepare\.mjs|document-revision\.mjs|index\.html|raven-api\.js|raven-core\.js|styles\.css|theme\.css|e2e/|playwright.*\.mjs|package(-lock)?\.json|\.github/workflows/browser-regression\.yml)$|^e2e/'; then
+            suite=full
+          fi
+          echo "suite=$suite" >> "$GITHUB_OUTPUT"
+          echo "Browser coverage: $suite (one job, no duplicate safety suite)"
+      - name: Full browser regression
+        if: steps.coverage.outputs.suite == 'full'
+        run: npm run test:e2e
+      - name: Focused backend and extension browser regression
+        if: steps.coverage.outputs.suite == 'focused'
+        run: |
+          npx playwright test e2e/studio-directory.spec.mjs e2e/studio-job-flow.spec.mjs e2e/job-dedup.spec.mjs e2e/extension-prepare.spec.mjs e2e/prepare-gate.spec.mjs e2e/prepare-contact-fields.spec.mjs e2e/prepare-required-fields.spec.mjs
+          npx playwright test e2e/raven.spec.mjs --grep "Apply on site|summary-only revision|listing and direct application remain available|generators save discovery jobs|application requires approval of both exact documents|review preserves approved document and revision invalidates approval|failed revision keeps the saved document and its approval|local master resume and track assignments persist through reload|offline resume fallback creates a local draft without network generation|generation cache prevents a duplicate resume model call|iPhone SE viewport keeps Raven usable without page overflow|refresh updates every job track and tabs are filter-only"
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

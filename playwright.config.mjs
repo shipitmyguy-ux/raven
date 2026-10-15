@@ -2,6 +2,7 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: "**/production-smoke.spec.mjs",
   fullyParallel: true,
   workers: process.env.CI ? 2 : undefined,
   retries: 0,
