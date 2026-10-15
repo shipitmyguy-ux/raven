@@ -1,3 +1,18 @@
+## Current owner directive and production handoff — Visa-only eligibility (October 14, 2026 MDT)
+
+Owner correction: **Never remove or hide Games / 3D job listings merely because of GMT/UTC/CET offsets or Canada, Europe and other remote-region labels.** A job can be excluded on geographic/legal grounds only when the listing explicitly establishes a mandatory work visa or work permit. A country label, preference, right-to-work statement, or lack of visa sponsorship is not sufficient. Preserve working-hour details for owner to evaluate personally. Normal role-fit, remote/onsite, vacancy validation, and duplicate identity checks remain independent. Recorded in AGENTS.md and job-search-config.json.
+
+Implemented source:
+- `supabase/functions/_shared/studio-us-eligibility.mjs` now exports a narrowly grounded `requiresVisaOrWorkPermit` test; `usStudioScopeAllowed` excludes only confirmed required visa/permit.
+- `supabase/functions/_shared/studio-sheet-feed.mjs` uses same filter to retain foreign/GMT spreadsheet rows, still handling shared careers-page URL dedup separately.
+- `tests/studio-us-eligibility.test.mjs`, `tests/studio-sheet-feed.test.mjs`, and `tests/backend-game-ingestion.test.mjs` updated to reflect owner policy, with positive mandatory-visa and negative sponsorship/question examples.
+- CI run **38664934829** passed all core regressions, Windows and browser safety. Production smoke on last code/status changes passed.
+- Live Supabase studio scanner **v20** and `raven-backend-v3` **v72** deployed. Both responded successfully on read-only health checks.
+- Reversal migration `supabase/migrations/20261015012100_restore_timezone_country_leads.sql` applied successfully; verified all eight prior GeoReview spreadsheet listings now `Discovered`, `listing_state=null`, including three GMT and five Canada. One unrelated listing availability note was preserved.
+- Studio spreadsheet source `tim-ploeger-remote-games` marked `next_check_at=now()` on 2026-10-15 01:22 UTC to prompt the existing 15-minute cron. **Next run not yet confirmed.** Check `raven_studio_sources` and `raven_studio_checks` before claiming success, and verify no visa-unproven listings are suppressed.
+- No saved applications, resumes, cover letters, or workflow statuses were edited; discovery-only status flags corrected.
+
+Prior handoff below preserves other open studio-source and duplicate-review tasks.
 ## Latest handoff — Raven cross-source studio/ATS safeguards (October 14, 2026 MDT)
 
 GitHub repo `shipitmyguy-ux/raven`; Supabase project `umvmilulnqnmeqvfoxxc`.
