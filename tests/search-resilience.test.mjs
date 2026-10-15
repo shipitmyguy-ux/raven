@@ -6,6 +6,7 @@ const sources=fs.readFileSync("supabase/functions/raven-backend-v3/sources.ts","
 
 assert.match(search,/listResults/,"quick search must be able to preserve cached rows");
 assert.match(search,/if\(!rows\.length\)/,"zero-result quick refresh must use cached discovery data");
+assert.match(search,/return track==="Games \/ 3D"\?await listResults\(track\):rows;/,"3D quick search must return persisted deduplicated results");
 assert.match(search,/atsWide\(track,true\),6500/,"quick ATS work must have a bounded deadline");
 assert.match(search,/linkedinDeep\(track,4\)/,"deep LinkedIn work must stay bounded");
 assert.match(search,/jobicy\(track,3\)/,"deep Jobicy work must stay bounded");
