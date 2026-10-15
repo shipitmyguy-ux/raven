@@ -13,4 +13,3 @@ Verification: focused destination/preparation/client/server/extension tests pass
 Known follow-up: banner incorrectly reports Unlabeled required field for a filled unlabeled required control; requiredLabels classifies missing labels before checking completion. Employer required controls are actually valid and preparation succeeded. Fix this reporting in the next batched extension update. Do not refresh or alter the live employer draft. Automatic save/document preparation for newly discovered eligible3D jobs remains authorized but unimplemented; separate follow-up after this acceptance.
 
 Prior name/limit policy activation: resume function136, cover106 and MCP5 deployed; restarted helper now loads grounded-llm-v10. No live new-document generation acceptance was performed for that separate policy; synthetic enforcement verified in PR96.
-
