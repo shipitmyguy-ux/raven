@@ -77,5 +77,22 @@
       "3D Artist",
       "World Builder"
     ]
-  }
+  },
+  "external_spreadsheet_feeds": [
+    {
+      "id": "tim-ploeger-remote-games",
+      "name": "Games Industry - Remote Job Openings",
+      "url": "https://docs.google.com/spreadsheets/d/1Kue4iGy1WNpItNyCpaMT9__A_228NmbQ9s_uUcc3wb8/edit",
+      "snapshot": "data/remote-games-sheet-jobs.json",
+      "track": "Games / 3D",
+      "status": "snapshot-imported-refresh-not-automated",
+      "deduplication": {
+        "primary": "canonicalized application URL",
+        "secondary": "normalized company + role + location",
+        "same_role_different_location": "retain separately",
+        "preserve_existing_status": true
+      },
+      "verification": "Source spreadsheet may contain stale or geographically restricted openings; verify before active classification."
+    }
+  ]
 }
