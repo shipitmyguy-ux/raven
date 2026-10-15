@@ -119,3 +119,28 @@ test("preflight stops on a sign-in destination before any packet or upload", asy
   expect(await page.locator('input[type="file"]').evaluate(input => input.files.length)).toBe(0);
   expect(await page.evaluate(() => window.__ravenMessages.some(item => item.type === "raven-prepare-result"))).toBe(false);
 });
+
+for(const outcome of ['accepted','rejected'])test(`removed upload inputs remain known after ${outcome} upload`,async({page})=>{
+ await page.addInitScript(value=>{
+  window.messages=[];const listeners=[];
+  window.deliver=packet=>listeners.forEach(listener=>listener({type:'raven-prepare-deliver',packet,preflightId:'11111111-1111-4111-8111-111111111111',expectedUrl:location.href},{},()=>{}));
+  window.chrome={runtime:{onMessage:{addListener(fn){listeners.push(fn);}},sendMessage(message,callback){window.messages.push(message);callback?.(message.type==='raven-preflight-context'?{title:value.title,company:value.company}:{});}}};
+ },packet);
+ await page.route('https://jobs.ashbyhq.com/**',route=>route.fulfill({contentType:'text/html',body:`<h1>Senior Artist</h1><p>Believer</p><form onsubmit="window.submitted=true;event.preventDefault()"><label for="name">Name</label><input id="name"><div class="upload-field"><label for="resume">Resume</label><input id="resume" type="file"></div><div class="upload-field"><label for="cover">Cover letter</label><input id="cover" type="file"></div><button type="submit">Submit</button></form>`}));
+ await page.goto(packet.jobUrl+'/application');
+ await page.evaluate(outcome=>document.addEventListener('change',event=>{
+  const input=event.target;if(input.type!=='file'||!input.files[0])return;
+  const filename=input.files[0].name,container=input.parentElement;
+  setTimeout(()=>{input.remove();const status=document.createElement('span');status.textContent=outcome==='accepted'?filename:'Upload failed: file rejected';container.append(status);},50);
+ }),outcome);
+ await page.addScriptTag({content:fs.readFileSync(new URL('../extension/src/assistant-core.js',import.meta.url),'utf8')});
+ await page.addScriptTag({content:fs.readFileSync(new URL('../extension/src/prepare-content.js',import.meta.url),'utf8')});
+ await page.evaluate(value=>window.deliver(value),packet);
+ await expect.poll(()=>page.evaluate(()=>window.messages.find(x=>x.type==='raven-prepare-result')?.result)).toBeTruthy();
+ const result=await page.evaluate(()=>window.messages.find(x=>x.type==='raven-prepare-result').result);
+ expect(result.notRequested).not.toContain('resume');expect(result.notRequested).not.toContain('coverLetter');
+ expect(result.attached).toEqual(outcome==='accepted'?['resume','coverLetter']:[]);
+ expect(result.selectedUnconfirmed).toEqual(outcome==='rejected'?['resume','coverLetter']:[]);
+ await expect(page.locator('#raven-assistant-banner')).not.toContainText('No upload field for');
+ expect(await page.evaluate(()=>Boolean(window.submitted))).toBe(false);
+});

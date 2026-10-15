@@ -165,3 +165,21 @@ test('all browser helper clients share one cache version for the stage protocol'
  const source=fs.readFileSync('app.js','utf8');const versions=[...source.matchAll(/import\("\.\/oneclick-client\.mjs\?v=(\d+)"\)/g)].map(match=>match[1]);
  assert.ok(versions.length>=3,'generation, preparation and power clients required');assert.equal(new Set(versions).size,1,'cached older clients must not reject new helper stages');
 });
+
+test('both-document polling accepts current per-document progress without losing run identity',async()=>{
+ const cover={...doc,document_type:'coverLetter'};
+ const progress=['queued','checking_saved_state','checking_drive_receipts','confirming','document_complete','confirming','document_complete','persisting','complete'];
+ const responses=[{token:'secret'},...progress.map((stage,i)=>({run_id:id,job_id:'JT-test',document_type:'both',current_document_type:i%2?'resume':'coverLetter',stage,...(stage==='complete'?{documents:[doc,cover]}:{})}))];
+ const observed=[];
+ const client=createOneClickClient({pollMs:0,fetchImpl:async()=>({ok:true,json:async()=>responses.shift()})});
+ const result=await client.run({job_id:'JT-test',document_type:'both'},stage=>observed.push(stage));
+ assert.deepEqual(observed,progress);assert.equal(result.documents.length,2);
+});
+
+test('unknown progress and cross-document identity remain rejected',async()=>{
+ for(const bad of [{stage:'unrecognized'},{stage:'confirming',document_type:'coverLetter'}]){
+  const replies=[{token:'secret'},{run_id:id,job_id:'JT-test',document_type:'resume',stage:'queued'},{run_id:id,job_id:'JT-test',document_type:'resume',...bad}];
+  const client=createOneClickClient({pollMs:0,fetchImpl:async()=>({ok:true,json:async()=>replies.shift()})});
+  await assert.rejects(client.run({job_id:'JT-test',document_type:'resume'}),/invalid status/);
+ }
+});

@@ -44,3 +44,9 @@ Treat extension updates as exceptional and batch them. Raven and the local helpe
 Implemented stage boundary: both canonical documents and live Drive PDF receipt checks finish, and their hashes are persisted, before any extension probe or employer preflight. Extension capability is an optional form-filling phase. If the extension is absent, unresponsive or outdated, generate/reuse both canonical documents, verify exact saved hashes and live Drive PDF receipts, persist metadata-only documents-ready with reasonType extension-unavailable, and stop before attachment-byte retrieval, profile/answer reads or packet delivery. Explicit Resume rechecks capability, job URL, saved hashes and Drive receipts, then reuses the unchanged documents before form delivery. The current extension and helper do not change for this web release.
 
 Unknown or explicitly rejected protocol/identity responses remain hard failures rather than being relabeled unavailable. Pure bridge silence or disappearance can defer form filling; uncertain dispatch retains the stable request identity for safe explicit recovery. Already-open tab recovery also requires the original persisted document hashes and fresh receipts. No reload automatically generates or submits anything.
+
+## Progress and upload-result compatibility
+
+All browser helper consumers must use the same versioned client. Valid per-document progress (including confirming and document_complete) retains the requested run/job/document identity; unknown stages and identity mismatches remain failures. Completion still requires both exact canonical documents and verified Drive receipts.
+
+Upload availability is observed before file dispatch. A successful employer confirmation may replace its file input with a filename/removal control; that does not mean the upload field was absent. Selected-but-unconfirmed uploads retain their warning, and genuinely missing controls are reported separately.

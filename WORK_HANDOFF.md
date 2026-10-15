@@ -1,3 +1,11 @@
+## Apply status and attachment-warning correction - October 14, 2026
+
+Owner requested fixing helper status rejection and the false missing-attachment warning, then retesting without submission. Prior app98 could retain helper client v4, which omitted confirming/document_complete progress stages now emitted by the writer. The already-published app99 aligns all consumers on client v5. Added a both-document progress-sequence regression plus rejection cases for unknown stages and mismatched document identity; no weakening of completion/hash/Drive guards or helper restart. Fresh live Nex Apply completed on its first click after Raven refresh, with no invalid-status error or Resume retry. Correct known fields and both employer filename/removal confirmations observed. Existing documents reused; Saved status preserved.
+
+Extension result classification now records upload-control availability before dispatch. Greenhouse removes successful inputs and renders filename/removal controls; post-upload absence must not become a missing-field warning. Accepted and selected-unconfirmed results remain separate, and genuinely absent fields retain warnings. Two real-DOM regression fixtures remove controls after accepted/rejected uploads and verify correct result/banner and zero submissions. This is necessarily packaged browser code, not a remotely executed web/helper workaround. Version2.4.3 staged in the owner's existing loaded output folder. Tested new-tab injection after staging the files: Chrome retained the old content script and still rendered the false warning. One manual extension Reload is therefore required to activate this browser-only correction; no web/helper change can replace that cached content script safely. Final live warning verification waits for that reload.
+
+All44 core command groups,30 focused Node tests, five focused Edge cases passed. Full160 Edge browser cases passed. No documents replaced, approvals changed or applications submitted. Keep private profile fields, hashes and URLs out of Git.
+
 # Raven execution handoff
 
 ## Fresh resume and cover-letter end-to-end acceptance — October 14, 2026 MDT

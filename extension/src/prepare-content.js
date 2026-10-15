@@ -233,11 +233,13 @@
     const attached = [];
     const selected = [];
     const notRequested = [];
+    // Accepted uploads may replace/remove their input. Record availability before dispatch.
+    const availableUploads = new Set(["resume", "coverLetter"].filter(key => fileCandidate(adapter, key)));
     const [resumeResult, coverResult] = await Promise.all([attach(packet, "resume"), attach(packet, "coverLetter")]);
     for (const [key, value] of [["resume", resumeResult], ["coverLetter", coverResult]]) {
       if (value.accepted) attached.push(key);
       if (value.selected) selected.push(key);
-      if (!fileCandidate(adapter, key)) notRequested.push(key);
+      if (!availableUploads.has(key) && !value.selected && !value.accepted) notRequested.push(key);
     }
     for (const key of Object.keys(profileTerms)) if (!requested.has(key) && !candidateFor(adapter, key, fields)) notRequested.push(key);
     const selectedUnconfirmed = selected.filter(key => !attached.includes(key));
