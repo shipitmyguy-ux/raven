@@ -289,6 +289,16 @@ for(const [provider,posting,suffix] of [
  assert.equal(flow.counts.dispatch,1);
 });
 
+test('saved documents apply without starting a generation run and use the resolved destination',async()=>{
+ const flow=preparationHarness({extensionMode:'ready'});
+ flow.job.resume='saved-resume';flow.job.coverLetter='saved-cover';
+ flow.ctx.localPreparationClient.resolveApplicationDestination=async job=>{assert.equal(job.id,flow.job.id);return 'https://jobs.lever.co/acme/98050e1b-0adb-4842-96e9-a6b9c987b799';};
+ await flow.prepare();
+ assert.equal(flow.counts.writer,0);assert.equal(flow.counts.dispatch,1);
+ assert.equal(flow.getStartedUrl(),flow.job.url);
+ assert.equal(flow.getPacket().jobUrl,'https://jobs.lever.co/acme/98050e1b-0adb-4842-96e9-a6b9c987b799/apply');
+});
+
 test('access gate still verifies and saves both documents, then explicit retry reuses them',async()=>{
  const flow=preparationHarness();
  await flow.prepare();

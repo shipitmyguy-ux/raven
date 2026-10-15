@@ -2102,7 +2102,7 @@
       if(savedKey!==key){kinds.forEach(kind=>{activeOneClickJobs.delete(key+":"+kind);activeOneClickJobs.set(savedKey+":"+kind,session);});key=savedKey;}
       if(forceLocal){
         if(!localPreparationClient){
-          const {createOneClickClient}=await import("./oneclick-client.mjs?v=5");
+          const {createOneClickClient}=await import("./oneclick-client.mjs?v=6");
           localPreparationClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
         }
         client=localPreparationClient;
@@ -2111,7 +2111,7 @@
         const pairedToken=localStorage.getItem(PAIR_KEY);
         if(pairedToken)oneClickClient=createRemoteWriterClient({token:pairedToken});
         else{
-          const {createOneClickClient}=await import("./oneclick-client.mjs?v=5");
+          const {createOneClickClient}=await import("./oneclick-client.mjs?v=6");
           oneClickClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
         }
       }
@@ -2177,7 +2177,7 @@
       if(intent&&String(intent.jobId)!==String(job.id))throw Error("Another application preparation is saved. Resume or dismiss it before starting this role.");
       if(intent&&new URL(intent.jobUrl).href!==new URL(job.url).href)throw Error("The saved employer URL changed. Review the listing before starting again.");
       if(!localPreparationClient){
-        const {createOneClickClient}=await import("./oneclick-client.mjs?v=5");
+        const {createOneClickClient}=await import("./oneclick-client.mjs?v=6");
         localPreparationClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
       }
       await localPreparationClient.ensureApplicationPreparation();
@@ -2196,7 +2196,7 @@
         }
         // A different request may have completed both documents after this run
         // failed. Verify canonical documents/exports before replaying that run.
-        if(!verified&&intent.runId&&job.resume&&job.coverLetter){
+        if(!verified&&job.resume&&job.coverLetter){
           try{verified=await verifiedPreparationDocuments(job.id,null,intent.jobUrl);}
           catch(error){if(!/has no matching verified Drive export/.test(error.message))throw error;refreshSavedExports=true;}
         }
@@ -2222,7 +2222,9 @@
           updatePreparationRecoveryBanner();
         };
         const canonical=verified.job;
-        const targetUrl=applicationTargetUrl(canonical.url);
+        const destination=localPreparationClient.resolveApplicationDestination
+          ? await localPreparationClient.resolveApplicationDestination(canonical):canonical.url;
+        const targetUrl=applicationTargetUrl(destination);
         let extensionReason="",preflight=null;
         try{await probePreparationExtension();}catch(error){extensionReason=extensionUnavailableReason(error);if(!extensionReason)throw error;}
         if(!extensionReason){
@@ -2990,7 +2992,7 @@
         try{
           const baseUrl=state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766";
           if(!powerClient||powerClientUrl!==baseUrl){
-            const {createOneClickClient}=await import("./oneclick-client.mjs?v=5");
+            const {createOneClickClient}=await import("./oneclick-client.mjs?v=6");
             powerClient=createOneClickClient({baseUrl});powerClientUrl=baseUrl;
           }
           renderPower(await (stop?powerClient.stopKeepingAwake():powerClient.getPowerStatus()));
