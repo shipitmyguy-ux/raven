@@ -1,3 +1,9 @@
+## Exact existing Drive PDFs for Apply — October 15, 2026 MDT
+
+Apply attachment preparation now resolves the current job/hash/folder export receipt and reads its original PDF through the authenticated Drive raw-file tool. Both binary hashes must match the canonical export hashes; stale/missing receipts, wrong file/folder, changed bytes and oversized/non-PDF data fail closed. No renderer, writer or upload fallback. Existing authorization, job locks, final document-version readback and attachment protocol remain. Drive read capability is isolated to this stage; generation cannot access it. No new network download endpoint.
+
+Focused regression coverage is in the existing required core CI commands (application-pdf and oneclick-security); no additional CI job or duplicate full local suite. Initial local focused preparation/extension/security checks:72 passed. Live Nex verification in progress; do not claim acceptance yet.
+
 ## Published preview/edit/OK and live Fair Play Labs recovery — October 15, 2026 MDT
 
 PR93 and PR94 merged; app102 is published. Owner requested removing separate manual document approvals. Preview offers edits or OK; OK closes review without creating approval state. Saved documents continue through current canonical hashes, exact PDF bytes and live Drive receipt verification. The secondary continue control now uses the same preparation pipeline. Existing approval storage remains preserved but cannot gate application progress. Factual validation and manual employer submission remain required by their respective existing systems.

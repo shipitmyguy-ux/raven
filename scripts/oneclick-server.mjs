@@ -180,7 +180,7 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
    const rows=await rest('raven_jobs?select=id&id=eq.'+encodeURIComponent(id)+'&limit=1');if(rows?.[0]?.id!==id)throw Error('NOT_FOUND');
   };
   const {createApplicationDocumentPreparer}=await import('./application-pdf.mjs');
-  const preparePdf=createApplicationDocumentPreparer({dispatch:serialDispatch,authorizeJob,exportDirectory:resolve('private/exports')});
+  const preparePdf=createApplicationDocumentPreparer({dispatch:serialDispatch,rest,downloadPdf:adapters.downloadPdf,config});
   const prepareApplicationDocuments=body=>withDocumentLock(body.job_id,'resume',()=>withDocumentLock(body.job_id,'coverLetter',()=>preparePdf(body)));
   const verifyApplicationReceipts=createApplicationReceiptVerifier({dispatch:serialDispatch,rest,verifyUpload:adapters.verifyUpload,config});
   let remote,pump;
