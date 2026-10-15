@@ -1393,6 +1393,19 @@
   }
   function bindDetailActions(job,expanded) {
             expanded.querySelectorAll("[data-apply-job]").forEach((button)=>{ button.addEventListener("click",(event)=>{ event.stopPropagation(); void beginApplication(job,button); }); });
+            expanded.querySelectorAll("[data-approved-apply]").forEach((button)=>{ button.addEventListener("click",event=>{event.stopPropagation();void prepareApplication(job,button);}); });
+            expanded.querySelectorAll("[data-prepare-application]").forEach(button=>{
+              button.addEventListener("click",event=>{event.stopPropagation();prepareApplication(job,button);});
+            });
+            expanded.querySelectorAll("[data-review-paused-preparation]").forEach(button=>{
+              button.addEventListener("click",event=>{
+                event.stopPropagation();closeJobDetail();
+                requestAnimationFrame(()=>{
+                  const banner=document.getElementById("preparationRecoveryBanner");
+                  if(banner&&!banner.hidden){banner.scrollIntoView({block:"center"});banner.querySelector("[data-resume-preparation]:not([hidden]),[data-clear-preparation]")?.focus();}
+                });
+              });
+            });
             expanded.querySelectorAll("[data-apply-status]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
@@ -1568,10 +1581,23 @@
     const nextAction=followUpSummary(job);
     const followUpValue=String(job.followUp||"").slice(0,10);
     const lifecycleControl='<div class="job-lifecycle-row"><label class="lifecycle-control"><span>Stage</span><select data-lifecycle-status aria-label="Job stage">'+lifecycleOptions+'</select></label></div>';
+    const docsReady=documentsReadyForApplication(job);
+    const bothDocumentsSaved=Boolean(job.resume&&job.coverLetter);
+    const prepareBusy=activeApplicationPrepares.has(String(job.id||job.url));
+    const bothBusy=oneClickSession(job,"both");
     const statusLower=currentStatus.toLowerCase();
     const postApplication=["applied","interview","offer","rejected"].includes(statusLower);
+    const isAppliedJob=statusLower==="applied";
+    const savedPreparation=preparationRecovery?.load();
+    const pausedElsewhere=savedPreparation&&!savedPreparation.expired&&savedPreparation.state!=="opened"&&String(savedPreparation.jobId)!==String(job.id);
+    const pausedJobTitle=pausedElsewhere?(knownJobById(savedPreparation.jobId)?.title||"another job"):"";
     const applyAction=job.url&&job.listing_state!=="closed"&&statusLower!=="closed"&&!postApplication
       ? '<button class="workflow-action is-primary" type="button" data-apply-job><span>Apply job</span></button>':"";
+    const applyGate=job.url&&job.listing_state!=="closed"&&!postApplication&&!pausedElsewhere?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply><span>'+(docsReady?'Continue with documents':'Prepare documents')+'</span></button>':"";
+    const resumePreparation=savedPreparation&&!savedPreparation.expired&&savedPreparation.state!=="opened"&&String(savedPreparation.jobId)===String(job.id);
+    const prepareAction=state.runtime?.settings?.["chatgpt-one-click"]===true&&job.url&&job.listing_state!=="closed"&&statusLower!=="closed"&&(!postApplication||isAppliedJob)
+      ? pausedElsewhere?'<button class="workflow-action is-secondary" type="button" data-review-paused-preparation>Review paused preparation</button>'
+        : '<button class="workflow-action is-secondary" type="button" data-prepare-application'+(prepareBusy?' disabled aria-busy="true"':'')+'><span>'+(resumePreparation?'Resume preparation':isAppliedJob?'Prepare again for review':'Optional verified PDF preparation')+'</span></button>':"";
     const postingUrl=/^https?:\/\//i.test(String(job.url||""))?job.url:"";
     const actions=postingUrl
       ? '<a class="employer-link" data-employer-link href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener">Open employer listing ↗</a>'
@@ -1579,7 +1605,7 @@
     const fullDescription=cleanJobDescription(job.notes)||"Full job description not yet available.";
     const summary=conciseJobSummary(job);
     const generating=generationSession(job);
-    const progress=oneClickProgress(job)||(generating?'Creating '+documentLabel(generating.type)+'…':'');
+    const progress=oneClickProgress(job)||(prepareBusy?'Preparing application…':generating?'Creating '+documentLabel(generating.type)+'…':'');
     const liveFeedback=state.preparationFeedback?.jobId===String(job.id)?state.preparationFeedback:null;
     const progressHtml=progress?'<p class="job-detail-progress" role="status" aria-live="polite"><span class="generation-spinner" aria-hidden="true"></span>'+escapeHtml(progress)+'</p>':
       liveFeedback?'<p class="job-detail-feedback is-'+escapeAttr(liveFeedback.kind)+'" role="'+(liveFeedback.kind==="error"?'alert':'status')+'">'+escapeHtml(liveFeedback.message)+'</p>':'';
@@ -1588,16 +1614,18 @@
       const currentPdf=exportEvent?'<a class="document-current-export" href="'+escapeAttr(exportEvent.metadata.drive_url)+'" target="_blank" rel="noopener noreferrer">Current PDF</a>':"";
       return '<div class="document-row" data-document-type="'+key+'"><div class="document-row-label"><strong>'+label+'</strong><span>'+(job[key]?'Ready':'Needs a document')+'</span>'+currentPdf+'</div>'+documentControl(job,key,label)+'</div>';
     }).join("");
+    const createDocuments=(!job.resume||!job.coverLetter)&&featureEnabled("resume-generation")&&featureEnabled("cover-letter-generation")
+      ? '<button class="workflow-action is-secondary" type="button" data-generate-both'+(generating||bothBusy||prepareBusy?' disabled aria-busy="true"':'')+'>Create missing documents</button>':"";
     const nextStep=isApplied
-      ? '<div class="job-next-step"><h3>Next step</h3><p class="next-action">'+escapeHtml(nextAction||'Set a follow-up date')+'</p><label class="follow-up-control"><span>Follow up</span><input type="date" data-follow-up-date value="'+escapeAttr(followUpValue)+'" aria-label="Follow-up date"></label></div>'
+      ? '<div class="job-next-step"><h3>Next step</h3><p class="next-action">'+escapeHtml(nextAction||'Set a follow-up date')+'</p><label class="follow-up-control"><span>Follow up</span><input type="date" data-follow-up-date value="'+escapeAttr(followUpValue)+'" aria-label="Follow-up date"></label>'+prepareAction+'</div>'
       : '<div class="job-next-step"><h3>Next step</h3>'+(applyAction||'<p>Review this role and choose its stage.</p>')+
-        (applyAction?'<p class="next-step-help">Opens the employer application, fills recognized fields, and attaches available documents. Complete and submit the employer form when you are ready.</p>':'')+'</div>';
+        (applyAction?'<p class="next-step-help">Opens the employer application and fills recognized fields using available documents. It never submits automatically; complete the employer form when you are ready.</p>':'')+prepareAction+'</div>';
     return '<section class="inline-job-detail">'+
       lifecycleControl+
       '<p class="job-detail-summary">'+escapeHtml(summary)+'</p>'+progressHtml+nextStep+
       '<section class="document-checklist" aria-label="Application documents"><h3>Documents</h3>'+documentRows+'</section>'+
       '<div class="job-detail-actions">'+actions+'</div>'+
-      '<details class="job-detail-disclosure"><summary>Job details</summary><div class="job-detail-disclosure-content"><dl>'+detailHtml+'</dl><h3>Full posting</h3><p class="job-description-text full-description">'+escapeHtml(fullDescription)+'</p></div></details>'+
+      '<details class="job-detail-disclosure"><summary>Job details</summary><div class="job-detail-disclosure-content"><dl>'+detailHtml+'</dl><h3>Full posting</h3><p class="job-description-text full-description">'+escapeHtml(fullDescription)+'</p>'+(applyGate||prepareAction&&createDocuments?'<div class="advanced-application-actions"><h3>Other application actions</h3>'+applyGate+(prepareAction?createDocuments:'')+'</div>':'')+'</div></details>'+
       '<details class="job-detail-disclosure"><summary>Evidence</summary><div class="job-detail-disclosure-content">'+renderCoverage(job)+'</div></details>'+
       '<details class="job-detail-disclosure"><summary>Activity</summary><div class="job-detail-disclosure-content">'+renderJobActivity(job)+'</div></details>'+
     '</section>';
@@ -2664,6 +2692,7 @@
     setStatus(documentLabel(type)+(approved?" approved":" approval removed"));
     render();
   }
+  function documentsReadyForApplication(job){return Boolean(job?.resume&&job?.coverLetter);}
   function applicationDocumentText(value){
     const raw=String(value||"");
     if(!/^data:text\/html(?:;charset=utf-8)?,/i.test(raw))return "";
@@ -2998,7 +3027,7 @@
     const oneClickBusy=oneClickSession(job,key);
     const busy=activeApplicationPrepares.has(String(job.id||job.url))||Boolean(oneClickBusy)||generating?.type===key;
     return '<span class="document-control '+(value?'has-file':'is-empty')+(busy?' is-generating':'')+'">'+
-      '<button class="document-primary" type="button" data-generate="'+escapeAttr(key)+'"'+(busy?' disabled aria-busy="true"':'')+'>'+(value?'Open':'Generate')+'</button>'+feedback+
+      '<button class="document-primary" type="button" data-generate="'+escapeAttr(key)+'"'+(busy?' disabled aria-busy="true"':'')+'>'+(value?'Review':'Generate')+'</button>'+feedback+
       '<span class="document-overflow">'+
         '<button class="document-menu-button" type="button" data-document-menu aria-haspopup="menu" aria-expanded="false" aria-label="More '+escapeAttr(fileLabel)+' options"'+(busy?' disabled':'')+'>More</button>'+
         '<span class="document-menu" role="menu" hidden>'+
@@ -3014,6 +3043,23 @@
   }
 
   function bindEvents() {
+    document.querySelector("[data-resume-preparation]")?.addEventListener("click",()=>{
+      const intent=preparationRecovery?.load();
+      if(!intent||intent.expired)return;
+      const job=knownJobById(intent.jobId);
+      if(!job){setStatus("Saved preparation found. Wait for jobs to finish loading, then try Resume preparation again.");return;}
+      if(job.track)state.activeTrack=job.track;
+      trackTabs.forEach(tab=>{const active=tab.dataset.track===state.activeTrack;tab.classList.toggle("active",active);tab.setAttribute("aria-selected",String(active));});
+      state.selectedId=job.id;render();
+      requestAnimationFrame(()=>detailPanel?.querySelector("[data-close-job-detail]")?.focus({preventScroll:true}));
+      void prepareApplication(job,detailPanel?.querySelector("[data-prepare-application]"));
+    });
+    document.querySelector("[data-clear-preparation]")?.addEventListener("click",()=>{
+      const intent=preparationRecovery?.load();
+      if(intent)preparationRecovery.clear(intent.preparationId);
+      updatePreparationRecoveryBanner();render();
+      setStatus("Saved preparation dismissed. Saved documents remain available.");
+    });
     detailPanel?.querySelector("[data-close-job-detail]")?.addEventListener("click",closeJobDetail);
     detailScrim?.addEventListener("click",closeJobDetail);
     document.addEventListener("keydown",(event)=>{
@@ -3380,6 +3426,7 @@
     const tasks=[loadJobs()];
     if(includeDiscovered) tasks.push(loadAllDiscovered());
     const results=await Promise.allSettled(tasks);
+    if(options.waitForRuntime)await options.waitForRuntime.catch(()=>{});
     if(includeDiscovered){
       const discoveredResult=results[1];
       if(discoveredResult?.status==="fulfilled")queueDiscoveredDocuments(discoveredResult.value?.newlyDiscovered||[]);
@@ -3392,8 +3439,17 @@
     applySharedParams();
     hydrateImmediateData();
 
-    await loadRuntimeConfig().catch(error=>console.warn("Runtime configuration is unavailable.",error));
-    await refreshAllJobs();
+    await getPreparationRecovery().then(updatePreparationRecoveryBanner).catch(error=>console.warn("Preparation recovery is unavailable",error));
+    const runtimePromise=loadRuntimeConfig();
+    const refreshPromise=refreshAllJobs({waitForRuntime:runtimePromise});
+    await Promise.allSettled([runtimePromise,refreshPromise]);
+    try{
+      const reconnect=(await getExtensionReconnect()).take(preparationRecovery?.load());
+      if(reconnect){
+        const job=state.jobs.find(item=>String(item.id)===String(reconnect.jobId));
+        if(job&&!job._discovered){state.selectedId=job.id;render();await prepareApplication(job,null,{automaticReconnect:true});}
+      }
+    }catch(error){console.warn("Extension connection recovery stopped",error);}
 
     let lastRefresh=Date.now();
     document.addEventListener("visibilitychange",()=>{

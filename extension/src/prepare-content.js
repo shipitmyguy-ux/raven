@@ -329,7 +329,7 @@
     const requiredText = requiredUnanswered.length ? " Required fields for you: " + requiredUnanswered.join(", ") + "." : "";
     const absentDocuments = notRequested.filter(key => key === "resume" || key === "coverLetter");
     const absentText = absentDocuments.length ? " No upload field for: " + absentDocuments.map(key => key === "coverLetter" ? "cover letter" : "resume").join(", ") + "." : "";
-    banner("Raven prepared this application. Fields filled: " + filledText + ". PDFs accepted by form: " + attachedText + "." + unconfirmedText + requiredText + absentText + " Complete any remaining fields and submit when ready.");
+    banner("Raven prepared this application. Fields filled: " + filledText + ". PDFs accepted by form: " + attachedText + "." + unconfirmedText + requiredText + absentText + " Review every field and attachment, then submit manually.");
     chrome.runtime.sendMessage({ type: "raven-prepare-result", result });
   }
   if (location.protocol !== "https:") return;

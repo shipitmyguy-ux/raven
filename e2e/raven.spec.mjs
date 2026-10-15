@@ -854,12 +854,13 @@ test('one-click stopped helper reports recovery action without opening ChatGPT o
   await expect(page.locator('[data-chatgpt-prompt="resume"]')).not.toHaveAttribute('aria-busy','true');
 });
 
-test('saved documents show an Apply job action that stops at review',async({page})=>{
+test('saved documents retain optional PDF preparation beside immediate Apply',async({page})=>{
  await mockRaven(page,{initialJob:{...savedJob,resume:'data:text/html,Resume',cover_letter:'data:text/html,Cover'}});
  await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=true;await route.fulfill({json:config});});
  await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
- await expect(jobDetail(page,'[data-prepare-application]')).toHaveText('Apply job');
- await expect(jobDetail(page,'.next-step-help')).toContainText('It never submits the application.');
+ await expect(jobDetail(page,'[data-apply-job]')).toHaveText('Apply job');
+ await expect(jobDetail(page,'[data-prepare-application]')).toHaveText('Optional verified PDF preparation');
+ await expect(jobDetail(page,'.next-step-help')).toContainText('It never submits automatically');
 });
 
 test('another paused preparation is explicit and preserved until the user dismisses it',async({page})=>{
@@ -883,7 +884,7 @@ test('another paused preparation is explicit and preserved until the user dismis
  await page.locator('#preparationRecoveryBanner [data-clear-preparation]').click();
  await expect(page.locator('#preparationRecoveryBanner')).toBeHidden();
  await page.locator('.job-card-summary').filter({hasText:current.title}).click();
- await expect(jobDetail(page,'[data-prepare-application]')).toHaveText('Apply job');
+ await expect(jobDetail(page,'[data-prepare-application]')).toHaveText('Optional verified PDF preparation');
  expect(helperCalls).toBe(0);expect(api.getGenerationCalls()).toBe(0);
 });
 
@@ -1560,7 +1561,7 @@ for(const site of [
     await page.goto(site.url);
     await page.addScriptTag({path:"extension/src/assistant-core.js"});
     await page.addScriptTag({path:"extension/src/content.js"});
-    await expect(page.locator("#raven-assistant-banner")).toContainText("approved document");
+    await expect(page.locator("#raven-assistant-banner")).toContainText("available document");
     const attached=await page.evaluate(async()=>{
       const inputs=[...document.querySelectorAll('input[type="file"]')];
       return Promise.all(inputs.map(async(input)=>({name:input.files?.[0]?.name||"",text:input.files?.[0]?await input.files[0].text():""})));
@@ -1572,7 +1573,8 @@ for(const site of [
   });
 }
 
-test("listing and direct application remain available without approved documents",async({page})=>{
+test("listing and direct application remain available without documents",async({page})=>{
+  await page.addInitScript(()=>{window.open=()=>({location:{replace(url){window.openedApplicationUrl=url;}}});});
   await mockRaven(page);
   await page.goto("/");
   await page.locator('[data-track="Professional"]').click();
@@ -1584,8 +1586,8 @@ test("listing and direct application remain available without approved documents
     await expect(link).toHaveAttribute("target","_blank");
   }
   await openDetailSection(page,"Job details");
-  await jobDetail(page, "[data-approved-apply]").click();
-  await expect(page.locator("#syncStatus")).toContainText("Writer offline in this fixture");
+  await jobDetail(page, "[data-apply-job]").click();
+  await expect.poll(()=>page.evaluate(()=>window.openedApplicationUrl)).toBe(savedJob.url);
 });
 
 test("remote watermark keeps one visual treatment across card states",async({page})=>{

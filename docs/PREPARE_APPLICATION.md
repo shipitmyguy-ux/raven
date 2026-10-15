@@ -4,11 +4,11 @@ Apply job opens the employer application without waiting for resume or cover-let
 
 Newly discovered feed jobs queue resume and cover-letter generation in the background. Generation uses Raven's existing factual and rendered-document validation and persistence path. It does not open a review dialog or hold up Apply. Background generation currently uses the normal save-before-generation behavior, so generated feed jobs can appear in Saved. A document preview remains optional.
 
-The older verified PDF preparation/recovery code remains in the repository for reference, but Raven no longer exposes it as an application path or runs it during startup. Existing recovery metadata is left untouched.
+The verified PDF preparation/recovery path remains available as an optional action beside direct Apply. It may also resume an already-started recovery, but does not gate direct Apply. Existing recovery metadata is left intact.
 
 ## Legacy version-2 preparation implementation
 
-The remaining sections document the older prepare-flow implementation and extension protocol. They are not requirements for the current Apply job action described above.
+The remaining sections document the optional verified-PDF prepare path and its extension protocol. None of those steps is required by the current Apply job action described above.
 
 ## Employer access gates
 

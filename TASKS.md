@@ -3,7 +3,7 @@
 - [~] Let the user open and autofill an employer application regardless of resume/cover-letter generation, approval, review, Drive export or paused-preparation state.
 - [~] Queue both missing documents for newly discovered feed jobs and generate them in the background without opening review.
 - [x] Close unrelated draft PRs #58 and #61 unmerged at the owner's request.
-- [ ] Open a clean replacement PR for #99, wait for CI, merge, and verify publication. No tests have been run locally; only `git diff --check` is verified so far.
+- [~] Replacement PR #100 is open; its first browser CI run exposed old UI expectations and startup timing. Updated the UI to keep verified-PDF prep optional and aligned affected browser expectations; core/recovery checks passed on the prior head. No tests have been run locally; `git diff --check` passed. Recheck CI, merge, and verify publication.
 
 ## Required-field warning fixed and short cover defaults published — October 15, 2026
 
