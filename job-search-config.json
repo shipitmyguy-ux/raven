@@ -85,15 +85,16 @@
       "url": "https://docs.google.com/spreadsheets/d/1Kue4iGy1WNpItNyCpaMT9__A_228NmbQ9s_uUcc3wb8/edit",
       "snapshot": "data/remote-games-sheet-jobs.json",
       "track": "Games / 3D",
-      "status": "scheduled-github-snapshot-refresh-live-db-sync-pending",
+      "status": "supabase-studio-cron-enabled",
       "deduplication": {
-        "primary": "canonicalized application URL",
-        "secondary": "normalized company + role + location",
-        "same_role_different_location": "retain separately",
+        "primary": "exact application URL and known ATS posting identity",
+        "secondary": "same company/title/location and available description text (review only)",
+        "same_role_different_location": "do not auto-merge unless exact posting identity",
         "preserve_existing_status": true
       },
       "verification": "Source spreadsheet may contain stale or geographically restricted openings; verify before active classification.",
-      "refresh_workflow": ".github/workflows/refresh-remote-games-sheet.yml"
+      "refresh_workflow": ".github/workflows/refresh-remote-games-sheet.yml (snapshot backup only)",
+      "live_import_owner": "Supabase Edge Function raven-studio-scan, provider remotegamessheet; cron every 15 minutes, source interval 24 hours"
     }
   ]
 }
