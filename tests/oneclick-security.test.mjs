@@ -28,6 +28,21 @@ test('game subprocess cannot select SoundAir and regenerates stale full-profile 
  }finally{await rm(dir,{recursive:true,force:true});}
 });
 
+test('Professional resume subprocess explicitly avoids the rejected game-identity opening',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'raven-professional-guidance-'));let prompt='';
+ try{
+  const adapters=createCodexAdapters({codexPath:'synthetic',workDir:dir,spawnImpl:(_path,args)=>{
+   const child=new EventEmitter();child.stdout=new PassThrough();child.stderr=new PassThrough();child.stdin=new PassThrough();child.kill=()=>child.emit('close',1);
+   child.stdin.on('data',chunk=>prompt+=chunk);
+   child.stdin.on('finish',async()=>{await writeFile(args[args.indexOf('-o')+1],'{}');child.emit('close',0);});return child;
+  }});
+  await adapters.generateDraft({job:{track:'Professional',title:'Project Manager'},profile:{},writingPrompt:'Use verified facts',documentType:'resume'});
+  assert.match(prompt,/Do not open with "Game-development professional"/);
+  assert.match(prompt,/Keep original employers and job titles/);
+  assert.match(prompt,/Do not invent SaaS tenure/);
+ }finally{await rm(dir,{recursive:true,force:true});}
+});
+
 test('Drive receipt requires observed matching tool output rather than model prose',()=>{
  assert.throws(()=>verifiedDriveReceipt([{type:'agent_message',text:JSON.stringify(metadata)}],{fileId:metadata.id,folderId:'folder12345'}),/DRIVE_METADATA_NOT_CONFIRMED/);
  assert.throws(()=>verifiedDriveReceipt([readEvent],{fileId:'other1234567890',folderId:'folder12345'}),/DRIVE_METADATA_NOT_CONFIRMED/);

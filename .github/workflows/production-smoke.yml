@@ -1,21 +1,26 @@
 name: Production Smoke Tests
 on:
   workflow_dispatch:
-  push:
-    branches: ["main"]
   workflow_run:
     workflows: ["Deploy Raven to GitHub Pages"]
     types: [completed]
 
+# Verify the deployed build once; docs/test-only pushes do not change production.
+concurrency:
+  group: production-smoke
+  cancel-in-progress: true
+
 jobs:
   smoke:
-    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     name: Headless Production Smoke Test
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -23,7 +28,7 @@ jobs:
           node-version: "22"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci --no-audit --no-fund
 
       - name: Cache Playwright browser
         id: playwright-cache

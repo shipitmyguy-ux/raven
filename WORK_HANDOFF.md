@@ -1,3 +1,13 @@
+# Raven execution handoff
+
+## Live document overlap and leaner QA — October 15, 2026 MDT
+
+Live published UI on a Saved Dutchie Senior Project Manager / GTM Launch job: baseline no documents and no matching Drive PDFs. Double-clicked Create missing documents; eight concurrent paired requests shared the exact UI run and four overlapping resume/cover requests returned409. Cover letter generated, saved and exported once. Resume failed existing Professional identity validation, including its bounded correction; a separate overlapping resume/cover retry reused the cover PDF but resume repeated the same rejected game-development opening. No data/validation bypass. Added explicit Professional prompt guidance to avoid this known opening while preserving original employers/titles and factual safeguards; live rerun pending helper rollout after CI.
+
+QA audit found no active local test runners or GitHub QA jobs at startup. Changes remove duplicate safety browser execution, give one browser workflow full UI coverage or a focused backend/extension selection, separate152 local browser cases from14 production smoke cases, run production smoke only after successful deployment or explicit dispatch (not docs/test pushes), use locked installs, and cancel superseded PR runs. Linux/Windows recovery/concurrency matrix remains. Local five adapter/security tests, syntax, test discovery and secret/diff checks passed; CI/live completion pending.
+
+## Prior execution context
+
 ## Completed document request concurrency regressions — October 14, 2026 MDT
 
 Added three real-helper process cases: repeated Generate both, resume-first overlap, and cover-letter-first overlap for the same synthetic job. Eight simultaneous duplicate requests share each active run; paired/single conflicts return409 while independent resume and cover-letter work proceeds. Deterministic IPC writing gates hold the race window open. Each case asserts exactly two total generations, saves, renders, uploads, physical Drive fixture PDFs and canonical export records; one per document, correct job/hash/file links, unchanged control job, reuse after completion and fresh-client refresh readback. Browser coverage now sends eight bursts across stale Generate both/resume/cover controls and checks two saved links after refresh.
