@@ -1,0 +1,1800 @@
+{
+  "schema_version": 1,
+  "source_spreadsheet": "https://docs.google.com/spreadsheets/d/1Kue4iGy1WNpItNyCpaMT9__A_228NmbQ9s_uUcc3wb8/edit",
+  "source_last_updated": "2026-10-11",
+  "description": "Studio discovery candidates from the remote game jobs sheet. sample_job_url is not necessarily an official studio career page. Verify ownership and discover official careers URLs before direct crawling.",
+  "studios": [
+    {
+      "name": "Black Rose Studio",
+      "category": "Developer",
+      "sample_job_url": "https://www.blackrosestudio.net/animator",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Super Spline Studios",
+      "category": "Outsourcer",
+      "sample_job_url": "https://supersplinestudios.com/jobs/#LEAD",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Roboto Games",
+      "category": "Developer",
+      "sample_job_url": "https://www.robotogames.com/senior-combat-animator-unity",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Playrix",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://playrix.com/job/open/animation-vfx/senior-2d-animator",
+      "jobs_in_seed": 19,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "One Man Studio",
+      "category": "Outsourcer",
+      "sample_job_url": "https://theonemanstudio.com/jobs/senior-animator/",
+      "jobs_in_seed": 7,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "HyperHug",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.ashbyhq.com/hyperhug/423c68b5-69af-48ab-89ee-0797ce3eb3f6",
+      "jobs_in_seed": 9,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Cakefish",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/cakefish-principal-animator",
+      "jobs_in_seed": 6,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "NetEase Games / Galaxy Studios",
+      "category": "Developer",
+      "sample_job_url": "https://job-boards.greenhouse.io/neteasegames/jobs/5166671007",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Flix Interactive",
+      "category": "Developer",
+      "sample_job_url": "https://www.flixinteractive.com/vacancies/gameplay-animator/",
+      "jobs_in_seed": 19,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Titanium Clad Studios",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/titanium-clad-studios-2d-character-animator",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Studio Wildcard",
+      "category": "Developer",
+      "sample_job_url": "https://studiowildcard.bamboohr.com/careers/73",
+      "jobs_in_seed": 6,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Frima",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.smartrecruiters.com/FrimaStudio/744000143115999-technical-animator",
+      "jobs_in_seed": 7,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "FyreFlight",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/fyreflight-games-pixel-animator",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Retrosoft Studios",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/retrosoft-studios-2d-character-animator",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Unfold Games",
+      "category": "Developer",
+      "sample_job_url": "https://remotegamejobs.com/jobs/unfold-games-3d-character-animator-humanoid-animation-remote-job",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Insomniac Games",
+      "category": "Developer",
+      "sample_job_url": "https://job-boards.greenhouse.io/insomniac/jobs/6164402004",
+      "jobs_in_seed": 8,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "That's No Moon",
+      "category": "Developer",
+      "sample_job_url": "https://job-boards.greenhouse.io/thatsnomoonentertainment/jobs/6186777004",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Mob Entertainment",
+      "category": "Developer",
+      "sample_job_url": "https://job-boards.greenhouse.io/mobentertainment/jobs/5232043007",
+      "jobs_in_seed": 10,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "People Can Fly",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.smartrecruiters.com/PeopleCanFly/744000149558319-senior-technical-animator",
+      "jobs_in_seed": 7,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Nekki",
+      "category": "Developer",
+      "sample_job_url": "https://nekki.com/vacancy/head-of-animation/",
+      "jobs_in_seed": 12,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "CI Games",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://cigames.teamtailor.com/jobs/8296289-cinematic-animator",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "NetEase Games / Interactive Entertainment Group",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://job-boards.greenhouse.io/neteasegames/jobs/5241774007",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "DragonFly Studio",
+      "category": "Developer",
+      "sample_job_url": "https://www.dragon-fly.biz/tech_animator_fortnite/",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Piranha Games",
+      "category": "Developer",
+      "sample_job_url": "https://ats.rippling.com/de-DE/pgicareers/jobs/1b9304af-ed07-489b-8b5a-8c5c4cd4e0fd",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Lakshya Digital",
+      "category": "Outsourcer",
+      "sample_job_url": "https://apply.workable.com/keywords-intl1/j/FEA7F2F45F/",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Redemption Games, Inc.",
+      "category": "Developer",
+      "sample_job_url": "https://www.linkedin.com/jobs/view/4473390254/",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Wolcen Studio",
+      "category": "Developer",
+      "sample_job_url": "https://wolcenstudio.bamboohr.com/careers/71",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "VOID Interactive",
+      "category": "Developer",
+      "sample_job_url": "https://void.bamboohr.com/careers/118",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Snail Games",
+      "category": "Developer",
+      "sample_job_url": "https://snail-games-usa-inc.hiringthing.com/job/1061235/lead-animator-central-art-team",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Grip Studios",
+      "category": "Developer",
+      "sample_job_url": "https://grip-studios.com/hiring.php",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Room 8 Studio",
+      "category": "Outsourcer",
+      "sample_job_url": "https://room8studio.com/talent/realistic-3d-character-artist-senior-2/",
+      "jobs_in_seed": 8,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Hatsu Labs",
+      "category": "Developer",
+      "sample_job_url": "https://app.dover.com/apply/Hatsu%20Labs/3a138bf4-77c5-43b9-8564-896da54cc065/?rs=76643084",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Angry Mob Games",
+      "category": "Developer",
+      "sample_job_url": "https://www.angrymobgames.com/project/stylized-environment-artist/",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Mystic Interactive",
+      "category": "Developer",
+      "sample_job_url": "https://www.mysticinteractive.com/jobs-blog/sr-3d-environment-artist",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Sawhorse Productions",
+      "category": "Developer",
+      "sample_job_url": "https://apply.workable.com/sawhorse-productions/j/4F007019D6/",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Metis Creative",
+      "category": "Developer",
+      "sample_job_url": "https://www.metismedia.net/jobs/3d-generalist-%26-animator",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "thatgamecompany",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.ashbyhq.com/thatgamecompany/36e101a4-c7ba-4884-8999-cd04abb979ee",
+      "jobs_in_seed": 11,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "INVIOX STUDIOS",
+      "category": "Developer",
+      "sample_job_url": "https://www.invioxstudios.com/career/3d-environment-artist",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "MaFi Games",
+      "category": "Developer",
+      "sample_job_url": "https://coigame.com/Jobs/2d-Illustrator",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Beffio",
+      "category": "Outsourcer",
+      "sample_job_url": "https://careers.beffio.com/jobs/7242656-senior-character-artist-unity3d-europe-remote-permanent",
+      "jobs_in_seed": 5,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Nex",
+      "category": "Publisher",
+      "sample_job_url": "https://job-boards.greenhouse.io/nex/jobs/5108172008",
+      "jobs_in_seed": 6,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Happy Cauldron Games",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/happy-cauldron-games-senior-unity-vfx-artist",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Sumo India",
+      "category": "Developer",
+      "sample_job_url": "https://sumodigitalltd.careers.hibob.com/jobs/05cea855-67eb-4aa5-9c38-0572b956bf53",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Torn Banner Studios",
+      "category": "Developer",
+      "sample_job_url": "https://tornbanner.bamboohr.com/careers/50",
+      "jobs_in_seed": 7,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Tigerroll Studios",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/tigerroll-studios-3d-weapon-artist-hero-asset",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Utopic",
+      "category": "Developer",
+      "sample_job_url": "https://app.dover.com/apply/Utopic/fc293111-6f88-4819-81e8-007ccbe82dd6/?rs=76643084",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Twin Atlas",
+      "category": "Developer",
+      "sample_job_url": "https://twinatlas.notion.site/environment-artist",
+      "jobs_in_seed": 8,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Double Twizzle",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/double-twizzle-games-2d-artist",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Warpfrog",
+      "category": "Developer",
+      "sample_job_url": "https://app.dover.com/apply/Warpfrog/07fa210e-1575-4de6-b62f-f377c042bc57/?rs=76643084",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Voodoo",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://jobs.ashbyhq.com/voodoo/b5bfc390-c999-4569-929d-51ed257ee259?locationId=93a613de-ed5b-478f-acd1-2c78f5d36547&utm",
+      "jobs_in_seed": 14,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Homa",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://apply.workable.com/homa-games/j/DE453781D2/",
+      "jobs_in_seed": 5,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Cinnamon",
+      "category": "Developer",
+      "sample_job_url": "https://cinnamonsoftware.teamtailor.com/jobs/8157708-roblox-environment-artist-map-builder",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Blackbird Interactive",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.lever.co/blackbirdinteractive/134a5b7d-12c8-4e1f-889d-216b1ceed2d8",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Long Leap Games",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.lever.co/xsolla/c6f428b4-e648-41a4-b4d7-4707a4ad4802",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "ZeptoLab",
+      "category": "Developer",
+      "sample_job_url": "https://apply.workable.com/zeptolab/j/82F3707C95/",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "MY.GAMES",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://careers.my.games/de-DE/26116",
+      "jobs_in_seed": 6,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "DECK 13 Interactive",
+      "category": "Developer",
+      "sample_job_url": "https://deck13.jobs.personio.de/job/2763224",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Plarium",
+      "category": "Developer",
+      "sample_job_url": "https://company.plarium.com/en/career/character-concept-artist-778-1257/",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Digital Extremes",
+      "category": "Developer",
+      "sample_job_url": "https://job-boards.greenhouse.io/digitalextremes/jobs/5210646007",
+      "jobs_in_seed": 5,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Voldex",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.ashbyhq.com/voldex/7ad5ac31-3053-49be-9590-213294eb27e1",
+      "jobs_in_seed": 4,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "UserWise",
+      "category": "Developer",
+      "sample_job_url": "https://apply.workable.com/userwise-services/j/390A7A6289/",
+      "jobs_in_seed": 6,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Speedway Games",
+      "category": "Developer",
+      "sample_job_url": "https://speedway-games.com/careers/221760",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "BulletFarm",
+      "category": "Developer",
+      "sample_job_url": "https://bulletfarm.com/careers/?ashby_jid=44c9cdaa-6a95-49b3-b46a-125bc31420d7",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "The Believer Company",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.ashbyhq.com/believer/fadae54c-240b-428f-a51f-c31a0fe28126",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "DLVR",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.gusto.com/postings/dlvr-3d-artist-68896d07-c740-4488-83bc-8bbbd5fcfffc",
+      "jobs_in_seed": 4,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Visent Games",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/visent-games-senior-lighting-artist",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "League of Geeks",
+      "category": "Developer",
+      "sample_job_url": "https://leagueofgeeks.com/careers#2d-artist",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Neon Badger",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/neon-badger-mid-senior-3d-generalist",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "TangleMindGames",
+      "category": "Developer",
+      "sample_job_url": "https://tanglemindgames.com/job.html?slug=art-lead",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Sad Owl Studios",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/sad-owl-studios-senior-3d-environment-artist",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Uni Dreams",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/uni-dreams-vfx-artist",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "GSC Game World",
+      "category": "Developer",
+      "sample_job_url": "https://www.gsc-game.com/careers/lead-lighting-artist/",
+      "jobs_in_seed": 4,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "iLogos Game Studios",
+      "category": "Developer",
+      "sample_job_url": "https://careers.ilogos.biz/jobs/8252054-2d-artist-props-and-customization",
+      "jobs_in_seed": 6,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Hyperlab",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.workable.com/view/tfxSitUoMdpC1KP2zrUhKR/remote-game-artist-in-turkey-at-hyperlab",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Side",
+      "category": "Business Services / Co-Dev",
+      "sample_job_url": "https://jobs.workable.com/view/biFMT2CVUerAqmhbCx5vDg/remote-artiste-conceptuel---personnage-%7C-concept-artist---character-in-canada-at-side",
+      "jobs_in_seed": 5,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Lazy River",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/lazy-river-2d-artist-illustrator",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Abstraction",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.ashbyhq.com/abstraction.games/cf591333-9c38-4355-87ea-e136de1c5652",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Joyteractive",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.ashbyhq.com/Joyteractive/885ea401-9604-4bb5-b726-cdb5f2b5aa59",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Inferno Studios",
+      "category": "Outsourcer",
+      "sample_job_url": "https://jobs.recruit.charliehr.com/fueltheinferno/senior-vfx-artist-real-time-0edb99ff-6162-4043-a2a1-a3fb134d1385/view-job",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "ENVER",
+      "category": "Outsourcer",
+      "sample_job_url": "https://enver.com/career/2d-and-3d-artist-multiple-roles",
+      "jobs_in_seed": 4,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "ArenaNet",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://jobs.ashbyhq.com/arenanet/6f794083-98ab-4574-b6c2-1b7bb6d79fbe",
+      "jobs_in_seed": 4,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Longdue",
+      "category": "Developer",
+      "sample_job_url": "https://apply.workable.com/longdue-games/j/4ACF86D24A/",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Drop Fake Inc.",
+      "category": "Developer",
+      "sample_job_url": "https://www.dropfake.com/lead-vfx-artist",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Thought Pennies Entertainment",
+      "category": "Developer",
+      "sample_job_url": "https://thought-pennies.careers-page.com/jobs/f40684cd-0997-4864-8a7e-3dfd62b9bfeb",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Tako Boy Studios",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/tako-boy-studios-pixel-artist-characters-animation",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Fool’s Theory",
+      "category": "Developer",
+      "sample_job_url": "https://careers.foolstheory.com/jobs/8480154-senior-lighting-artist",
+      "jobs_in_seed": 4,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Flying Wild Hog",
+      "category": "Developer",
+      "sample_job_url": "https://flyingwildhog-job-offer.productive24.com/?param=561624",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "CD PROJEKT RED",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://jobs.smartrecruiters.com/CDPROJEKTRED/744000154416981-expert-illustrator",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Lockwood Publishing",
+      "category": "Publisher",
+      "sample_job_url": "https://apply.workable.com/lockwood/j/89EB69C7A1/",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Escape Velocity",
+      "category": "Developer",
+      "sample_job_url": "https://job-boards.greenhouse.io/escapevelocityentertainmentinc/jobs/4438551009",
+      "jobs_in_seed": 14,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Goodgame Studios",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://www.linkedin.com/jobs/view/4467364342/",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Febucci",
+      "category": "Developer",
+      "sample_job_url": "https://febucci.com/careers/general-artist",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Definitely Games",
+      "category": "Developer",
+      "sample_job_url": "https://pages.def.games/lead-game-artist",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "IllFonic",
+      "category": "Developer",
+      "sample_job_url": "https://illfonic.breezy.hr/p/0024c6127d76-art-animation-director",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Mad Head Games",
+      "category": "Developer",
+      "sample_job_url": "https://careers.madheadgames.com/jobs/lead-environment-artist-ckS9",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "StoryToys",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://jobs.workable.com/view/tPRFsSdEDdGWD8xyXWxoz3/remote-3d-art-lead-in-united-kingdom-at-storytoys",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Crater Studios",
+      "category": "Developer",
+      "sample_job_url": "https://craterstudiosgames.com/careers/audio-designer",
+      "jobs_in_seed": 5,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Sony Interactive Entertainment / PlayStation",
+      "category": "Publisher",
+      "sample_job_url": "https://job-boards.greenhouse.io/sonyinteractiveentertainmentglobal/jobs/5988572004",
+      "jobs_in_seed": 8,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Can Can Can a Man",
+      "category": "Developer",
+      "sample_job_url": "https://www.cancancanaman.com/jobs",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Room 8 Group",
+      "category": "Outsourcer",
+      "sample_job_url": "https://room8group.com/join-the-team/senior-business-development-director/",
+      "jobs_in_seed": 9,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Devoted Studios",
+      "category": "Developer",
+      "sample_job_url": "https://apply.workable.com/devoted-studios-1/j/736A817BF3/",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "HoYoverse",
+      "category": "Publisher",
+      "sample_job_url": "https://jobs.ashbyhq.com/hoyoverse/87d6ca3a-894f-412a-a45f-44b72134186c",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Keywords Studios",
+      "category": "Business Services",
+      "sample_job_url": "https://jobs.workable.com/view/9NdXx5YMXmP3WT87rz9rH5/remote-business-development-manager---audio-development-in-united-states-at-keywords-studios",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Scopely",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://job-boards.greenhouse.io/scopely/jobs/5407344008?gh_jid=5407344008",
+      "jobs_in_seed": 22,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Rabbit Games",
+      "category": "Developer",
+      "sample_job_url": "https://rabbitgames.com/join-us/",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Wolfjaw Studios",
+      "category": "Business Services",
+      "sample_job_url": "https://jobs.ashbyhq.com/wolfjaw-careers/c9a927e5-303f-4026-8ac2-be692de56980",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "DreamForge",
+      "category": "Tech / Middleware / Tools",
+      "sample_job_url": "https://dreamforge-games-corporation.breezy.hr/p/a622b434e8b0-head-of-community-growth",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Singular Perception",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/singular-perception-social-media-community-lead",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Eleventh Hour Games",
+      "category": "Developer",
+      "sample_job_url": "https://job-boards.greenhouse.io/eleventhhourgames/jobs/8546135002",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "HexNest Games",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/hexnest-games-community-manager",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Scape",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.ashbyhq.com/scape/c8c50e89-5098-44c7-95ae-8a75150d9846",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "PlayStation / Bend Studio",
+      "category": "Publisher",
+      "sample_job_url": "https://job-boards.greenhouse.io/sonyinteractiveentertainmentglobal/jobs/6166115004",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Naphora Games Group",
+      "category": "Developer",
+      "sample_job_url": "https://job-boards.eu.greenhouse.io/alemnafora/jobs/4949471101",
+      "jobs_in_seed": 4,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Shockbyte",
+      "category": "Tech / Middleware / Tools",
+      "sample_job_url": "https://apply.workable.com/shockbyte/j/746F8FA391/",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Team17 Digital",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://apply.workable.com/team-17-digital/j/6EC7ED4F08/",
+      "jobs_in_seed": 7,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Kano",
+      "category": "Developer",
+      "sample_job_url": "https://job-boards.greenhouse.io/kano/jobs/4779579101",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Atari",
+      "category": "Publisher",
+      "sample_job_url": "https://job-boards.greenhouse.io/atariinc/jobs/5399482008",
+      "jobs_in_seed": 6,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "G5 Games",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://jobs.g5.com/remote/marketing_pr/294",
+      "jobs_in_seed": 4,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Loot Labs",
+      "category": "Platform",
+      "sample_job_url": "https://jobs.ashbyhq.com/loot-labs/20d2134e-347c-40ce-9163-fff583ac3123",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Daybreak Games",
+      "category": "Developer",
+      "sample_job_url": "https://www.daybreakgames.com/careers?job=6737342002",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "House of How Games",
+      "category": "Developer",
+      "sample_job_url": "https://www.houseofhow.com/job/lead-technical-designer/",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Superbloom",
+      "category": "Developer",
+      "sample_job_url": "https://crystalline-dichondra-60e.notion.site/Live-Ops-Manager-26236a1b530880b78b09c058861e2fb3",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "BlackMill Games",
+      "category": "Developer",
+      "sample_job_url": "https://focusentertainment.recruitee.com/l/en/o/blackmill-games-multiplayer-game-designer-fhnb",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "teamLFG",
+      "category": "Developer",
+      "sample_job_url": "https://job-boards.greenhouse.io/teamlfg/jobs/6019053004",
+      "jobs_in_seed": 14,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Giant Sparrow",
+      "category": "Developer",
+      "sample_job_url": "https://www.giantsparrow.com/jobs/senior-designer/",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Nexters",
+      "category": "Developer",
+      "sample_job_url": "https://www.nexters.com/en/about/alljobs/?vacancy=balance-game-designer-17881743600",
+      "jobs_in_seed": 14,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "WB Games Avalanche",
+      "category": "Developer",
+      "sample_job_url": "https://careers.wbd.com/global/en/job/R000107471/Senior-Designer-Gameplay",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Payload Studios",
+      "category": "Developer",
+      "sample_job_url": "https://apply.workable.com/payload-studios/j/A29181F5E7/",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "31st Union",
+      "category": "Developer",
+      "sample_job_url": "https://job-boards.greenhouse.io/31stunion/jobs/7865966003",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "High Voltage Software",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.workable.com/view/4Y8YXmpTuou168z6PckVc5/remote-technical-game-designer-(creator-tools)-in-mexico-at-high-voltage-software",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Yodo1",
+      "category": "Publisher",
+      "sample_job_url": "https://careers.yodo1.com/jobs/8224438-senior-game-designer",
+      "jobs_in_seed": 5,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Tripledot Studios / Lion Studios",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://job-boards.eu.greenhouse.io/tripledotstudios/jobs/4965778101",
+      "jobs_in_seed": 6,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "A Thinking Ape",
+      "category": "Developer",
+      "sample_job_url": "https://job-boards.greenhouse.io/athinkingape/jobs/8180841",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Hugecalf Studios",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.hugecalf.com/game-designer",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Bungie",
+      "category": "Developer",
+      "sample_job_url": "https://job-boards.greenhouse.io/bungie/jobs/6193602004",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Smoking Gun Interactive",
+      "category": "Developer",
+      "sample_job_url": "https://apply.workable.com/smoking-gun-interactive-1/j/1AA20437B2/",
+      "jobs_in_seed": 6,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Fishing Planet",
+      "category": "Developer",
+      "sample_job_url": "https://fishingplanet.com/career/senior-game-designer/",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Studio Nuwa",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/studio-nuwa-game-designer",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Meeple Corp",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/meeple-corp-game-designer",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Seismic Squirrel",
+      "category": "Developer",
+      "sample_job_url": "https://seismicsquirrel.bamboohr.com/careers/64",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Cross Key Games",
+      "category": "Developer",
+      "sample_job_url": "https://apply.workable.com/cross-key-games/j/40DBFE8971/",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Gardens Interactive",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.ashbyhq.com/gardens/554a92f6-c6ac-4b1c-976e-d01a0a06f6e6",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Panic Stations",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.workable.com/view/iNVSumpcPxkxrX623NzPph/remote-system-designer---3-month-contract-in-united-kingdom-at-panic-stations",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Sunblink",
+      "category": "Developer",
+      "sample_job_url": "https://sunblink.breezy.hr/p/87821a7ac546-environment-gameplay-designer",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "CrazyLabs",
+      "category": "Developer",
+      "sample_job_url": "https://www.crazylabs.com/jobs/co/remote/F5.073/game-level-designer-3d-unity-sled-surfers/all/",
+      "jobs_in_seed": 6,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "2K / Gearbox Entertainment",
+      "category": "Developer",
+      "sample_job_url": "https://job-boards.greenhouse.io/2k/jobs/7978904003",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Cosmic Dog",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/cosmic-dog-level-designer",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Terra Localizations",
+      "category": "Business Services",
+      "sample_job_url": "https://jobs.ashbyhq.com/terra/c2c873ff-5def-4d0e-a58d-e42e9cf54a7d",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Paradoxum Games",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.paradoxum.gg/jobs/marketing-lead-contract/",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Nitrado",
+      "category": "Hardware / Peripherals",
+      "sample_job_url": "https://www.linkedin.com/jobs/view/4416230334",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Armor Games Studios",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/armor-games-studios-senior-marketing-manager",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "PUBG Madison",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://job-boards.greenhouse.io/pubgmadison/jobs/8605695002",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Skyborne Games",
+      "category": "Developer",
+      "sample_job_url": "https://www.skybornegames.com/creative-designer---performance-marketing.html",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Fortis Games",
+      "category": "Developer",
+      "sample_job_url": "https://www.fortisgames.com/de-de/careers?gh_jid=4713561005",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "BeamNG",
+      "category": "Developer",
+      "sample_job_url": "https://apply.workable.com/beamng/j/CCC0F0A64C/",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Mythical Games",
+      "category": "Developer",
+      "sample_job_url": "https://mythicalgames.careers.hibob.com/jobs/653c29fa-35b9-4443-94b7-8c9359815d14",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Tripledot Studios",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://job-boards.eu.greenhouse.io/tripledotstudios/jobs/4960068101",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Unity Technologies",
+      "category": "Tech / Middleware / Tools",
+      "sample_job_url": "https://unitytech.wd1.myworkdayjobs.com/en-US/Unity/job/Senior-Field-Marketing-Events-Manager_JOBREQ-2616225?locations=5dbddbc012431001a88e364f5fc40000",
+      "jobs_in_seed": 7,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Dillo Interactive",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/dillo-interactive-graphic-design-generalist",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Balor Games",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.ashbyhq.com/balorgames/9a9044ab-0223-4b11-ab8d-f13adb6e7956",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "PlayQ",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://job-boards.greenhouse.io/playq/jobs/8119190",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Immutable",
+      "category": "Tech / Middleware / Tools",
+      "sample_job_url": "https://jobs.lever.co/immutable/46e44c79-90cb-4ce1-b8f8-0b7707c69f12",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Humble Bundle",
+      "category": "Platform",
+      "sample_job_url": "https://jobs.jobvite.com/humble-bundle/job/oBsTAfwgg",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Yotta Games",
+      "category": "Developer",
+      "sample_job_url": "https://www.linkedin.com/jobs/view/4457304177/",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Fusebox Games",
+      "category": "Developer",
+      "sample_job_url": "https://www.linkedin.com/jobs/view/4467071700/",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Failbetter Games",
+      "category": "Developer",
+      "sample_job_url": "https://www.failbettergames.com/jobs/writer-and-narrative-designer-senior-mid-level",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Ravenwake Games",
+      "category": "Developer",
+      "sample_job_url": "https://job-boards.greenhouse.io/ravenwakegames/jobs/8381898002",
+      "jobs_in_seed": 3,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Optillusion Games",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/optillusion-games-social-media-video-creator-editor",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Untitled Ad Labs",
+      "category": "Marketing Agency",
+      "sample_job_url": "https://untitledadlab.com/careers",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Coffee Moth Games",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/coffee-moth-games-social-media-short-form-video-creator",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Santa Barbara Games",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/santa-barbara-games-content-social-manager",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Obsidian Entertainment",
+      "category": "Developer",
+      "sample_job_url": "https://www.linkedin.com/jobs/view/4472094929/",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Plummy",
+      "category": "Developer",
+      "sample_job_url": "https://plummygames.teamtailor.com/jobs/7489647-product-manager",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Xsolla",
+      "category": "Tech / Middleware / Tools",
+      "sample_job_url": "https://jobs.lever.co/xsolla/76eb8aa4-5636-4c38-a945-48365cce5f92",
+      "jobs_in_seed": 4,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "SOFTGAMES",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://jobs.softgames.de/o/senior-game-producer-casual-fully-remote",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Coal Car Studio",
+      "category": "Developer",
+      "sample_job_url": "https://www.coalcar.ca/careers",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Sumo Digital",
+      "category": "Developer",
+      "sample_job_url": "https://sumodigitalltd.careers.hibob.com/jobs/2a5f2223-c7eb-43e1-9877-4e53d6cb8b4b",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Pipeworks Studios",
+      "category": "Developer",
+      "sample_job_url": "https://pipeworks.pinpointhq.com/en/postings/e6282293-ef43-4a54-828d-200eae2a1c66",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Netflix",
+      "category": "Media Company",
+      "sample_job_url": "https://explore.jobs.netflix.net/careers/job/790317535096",
+      "jobs_in_seed": 4,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Unknown Worlds",
+      "category": "Developer",
+      "sample_job_url": "https://job-boards.greenhouse.io/unknownworlds/jobs/8797919002",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "PlayStation",
+      "category": "Publisher",
+      "sample_job_url": "https://job-boards.greenhouse.io/sonyinteractiveentertainmentglobal/jobs/6191604004",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Tripledot Studios / PeopleFun",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://job-boards.eu.greenhouse.io/tripledotstudios/jobs/4999209101",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Mythwright",
+      "category": "Publisher",
+      "sample_job_url": "https://apply.workable.com/mythwright/j/665FDB5D4D/",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "CoolGames",
+      "category": "Developer",
+      "sample_job_url": "https://apply.workable.com/coolgames/j/90CC46A78C/",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Raw Power Games",
+      "category": "Developer",
+      "sample_job_url": "https://careers.rawpowergames.com/jobs/7951452-qa-director",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Colonist",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.ashbyhq.com/colonist/435458c1-22bf-44cc-83a8-51ca6f5319f3",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Crytivo",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/crytivo-qa-tester",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Skydance Games",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.lever.co/skydance/7d787d0c-440f-48d2-a2a8-f915ce78c486",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Testronic",
+      "category": "Outsourcer (QA)",
+      "sample_job_url": "https://apply.workable.com/testronic/j/10810BA45B/",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "FuturLab",
+      "category": "Developer",
+      "sample_job_url": "https://www.futurlab.co.uk/careers/senior-qa-tester-uk-only-remotehybrid-brighton-ca7fc5124e",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Forklift Interactive",
+      "category": "Publisher",
+      "sample_job_url": "https://www.workwithindies.com/careers/forklift-interactive-lead-unity-developer",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Battle Creek Games",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.ashbyhq.com/battle-creek-games/33e45f61-d35b-4ed7-b6b9-8e85235b11ab",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "The Forge",
+      "category": "Developer",
+      "sample_job_url": "https://forge-vtt.com/jobs#senior-developer-en",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Netflix Games Studio",
+      "category": "Media Company",
+      "sample_job_url": "https://explore.jobs.netflix.net/careers/job/790315772163",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "redly",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.ashbyhq.com/redlygames/257685e0-4df0-4cce-b9d9-bab7c99f0509",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Disney Experience",
+      "category": "Media Company",
+      "sample_job_url": "https://www.disneycareers.com/en/job/sweden/senior-online-engineer/391/91300061952",
+      "jobs_in_seed": 5,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Nexus Mods",
+      "category": "Tech / Middleware / Tools",
+      "sample_job_url": "https://nexusmods.careers.hibob.com/jobs/bcdc4392-f135-4085-8924-52b2873f2162",
+      "jobs_in_seed": 4,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Brink Gaming Inc",
+      "category": "Developer",
+      "sample_job_url": "https://brink.careers.haileyhr.app/en-GB/job/c4453d55-2fe2-42cf-9973-758d639e9c6e/47a86db7-b7b5-4ffb-914c-b73d4b2077a2/c94ac875-4f4a-4e9d-a53d-594ca8028928",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Visual Concepts",
+      "category": "Developer",
+      "sample_job_url": "https://job-boards.greenhouse.io/visualconcepts/jobs/7750291003",
+      "jobs_in_seed": 2,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Snowed In Studios",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.workable.com/view/7oy5pSGa3cJ83RqmZvTdDi/remote-senior-generalist-game-programmer-%7C-programmeur(-euse)-g%C3%A9n%C3%A9raliste-de-jeux-vid%C3%A9o-in-ontario-at-snowed-in-studios",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Sunfox Studios",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/sunfox-studios-multiplayer-engine-programmer",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Climax Studios / The Multiplayer Group",
+      "category": "Tech / Middleware / Tools",
+      "sample_job_url": "https://apply.workable.com/climax-studios/j/F677984CC8/",
+      "jobs_in_seed": 5,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Astrid Entertainment",
+      "category": "Developer",
+      "sample_job_url": "https://apply.workable.com/astrid-entertainment/j/AB6A5EB788/",
+      "jobs_in_seed": 4,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Hardsuit Labs",
+      "category": "Developer",
+      "sample_job_url": "https://apply.workable.com/hardsuit-labs-1/j/1709823148/",
+      "jobs_in_seed": 5,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Ghost Story Games",
+      "category": "Developer",
+      "sample_job_url": "https://job-boards.greenhouse.io/gsgcareers/jobs/8031365",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Gamer Realities",
+      "category": "Tech / Middleware / Tools",
+      "sample_job_url": "https://www.workwithindies.com/careers/gamer-realities-multiplayer-back-end-unity-programmer",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Alderon Games",
+      "category": "Developer",
+      "sample_job_url": "https://alderongames.com/work-with-us/unreal-engine-gameplay-security-engineer",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Double Eleven",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://apply.workable.com/double-eleven/j/FD59C7B736/",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Tanglewood Games",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/tanglewood-games-senior-rendering-engineer",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Demiurge Studios",
+      "category": "Developer",
+      "sample_job_url": "https://demiurgestudios.com/job-details/?jobid=85f401d2-5242-4096-b852-2947492d0035#rw_job_detail_id",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Gamebreaking Studios",
+      "category": "Developer",
+      "sample_job_url": "https://careers.gamebreaking.com/p/faf61a90c0f5-latin-america-senior-software-development-engineer-game",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Triplo Z",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/triplo-z-senior-gameplay-multiplayer-programmer-unreal",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "lessmore.games",
+      "category": "Developer",
+      "sample_job_url": "https://lessmore.games/lessmore/contact-us/senior-backend-developer/",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Elsewhere",
+      "category": "Developer",
+      "sample_job_url": "https://www.workwithindies.com/careers/elsewhere-generative-ai-game-developer",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Facepunch Studios",
+      "category": "Developer",
+      "sample_job_url": "https://facepunch.com/careers/programmer",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Lunacy Studios",
+      "category": "Developer",
+      "sample_job_url": "https://fascinated-sternum-aa5.notion.site/9709cb409b1c837b8ac3818e9d0b848b",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Third Kind Games",
+      "category": "Developer",
+      "sample_job_url": "https://thirdkindgames.com/careers/senior-unreal-programmer",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Pine Creek Games",
+      "category": "Developer",
+      "sample_job_url": "https://pine-creek-games.breezy.hr/p/2c78a15a57ea01-tech-artist-2d-project-unity-developer",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Vivid Games",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.vividgames.com/jobs/8351271-senior-technical-artist-remote-hybrid-or-on-site",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "kaleidoscube",
+      "category": "Developer",
+      "sample_job_url": "https://www.kaleidoscube.com/jobs/gameplay-polish",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Moon Active",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.ashbyhq.com/moonactive/f177fdbb-a616-4111-8684-f8a556255442?workplaceType=Remote",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Atomhawk",
+      "category": "Developer",
+      "sample_job_url": "https://sumodigitalltd.careers.hibob.com/jobs/b0dde3f6-13a4-4364-a989-26964252645d",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Second Dinner",
+      "category": "Developer",
+      "sample_job_url": "https://jobs.ashbyhq.com/SecondDinner/709697fb-a74a-4747-9ef1-f95dcbfb89c6",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    },
+    {
+      "name": "Wooga",
+      "category": "Developer / Publisher",
+      "sample_job_url": "https://job-boards.greenhouse.io/wooga/jobs/8213546",
+      "jobs_in_seed": 1,
+      "source": "tim-ploeger-remote-games-sheet",
+      "verification": "unverified-careers-site"
+    }
+  ]
+}
