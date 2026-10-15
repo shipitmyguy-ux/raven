@@ -2,7 +2,7 @@
 
 ## Discovery-time documents and apply without approval — 2026-10-15
 
-Branch `codex/raven-autofill-no-document-approval` implements automatic sequential resume/cover-letter generation for newly discovered feed jobs and removes user document approval as an application prerequisite. Application profile and remembered safe answers are sent immediately, and the extension attaches any available compatible saved document while leaving final submission manual. Generation still requires factual and rendered-output checks. Auto-generating a feed discovery saves it to Raven through the existing save-before-generation path, which can increase Saved jobs. Code/docs/fixtures have been edited; no tests were run. Finish diff review, then commit and push the branch.
+Branch `codex/raven-autofill-no-document-approval` was pushed at `1119902`. It implements automatic sequential resume/cover-letter generation for newly discovered feed jobs and removes user document approval as an application prerequisite. Application profile and remembered safe answers are sent immediately, and the extension attaches any available compatible saved document while leaving final submission manual. Generation still requires factual and rendered-output checks. Auto-generating a feed discovery saves it to Raven through the existing save-before-generation path, which can increase Saved jobs. `git diff --check` passed; tests were not run. Review CI before merging.
 
 ## Approved InGameJob production activation — 2026-10-13
 
