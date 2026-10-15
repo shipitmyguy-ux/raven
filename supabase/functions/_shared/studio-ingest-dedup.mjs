@@ -19,6 +19,9 @@ function compatibleGeography(a,b){
 }
 function reviewReason(a,b,ev){
  if(!ev.sameCompany)return '';
+ // Distinct vacancy IDs from one verified ATS may represent multiple hires.
+ if(/^Studio:/.test(String(a.source||''))&&a.source===b.source&&a.url!==b.url)return '';
+ if(/^(unknown|undisclosed|anonymous|confidential|studio|company|n a)( employer| client)?$/.test(normalizeIdentity(a.company)))return '';
  if(typeof a.remote==='boolean'&&typeof b.remote==='boolean'&&a.remote!==b.remote)return '';
  if(ev.conflictingLevel)return '';
  if(ev.sameTitle&&compatibleGeography(a,b))return 'same-employer-title-and-compatible-scope';
