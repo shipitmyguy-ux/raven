@@ -26,7 +26,9 @@ export async function quickSearch(track:Track){
     return await listResults(track).catch(()=>[] as Candidate[]);
   }
   await upsertResults(rows);
-  return rows;
+  // Games / 3D must display canonical persisted results, not discarded
+  // duplicates or candidates held for geographic/identity review.
+  return track==="Games / 3D"?await listResults(track):rows;
 }
 
 export async function deepSearch(track:Track){
