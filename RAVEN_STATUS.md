@@ -1,3 +1,13 @@
+## Live Apply acceptance - October 14, 2026
+
+Owner explicitly authorized dismissing the paused preparation, testing a prepared 3D application, uploading its documents, and stopping before submission. Dismissed the existing intent through Raven; UI confirmed saved documents remain available.
+
+HyperHug: Apply job opened the exact Ashby application in a new tab. Employer UI showed correct name, email and portfolio, plus the resume filename and replacement/removal controls. This form has no cover-letter upload. Unknown role/language questions remained unanswered. Nothing submitted; Raven remains Saved.
+
+Nex: public read-only precheck confirmed separate resume and cover-letter controls. First Apply attempt stopped on Raven helper returned an invalid status; corresponding helper run nevertheless durably completed both existing-document checks. Explicit Resume reused that completed run and opened the Greenhouse form. Employer UI confirmed first/last name, email, portfolio and LinkedIn, plus separate resume and cover-letter filenames/removal controls. Country, phone, city, work authorization, sponsorship and salary remained blank for owner review. No manual field or attachment workaround was used. No new documents, approvals or Applied status changes. Left employer forms open and unsubmitted.
+
+Two observed follow-ups: investigate the transient helper-status rejection (not diagnosed or claimed fixed); correct the extension summary that reports PDFs accepted yet also says no upload fields after Greenhouse replaces its upload inputs with completed-file controls. Employer upload confirmations establish this test's attachment result; the contradictory message remains a defect. Batch any extension correction under standing stability policy. No source/helper/extension update during this acceptance test. Screenshots remain local and private; no contact details, filenames with private IDs, document hashes or cloud links are committed.
+
 ## Document routing and stage diagnostics — October 14, 2026 MDT
 
 Consolidated Generate, paired generation, ChatGPT, and Save PDF to Drive selection in routeDocumentRequest. Preserved current concurrent writers, prepare-application guard, phone resume behavior, explicit revisions, saved-document reuse and verified export readback. App98/client5. Durable helper state and resume_workflow metadata now retain request ID, failed stage/document, safe allowlisted error code, stage timestamps, elapsed time and per-document stage durations. Parallel sibling failures retain their own stage. Browser failures show request ID and failed stage. No extension changes.

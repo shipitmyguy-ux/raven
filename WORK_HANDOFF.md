@@ -1,3 +1,13 @@
+## Live Apply acceptance - October 14, 2026
+
+Owner explicitly authorized dismissing the paused preparation, testing a prepared 3D application, uploading its documents, and stopping before submission. Dismissed the existing intent through Raven; UI confirmed saved documents remain available.
+
+HyperHug: Apply job opened the exact Ashby application in a new tab. Employer UI showed correct name, email and portfolio, plus the resume filename and replacement/removal controls. This form has no cover-letter upload. Unknown role/language questions remained unanswered. Nothing submitted; Raven remains Saved.
+
+Nex: public read-only precheck confirmed separate resume and cover-letter controls. First Apply attempt stopped on Raven helper returned an invalid status; corresponding helper run nevertheless durably completed both existing-document checks. Explicit Resume reused that completed run and opened the Greenhouse form. Employer UI confirmed first/last name, email, portfolio and LinkedIn, plus separate resume and cover-letter filenames/removal controls. Country, phone, city, work authorization, sponsorship and salary remained blank for owner review. No manual field or attachment workaround was used. No new documents, approvals or Applied status changes. Left employer forms open and unsubmitted.
+
+Two observed follow-ups: investigate the transient helper-status rejection (not diagnosed or claimed fixed); correct the extension summary that reports PDFs accepted yet also says no upload fields after Greenhouse replaces its upload inputs with completed-file controls. Employer upload confirmations establish this test's attachment result; the contradictory message remains a defect. Batch any extension correction under standing stability policy. No source/helper/extension update during this acceptance test. Screenshots remain local and private; no contact details, filenames with private IDs, document hashes or cloud links are committed.
+
 # Document routing execution summary — October 14, 2026 MDT
 PR: https://github.com/shipitmyguy-ux/raven/pull/87. Integrated code8f77fcc: GitHub core/Windows/safety run38669009869 passed all three jobs. Full browser run38669009827 is still running at this handoff. Final focused document suite50/50 passes;8 focused Edge cases pass. Production/helper activation remains unperformed.
 
