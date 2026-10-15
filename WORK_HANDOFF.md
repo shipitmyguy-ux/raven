@@ -1,3 +1,10 @@
+## Nex destination recovery and live acceptance - October 14, 2026 MDT
+
+Resolved destination confirmation by refreshing Raven after the owner reloaded extension2.4.6, then explicitly resuming from the job drawer. Browser diagnostics showed Extension context invalidated from the old content bridge. No extension update, permission change, helper restart or application-code change needed.
+
+A newly created Nex tab passed preflight/delivery. Before agent form interaction, committed profile-qualified city and both Nex PDF filenames with Remove file controls were visible. Raven reported country/city and known contact fields filled, resume/coverLetter accepted. Automatic city and both attachments PASSED. Authorization/sponsorship/salary remained blank; Saved retained; no submission. Later interaction only positioned the screenshot and closed the city menu without selecting. Private contact values/screenshots excluded from Git.
+
+After extension reload, refresh Raven to renew its context, then use drawer Resume preparation. Banner Resume first opens the drawer. No permanent prevention of stale contexts claimed. Live acceptance only; no code release.
 ## Document request concurrency regressions — October 14, 2026 MDT
 
 Added three real-helper process cases: repeated Generate both, resume-first overlap, and cover-letter-first overlap for the same synthetic job. Eight simultaneous duplicate requests share each active run; paired/single conflicts return409 while independent resume and cover-letter work proceeds. Deterministic IPC writing gates hold the race window open. Each case asserts exactly two total generations, saves, renders, uploads, physical Drive fixture PDFs and canonical export records; one per document, correct job/hash/file links, unchanged control job, reuse after completion and fresh-client refresh readback. Browser coverage now sends eight bursts across stale Generate both/resume/cover controls and checks two saved links after refresh.
