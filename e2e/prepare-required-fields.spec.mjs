@@ -39,3 +39,14 @@ test('required choices are checked per control or form and absent upload fields 
  await expect(page.locator('#raven-assistant-banner')).toContainText('No upload field for: resume, cover letter.');
  await expect(page.locator('#raven-assistant-banner')).not.toContainText('linkedin');
 });
+
+for(const missing of [false,true])test('unlabeled required controls warn only when incomplete: '+missing,async({page})=>{
+ await page.addInitScript(value=>{window.__messages=[];window.__listeners=[];window.chrome={runtime:{onMessage:{addListener:f=>window.__listeners.push(f)},sendMessage:(m,cb)=>{window.__messages.push(m);cb?.(m.type==='raven-preflight-context'?{title:value.title,company:value.company}:{});}}};},packet);
+ await page.route('https://example.test/apply',route=>route.fulfill({contentType:'text/html',body:'<h1>Artist</h1><p>Acme</p><form><label for="first">First name</label><input id="first"><label for="email">Email</label><input id="email" type="email"><input required value="filled"><textarea required>filled</textarea><select required><option value="yes" selected>Yes</option></select><input type="checkbox" required checked><input type="radio" name="choice" required><input type="radio" name="choice" checked><input id="file" type="file" required style="display:none">'+(missing?'<input required>':'')+'<button type="submit">Submit</button></form>'}));
+ await page.goto('https://example.test/apply');
+ await page.locator('#file').setInputFiles({name:'existing.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4')});
+ await page.addScriptTag({content:fs.readFileSync(new URL('../extension/src/assistant-core.js',import.meta.url),'utf8')});
+ await page.addScriptTag({content:fs.readFileSync(new URL('../extension/src/prepare-content.js',import.meta.url),'utf8')});
+ await page.evaluate(value=>window.__listeners.forEach(f=>f({type:'raven-prepare-deliver',packet:value,preflightId:'fixture',expectedUrl:location.href},{},()=>{})),packet);
+ await expect.poll(()=>page.evaluate(()=>window.__messages.find(m=>m.type==='raven-prepare-result')?.result.requiredUnanswered)).toEqual(missing?['Unlabeled required field']:[]);
+});

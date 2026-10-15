@@ -2,7 +2,7 @@ import {createHash} from 'node:crypto';
 import {validateDraft} from '../supabase/functions/_shared/document-writer.mjs';
 
 function validationFeedback(kind,draft,profile,job){
- try{validateDraft(kind,draft,profile,{target:job});return 'Correct unsupported factual claims using only verified evidence.';}
+ try{validateDraft(kind,draft,profile,{target:job,shortCover:true});return 'Correct unsupported factual claims using only verified evidence.';}
  catch(error){return error.code==='INVALID_DRAFT'?error.message:'Correct the document structure and cite verified fact IDs.';}
 }
 

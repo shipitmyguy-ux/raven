@@ -133,16 +133,16 @@
       if (type !== "file" && typeof el.getClientRects === "function" && el.getClientRects().length === 0) continue;
       const raw = labelFor(el, false) || el.closest("fieldset")?.querySelector("legend")?.innerText || "";
       const label = String(raw).replace(/\s+/g, " ").trim().slice(0, 120);
-      if (!label) { labels.add("Unlabeled required field"); continue; }
+      let missing = false;
       if (type === "radio") {
-        const group = el.closest("fieldset")?.querySelector("legend")?.innerText || label || "Unlabeled required choice";
-        const members = el.form && el.name ? controls.filter(control => control.type === "radio" && control.form === el.form && control.name === el.name) : [el];
-        if (!members.some(control => control.checked)) labels.add(String(group).replace(/\s+/g, " ").trim().slice(0, 120));
+        const members = el.name ? controls.filter(control => control.type === "radio" && control.form === el.form && control.name === el.name) : [el];
+        missing = !members.some(control => control.checked);
       } else if (type === "checkbox") {
-        if (!el.checked) labels.add(label);
+        missing = !el.checked;
       } else if (type === "file") {
-        if (!el.files?.length) labels.add(label);
-      } else if (!String(el.value || "").trim() && !(el.getAttribute("role") === "combobox" && selectedLocation(el))) labels.add(label);
+        missing = !(el.files?.length || String(el.value || "").trim());
+      } else missing = !String(el.value || "").trim() && !(el.getAttribute("role") === "combobox" && selectedLocation(el));
+      if (missing) labels.add(type === "radio" ? String(el.closest("fieldset")?.querySelector("legend")?.innerText || label || "Unlabeled required field").replace(/\s+/g," ").trim().slice(0,120) : label || "Unlabeled required field");
     }
     return [...labels];
   }

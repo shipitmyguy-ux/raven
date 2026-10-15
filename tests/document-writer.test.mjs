@@ -136,7 +136,7 @@ test("identity, employer metadata and education remain immutable",()=>{
 });
 test("cover letter body is model-authored and signature is canonical",async()=>{
  const r=await writeDocument({kind:"coverLetter",profile,target,complete:sequence([cover,accepted])});
- assert.deepEqual(r.document.paragraphs,cover.paragraphs.map(p=>p.text));assert.equal(r.document.signature,"Mike Rodriguez");
+ assert.deepEqual(r.document.paragraphs,[cover.paragraphs.map(p=>p.text).join(" ")]);assert.equal(r.document.signature,"Mike Rodriguez");
 });
 test("unsupported claims receive a bounded deterministic repair",async()=>{
  const requests=[],bad={...resume,summary:claim("Led a team of 50.",["f2"])};
@@ -279,7 +279,7 @@ test("cover letter preserves grounded multi-sentence prose and canonical signatu
  assert.equal(r.document.closing,"Sincerely,");
  assert.equal(r.document.signature,"Mike Rodriguez");
  assert.equal(requests.length,1);
- assert.equal(r.document.paragraphs[0],"I built game environments. I mentored newer artists.");
+ assert.equal(r.document.paragraphs[0],letter.paragraphs.map(p=>p.text).join(" "));
 });
 
 test("general software skills cannot be reassigned to an employer",()=>{
@@ -299,7 +299,7 @@ test("source citations block moving general facts or other employers into work h
 test("cover duplicate paragraphs are removed while unique prose stays intact",()=>{
  const result=validateDraft("coverLetter",{...cover,paragraphs:[cover.paragraphs[0],cover.paragraphs[0],cover.paragraphs[1]]},profile);
  assert.deepEqual(result.paragraphs,cover.paragraphs.map(p=>p.text));
- assert.throws(()=>validateDraft("coverLetter",{...cover,paragraphs:[cover.paragraphs[0],cover.paragraphs[0]]},profile));
+ assert.equal(validateDraft("coverLetter",{...cover,paragraphs:[cover.paragraphs[0],cover.paragraphs[0]]},profile).paragraphs.length,1);
 });
 test("game resumes restore every canonical shipped title independently of AI selection",()=>{
  const p={...profile,shipped_titles:["Six Days in Fallujah","Example Game"]};
@@ -413,7 +413,7 @@ test('company-named cover repair enums exclude general facts while separate gene
  const allowed=repair.input.factualCorrection.allowed_evidence;
  assert.deepEqual(allowed.find(e=>e.path==='paragraphs.0').facts.map(f=>f.id),['f1','f2']);
  assert.ok(allowed.find(e=>e.path==='paragraphs.1').facts.some(f=>f.id==='x1'));
- assert.deepEqual(result.document.paragraphs,fixed.paragraphs.map(c=>c.text));
+ assert.deepEqual(result.document.paragraphs,[fixed.paragraphs.map(c=>c.text).join(" ")]);
 });
 
 
@@ -463,4 +463,16 @@ test('writer retries an overlong document with the concrete character limit and 
  const length=visibleDocumentText(generatedCoverLetterHtml(target,validateDraft('coverLetter',cover,profile,{target}))).length;
  const result=await writeDocument({kind:'coverLetter',profile,target:{...target,description:'Cover letter maximum '+length+' characters.'},complete:sequence([long,cover],requests)});
  assert.equal(result.document.signature,'Mike Rodriguez');assert.equal(requests.length,2);assert.ok(visibleDocumentText(generatedCoverLetterHtml(target,result.document)).length<=length);
+});
+
+test('new cover-letter generation uses one short conversational paragraph and refuses oversized bodies',async()=>{
+ const requests=[],draft={greeting:'Hi team,',paragraphs:[claim("I build game environments and mentor newer artists. I’d love to bring that experience to your team.",['f1','f2'])],closing:'Thanks,'};
+ const result=await writeDocument({kind:'coverLetter',profile,target,complete:sequence([draft],requests)});
+ assert.equal(result.document.paragraphs.length,1);assert.equal(result.document.signature,'Mike Rodriguez');
+ assert.equal(requests[0].schema.properties.paragraphs.minItems,1);assert.equal(requests[0].schema.properties.paragraphs.maxItems,1);
+ assert.match(requests[0].instructions,/conversational/);assert.match(requests[0].instructions,/natural contractions/);
+ const long={...draft,paragraphs:[claim('I would welcome a conversation about the role. '.repeat(24),[])]};
+ assert.throws(()=>validateDraft('coverLetter',long,profile,{shortCover:true}),/900 characters and 120 words/);
+ const before=structuredClone(cover);const normalized=validateDraft('coverLetter',cover,profile,{shortCover:true});
+ assert.equal(normalized.paragraphs.length,1);assert.deepEqual(cover,before);
 });

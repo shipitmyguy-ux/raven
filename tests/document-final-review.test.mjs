@@ -41,7 +41,7 @@ test('missed cover claim triggers a bounded passage repair even when the model r
  },reviewComplete:async()=>({data:{issues:[]}})});
  assert.equal(requests.length,2);
  assert.deepEqual(requests[1].input.factualCorrection.invalid_paths,['paragraphs.0']);
- assert.deepEqual(result.document.paragraphs,[good.paragraphs[1].text,good.paragraphs[0].text]);
+ assert.deepEqual(result.document.paragraphs,[[good.paragraphs[1].text,good.paragraphs[0].text].join(" ")]);
  assert.equal(result.final_review.status,'passed');
 });
 test('live professional retest: database reporting is not database management',()=>{
@@ -88,7 +88,7 @@ test('separate factual reviewer repairs only the wrong project attribution and r
  }});
  assert.equal(reviews.length,2);assert.equal(drafts.length,2);
  assert.deepEqual(drafts[1].input.factualCorrection.invalid_paths,['paragraphs.0']);
- assert.deepEqual(result.document.paragraphs,good.paragraphs.map(p=>p.text));
+ assert.deepEqual(result.document.paragraphs,[good.paragraphs.map(p=>p.text).join(" ")]);
  assert.equal(result.final_review.factual_review.status,'passed');
  assert.equal(reviews[1].input.document.paragraphs[1],good.paragraphs[1].text);
 });
@@ -120,7 +120,8 @@ test('Professional reviewer receives posting and severe art-dominance triggers o
  },reviewComplete:async args=>{reviews.push(args);return {data:{issues:reviews.length===1?[{path:'paragraphs.0',code:'irrelevant_framing',quote:bad.paragraphs[0].text,reason:'Replace dominant art-production detail with verified mentoring relevant to team coordination.'}]:[]}};}});
  assert.equal(reviews[0].input.target.description,t.description);
  assert.deepEqual(requests[1].input.factualCorrection.invalid_paths,['paragraphs.0']);
- assert.equal(result.document.paragraphs[1],bad.paragraphs[1].text);
+ assert.ok(result.document.paragraphs[0].includes(bad.paragraphs[1].text));
+ assert.equal(result.document.paragraphs.length,1);
  assert.equal(requests.length,2);assert.equal(reviews.length,2);
 });
 

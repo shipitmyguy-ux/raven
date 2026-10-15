@@ -83,7 +83,7 @@ export function buildExternalChatPrompt(requestedKind,profile,target){
   };
   const coverShape={
     greeting:"Dear Hiring Manager,",
-    paragraphs:[{text:"Supported cover-letter paragraph.",fact_ids:["supporting_fact_id"]},{text:"Interest-only paragraph with no candidate-history claim.",fact_ids:[]}],
+    paragraphs:[{text:"One short conversational paragraph connecting relevant verified experience to this role.",fact_ids:["supporting_fact_id"]}],
     closing:"Sincerely,"
   };
   const output={raven_format:"raven-chatgpt-v1"};
@@ -104,7 +104,7 @@ export function buildExternalChatPrompt(requestedKind,profile,target){
     "Return only valid JSON (no markdown or commentary), with raven_format exactly raven-chatgpt-v1. Use the exact output keys shown; do not add keys or change key spelling.",
     "Do not put candidate name, contact, employer metadata, dates, education, or shipped_titles in the resume object; Raven restores them."
   ];
-  if(kind==="coverLetter"||kind==="both")rules.push("For cover letters, write a cohesive first-person letter, usually 180-300 words, connecting two or three relevant verified examples to the job. Avoid naming past employers; Raven already carries employment history in the resume.");
+  if(kind==="coverLetter"||kind==="both")rules.push("For cover letters, write a cohesive first-person letter, in exactly one short conversational body paragraph, aiming for 60-100 words (at most 120 words and 900 characters), connecting one relevant verified example to the job. Use plain words, natural contractions and a warm, casual voice; avoid formal filler and inflated enthusiasm. Avoid naming past employers; Raven already carries employment history in the resume.");
   return [
     "RAVEN MANUAL CHATGPT GENERATION",
     "REQUESTED OUTPUT: "+kind,
@@ -184,7 +184,7 @@ export function createDocumentHandler(kind,{getEnv,fetchImpl=fetch,logEvidence=e
       if(body.manualDraft){
         const draft=body.manualDraft;
         if(typeof draft!=="object"||Array.isArray(draft))throw new WriterError("Paste the Raven JSON object returned by ChatGPT.","INVALID_INPUT",400);
-        const document=validateDraft(kind,draft,profile,{target,instructions:""});
+        const document=validateDraft(kind,draft,profile,{target,instructions:"",shortCover:true});
         // Contact details are restored from Raven's device-local Application
         // Profile in the browser and are never returned by this public endpoint.
         if(kind==="resume") document.contact="";
