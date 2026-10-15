@@ -5,6 +5,7 @@ import {stripTypeScriptTypes} from 'node:module';
 import * as collector from '../supabase/functions/_shared/studio-collector.mjs';
 import * as schedule from '../supabase/functions/_shared/studio-schedule.mjs';
 import {planStudioIngestion} from '../supabase/functions/_shared/studio-ingest-dedup.mjs';
+import {usStudioScopeAllowed} from '../supabase/functions/_shared/studio-us-eligibility.mjs';
 import * as providers from '../supabase/functions/_shared/studio-providers.mjs';
 import '../supabase/functions/_shared/track-filter.js';
 const source=stripTypeScriptTypes(fs.readFileSync('supabase/functions/raven-studio-scan/index.ts','utf8').replace(/^import .*;\r?\n/gm,''));
@@ -44,7 +45,7 @@ const fakeFetch=async(url,opts={})=>{
   {id:'3',name:'Environment Artist',location:{city:'London',country:'UK'}},
  ]});
 };
-vm.runInNewContext(source,{...providers,...collector,...schedule,planStudioIngestion,fetchStudioJson:url=>collector.fetchStudioJson(url,fakeFetch),enrichStudioDetails:(s,j,opts)=>collector.enrichStudioDetails(s,j,{...opts,fetcher:fakeFetch}),globalThis:{RavenTrackFilter:globalThis.RavenTrackFilter},Deno:{env:{get:n=>n==='SUPABASE_URL'?'https://db.example':'test-key'},serve:fn=>{handler=fn;}},fetch:fakeFetch,crypto,Response,TextEncoder,TextDecoder,Uint8Array,AbortSignal,URL});
+vm.runInNewContext(source,{...providers,...collector,...schedule,planStudioIngestion,usStudioScopeAllowed,fetchStudioJson:url=>collector.fetchStudioJson(url,fakeFetch),enrichStudioDetails:(s,j,opts)=>collector.enrichStudioDetails(s,j,{...opts,fetcher:fakeFetch}),globalThis:{RavenTrackFilter:globalThis.RavenTrackFilter},Deno:{env:{get:n=>n==='SUPABASE_URL'?'https://db.example':'test-key'},serve:fn=>{handler=fn;}},fetch:fakeFetch,crypto,Response,TextEncoder,TextDecoder,Uint8Array,AbortSignal,URL});
 const request=secret=>new Request('https://collector.example',{method:'POST',headers:secret?{'x-raven-studio-secret':secret}:{}});
 assert.equal((await handler(request())).status,401);
 assert.equal(providerCalls,0);
