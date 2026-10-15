@@ -1,73 +1,38 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';
+import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
-import {join,resolve} from 'node:path';
+import {join} from 'node:path';
 import {createApplicationDocumentPreparer} from '../scripts/application-pdf.mjs';
 import {createOneClickServer} from '../scripts/oneclick-server.mjs';
-
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const docs={resume:{document_type:'resume',document_url:'data:text/html,resume'},coverLetter:{document_type:'coverLetter',document_url:'data:text/html,letter'}};
 for(const doc of Object.values(docs)){doc.document_sha256=hash(doc.document_url);doc.job_id='job-1';}
 const requestDocs=()=>Object.entries(docs).map(([document_type,doc])=>({document_type,document_sha256:doc.document_sha256}));
-function dispatcher({changeAtEnd=false,overridePath}={}){
- let reads=0;
- return async raw=>{
-  const rpc=JSON.parse(raw),{name,arguments:args}=rpc.params;
-  let value;
-  if(name==='get_document'){
-   reads++;
-   const d=docs[args.document_type];
-   value={...d,...(changeAtEnd&&reads>2?{document_url:'data:text/html,changed',document_sha256:hash('data:text/html,changed')}:{})};
-  }else if(name==='export_document_pdf'){
-   const pdf=Buffer.from('%PDF-1.7\nfixture');
-   value={job_id:args.job_id,document_type:args.document_type,document_sha256:args.document_sha256,file_name:`${args.job_id}-${args.document_type}-${args.document_sha256.slice(0,12)}.pdf`,file_path:overridePath||join(globalThis.__pdfTestDir,`${args.job_id}-${args.document_type}-${args.document_sha256.slice(0,12)}.pdf`),pdf_sha256:hash(pdf)};
-  }
-  return JSON.stringify({jsonrpc:'2.0',id:rpc.id,result:{structuredContent:value}});
- };
+function fixture({changeAtEnd=false,receiptPatch={},bytes,missing=false}={}){
+ let reads=0;const downloads=[],calls=[];
+ const originals={resume:Buffer.from('%PDF-1.7 original Drive resume'),coverLetter:Buffer.from('%PDF-1.7 original Drive cover letter')};
+ const dispatch=async raw=>{const rpc=JSON.parse(raw);calls.push(rpc.params.name);assert.equal(rpc.params.name,'get_document','Apply must never render, save or upload');const doc=docs[rpc.params.arguments.document_type];reads++;return JSON.stringify({result:{structuredContent:{...doc,...(changeAtEnd&&reads>2?{document_url:'changed',document_sha256:hash('changed')}:{})}}});};
+ const rest=async path=>{assert.ok(path.includes('job_id=eq.job-1'));assert.ok(path.includes('folder_id=eq.folder12345'));const kind=path.includes('document_type=eq.resume')?'resume':'coverLetter';assert.ok(path.includes(docs[kind].document_sha256));return missing?[]:[{metadata:{document_type:kind,document_sha256:docs[kind].document_sha256,folder_id:'folder12345',file_id:'file1234567890'+kind,drive_url:'https://drive.google.com/file/d/file1234567890'+kind+'/view',pdf_sha256:hash(originals[kind]),...receiptPatch}}];};
+ const downloadPdf=async input=>{downloads.push(input);return bytes||originals[input.fileId.endsWith('resume')?'resume':'coverLetter'];};
+ return {prepare:createApplicationDocumentPreparer({dispatch,rest,downloadPdf,config:{driveFolderId:'folder12345'}}),originals,downloads,calls};
 }
-test('preparer returns exact current resume and letter PDF bytes with digests and no file paths',async()=>{
- const dir=await mkdtemp(join(tmpdir(),'raven-app-pdf-'));globalThis.__pdfTestDir=dir;
- try{
-  const pdf=Buffer.from('%PDF-1.7\nfixture');
-  for(const [kind,doc] of Object.entries(docs))await writeFile(join(dir,`job-1-${kind}-${doc.document_sha256.slice(0,12)}.pdf`),pdf);
-  const prepare=createApplicationDocumentPreparer({dispatch:dispatcher(),authorizeJob:async()=>{},exportDirectory:dir});
-  const result=await prepare({job_id:'job-1',documents:requestDocs()});
-  assert.equal(result.job_id,'job-1');assert.equal(result.documents.length,2);
-  for(const output of result.documents){assert.equal(output.pdf_sha256,hash(pdf));assert.equal(output.data_url,'data:application/pdf;base64,'+pdf.toString('base64'));assert.equal('file_path'in output,false);}
- }finally{delete globalThis.__pdfTestDir;await rm(dir,{recursive:true,force:true});}
+test('Apply reuses byte-for-byte existing Drive PDFs and never invokes renderer or upload',async()=>{
+ const f=fixture();const result=await f.prepare({job_id:'job-1',documents:requestDocs()});
+ assert.equal(result.documents.length,2);
+ for(const output of result.documents){const original=f.originals[output.document_type];assert.equal(output.pdf_sha256,hash(original));assert.deepEqual(Buffer.from(output.data_url.split(',')[1],'base64'),original);assert.equal('file_path' in output,false);}
+ assert.deepEqual(f.downloads.map(d=>d.fileId),['file1234567890resume','file1234567890coverLetter']);
+ assert.ok(f.downloads.every(d=>d.folderId==='folder12345'));
 });
-test('preparer rejects stale hashes, changed final readback, and arbitrary file paths',async()=>{
- const dir=await mkdtemp(join(tmpdir(),'raven-app-pdf-'));globalThis.__pdfTestDir=dir;
- try{
-  const pdf=Buffer.from('%PDF-1.7\nfixture');
-  for(const [kind,doc] of Object.entries(docs))await writeFile(join(dir,`job-1-${kind}-${doc.document_sha256.slice(0,12)}.pdf`),pdf);
-  const prep=opts=>createApplicationDocumentPreparer({dispatch:dispatcher(opts),authorizeJob:async()=>{},exportDirectory:dir});
-  await assert.rejects(prep()({job_id:'job-1',documents:requestDocs().map((d,i)=>i?d:{...d,document_sha256:'a'.repeat(64)})}),/VERSION_CONFLICT/);
-  await assert.rejects(prep({changeAtEnd:true})({job_id:'job-1',documents:requestDocs()}),/VERSION_CONFLICT/);
-  await assert.rejects(prep({overridePath:resolve(dir,'..','outside.pdf')})({job_id:'job-1',documents:requestDocs()}),/PDF_PATH_INVALID/);
- }finally{delete globalThis.__pdfTestDir;await rm(dir,{recursive:true,force:true});}
-});
-test('preparer rejects PDFs above the renderer limit before returning bytes',async()=>{
- const dir=await mkdtemp(join(tmpdir(),'raven-app-pdf-limit-'));
- try{
-  const bytes=Buffer.alloc(2*1024*1024+1,0x20);Buffer.from('%PDF-').copy(bytes);
-  let exported=false;
-  const dispatch=async raw=>{
-   const rpc=JSON.parse(raw),{name,arguments:args}=rpc.params;let value;
-   if(name==='get_document')value=docs[args.document_type];
-   if(name==='export_document_pdf'){
-    exported=true;const file_name=`${args.job_id}-${args.document_type}-${args.document_sha256.slice(0,12)}.pdf`;
-    const file_path=join(dir,file_name);await writeFile(file_path,bytes);
-    value={job_id:args.job_id,document_type:args.document_type,document_sha256:args.document_sha256,file_name,file_path,pdf_sha256:hash(bytes)};
-   }
-   return JSON.stringify({jsonrpc:'2.0',id:rpc.id,result:{structuredContent:value}});
-  };
-  const prepare=createApplicationDocumentPreparer({dispatch,exportDirectory:dir});
-  await assert.rejects(prepare({job_id:'job-1',documents:requestDocs()}),/PDF_EXPORT_INVALID/);
-  assert.equal(exported,true);
- }finally{await rm(dir,{recursive:true,force:true});}
+test('Apply fails closed for stale documents, missing or invalid receipts and altered PDF bytes',async()=>{
+ await assert.rejects(fixture().prepare({job_id:'job-1',documents:requestDocs().map((d,i)=>i?d:{...d,document_sha256:'a'.repeat(64)})}),/VERSION_CONFLICT/);
+ await assert.rejects(fixture({changeAtEnd:true}).prepare({job_id:'job-1',documents:requestDocs()}),/VERSION_CONFLICT/);
+ for(const opts of [{missing:true},{receiptPatch:{folder_id:'other'}},{receiptPatch:{document_type:'wrong'}},{receiptPatch:{document_sha256:'a'.repeat(64)}},{receiptPatch:{drive_url:'https://evil.test/file'}},{receiptPatch:{pdf_sha256:null}}]){
+  const f=fixture(opts);await assert.rejects(f.prepare({job_id:'job-1',documents:requestDocs()}),/EXPORT_RECORD_NOT_CONFIRMED/);assert.equal(f.downloads.length,0);
+ }
+ await assert.rejects(fixture({bytes:Buffer.from('%PDF-1.7 freshly re-rendered')}).prepare({job_id:'job-1',documents:requestDocs()}),/PDF_READBACK_NOT_CONFIRMED/);
+ for(const bytes of [Buffer.from('not pdf'),Buffer.alloc(2*1024*1024+1)])await assert.rejects(fixture({bytes}).prepare({job_id:'job-1',documents:requestDocs()}),/PDF_EXPORT_INVALID/);
 });
 test('application document HTTP route enforces origin, session, authorization, exact body and health capability',async()=>{
  const dir=await mkdtemp(join(tmpdir(),'raven-app-route-'));let preparations=0,authorizations=0;
