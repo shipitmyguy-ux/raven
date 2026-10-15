@@ -61,6 +61,11 @@ test('authenticated scanner imports new jobs once and preserves exact and ambigu
  const touch=writes.find(w=>w.path.includes('source=eq.')&&w.method==='PATCH');
  assert.ok(touch,'previous sheet discovery refreshed without title/status overwrite');
  assert.deepEqual(Object.keys(touch.body),['last_seen']);
+ const origin=writes.find(w=>w.path.startsWith('raven_job_source_links'));
+ assert.ok(origin,'source provenance saved without overwriting the existing posting');
+ assert.ok(origin.body.some(x=>x.canonical_url==='https://example.org/fresh-role'));
+ assert.ok(origin.body.some(x=>x.canonical_url==='https://jobs.ashbyhq.com/studio-a/same-job'));
+
  const check=writes.find(w=>w.path==='raven_studio_checks');
  assert.equal(check.body.status,'ok');
 });
