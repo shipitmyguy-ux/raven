@@ -1743,7 +1743,9 @@
   }
 
   async function generateBothForJob(job){
-    if(state.runtime?.settings?.["chatgpt-one-click"]===true)return generateOneClick(job,"both",null);
+    return routeDocumentRequest(job,"both",null,{intent:"generate"});
+  }
+  async function generateBothLegacy(job){
     if(generationSession(job))return;
     const missing=["resume","coverLetter"].filter(type=>!job[type]);
     if(!missing.length)return openDocumentReview(job,"resume");
@@ -1774,10 +1776,9 @@
   }
 
   async function generateForJob(job,type,button=null,options={}) {
-    if(state.runtime?.settings?.["chatgpt-one-click"]===true&&!options.force){
-      if(job[type])return openDocumentReview(job,type);
-      return generateOneClick(job,type,button,{autoOpen:options.autoOpen!==false});
-    }
+    return routeDocumentRequest(job,type,button,{...options,intent:"generate"});
+  }
+  async function generateLegacy(job,type,button=null,options={}) {
     const existing=generationSession(job);
     if(existing){
       if(Date.now()-Number(existing.startedAt||0)<180000) return;
@@ -1936,6 +1937,19 @@
     return String(payload.prompt);
   }
 
+  // All document actions select a route here; adapters never select another route.
+  function routeDocumentRequest(job,type,button=null,options={}){
+    if(!job||!["resume","coverLetter","both"].includes(type))throw Error("Invalid document request.");
+    const intent=options.intent||"chatgpt";
+    if(!["generate","chatgpt","export"].includes(intent))throw Error("Invalid document action.");
+    if(intent==="export"&&!job[type]){setStatus("Save a document in Raven before exporting to Drive.");return;}
+    if(intent==="generate"&&type!=="both"&&job[type]&&!options.force)return openDocumentReview(job,type);
+    if(state.runtime?.settings?.["chatgpt-one-click"]===true&&!options.force)return generateOneClick(job,type,button,{autoOpen:options.autoOpen!==false});
+    if(intent==="export")return saveDocumentToDriveLegacy(job,type);
+    if(intent==="chatgpt")return launchChatGptLegacy(job,type,button);
+    return type==="both"?generateBothLegacy(job):generateLegacy(job,type,button,options);
+  }
+
   const activeOneClickJobs=new Map();
   function oneClickSession(job,type){
     const key=String(job.id||job.url);
@@ -1959,7 +1973,7 @@
         const {createOneClickClient}=await import("./oneclick-client.mjs?v=1");
         oneClickClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
       }
-      const labels={queued:"Queued · waiting for writer…",writing:"Writing from verified facts…",saving:"Saving in Raven…",pdf:"Creating PDF…",uploading:"Saving PDF to Drive…",recording:"Confirming saved links…",complete:"Verifying saved documents…"};
+      const labels={queued:"Queued · waiting for writer…",reading:"Checking saved documents…",context:"Loading verified facts…",verifying:"Checking Drive PDF…",confirming:"Confirming saved document…",writing:"Writing from verified facts…",saving:"Saving in Raven…",pdf:"Creating PDF…",uploading:"Saving PDF to Drive…",recording:"Confirming saved links…",complete:"Verifying saved documents…"};
       const result=await oneClickClient.run({job_id:String(job.id),document_type:type},stage=>{
         session.label=labels[stage]||"Generating…";render();setStatus(session.label);
       });
@@ -1976,7 +1990,9 @@
     finally{kinds.forEach(kind=>activeOneClickJobs.delete(key+":"+kind));setGenerationButton(button,false);render();}
   }
   async function launchChatGptPrompt(job,type,button=null){
-    if(state.runtime.settings["chatgpt-one-click"]===true)return generateOneClick(job,type,button);
+    return routeDocumentRequest(job,type,button,{intent:"chatgpt"});
+  }
+  async function launchChatGptLegacy(job,type,button=null){
     let chatTab=null;
     try{
       chatTab=window.open("about:blank","_blank");
@@ -2071,8 +2087,9 @@
   }
 
   async function saveDocumentToDrive(job=state.generatorJob,type=state.generatorType){
-    if(!job?.[type]){setStatus("Save a document in Raven before exporting to Drive.");return;}
-    if(state.runtime.settings["chatgpt-one-click"]===true)return generateOneClick(job,type,null);
+    return routeDocumentRequest(job,type,null,{intent:"export"});
+  }
+  async function saveDocumentToDriveLegacy(job,type){
     const tab=window.open("about:blank","_blank");
     try{
       const {directPrompt}=await import("./chatgpt-direct.mjs?v=1");

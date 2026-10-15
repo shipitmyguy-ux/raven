@@ -71,3 +71,22 @@ test('cover letter for the same job is accepted while resume runs and completes 
   assert.equal((await (await f.request('/runs/'+cover.run_id)).json()).stage,'complete');
  }finally{release();await f.cleanup();}
 });
+
+test('stage diagnostics survive disk reload and event readback; unknown errors are redacted',async()=>{
+ for(const message of ['EXPORT_RECORD_NOT_CONFIRMED','PRIVATE_SECRET_VALUE']){
+  const f=await fixture(async(input,onProgress)=>{onProgress({stage:'recording',document_type:'resume',elapsed_ms:42,stage_timings:[{stage:'uploading',document_type:'resume',duration_ms:20}]});throw Error(message);});
+  try{
+   const run=await (await f.request('/runs',{job_id:'one',document_type:'resume'})).json();await f.runtime.drain();
+   const result=await (await f.request('/runs/'+run.run_id)).json();
+   assert.equal(result.failed_stage,'recording');assert.equal(result.failed_document_type,'resume');
+   assert.equal(result.error_code,message==='PRIVATE_SECRET_VALUE'?'WORKFLOW_FAILED':message);
+   assert.equal(f.writes.at(-1).metadata.elapsed_ms,42);assert.equal(f.writes.at(-1).metadata.stage_timings[0].duration_ms,20);
+   assert.ok(!JSON.stringify(f.writes).includes('PRIVATE_SECRET_VALUE'));
+   const reloaded=await createOneClickServer({stateDir:f.dir,runWorkflow:async()=>{},rest:async()=>[],authorizeJob:async()=>{}});
+   const {readFile}=await import('node:fs/promises');
+   const disk=JSON.parse(await readFile(join(f.dir,run.run_id+'.json'),'utf8'));
+   assert.equal(disk.failed_stage,'recording');assert.equal(disk.run_id,run.run_id);
+   assert.equal(reloaded.server.listening,false);
+  }finally{await f.cleanup();}
+ }
+});

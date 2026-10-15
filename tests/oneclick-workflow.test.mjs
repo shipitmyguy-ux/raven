@@ -80,3 +80,18 @@ test('document mutation after PDF upload cannot be recorded as current',async()=
 test('invalid input fails before any tool call',async()=>{
  const f=fixture();await assert.rejects(f.run({jobId:'bad/id'}),/INVALID_ARGUMENTS/);assert.equal(f.calls.length,0);
 });
+
+test('diagnostics record stage timing, document kind and the exact failed stage',async()=>{
+ for(const [options,stage] of [[{uploadFailure:true},'uploading'],[{recordFailure:true},'recording'],[{conflict:true},'saving'],[{changed:true},'confirming']]){
+  const f=fixture(options);
+  await assert.rejects(f.run({jobId:'JT-1'}),error=>{
+   assert.equal(error.failed_stage,stage);assert.equal(error.failed_document_type,'resume');
+   assert.equal(error.diagnostics.stage_timings.at(-1).stage,stage);
+   assert.ok(error.diagnostics.stage_timings.every(t=>Number.isFinite(t.duration_ms)&&t.duration_ms>=0));return true;
+  });
+ }
+ const f=fixture();const result=await f.run({jobId:'JT-1',documentType:'both'});
+ for(const kind of ['resume','coverLetter'])for(const stage of ['reading','context','writing','saving','pdf','uploading','recording','confirming'])assert.ok(result.stage_timings.some(t=>t.document_type===kind&&t.stage===stage),kind+': '+stage);
+ assert.ok(Number.isFinite(Date.parse(result.stage_started_at)));
+ assert.equal(result.documents.length,2);
+});

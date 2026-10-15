@@ -10,7 +10,7 @@ async function run({blocked=false,copied=true,fail=false}={}){
  const result={};
  const tab={closed:false,document:{title:'',body:{}},location:{replace:url=>{result.url=url;}},close:()=>{result.closed=true;}};
  const context={state:{runtime:{settings:{}}},transferModule:{filePrompt,REQUEST_KEY},crypto:{randomUUID:()=>"test-request"},readCache:()=>({}),writeCache:(_,value)=>{result.requests=value;},document:{getElementById:()=>null},window:{open:()=>blocked?null:tab,prompt:(_,value)=>{result.fallback=value;}},requestChatGptPrompt:async()=>{if(fail)throw new Error('service failed');return prompt;},copyTextToClipboard:async value=>{result.clipboard=value;return copied;},setGenerationButton:(_,active)=>{result.busy=active;},setStatus:value=>{result.status=value;},encodeURIComponent};
- vm.createContext(context);
+ vm.createContext(context);vm.runInContext(source.slice(source.indexOf("  // All document actions"),source.indexOf("  const activeOneClickJobs=")),context);
  await vm.runInContext(handler+'\nlaunchChatGptPrompt({},"resume")',context);
  return {...result,prompt:filePrompt(prompt,"test-request")};
 }

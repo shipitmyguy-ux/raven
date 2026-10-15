@@ -1552,3 +1552,17 @@ test('Drive exports remain visible when workflow progress fills the activity win
  await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
  await expect(page.getByRole('link',{name:'Open PDF in Drive'})).toHaveCount(2);
 });
+
+test('document failure shows request and failed stage and releases controls for retry',async({page})=>{
+ await mockRaven(page);
+ await page.route('**/runtime-config.json',async route=>{const r=await route.fetch(),c=await r.json();c.settings['chatgpt-one-click']=true;await route.fulfill({json:c});});
+ const id='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+ await page.route('http://127.0.0.1:8766/**',async route=>{
+  const path=new URL(route.request().url()).pathname;
+  await route.fulfill({json:path==='/session'?{token:'fixture-token'}:{run_id:id,job_id:'job-1',stage:'failed',failed_stage:'recording',error_code:'EXPORT_RECORD_NOT_CONFIRMED',error:'The saved link could not be confirmed.'}});
+ });
+ await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
+ await page.locator('[data-generate="resume"]').click();
+ await expect(page.locator('#syncStatus')).toContainText(id);await expect(page.locator('#syncStatus')).toContainText('recording');
+ await expect(page.locator('[data-generate="resume"]')).toBeEnabled();await expect(page.locator('dialog[open]')).toHaveCount(0);
+});

@@ -1,4 +1,4 @@
-const stages=new Set(['queued','writing','saving','pdf','uploading','recording','complete','failed']);
+const stages=new Set(['queued','reading','context','verifying','confirming','writing','saving','pdf','uploading','recording','complete','failed']);
 export function createOneClickClient({baseUrl='http://127.0.0.1:8766',fetchImpl=globalThis.fetch,pollMs=1500,maxWaitMs=600000}={}){
   const url=new URL(baseUrl);
   if(url.protocol!=='http:'||url.hostname!=='127.0.0.1'||url.username||url.password||url.pathname!=='/'||url.search||url.hash)throw Error('Invalid Raven helper address.');
@@ -27,7 +27,11 @@ export function createOneClickClient({baseUrl='http://127.0.0.1:8766',fetchImpl=
     for(;;){
       if(!stages.has(run.stage)||run.run_id!==runId||(run.job_id&&String(run.job_id)!==String(input.job_id)))throw Error('Raven helper returned an invalid status.');
       onStage(run.stage);
-      if(run.stage==='failed')throw Error(run.error||'Resume generation failed. Your saved documents remain available.');
+      if(run.stage==='failed'){
+        const error=Error((run.error||'Document generation failed. Your saved documents remain available.')+' [Request '+runId+(stages.has(run.failed_stage)?' · '+run.failed_stage:'')+']');
+        error.run_id=runId;error.failed_stage=run.failed_stage;error.error_code=run.error_code;
+        throw error;
+      }
       if(run.stage==='complete'){
         const kinds=input.document_type==='both'?['resume','coverLetter']:[input.document_type];
         if(!kinds.every(kind=>run.documents?.some(d=>d.document_type===kind&&d.document_url&&/^[a-f0-9]{64}$/i.test(d.document_sha256||'')&&/^https:\/\/drive\.google\.com\/file\/d\/[A-Za-z0-9_-]{10,160}\/view$/.test(d.drive_url||'')&&d.file_id)))throw Error('Raven helper has not confirmed the saved document and Drive PDF.');

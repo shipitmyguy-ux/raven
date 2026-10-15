@@ -15,6 +15,7 @@ export async function createReceiptJournal(directory){
  const path=key=>join(directory,createHash('sha256').update(key).digest('hex')+'.json');
  return {async get(key){try{return JSON.parse(await readFile(path(key),'utf8'));}catch(error){if(error.code==='ENOENT')return undefined;throw Error('RECEIPT_JOURNAL_INVALID');}},async set(key,value){await atomicJson(path(key),value);}};
 }
+const diagnosticCodes=new Set(['CHATGPT_RUNNER_FAILED','FACTUAL_REVIEW_BLOCKED','INVALID_DOCUMENT','VERSION_CONFLICT','DRIVE_METADATA_NOT_CONFIRMED','DRIVE_UPLOAD_NOT_CONFIRMED','DRIVE_UPLOAD_NOT_VERIFIED','DOCUMENT_UNAVAILABLE','NOT_FOUND','DATABASE_UNAVAILABLE','UNAUTHORIZED','GENERATION_CONTEXT_INCOMPLETE','DOCUMENT_READBACK_NOT_CONFIRMED','EXPORT_LOOKUP_FAILED','PDF_READBACK_NOT_CONFIRMED','EXPORT_RECORD_NOT_CONFIRMED','PDF_OR_DRIVE_EXPORT_FAILED','RECEIPT_JOURNAL_INVALID']);
 const safeError=error=>({
  CHATGPT_RUNNER_FAILED:'ChatGPT generation or Drive access failed. Your saved document is preserved; retry after checking your ChatGPT connection.',
  FACTUAL_REVIEW_BLOCKED:'The draft did not pass Raven’s factual review. Your existing documents were preserved.',
@@ -34,13 +35,13 @@ export async function createOneClickServer({runWorkflow,rest,authorizeJob,stateD
  for(const name of await readdir(stateDir)){
   if(!/^[a-f0-9-]{36}\.json$/.test(name))continue;
   const state=JSON.parse(await readFile(join(stateDir,name),'utf8'));
-  if(!['complete','failed'].includes(state.stage)){state.stage='failed';state.error='The helper restarted. Click again to resume safely from the saved document and upload receipt.';}
+  if(!['complete','failed'].includes(state.stage)){state.failed_stage=state.stage;state.error_code='HELPER_RESTARTED';state.stage='failed';state.error='The helper restarted. Click again to resume safely from the saved document and upload receipt.';}
   runs.set(state.run_id,state);
  }
  const save=state=>atomicJson(join(stateDir,state.run_id+'.json'),state);
  async function persist(state){
   await save(state);
-  await rest('raven_job_events',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({job_id:state.job_id,event_type:'resume_workflow',source:'raven-one-click',summary:`Resume workflow: ${state.stage}`,metadata:{run_id:state.run_id,stage:state.stage,document_type:state.document_type,error:state.error||null,documents:(state.documents||[]).map(({document_type,document_sha256,drive_url,file_id})=>({document_type,document_sha256,drive_url,file_id}))}})});
+  await rest('raven_job_events',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({job_id:state.job_id,event_type:'resume_workflow',source:'raven-one-click',summary:`Resume workflow: ${state.stage}`,metadata:{run_id:state.run_id,stage:state.stage,document_type:state.document_type,error:state.error||null,failed_stage:state.failed_stage||null,failed_document_type:state.failed_document_type||null,error_code:state.error_code||null,stage_started_at:state.stage_started_at||null,elapsed_ms:state.elapsed_ms||0,stage_timings:state.stage_timings||[],documents:(state.documents||[]).map(({document_type,document_sha256,drive_url,file_id})=>({document_type,document_sha256,drive_url,file_id}))}})});
  }
  function enqueue(input){
   const key=input.job_id+'|'+input.document_type;
@@ -60,7 +61,7 @@ export async function createOneClickServer({runWorkflow,rest,authorizeJob,stateD
     await writes;
     const complete={...state,...result,stage:'complete'};await persist(complete);Object.assign(state,complete);
    }catch(error){
-    await writes.catch(()=>{});state.stage='failed';state.error=safeError(error);state.documents=error.partial_documents||state.documents||[];
+    await writes.catch(()=>{});if(error.diagnostics)Object.assign(state,error.diagnostics);state.failed_stage=error.failed_stage||state.stage;state.failed_document_type=error.failed_document_type||state.document_type;state.error_code=diagnosticCodes.has(error.message)?error.message:'WORKFLOW_FAILED';state.stage='failed';state.error=safeError(error);state.documents=error.partial_documents||state.documents||[];
     await persist(state).catch(()=>save(state));
    }finally{active.delete(key);}
   });
