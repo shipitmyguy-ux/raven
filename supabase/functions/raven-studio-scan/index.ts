@@ -1,4 +1,7 @@
 import "../_shared/track-filter.js";
+import {collectRemoteGameSheet, spreadsheetArtRoleAllowed} from "../_shared/studio-sheet-feed.mjs";
+import {duplicateEvidence} from "../_shared/job-duplicate-evidence.mjs";
+import {sameJob} from "../_shared/studio-result-dedup.mjs";
 import {MAX_STUDIO_JOBS, providerEndpoint, providerRecords, normalizeStudioJobs, deduplicateStudioJobs} from "../_shared/studio-providers.mjs";
 import {fetchStudioJson, fetchStudioText, enrichStudioDetails, reuseFreshStudioDescriptions} from "../_shared/studio-collector.mjs";
 import {collectIcims} from "../_shared/studio-icims.mjs";
@@ -48,6 +51,7 @@ async function preparePortalDetails(jobs:any[],deadline:number,restoreMetadata=f
 }
 async function sourceJobs(s:any,deadline:number){
  const portalOptions={fetchJson:fetchStudioJson,fetchText:fetchStudioText,deadline,jobAllowed:(j:any)=>gameArtRoleAllowed(j)&&jobLocationAllowed(j),detailAllowed:(j:any)=>gameArtRoleAllowed(j),prepareDetails:(jobs:any[])=>preparePortalDetails(jobs,deadline,true)};
+ if(s.provider==="remotegamessheet")return collectRemoteGameSheet(s);
  if(s.provider==="ingamejob")return collectInGameJob(s,portalOptions);
  if(s.provider==="gamesjobsdirect")return collectGamesJobsDirect(s,portalOptions);
  if(s.provider==="eightbit")return collectEightBit(s,portalOptions);
@@ -86,20 +90,66 @@ async function sourceJobs(s:any,deadline:number){
  }
  throw Error("Provider page limit exceeded");
 }
+
+const SHEET_SOURCE="Tim Ploeger Remote Games Sheet";
+async function deduplicateSheetResults(jobs:any[]) {
+ // Read-only cross-source comparison, including descriptions where available.
+ // Preserve saved application records; only insert genuinely new discoveries.
+ const known:any[]=[];
+ for(let offset=0;offset<5000;offset+=500){
+  const rows=await db("raven_search_results?select=url,title,company,location,remote,snippet,source,track,status&track=eq."+encodeURIComponent("Games / 3D")+"&limit=500&offset="+offset);
+  if(!Array.isArray(rows))throw Error("Invalid existing game-job records");
+  known.push(...rows);
+  if(rows.length<500)break;
+  if(offset>=4500)throw Error("Existing game-job lookup exceeded safe bounds");
+ }
+ const fresh:any[]=[],refresh:string[]=[];
+ let skippedExact=0,heldForReview=0;
+ for(const job of jobs){
+  const proposed={...job,source:SHEET_SOURCE,track:"Games / 3D",status:"Discovered"};
+  const match=known.find(row=>sameJob(proposed,row)||duplicateEvidence(proposed,row).decision==="duplicate");
+  if(match){
+   skippedExact++;
+   if(match.source===SHEET_SOURCE&&match.url===job.url&&match.status==="Discovered")refresh.push(job.url);
+   continue;
+  }
+  const review=known.some(row=>duplicateEvidence(proposed,row).decision==="review");
+  if(review){heldForReview++;continue;}
+  fresh.push(job);known.push(proposed);
+ }
+ return {jobs:fresh,refresh,skippedExact,heldForReview};
+}
+async function refreshExistingSheetRows(urls:string[],now:string){
+ for(let i=0;i<urls.length;i+=25){
+  // URL quoting is performed before query encoding; do not interpolate raw
+  // external spreadsheet strings into the PostgREST filter grammar.
+  const list="("+urls.slice(i,i+25).map(url=>'"'+url.replace(/\\/g,'\\\\').replace(/"/g,'\\"')+'"').join(",")+")";
+  await db("raven_search_results?url=in."+encodeURIComponent(list)+"&source=eq."+encodeURIComponent(SHEET_SOURCE)+"&status=eq.Discovered","PATCH",{last_seen:now});
+ }
+}
 async function check(s:any,tickDeadline:number){
  const start=Date.now(),deadline=Math.min(tickDeadline,start+75000);let cursorNext:any;let status="ok",error="",total=0,eligible=0,details:any={status:"not_checked",error:null};
  try{
   const collected=await sourceJobs(s,deadline);const jobs=collected.jobs;total=collected.fetched;cursorNext=collected.detail_cursor_next;
-  const selected=jobs.filter((j:any)=>gameArtRoleAllowed(j)&&jobLocationAllowed(j));
+  const sheet=s.provider==="remotegamessheet";
+  const selected=jobs.filter((j:any)=>(sheet?spreadsheetArtRoleAllowed(j):gameArtRoleAllowed(j))&&jobLocationAllowed(j));
   eligible=selected.length;
-  // Cache lookups are only needed for descriptions missing from this feed.
-  await preparePortalDetails(selected.filter((j:any)=>!j.snippet),deadline);
-  details=collected.details||await enrichStudioDetails(s,selected,{deadline});
   const seen=new Date().toISOString();
-  for(const group of [selected.filter((j:any)=>!!j.snippet),selected.filter((j:any)=>!j.snippet)])for(let i=0;i<group.length;i+=35)await db("raven_search_results?on_conflict=url","POST",group.slice(i,i+35).map((j:any)=>({
+  let candidates=selected,skippedExact=0,heldForReview=0;
+  if(sheet){
+   const distinct=await deduplicateSheetResults(selected);
+   candidates=distinct.jobs;skippedExact=distinct.skippedExact;heldForReview=distinct.heldForReview;
+   await refreshExistingSheetRows(distinct.refresh,seen);
+  }else{
+   // Official providers keep their existing description cache and update path.
+   await preparePortalDetails(selected.filter((j:any)=>!j.snippet),deadline);
+  }
+  details=collected.details||await enrichStudioDetails(s,candidates,{deadline});
+  for(const group of [candidates.filter((j:any)=>!!j.snippet),candidates.filter((j:any)=>!j.snippet)])for(let i=0;i<group.length;i+=35)await db("raven_search_results?on_conflict=url","POST",group.slice(i,i+35).map((j:any)=>({
    track:"Games / 3D",title:j.title,company:j.company,location:j.location,remote:j.remote,
-   url:j.url,...(j.snippet?{snippet:j.snippet,studio_description_updated_at:j.studio_description_updated_at||seen}:{}),source:"Studio:"+s.provider,score:12,status:"Discovered",last_seen:seen
+   url:j.url,...(j.snippet?{snippet:j.snippet,studio_description_updated_at:j.studio_description_updated_at||seen}:{}),source:sheet?SHEET_SOURCE:"Studio:"+s.provider,score:sheet?8:12,status:"Discovered",last_seen:seen
   })));
+  if(sheet)details={...details,skipped_exact:skippedExact,held_for_review:heldForReview,imported:candidates.length};
  }catch(e){status="failed";error=String(e instanceof Error?e.message:e);}
  const checked=new Date().toISOString();
  await db("raven_studio_sources?id=eq."+s.id,"PATCH",{
