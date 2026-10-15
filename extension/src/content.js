@@ -286,7 +286,7 @@
         let message="Raven application assistant: "+filled+" known field"+(filled===1?"":"s")+" filled";
         if(uploadCount) message+=" · "+uploadCount+" available document"+(uploadCount===1?"":"s")+" attached";
         if(skippedFormat) message+=" · a document format is not accepted by this upload field";
-        message+=". Review every field and attachment before submitting.";
+        message+=" · continue on the employer site to complete your application";
         banner(message);
       }
     }

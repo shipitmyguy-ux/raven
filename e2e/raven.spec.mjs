@@ -183,7 +183,7 @@ test("JSON attachment automatically validates and persists to its original job",
   expect(api.getJob().resume).toContain('data:text/html');
   await page.reload();await page.locator('[data-track="Professional"]').click();
   await page.locator('.job-title').filter({hasText:savedJob.title}).click();
-  await expect(page.locator('[data-generate="resume"]')).toHaveText('Review');
+  await expect(page.locator('[data-generate="resume"]')).toHaveText('Open');
 });
 
 test("loads mocked jobs and all tracks without page errors",async({page})=>{
@@ -1101,7 +1101,7 @@ test("resume generation stays visibly active and does not pop review after leavi
   await expect(page.locator("#documentReviewDialog")).not.toBeVisible();
 
   await page.locator(".job-card-summary").first().click();
-  await expect(page.locator('[data-generate="resume"]')).toHaveText("Review");
+  await expect(page.locator('[data-generate="resume"]')).toHaveText("Open");
 });
 
 test("requested document changes show persistent AI processing feedback",async({page})=>{
@@ -1171,7 +1171,7 @@ test("cover letter generation inherits resume progress and nonintrusive completi
   await expect(page.locator("#documentReviewDialog")).not.toBeVisible();
 
   await page.locator(".job-card-summary").first().click();
-  await expect(page.locator('[data-generate="coverLetter"]')).toHaveText("Review");
+  await expect(page.locator('[data-generate="coverLetter"]')).toHaveText("Open");
 });
 
 test("new discoveries generate both documents in the background without blocking application",async({page})=>{
@@ -1193,8 +1193,8 @@ test("new discoveries generate both documents in the background without blocking
   await page.reload();
   await page.locator('[data-track="Professional"]').click();
   await page.locator(".job-card-summary").first().click();
-  await expect(page.locator('[data-generate="resume"]')).toHaveText("Review");
-  await expect(page.locator('[data-generate="coverLetter"]')).toHaveText("Review");
+  await expect(page.locator('[data-generate="resume"]')).toHaveText("Open");
+  await expect(page.locator('[data-generate="coverLetter"]')).toHaveText("Open");
   expect(api.getGenerationCalls()).toBe(2);
 });
 
@@ -1218,8 +1218,8 @@ for (const track of ["Games / 3D", "Professional", "Labor", "Wildcard"]) {
     await page.reload();
     await page.getByRole("tab",{name:track,exact:true}).click();
     await page.locator(".job-card-summary").first().click();
-    await expect(page.locator('[data-generate="resume"]')).toHaveText("Review");
-    await expect(page.locator('[data-generate="coverLetter"]')).toHaveText("Review");
+    await expect(page.locator('[data-generate="resume"]')).toHaveText("Open");
+    await expect(page.locator('[data-generate="coverLetter"]')).toHaveText("Open");
     expect(errors).toEqual([]);
   });
 }
@@ -1273,7 +1273,7 @@ test("failed pair errors survive reload and retry clears only the successful doc
   await expect(page.locator('#documentReviewDialog')).toBeVisible();
   await expect.poll(errors).toEqual({'job-1|coverLetter':'cover letter generation failed: Mock generator unavailable'});
   await page.reload();await openJob();
-  await expect(page.locator('[data-generate="resume"]')).toHaveText('Review');
+  await expect(page.locator('[data-generate="resume"]')).toHaveText('Open');
   await expect(page.locator('.document-generation-error')).toHaveCount(1);
   await expect(page.locator('.document-generation-error')).toContainText('cover letter generation failed');
 });
@@ -1295,7 +1295,7 @@ test("failed pair preserves its successful sibling across reload and retry",asyn
   await expect(page.locator('#documentReviewDialog')).toBeVisible();
   const prior=api.getJob().resume;expect(prior).toContain('data:text/html');
   await page.reload();await openJob();
-  await expect(page.locator('[data-generate="resume"]')).toHaveText('Review');
+  await expect(page.locator('[data-generate="resume"]')).toHaveText('Open');
   await expect(page.locator('.document-generation-error')).toContainText('Cover reviewer unavailable');
   expect(api.getJob().resume).toBe(prior);
   coverFails=false;
@@ -1305,8 +1305,8 @@ test("failed pair preserves its successful sibling across reload and retry",asyn
   expect(api.getJob().resume).toBe(prior);
   await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('ravenGenerationErrorsV1')||'{}'))).toEqual({});
   await page.reload();await openJob();
-  await expect(page.locator('[data-generate="resume"]')).toHaveText('Review');
-  await expect(page.locator('[data-generate="coverLetter"]')).toHaveText('Review');
+  await expect(page.locator('[data-generate="resume"]')).toHaveText('Open');
+  await expect(page.locator('[data-generate="coverLetter"]')).toHaveText('Open');
   await expect(page.locator('.document-generation-error')).toHaveCount(0);
 });
 
@@ -1340,8 +1340,8 @@ test("Generate both creates and persists both documents from one button",async({
   await page.reload();
   await page.getByRole('tab',{name:'Professional',exact:true}).click();
   await page.locator('.job-card-summary').first().click();
-  await expect(page.locator('[data-generate="resume"]')).toHaveText('Review');
-  await expect(page.locator('[data-generate="coverLetter"]')).toHaveText('Review');
+  await expect(page.locator('[data-generate="resume"]')).toHaveText('Open');
+  await expect(page.locator('[data-generate="coverLetter"]')).toHaveText('Open');
 });
 
 test("Finish documents preserves an existing resume",async({page})=>{

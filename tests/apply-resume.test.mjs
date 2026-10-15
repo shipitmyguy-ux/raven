@@ -15,7 +15,7 @@ test('application opens without waiting for either document and sends autofill d
  const job={id:'a',url:'https://example.test/apply',title:'Role',resume:'',coverLetter:''},h=harness(job);h.click();
  assert.equal(h.generationCalls(),0);assert.equal(h.scheduled.length,1);assert.deepEqual(h.events,['raven-application-packet']);
  const packet=JSON.parse(h.bridge.dataset.packet);assert.equal(packet.resume,'');assert.equal(packet.coverLetter,'');assert.equal(packet.profile.email,'candidate@example.com');
- h.flush();assert.equal(h.opened(),job.url);assert.match(h.statuses.at(-1),/review before submitting/);
+ h.flush();assert.equal(h.opened(),job.url);assert.match(h.statuses.at(-1),/Raven is filling known fields/);
 });
 test('application sends each available document without an approval record',()=>{
  const job={id:'b',url:'https://example.test/apply',resume:'saved resume bytes',coverLetter:''},h=harness(job);h.click();

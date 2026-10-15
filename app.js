@@ -2203,7 +2203,7 @@
         const a=document.createElement("a");a.href=url;
         a.download=[job.company,job.title,type].filter(Boolean).join(" - ").replace(/[<>:"/\\|?*\x00-\x1f]/g,"_").slice(0,180)+".docx";
         a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
-        setStatus("Word document downloaded · review before submitting");
+        setStatus("Word document downloaded · available to attach to your application");
       }
     }catch(error){setStatus("Download failed: "+error.message);}
   }
@@ -2403,7 +2403,7 @@
     const bridge=document.getElementById("ravenExtensionBridge");
     if(bridge){ bridge.dataset.packet=JSON.stringify(packet); document.dispatchEvent(new CustomEvent("raven-application-packet")); }
     setTimeout(()=>window.open(job.url,"_blank","noopener"),120);
-    setStatus("Employer application opened · Raven will fill known fields and attach any available documents · review before submitting");
+    setStatus("Employer application opened · Raven is filling known fields and attaching available documents");
   }
 
   function previewableDocumentUrl(value) {
@@ -2416,7 +2416,7 @@
     state.generatorType=type;
     const label=documentLabel(type);
     const value=String(job[type]||"");
-    document.getElementById("reviewTitle").textContent="Review "+label;
+    document.getElementById("reviewTitle").textContent=label;
     document.getElementById("reviewContext").textContent=(job.title||"Role")+(job.company?" at "+job.company:"");
     const link=document.getElementById("reviewOpenFile");
     link.href=value;
@@ -2694,7 +2694,7 @@
       '</span>';
     }
     return '<span class="document-control has-file">'+
-      '<button class="document-primary" type="button" data-generate="'+escapeAttr(key)+'">Review</button>'+feedback+
+      '<button class="document-primary" type="button" data-generate="'+escapeAttr(key)+'" aria-label="Open '+escapeAttr(label)+'">Open</button>'+feedback+
       '<span class="document-overflow">'+
         '<button class="document-menu-button" type="button" data-document-menu aria-haspopup="menu" aria-expanded="false" aria-label="More '+escapeAttr(fileLabel)+' options" title="More options">…</button>'+
         '<span class="document-menu" role="menu" hidden>'+

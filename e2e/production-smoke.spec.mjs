@@ -225,10 +225,10 @@ test.describe("Deployed Raven App Production Smoke Tests", () => {
     await expect(applyGate).toBeVisible();
     await expect(applyGate).toContainText("Apply");
 
-    // Click Review for resume to exercise non-destructive Review Documents flow
+    // Open the saved resume to confirm it remains accessible without an approval step.
     await page.locator('[data-generate="resume"]').first().click();
     await expect(page.locator("#documentReviewDialog")).toBeVisible();
-    await expect(page.locator("#reviewTitle")).toContainText("Review resume");
+    await expect(page.locator("#reviewTitle")).toContainText("resume");
 
     // Close review dialog
     await page.locator("[data-review-close]").first().click();

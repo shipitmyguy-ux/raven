@@ -5,7 +5,7 @@
 - [x] Queue every eligible newly discovered feed job for resume and cover-letter generation.
 - [x] Keep Apply + autofill available without either document and attach any available compatible file.
 - [x] Remove the explicit document approval state/control; retain factual and rendered-document validation and manual employer submission.
-- [x] Review and push `codex/raven-autofill-no-document-approval` (`1119902`; tests not run).
+- [x] Push `codex/raven-autofill-no-document-approval`; remove remaining mandatory-sounding review copy (`1119902`; tests not run).
 
 ## Approved InGameJob production activation — 2026-10-13
 

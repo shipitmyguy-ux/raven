@@ -2,7 +2,7 @@
 
 ## Discovery-time documents and apply without approval — 2026-10-15
 
-Implemented and pushed in commit `1119902` on `codex/raven-autofill-no-document-approval`: every eligible newly discovered feed job is queued for sequential resume and cover-letter generation, with retry timing persisted locally. Apply + autofill opens the employer listing immediately and sends profile/remembered answers plus whichever documents are currently available; the browser extension attaches compatible files without an approval record and never submits. Generation still requires factual and rendered-document checks. Background generation saves discovered jobs through Raven's existing job persistence path, so it can add feed jobs to Saved. Tests were not run; `git diff --check` passed.
+Implemented on `codex/raven-autofill-no-document-approval`: every eligible newly discovered feed job is queued for sequential resume and cover-letter generation, with retry timing persisted locally. Apply + autofill opens the employer listing immediately and sends profile/remembered answers plus whichever documents are currently available; the browser extension attaches compatible files without an approval record and never submits. Follow-up `1119902` also removed mandatory-sounding review copy from apply status, extension banner, and saved-document controls. Generation still requires factual and rendered-document checks. Background generation saves discovered jobs through Raven's existing job persistence path, so it can add feed jobs to Saved. `git diff --check` passed; tests were not run.
 
 ## Approved InGameJob production activation — 2026-10-13
 

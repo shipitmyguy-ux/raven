@@ -38,7 +38,7 @@ Raven is a web job-search, application-tracking and application-assistance syste
 
 Four tracks are Professional, Labor, Wildcard, and Games / 3D. Track tabs filter existing results; refresh uses a shared all-track path. Confirmed remote work anywhere is eligible. In-person/hybrid roles require explicit nearby Colorado work locations using the configured city whitelist, not an estimated radius. Professional excludes direct selling duties/titles while permitting appropriate support/operations/enablement. Games / 3D requires relevant art-role evidence and rejects technical/programming and other excluded roles. Filtering must not delete saved documents or application history.
 
-Web and browser extension are in scope. Native iOS/Android are excluded. Final employer submission stays manual. Generated prose must use verified facts; a posting never establishes a candidate qualification. Application autofill and available document attachment do not wait for a separate user approval step.
+Web and browser extension are in scope. Native iOS/Android are excluded. Raven opens the employer form and fills known fields; the employer site keeps control of submission. Generated prose must use verified facts; a posting never establishes a candidate qualification. Application autofill and available document attachment do not wait for document generation or approval.
 
 ## Canonical systems and file map
 
