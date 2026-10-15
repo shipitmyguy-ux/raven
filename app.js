@@ -777,12 +777,13 @@
         };
       });
     const savedUrls = new Set(saved.map((job)=>normalizeComparableUrl(job.url)).filter(Boolean));
+    const savedIds = new Set(saved.filter((job)=>job.id&&!job._discovered&&String(job.status||"Saved").toLowerCase()!=="discovered").map((job)=>String(job.id)));
     const unsaved = discovered.filter((job)=>!savedUrls.has(normalizeComparableUrl(job.url))
       && !state.jobs.some(existing=>window.RavenJobDedup.sameJob(existing,job)));
     return window.RavenJobDedup.deduplicateJobs([...saved, ...unsaved]).filter(job=>job.listing_state==="closed" || (
       (state.activeTrack!=="Games / 3D"||window.RavenTrackFilter.gameArtRoleAllowed(job))
       && (state.activeTrack!=="Professional"||window.RavenTrackFilter.professionalRoleAllowed(job))
-      && window.RavenTrackFilter.jobLocationAllowed(job)));
+      && (savedIds.has(String(job.id))||window.RavenTrackFilter.jobLocationAllowed(job))));
   }
   function filteredJobs() {
     const query=searchBox.value.trim().toLowerCase();

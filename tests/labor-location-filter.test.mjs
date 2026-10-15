@@ -27,14 +27,14 @@ test('backend filters before ranking across tracks',()=>{
  const db=fs.readFileSync(new URL('../supabase/functions/raven-backend-v3/db.ts',import.meta.url),'utf8');
  assert.match(db,/candidateAllowedForTrack/);
 });
-test('browser filters saved and cached Labor without mutating history',()=>{
+test('browser keeps saved Labor history while filtering unsaved distant jobs',()=>{
  const code=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
  const start=code.indexOf('  function combinedJobs() {'),end=code.indexOf('  function filteredJobs()',start);
  const state={activeTrack:'Labor',jobs:[{id:'distant',track:'Labor',title:'Painter',location:'Denver, CO',url:'https://example.com/distant',status:'Applied'},{id:'local',track:'Labor',title:'Painter',location:'Fort Collins, CO',url:'https://example.com/local',status:'Saved'}],discovered:{Labor:[{title:'Maintenance Technician',location:'Loveland, CO',url:'https://example.com/loveland'},{title:'Custodian',location:'Colorado',url:'https://example.com/unknown'}]}};
  const before=JSON.stringify(state);
  const context={state,window:{RavenTrackFilter:globalThis.RavenTrackFilter,RavenJobDedup:globalThis.RavenJobDedup},normalizeComparableUrl:v=>v||'',parseBool:v=>Boolean(v),preferredDescription:(a,b)=>a||b};
  vm.createContext(context);vm.runInContext(code.slice(start,end)+';result=combinedJobs();',context);
- assert.deepEqual(Array.from(context.result,r=>r.location),['Fort Collins, CO','Loveland, CO']);
+ assert.deepEqual(Array.from(context.result,r=>r.location),['Denver, CO','Fort Collins, CO','Loveland, CO']);
  assert.equal(JSON.stringify(state),before);
 });
 
@@ -75,7 +75,7 @@ test('hybrid work requires a sole Fort Collins Colorado location across all trac
  }
 });
 
-test('browser hides saved and cached outside-city hybrid jobs without changing saved history',()=>{
+test('browser keeps saved hybrid jobs across tracks but suppresses unsaved hybrids',()=>{
  const code=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
  const start=code.indexOf('  function combinedJobs() {'),end=code.indexOf('  function filteredJobs()',start);
  for(const activeTrack of ['Professional','Labor','Wildcard','Games / 3D']){
@@ -90,7 +90,24 @@ test('browser hides saved and cached outside-city hybrid jobs without changing s
   const before=JSON.stringify(state);
   const context={state,window:{RavenTrackFilter:globalThis.RavenTrackFilter,RavenJobDedup:globalThis.RavenJobDedup},normalizeComparableUrl:v=>v||'',parseBool:v=>Boolean(v),preferredDescription:(a,b)=>a||b};
   vm.createContext(context);vm.runInContext(code.slice(start,end)+';result=combinedJobs();',context);
-  assert.deepEqual(Array.from(context.result,r=>r.location),['Fort Collins, CO (Hybrid)','Loveland, CO'],activeTrack);
+  assert.deepEqual(Array.from(context.result,r=>r.location),['Loveland, CO (Hybrid)','Fort Collins, CO (Hybrid)','Loveland, CO'],activeTrack);
   assert.equal(JSON.stringify(state),before,activeTrack+': saved history preserved');
  }
+});
+
+test('saved Games documents stay reachable despite hybrid wording; discovered onsite remains hidden',()=>{
+ const code=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
+ const start=code.indexOf('  function combinedJobs() {'),end=code.indexOf('  function filteredJobs()',start);
+ const state={activeTrack:'Games / 3D',jobs:[
+  {id:'saved-remote-or-hybrid',track:'Games / 3D',title:'Principal Environment Artist',company:'Studio A',location:'Remote UK or Hybrid Lisbon',remote:true,status:'Saved',url:'https://example.com/saved',resume:'saved resume',coverLetter:'saved cover'},
+  {id:'ignored-remote-or-hybrid',track:'Games / 3D',title:'Lead Environment Artist',company:'Studio B',location:'Remote EMEA; Hybrid preferred',remote:true,status:'Ignored',url:'https://example.com/ignored'}
+ ],discovered:{'Games / 3D':[
+  {id:'DISC-onsite',track:'Games / 3D',title:'Environment Artist',company:'Studio C',location:'London, UK',remote:false,status:'Discovered',url:'https://example.com/onsite'},
+  {id:'DISC-remote',track:'Games / 3D',title:'Environment Artist',company:'Studio D',location:'Remote',remote:true,status:'Discovered',url:'https://example.com/remote'}
+ ]}};
+ const context={state,window:{RavenTrackFilter:globalThis.RavenTrackFilter,RavenJobDedup:globalThis.RavenJobDedup},normalizeComparableUrl:v=>v||'',parseBool:v=>Boolean(v),preferredDescription:(a,b)=>a||b};
+ vm.createContext(context);vm.runInContext(code.slice(start,end)+';result=combinedJobs();',context);
+ assert.deepEqual(Array.from(context.result,r=>r.id),['saved-remote-or-hybrid','ignored-remote-or-hybrid','DISC-remote']);
+ assert.equal(context.result[0].resume,'saved resume');
+ assert.equal(context.result[0].coverLetter,'saved cover');
 });
