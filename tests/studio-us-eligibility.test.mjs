@@ -59,3 +59,24 @@ test('a mere mention of visa sponsorship must not be considered mandatory',()=>{
  assert.equal(requiresVisaOrWorkPermit({snippet:'No work visa is needed; remote from any country.'}),false);
  assert.equal(requiresVisaOrWorkPermit({snippet:'Will you require visa sponsorship?'}),false);
 });
+
+test('visa sponsorship questions and negated requirements do not hide postings',()=>{
+ for(const snippet of [
+   'Is a visa required?',
+   'Do you require visa sponsorship?',
+   'Visa sponsorship is required for candidates who need it.',
+   'No work visa is required for this remote role.',
+   'The work visa is not mandatory.',
+   'Visa sponsorship is not offered.',
+   'Work permit sponsorship will be considered.',
+   'No visa required, but candidates must be available during CET.'
+ ])assert.equal(requiresVisaOrWorkPermit({location:'Europe only',snippet}),false,snippet);
+});
+test('separate explicit required work visa remains disqualifying despite sponsorship boilerplate',()=>{
+ assert.equal(requiresVisaOrWorkPermit({
+  snippet:'Visa sponsorship is not offered; a valid work visa is mandatory for this position.'
+ }),true);
+ assert.equal(requiresVisaOrWorkPermit({
+  snippet:'No visa is required for visitors, but applicants must hold a valid work permit.'
+ }),true);
+});
