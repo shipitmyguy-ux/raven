@@ -9,6 +9,7 @@ import * as providers from '../supabase/functions/_shared/studio-providers.mjs';
 import * as sheet from '../supabase/functions/_shared/studio-sheet-feed.mjs';
 import * as evidence from '../supabase/functions/_shared/job-duplicate-evidence.mjs';
 import {planStudioIngestion} from '../supabase/functions/_shared/studio-ingest-dedup.mjs';
+import {usStudioScopeAllowed} from '../supabase/functions/_shared/studio-us-eligibility.mjs';
 import {sameJob} from '../supabase/functions/_shared/studio-result-dedup.mjs';
 import '../supabase/functions/_shared/track-filter.js';
 const source=stripTypeScriptTypes(fs.readFileSync('supabase/functions/raven-studio-scan/index.ts','utf8').replace(/^import .*;\r?\n/gm,''));
@@ -40,7 +41,7 @@ const fakeFetch=async(url,opts={})=>{
  return new Response(null,{status:204});
 };
 let handler;
-vm.runInNewContext(source,{...providers,...collector,...schedule,...sheet,collectRemoteGameSheet:async()=>({jobs:collected,fetched:656,details:{status:'not_needed',error:null,attempted:0,completed:0,deferred:0}}),...evidence,sameJob,planStudioIngestion,
+vm.runInNewContext(source,{...providers,...collector,...schedule,...sheet,collectRemoteGameSheet:async()=>({jobs:collected,fetched:656,details:{status:'not_needed',error:null,attempted:0,completed:0,deferred:0}}),...evidence,sameJob,planStudioIngestion,usStudioScopeAllowed,
  fetch:fakeFetch,globalThis:{RavenTrackFilter:globalThis.RavenTrackFilter},
  Deno:{env:{get:k=>k==='SUPABASE_URL'?'https://db.example':'local-test-key'},serve:fn=>{handler=fn;}},
  crypto,Response,TextEncoder,TextDecoder,Uint8Array,AbortSignal,URL});
