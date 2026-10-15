@@ -1,5 +1,11 @@
 # Raven execution handoff
 
+## Current task: Apply without document gating — October 15, 2026
+
+Working branch `codex/raven-apply-without-review` is based directly on current `origin/main` (`f2f1159`). The implementation replaces the Apply action's preparation pipeline with a direct version-1 autofill packet, includes saved profile/answers and available documents, removes the paused-preparation UI gate/startup reconnect, and queues missing documents for feed jobs. Extension v2.4.9 handles the packet regardless of the old prepare state, adds saved cover-letter text where a compatible text field exists, and uses non-approval wording. Document factual/rendered validation and manual employer submission remain.
+
+PR #58 and #61 were closed unmerged at the owner's request. Do not merge PR #99: it is based on stale code and includes unrelated changes. `git diff --check` passed; no test suite was run locally. Next: inspect diff, make any corrections, commit/push this clean branch, open a replacement PR, close #99 after replacement exists, wait for required CI, merge, and verify hosted deployment. User has already authorized push and merge.
+
 ## Required-field warning fixed and short cover defaults published — October 15, 2026
 
 PR98 merged as ca0015e. General completion checks now precede missing-label warnings for text, textarea, select, checkbox, same-form or form-less radio groups and file controls. Completed unlabeled controls no longer warn; incomplete controls still report their label or Unlabeled required field. Disabled/hidden non-file checks and separate upload acceptance remain. Installed extension2.4.8 updated in owner-identified folder and owner reloaded it; no new permissions.

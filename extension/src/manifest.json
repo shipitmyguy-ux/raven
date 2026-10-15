@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Raven Application Assistant",
-  "version": "2.4.8",
-  "description": "Save jobs to Raven and assist with approved application autofill. Never submits applications.",
+  "version": "2.4.9",
+  "description": "Save jobs to Raven and autofill employer applications with available profile data and documents. Never submits applications.",
   "permissions": ["contextMenus","tabs","storage","downloads"],
   "host_permissions": ["<all_urls>"],
   "background": {"service_worker":"background.js"},

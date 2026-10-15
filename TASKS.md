@@ -1,3 +1,10 @@
+## Apply without document gating — October 15, 2026
+
+- [~] Let the user open and autofill an employer application regardless of resume/cover-letter generation, approval, review, Drive export or paused-preparation state.
+- [~] Queue both missing documents for newly discovered feed jobs and generate them in the background without opening review.
+- [x] Close unrelated draft PRs #58 and #61 unmerged at the owner's request.
+- [ ] Open a clean replacement PR for #99, wait for CI, merge, and verify publication. No tests have been run locally; only `git diff --check` is verified so far.
+
 ## Required-field warning fixed and short cover defaults published — October 15, 2026
 
 PR98 merged as ca0015e. General completion checks now precede missing-label warnings for text, textarea, select, checkbox, same-form or form-less radio groups and file controls. Completed unlabeled controls no longer warn; incomplete controls still report their label or Unlabeled required field. Disabled/hidden non-file checks and separate upload acceptance remain. Installed extension2.4.8 updated in owner-identified folder and owner reloaded it; no new permissions.

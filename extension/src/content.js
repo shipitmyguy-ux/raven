@@ -80,7 +80,10 @@
       try{
         const packet=JSON.parse(bridge.dataset.packet);
         if(packet?.version!==1||packet?.mode==="prepare")return;
-        chrome.storage.local.set({[PACKET_KEY]:packet},()=>banner("Raven application packet sent to extension."));
+        chrome.storage.local.set({[PACKET_KEY]:packet},()=>{
+          banner("Raven application packet sent to extension.");
+          document.dispatchEvent(new CustomEvent("raven-application-packet-saved"));
+        });
       }catch{}
     });
     chrome.runtime.onMessage.addListener((message)=>{
@@ -224,7 +227,7 @@
     return findByTerms(kind==="resume"?["resume","cv"]:["cover letter","cover"],{files:true});
   }
 
-  function uploadApprovedDocument(packet,kind){
+  function uploadAvailableDocument(packet,kind){
     const value=kind==="resume"?packet.resume:packet.coverLetter;
     const file=dataUrlToFile(value,kind,packet);
     if(!file) return {uploaded:false,reason:"unavailable"};
@@ -292,9 +295,6 @@
   }
 
   chrome.storage.local.get([PACKET_KEY,SESSION_KEY],async(values)=>{
-    chrome.runtime.sendMessage({type:"raven-prepare-status"},status=>{
-    void chrome.runtime.lastError;
-    if(status?.prepared)return;
     let session=values[SESSION_KEY]||null;
     const packet=values[PACKET_KEY];
     if(packet?.version===1&&packet?.jobUrl){
@@ -306,8 +306,12 @@
       }else{
         const profileCount=fillProfile(packet.profile||{});
         const answerCount=fillRememberedAnswers(packet.answers||{});
-        const resumeResult=uploadApprovedDocument(packet,"resume");
-        const coverResult=uploadApprovedDocument(packet,"coverLetter");
+        const coverLetterInput=[...document.querySelectorAll("textarea")].find(el=>
+          core.normalizeQuestion(labelFor(el))==="cover letter"&&!String(el.value||"").trim()&&
+          (!Number.isInteger(el.maxLength)||el.maxLength<0||String(packet.coverLetterText||"").length<=el.maxLength));
+        const coverTextFilled=Boolean(coverLetterInput&&packet.coverLetterText&&setControlValue(coverLetterInput,packet.coverLetterText));
+        const resumeResult=uploadAvailableDocument(packet,"resume");
+        const coverResult=uploadAvailableDocument(packet,"coverLetter");
         const uploadCount=Number(resumeResult.uploaded)+Number(coverResult.uploaded);
         const skippedFormat=[resumeResult,coverResult].filter((result)=>result.reason==="format").length;
         session={version:1,createdAt:new Date().toISOString(),jobId:packet.jobId||"",jobUrl:packet.jobUrl||"",host:location.hostname,adapter:adapter.id};
@@ -315,13 +319,13 @@
         chrome.storage.local.remove(PACKET_KEY);
         const filled=profileCount+answerCount;
         let message="Raven application assistant: "+filled+" known field"+(filled===1?"":"s")+" filled";
-        if(uploadCount) message+=" · "+uploadCount+" approved document"+(uploadCount===1?"":"s")+" attached";
-        if(skippedFormat) message+=" · approved document format not accepted by this upload field";
-        message+=". Review every field and attachment before submitting.";
+        if(coverTextFilled) message+=" · saved cover letter added";
+        if(uploadCount) message+=" · "+uploadCount+" available document"+(uploadCount===1?"":"s")+" attached";
+        if(skippedFormat) message+=" · available document format not accepted by this upload field";
+        message+=". Complete any remaining employer fields and submit when ready.";
         banner(message);
       }
     }
     watchCompletion(session);
-    });
   });
 })();
