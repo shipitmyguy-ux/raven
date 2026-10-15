@@ -1,4 +1,4 @@
-const stages=new Set(['queued','document_complete','document_failed','context','verifying','confirming','checking_saved_state','checking_drive_receipts','writing','saving','pdf','uploading','recording','complete','failed']);
+const stages=new Set(['queued','persisting','document_complete','document_failed','context','verifying','confirming','checking_saved_state','checking_drive_receipts','writing','saving','pdf','uploading','recording','complete','failed']);
 const runPattern=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 export function createOneClickClient({baseUrl='http://127.0.0.1:8766',fetchImpl=globalThis.fetch,pollMs=1500,maxWaitMs=600000}={}){
   const url=new URL(baseUrl);

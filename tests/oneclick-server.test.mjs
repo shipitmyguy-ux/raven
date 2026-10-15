@@ -180,3 +180,12 @@ test('stage diagnostics survive disk reload and event readback; unknown errors a
   }finally{await f.cleanup();}
  }
 });
+
+test('durable progress write failure identifies persistence and never publishes success',async()=>{
+ let writes=0;
+ const f=await fixture(async(input,progress)=>{progress({stage:'writing',document_type:'resume'});return {job_id:input.jobId,stage:'complete',documents:[]};},{rest:async()=>{if(++writes===2)throw Error('DATABASE_UNAVAILABLE');return [];}});
+ try{
+  const run=await (await f.request('/runs',{job_id:'one',document_type:'resume'})).json();await f.runtime.drain();
+  const result=await (await f.request('/runs/'+run.run_id)).json();assert.equal(result.stage,'failed');assert.equal(result.failed_stage,'persisting');assert.equal(result.error_code,'DATABASE_UNAVAILABLE');
+ }finally{await f.cleanup();}
+});

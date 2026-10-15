@@ -80,7 +80,7 @@ export async function createOneClickServer({runWorkflow,rest,authorizeJob,pairRe
   const state={run_id:randomUUID(),job_id:input.job_id,document_type:input.document_type,stage:'queued',created_at:new Date().toISOString()};
   runs.set(state.run_id,state);for(const key of keys)active.set(key,state);
   void activity.run(()=>scheduler.schedule(async()=>{
-   let writes=Promise.resolve();
+   let writes=Promise.resolve(),failureStage;
    try{
     await persist(state);
     const result=await runWorkflow({jobId:state.job_id,documentType:state.document_type},progress=>{
@@ -93,7 +93,7 @@ export async function createOneClickServer({runWorkflow,rest,authorizeJob,pairRe
     await writes;
     const complete={...state,...result,stage:'complete'};await persist(complete);Object.assign(state,complete);
    }catch(error){
-    await writes.catch(()=>{});if(error.diagnostics){const {document_type,...diagnostics}=error.diagnostics;Object.assign(state,diagnostics);}state.failed_stage=error.failed_stage||state.stage;state.failed_document_type=error.failed_document_type||state.current_document_type||state.document_type;state.error_code=diagnosticCodes.has(error.message)?error.message:'WORKFLOW_FAILED';state.stage='failed';state.error=safeError(error);state.documents=error.partial_documents||state.documents||[];
+    await writes.catch(()=>{});if(error.diagnostics){const {document_type,...diagnostics}=error.diagnostics;Object.assign(state,diagnostics);}state.failed_stage=error.failed_stage||failureStage||state.stage;state.failed_document_type=error.failed_document_type||state.current_document_type||state.document_type;state.error_code=diagnosticCodes.has(error.message)?error.message:'WORKFLOW_FAILED';state.stage='failed';state.error=safeError(error);state.documents=error.partial_documents||state.documents||[];
     await persist(state).catch(()=>save(state));
    }finally{for(const key of keys)if(active.get(key)===state)active.delete(key);}
   },input.document_type==='both'?2:1)).catch(()=>{});
