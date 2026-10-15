@@ -1,3 +1,9 @@
+## Automatic stale extension recovery - October 15, 2026 MDT
+
+Web app100 / preparation module8 detects a silent destination preflight after capability response, or the known invalidated-context transport error. After exact canonical document hashes and live Drive receipts are saved, Raven performs one automatic page renewal and resumes the same preparation/request identity. Tab-local metadata expires after two minutes and is consumed before boot work; repeat failure stops with documents ready. Recovery never starts generation from missing/changed/expired metadata, never retries uncertain form delivery automatically, and does not refresh while a document editor/import/options dialog, active writer or pending document sync exists. No extension change/reload, new permissions, remote code, helper restart, approval or application submission.
+
+Verified:52 preparation Node cases; both new Edge recovery cases pass (successful renewal and persistently unavailable bridge). Existing missing/outdated extension cases pass. All71 core workflow commands passed; full168-case Edge suite in progress. Fixtures use synthetic API/helper/PDF data; no live employer forms or personal documents used for this implementation. Prior real Nex city/two-attachment acceptance remains separate. Publication and hosted acceptance pending.
+
 ## Nex destination recovery and live acceptance - October 14, 2026 MDT
 
 Resolved destination confirmation by refreshing Raven after the owner reloaded extension2.4.6, then explicitly resuming from the job drawer. Browser diagnostics showed Extension context invalidated from the old content bridge. No extension update, permission change, helper restart or application-code change needed.

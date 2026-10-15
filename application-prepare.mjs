@@ -32,7 +32,7 @@ const legacyTransportErrors=new Set([
 ]);
 function legacyTransportUnavailable(message){
   return typeof message==='string'&&legacyTransportErrors.has(message)
-    ? unavailable('The Raven Chrome extension did not respond. Check or reload it in Chrome, then resume preparation.')
+    ? Object.assign(unavailable('The Raven Chrome extension did not respond. Check or reload it in Chrome, then resume preparation.'),{reconnectBeforeDelivery:message==='Extension context invalidated.'})
     : null;
 }
 
@@ -70,7 +70,7 @@ export function preflightPreparationApplication({jobId,jobUrl,title='',company='
       if(value.ok!==true||value.status!=='ready'||!uuidPattern.test(value.preflightId||'')){finish(Error(value.reason||'The application destination could not be verified.'));return;}
       finish(null,value);
     };
-    const timer=setTimeout(()=>finish(invalidSeen?Error('Chrome returned an invalid application destination response. Review it before resuming.'):unavailable('The Raven Chrome extension did not confirm the application destination. Check it in Chrome, then resume preparation.')),timeoutMs);
+    const timer=setTimeout(()=>finish(invalidSeen?Error('Chrome returned an invalid application destination response. Review it before resuming.'):Object.assign(unavailable('The Raven Chrome extension did not confirm the application destination. Check it in Chrome, then resume preparation.'),{reconnectBeforeDelivery:true})),timeoutMs);
     bridge.addEventListener('raven-preflight-response',onResponse);
     bridge.dataset.preparePreflightRequest=JSON.stringify({requestId,jobId,jobUrl,title,company});
     bridge.dispatchEvent(new Event('raven-preflight-application',{bubbles:true}));
@@ -160,4 +160,27 @@ export function createPreparationRecovery({storage=globalThis.localStorage,now=(
     return run();
   }
   return {load,start,update,clear,withLease};
+}
+
+// One tab-local renewal, only before packet delivery. Never persist profile/PDF data.
+export function createExtensionReconnect({storage=globalThis.sessionStorage,now=()=>Date.now(),key='raven.extension-reconnect.v1'}={}){
+  const read=()=>{try{return JSON.parse(storage.getItem(key)||'null');}catch{return null;}};
+  const identity=intent=>intent&&!intent.expired&&intent.state==='documents-ready'&&uuidPattern.test(intent.preparationId||'')&&uuidPattern.test(intent.extensionRequestId||'')&&
+    shaPattern.test(intent.documents?.resume?.documentSha256||'')&&shaPattern.test(intent.documents?.coverLetter?.documentSha256||'')
+    ? {preparationId:intent.preparationId,extensionRequestId:intent.extensionRequestId,jobId:intent.jobId,jobUrl:intent.jobUrl,resume:intent.documents.resume.documentSha256,coverLetter:intent.documents.coverLetter.documentSha256}:null;
+  const matches=(a,b)=>a&&b&&Object.keys(b).every(field=>a[field]===b[field]);
+  return {
+    arm(intent,error){
+      const value=identity(intent),old=read();
+      if(error?.code!=='PREPARATION_EXTENSION_UNAVAILABLE'||error.reconnectBeforeDelivery!==true||!value||old?.preparationId===value.preparationId)return false;
+      try{storage.setItem(key,JSON.stringify({...value,createdAt:now(),pending:true}));return true;}catch{return false;}
+    },
+    take(intent){
+      const saved=read();if(!saved?.pending)return null;
+      // Consume before any network work; a failed resume cannot cause a reload loop.
+      try{storage.setItem(key,JSON.stringify({...saved,pending:false}));}catch{return null;}
+      if(!Number.isFinite(saved.createdAt)||now()-saved.createdAt<0||now()-saved.createdAt>120000||!matches(saved,identity(intent)))return null;
+      return {preparationId:saved.preparationId,jobId:saved.jobId};
+    }
+  };
 }
