@@ -1,5 +1,5 @@
 // Only verified public careers boards. Never use the authenticated Breezy API.
-const BOARDS=Object.freeze({playdead:{host:'playdead.breezy.hr',studio:'Playdead'},'wildflower-interactive':{host:'wildflower-interactive.breezy.hr',studio:'Wildflower Interactive'}});
+const BOARDS=Object.freeze({playdead:{host:'playdead.breezy.hr',studio:'Playdead'},'wildflower-interactive':{host:'wildflower-interactive.breezy.hr',studio:'Wildflower Interactive'},illfonic:{host:'illfonic.breezy.hr',studio:'IllFonic'}});
 const entities=s=>String(s??'').replace(/&(?:amp|lt|gt|quot|apos|nbsp);|&#(?:x[0-9a-f]+|\d+);/gi,e=>{const m={'&amp;':'&','&lt;':'<','&gt;':'>','&quot;':'"','&apos;':"'",'&nbsp;':' '};if(m[e.toLowerCase()])return m[e.toLowerCase()];const n=e[2].toLowerCase()==='x'?parseInt(e.slice(3,-1),16):parseInt(e.slice(2,-1),10);return n>0&&n<=0x10ffff?String.fromCodePoint(n):'';});
 const clean=(s,n=20000)=>entities(entities(s)).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,n);
 function board(s){const b=Object.hasOwn(BOARDS,s.board_key)?BOARDS[s.board_key]:null;if(s.provider!=='breezy'||!b||b.studio!==s.studio_name)throw Error('Unverified Breezy board');return b;}
