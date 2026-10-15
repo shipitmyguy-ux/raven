@@ -1,4 +1,10 @@
 import {createHash} from 'node:crypto';
+import {validateDraft} from '../supabase/functions/_shared/document-writer.mjs';
+
+function validationFeedback(kind,draft,profile,job){
+ try{validateDraft(kind,draft,profile,{target:job});return 'Correct unsupported factual claims using only verified evidence.';}
+ catch(error){return error.code==='INVALID_DRAFT'?error.message:'Correct the document structure and cite verified fact IDs.';}
+}
 
 const digest=value=>createHash('sha256').update(value).digest('hex');
 const idPattern=/^[A-Za-z0-9_-]{1,160}$/;
@@ -100,7 +106,7 @@ export function createOneClickWorkflow({dispatch,rest,generateDraft,uploadPdf,ve
       catch(error){
        if(attempt||!['INVALID_DOCUMENT','FACTUAL_REVIEW_BLOCKED'].includes(error.message))throw error;
        progress('writing',kind);
-       draft=await generateDraft({job,profile,writingPrompt:writing_prompt,documentType:kind,repair:{error:error.message,previousDraft:draft}});
+       draft=await generateDraft({job,profile,writingPrompt:writing_prompt,documentType:kind,repair:{error:error.message,details:validationFeedback(kind,draft,profile,job),previousDraft:draft}});
       }
      }
     }

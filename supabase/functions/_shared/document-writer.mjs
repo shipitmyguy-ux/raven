@@ -174,7 +174,14 @@ export function unsupportedSpecifics(value,evidence,profile,{roleId=null}={}){
 function claimEvidenceIssues(value,facts,profile,{target=null,instructions="",cover=false,roleId=null}={}){
   const issues=[];
   const evidenceText=facts.map(f=>[f.text,f.company].filter(Boolean).join(" ")).join(" ");
-  issues.push(...unsupportedSpecifics(value,evidenceText,profile,{roleId}));
+  // An explicit application to the advertised role is not a past title claim.
+  let factualValue=value;
+  if(cover&&target?.title){
+    const words=text=>String(text).toLowerCase().match(/[a-z0-9]+/g)||[];
+    factualValue=value.replace(/\bI(?:['’]m| am) applying for (?:the )?(.{1,120}?) (?:role|position)\b/gi,(phrase,title)=>
+      JSON.stringify(words(title).sort())===JSON.stringify(words(target.title).sort())?'I am applying for the advertised role':phrase);
+  }
+  issues.push(...unsupportedSpecifics(factualValue,evidenceText,profile,{roleId}));
   const evidenceLower=evidenceText.toLowerCase();
   const instructionLower=String(instructions||"").toLowerCase();
   const targetLower=[target?.title,target?.company].filter(Boolean).join(" ").toLowerCase();

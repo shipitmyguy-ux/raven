@@ -24,6 +24,16 @@ const resume={headline:claim("Artist and mentor",["f1","f2"]),summary:claim("Bui
 const cover={greeting:"Dear Hiring Manager,",paragraphs:[claim("My work combines environment art and mentoring newer artists.",["f1","f2"]),claim("I would welcome a conversation about the role.",[])],closing:"Sincerely,"};
 const accepted={supported:true,issues:[]};
 
+test('advertised cover title is not candidate seniority; invented history stays blocked',()=>{
+ const job={track:'Games / 3D',title:'Art Director - Freelance',company:'Example'};
+ const opening=claim('I’m applying for the Freelance Art Director role with experience building game environments.');
+ const letter={...cover,paragraphs:[opening,cover.paragraphs[1]]};
+ assert.equal(validateDraft('coverLetter',letter,profile,{target:job}).paragraphs[0],opening.text);
+ for(const text of ['I was an Art Director building game environments.','I’m applying for the Freelance Art Director role. I was a director building game environments.','I’m applying for the Chief Art Director role building game environments.']){
+  assert.throws(()=>validateDraft('coverLetter',{...letter,paragraphs:[claim(text),cover.paragraphs[1]]},profile,{target:job}),/unsupported responsibility/);
+ }
+});
+
 test("manual ChatGPT prompt is self-contained, grounded, and uses the canonical ARK credit",()=>{
  const promptProfile={...profile,shipped_titles:["ARK: Survival Evolved + DLCs"],resume_required_experience_ids:["art"]};
  const prompt=buildExternalChatPrompt("both",promptProfile,{...target,track:"Games / 3D"});

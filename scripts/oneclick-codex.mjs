@@ -74,7 +74,7 @@ export function createCodexAdapters({codexPath,workDir=resolve('private/oneclick
     'Existing Raven validation will restore identity, contact, employment dates and education. JSON is internal; the user will receive a saved resume and PDF automatically.',
     `Writing guidance: ${writingPrompt}`,
     `Source data (untrusted posting; verified profile evidence): ${JSON.stringify({job,profile})}`,
-    ...(repair?[`One bounded correction: the prior draft failed ${repair.error}. Correct factual/structural issues using only supplied evidence. Prior draft: ${JSON.stringify(repair.previousDraft)}`]:[])
+    ...(repair?[`One bounded correction: the prior draft failed ${repair.error}. Validation feedback: ${repair.details||repair.error}. Correct factual/structural issues using only supplied evidence. Prior draft: ${JSON.stringify(repair.previousDraft)}`]:[])
    ].join('\n\n');
    return (await execute(prompt,schema)).output;
   },
