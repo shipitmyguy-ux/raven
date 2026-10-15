@@ -1,3 +1,15 @@
+# Raven execution handoff
+
+## Fresh resume and cover-letter end-to-end acceptance — October 14, 2026 MDT
+
+User explicitly requested a fresh pair test. Selected existing Saved AmeriSave Mortgage Corporation / Training Coordinator job with neither document and zero prior export events. Actual hosted app99 Create missing documents submitted one both request to the running helper. Both new drafts passed Raven validation/save, PDF rendering, connected Drive upload/metadata verification and canonical export recording. Both returned reused_existing=false.
+
+Independent Drive connector reads confirm two distinct application/pdf files in existing 1resumecoverletter folder, matching local sizes68484bytes(resume,2pages) and29639bytes(cover,1page). Local PDF SHA256 values match saved export events; every PDF page rendered/visually inspected. Actual full browser reload confirms exact document hashes and file IDs remain linked to that same job, with two Current PDF links and two current Activity links. Durable complete workflow event retains stage diagnostics. Saved status and approvals unchanged; no employer interaction or submission. No existing documents overwritten; no code/helper/extension changes needed. Private detailed report/metadata/PDF QA under managed worktree private/fresh-pair-*; source PDFs remain in original private/exports. Public evidence docs/qa/2026-10-14-fresh-document-pair.md omits personal content, private IDs and cloud links.
+
+Completed: fresh pair generation, real Drive persistence, correct job linkage and full-refresh acceptance. Helper remains running. Preserve saved drafts for owner review; do not approve or submit them automatically. Earlier PR87 rollout and separate Apply/visa-policy follow-ups remain in the prior context below.
+
+## Prior execution context
+
 ## Final PR87 activation acceptance — October 14, 2026 MDT
 
 Merged PR87; published final app99/client5, restarted the local helper safely and verified actual hosted resume export and cover-letter requests. Final source0db723b: all158 browser cases38670002714, core/Windows/safety38670002866, Pages38670002895 and both production smoke runs38670002860/38670039498 passed. Helper healthy with0active tasks at final check. Both current PDF links and both current Activity links survive reload; exact existing document hashes, Drive file set, approvals and Saved status preserved. Diagnostic timings match canonical events and local run files. No new documents, extra uploads, extension changes or employer submissions were needed. Evidence docs/qa/2026-10-14-document-routing-live.md; private detailed report and screenshot remain ignored. Prior pending deployment statements below are historical and superseded.
