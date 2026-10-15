@@ -160,3 +160,8 @@ test('failed polling identifies request and stage without exposing raw helper er
  const client=createOneClickClient({fetchImpl:async()=>({ok:true,json:async()=>n++?{run_id:id,job_id:'JT-test',stage:'failed',failed_stage:'recording',error_code:'EXPORT_RECORD_NOT_CONFIRMED',error:'Saved links could not be confirmed.'}:{token:'secret'}})});
  await assert.rejects(client.run({job_id:'JT-test',document_type:'resume'}),error=>error.run_id===id&&error.failed_stage==='recording'&&error.error_code==='EXPORT_RECORD_NOT_CONFIRMED'&&error.message.includes(id));
 });
+
+test('all browser helper clients share one cache version for the stage protocol',()=>{
+ const source=fs.readFileSync('app.js','utf8');const versions=[...source.matchAll(/import\("\.\/oneclick-client\.mjs\?v=(\d+)"\)/g)].map(match=>match[1]);
+ assert.ok(versions.length>=3,'generation, preparation and power clients required');assert.equal(new Set(versions).size,1,'cached older clients must not reject new helper stages');
+});

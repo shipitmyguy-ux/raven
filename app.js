@@ -2106,7 +2106,7 @@
         const pairedToken=localStorage.getItem(PAIR_KEY);
         if(pairedToken)oneClickClient=createRemoteWriterClient({token:pairedToken});
         else{
-          const {createOneClickClient}=await import("./oneclick-client.mjs?v=4");
+          const {createOneClickClient}=await import("./oneclick-client.mjs?v=5");
           oneClickClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
         }
       }
@@ -2171,7 +2171,7 @@
       if(intent&&String(intent.jobId)!==String(job.id))throw Error("Another application preparation is saved. Resume or dismiss it before starting this role.");
       if(intent&&new URL(intent.jobUrl).href!==new URL(job.url).href)throw Error("The saved employer URL changed. Review the listing before starting again.");
       if(!localPreparationClient){
-        const {createOneClickClient}=await import("./oneclick-client.mjs?v=4");
+        const {createOneClickClient}=await import("./oneclick-client.mjs?v=5");
         localPreparationClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
       }
       await localPreparationClient.ensureApplicationPreparation();
@@ -2972,7 +2972,7 @@
         try{
           const baseUrl=state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766";
           if(!powerClient||powerClientUrl!==baseUrl){
-            const {createOneClickClient}=await import("./oneclick-client.mjs?v=4");
+            const {createOneClickClient}=await import("./oneclick-client.mjs?v=5");
             powerClient=createOneClickClient({baseUrl});powerClientUrl=baseUrl;
           }
           renderPower(await (stop?powerClient.stopKeepingAwake():powerClient.getPowerStatus()));

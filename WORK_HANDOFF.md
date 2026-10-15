@@ -1,3 +1,15 @@
+# Raven execution handoff
+
+## PR87 merged, published and helper live verification — October 14, 2026 MDT
+
+PR87 merged as f18e5d25609f797020212b08c9bf790eeb87d2cb after all final checks passed:158 browser cases (38669227310), core/Windows/safety38669227453. Main158browser38669442910,core38669442891,Pages38669442893,push smoke38669442913 and post-Pages smoke38669479021 all passed.
+
+Updated existing runtime checkout to merged source and restarted exact idle helper (old17184,new25996) with existing protected configuration, original private state and grants. Real hosted app98 resume Review→Save PDF to Drive and cover ChatGPT action both completed through actual helper and connected Drive metadata verification. Both existing document hashes, all prior Drive file IDs, approval state and Saved status preserved. Full reload verified two Current PDF links plus two current Activity links; diagnostic timings match durable local run JSON and canonical resume_workflow events. Zero ChatGPT popups. Existing artifacts were reused, not fresh generated or uploaded; failure/redaction cases verified by regressions rather than injected into real data. Private report/screenshot in managed worktree private/diagnostics-live-report.json and diagnostics-live.png.
+
+Live review found remaining helper-client imports still using cache version4. App99 follow-up changes every helper consumer to version5 and adds a cache-version consistency regression;94 focused tests and all71 core workflow commands passed. Publishing this frontend-only correction; no additional helper restart needed. Unrelated live Apply status rejection remains historically observed; cache mismatch was found but its causal link to that earlier incident is not independently proven.
+
+Carry forward separate Apply acceptance follow-ups and owner visa policy below. Helper is running; do not restart while busy. No extension update, employer submission, approval change or credential change made by this rollout.
+
 ## Live Apply acceptance - October 14, 2026
 
 Owner explicitly authorized dismissing the paused preparation, testing a prepared 3D application, uploading its documents, and stopping before submission. Dismissed the existing intent through Raven; UI confirmed saved documents remain available.
@@ -7,12 +19,6 @@ HyperHug: Apply job opened the exact Ashby application in a new tab. Employer UI
 Nex: public read-only precheck confirmed separate resume and cover-letter controls. First Apply attempt stopped on Raven helper returned an invalid status; corresponding helper run nevertheless durably completed both existing-document checks. Explicit Resume reused that completed run and opened the Greenhouse form. Employer UI confirmed first/last name, email, portfolio and LinkedIn, plus separate resume and cover-letter filenames/removal controls. Country, phone, city, work authorization, sponsorship and salary remained blank for owner review. No manual field or attachment workaround was used. No new documents, approvals or Applied status changes. Left employer forms open and unsubmitted.
 
 Two observed follow-ups: investigate the transient helper-status rejection (not diagnosed or claimed fixed); correct the extension summary that reports PDFs accepted yet also says no upload fields after Greenhouse replaces its upload inputs with completed-file controls. Employer upload confirmations establish this test's attachment result; the contradictory message remains a defect. Batch any extension correction under standing stability policy. No source/helper/extension update during this acceptance test. Screenshots remain local and private; no contact details, filenames with private IDs, document hashes or cloud links are committed.
-
-# Document routing execution summary — October 14, 2026 MDT
-PR: https://github.com/shipitmyguy-ux/raven/pull/87. Integrated code8f77fcc: GitHub core/Windows/safety run38669009869 passed all three jobs. Full browser run38669009827 is still running at this handoff. Final focused document suite50/50 passes;8 focused Edge cases pass. Production/helper activation remains unperformed.
-
-
-Implemented unified browser document dispatch and per-document stage diagnostics in PR #87. Integrated latest main8275750, preserving prepared-job visibility and completed 3D batch state below. Local verification:71 core commands,8 focused Edge cases,50 document tests passed. New diagnostics include request ID, failed stage/document, safe error code, timestamps and durations, plus distinct persistence failure reporting. Final GitHub checks pending after main integration. No live generation, helper restart, extension update or production publication performed. Original checkout and unrelated local work preserved.
 
 ## Current owner directive and production handoff — Visa-only eligibility (October 14, 2026 MDT)
 
