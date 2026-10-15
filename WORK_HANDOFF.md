@@ -9,7 +9,7 @@ Implemented and live deployed:
 - Initial 30 manual sheet records preserved, read-only API shows 19 of them among 26 visible Games / 3D results, no repeated URLs.
 - Source registry enlarged from 169 to 373 by adding 204 disabled/unverified company candidates using migration `20261015003900_sheet_studio_candidates.sql`. No assumed official careers ownership.
 - GitHub Actions `refresh-remote-games-sheet.yml` now refreshes the JSON snapshot only. No GitHub service-role secret required; no competing live import loop. The public fetch/validation Actions run passed.
-- Tests: `tests/job-duplicate-evidence.test.mjs`, `tests/studio-sheet-feed.test.mjs`, `tests/studio-sheet-scan-handler.test.mjs` added to `.github/workflows/test.yml`. Check newest run after status update; do not claim all final checks green until verified.
+- Tests: `tests/job-duplicate-evidence.test.mjs`, `tests/studio-sheet-feed.test.mjs`, `tests/studio-sheet-scan-handler.test.mjs` added to `.github/workflows/test.yml`. Core CI run 38660556057 passed (core, Windows and browser safety), and logs confirm the three new spreadsheet/dedup tests were invoked. Snapshot refresh run 38660555783 and production smoke run 38660555953 passed.
 
 Remaining: GitHub issues #85 (official studio feeds) and #86 (cross-source text dedup through all ingestion). Verify official career/ATS destinations one by one, audit cross-source title/location aliases and any stale/manual geography rows. Keep entire user's saved-job/document/application history intact. No worker agent started from this chat.
 
