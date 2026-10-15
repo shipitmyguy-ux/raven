@@ -129,3 +129,62 @@ for(const scenario of ['fail-once','crash'])for(const documentType of ['resume',
   assert.deepEqual(await driveIds(root),beforeDrive);assert.deepEqual((await database(root)).jobs,saved.jobs);
  });
 }
+
+for(const firstType of ['both','resume','coverLetter']){
+ test('concurrent duplicate and overlapping requests: '+firstType+' first',{timeout:30000},async t=>{
+  const root=await mkdtemp(join(tmpdir(),'raven-recovery-'));
+  const control={version:1,status:'Applied',resume:'preserved control resume'};
+  await writeFile(join(root,'database.json'),JSON.stringify({jobs:{[jobId]:{version:1,status:'Saved'},'control-job':control},files:[],events:[],counts:{generate:0,save:0,render:0,upload:0,verify:0,record:0,blocked:0}}));
+  let helper;
+  t.after(async()=>{await stop(helper);assert.ok(resolve(root).startsWith(resolve(tmpdir())+sep)&&basename(root).startsWith('raven-recovery-'));await rm(root,{recursive:true,force:true});});
+  helper=await start(root,'hold-writing','both');
+  const headers={'X-Raven-Local-Client':'raven-web-v1',Origin:origin,Referer:origin+'/raven/','Content-Type':'application/json'};
+  const session=await fetch(helper.base+'/session',{method:'POST',headers,body:'{}'});assert.equal(session.status,200);
+  headers.Authorization='Bearer '+(await session.json()).token;
+  const submit=async document_type=>{
+   const response=await fetch(helper.base+'/runs',{method:'POST',headers,body:JSON.stringify({job_id:jobId,document_type})});
+   return {status:response.status,body:await response.json()};
+  };
+  const first=await submit(firstType);assert.equal(first.status,202);
+  await helper.message('writing-'+(firstType==='both'?'resume':firstType));
+  if(firstType==='both')await helper.message('writing-coverLetter');
+  const duplicates=await Promise.all(Array.from({length:8},()=>submit(firstType)));
+  for(const result of duplicates){assert.equal(result.status,202);assert.equal(result.body.run_id,first.body.run_id,'Repeated clicks must share the active run');}
+  const runs=[first.body];
+  if(firstType==='both'){
+   for(const kind of ['resume','coverLetter'])assert.equal((await submit(kind)).status,409,'Paired run must reserve '+kind);
+  }else{
+   assert.equal((await submit('both')).status,409,'Partial overlap must not queue another pair');
+   const other=firstType==='resume'?'coverLetter':'resume';
+   const independent=await submit(other);assert.equal(independent.status,202);assert.notEqual(independent.body.run_id,first.body.run_id);runs.push(independent.body);
+   await helper.message('writing-'+other);
+   const overlaps=await Promise.all(Array.from({length:8},(_,i)=>submit(i%2?firstType:other)));
+   for(let i=0;i<overlaps.length;i++){assert.equal(overlaps[i].status,202);assert.equal(overlaps[i].body.run_id,i%2?first.body.run_id:independent.body.run_id);}
+   assert.equal((await submit('both')).status,409,'Two independent active documents must reject an overlapping pair');
+  }
+  const held=await database(root);assert.equal(held.counts.generate,2);assert.equal(held.counts.upload,0);
+  for(const kind of ['resume','coverLetter'])helper.child.send({type:'release',document_type:kind});
+  const {client}=clientFor(helper);
+  const completed=await Promise.all(runs.map(run=>client.resumeRun({job_id:jobId,document_type:run.document_type},run.run_id)));
+  const documents=completed.flatMap(run=>run.documents),saved=await database(root);
+  assert.equal(documents.length,2);assert.equal(new Set(documents.map(doc=>doc.file_id)).size,2);
+  for(const key of ['generate','save','render','upload','record'])assert.equal(saved.counts[key],2,key+' must occur once per document');
+  assert.equal(saved.files.length,2);assert.equal((await driveIds(root)).length,2);
+  for(const kind of ['resume','coverLetter']){
+   const doc=documents.find(doc=>doc.document_type===kind);assert.ok(doc);
+   assert.equal(doc.document_url,saved.jobs[jobId][kind]);assert.equal(doc.document_sha256,sha(saved.jobs[jobId][kind]));
+   const links=saved.events.filter(e=>e.event_type==='document_drive_export'&&e.metadata.document_type===kind);
+   assert.equal(links.length,1);assert.equal(links[0].job_id,jobId);assert.equal(links[0].metadata.file_id,doc.file_id);assert.equal(links[0].metadata.drive_url,doc.drive_url);
+   const file=saved.files.find(file=>file.file_id===doc.file_id);assert.ok(file);assert.equal(sha(await readFile(join(root,'drive',doc.file_id+'.pdf'))),file.pdf_sha256);
+  }
+  assert.deepEqual(saved.jobs['control-job'],control);
+  const before=await pdfSnapshot(root),files=await driveIds(root);
+  const repeated=await client.run({job_id:jobId,document_type:'both'});
+  assert.deepEqual(repeated.documents.map(doc=>doc.file_id).sort(),documents.map(doc=>doc.file_id).sort());
+  const after=await database(root);for(const key of ['generate','save','render','upload','record'])assert.equal(after.counts[key],2,'Completed retry must reuse '+key);
+  assert.deepEqual(await pdfSnapshot(root),before);assert.deepEqual(await driveIds(root),files);
+  // A fresh client represents refresh: durable runs must retain their exact job/document links.
+  const refreshed=clientFor(helper).client;
+  for(const run of completed)assert.deepEqual((await refreshed.resumeRun({job_id:jobId,document_type:run.document_type},run.run_id)).documents,run.documents);
+ });
+}

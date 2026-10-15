@@ -175,7 +175,7 @@ jobs:
         run: ./tests/private-tunnel-credentials.test.ps1
 
   document-recovery:
-    name: Document recovery (${{ matrix.os }})
+    name: Document recovery and concurrency (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 5
     strategy:
@@ -189,5 +189,5 @@ jobs:
           node-version: "22"
       - name: Install locked test dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Upload failure and forced helper restart recovery
+      - name: Upload recovery, helper restart, and overlapping document requests
         run: npm run test:document-recovery
