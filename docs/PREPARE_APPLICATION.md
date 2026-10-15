@@ -54,3 +54,9 @@ Upload availability is observed before file dispatch. A successful employer conf
 ## Profile contact dropdowns
 
 Country, phone and city require non-empty values in the device Application profile. Greenhouse country/city searchable dropdowns select only a unique option matching the profile; city includes profile region/country for disambiguation. A typed query is not accepted as a committed location. Unknown/ambiguous results remain manual and unfinished searches are cleared; existing selections are preserved. Authorization, sponsorship and salary are never inferred or filled by this adapter. An owner-authorized one-off salary draft entered during a supervised test does not become a reusable automatic answer.
+
+## Automatic stale connection recovery
+
+After an explicit Prepare/Apply/Resume action has verified both saved documents and live Drive receipts, a silent preflight following a capability response can mean Chrome invalidated the old content-script connection. Raven renews its page connection once and automatically resumes the same job and request. It rechecks canonical URL, hashes and receipts before retrieving PDFs or delivering the packet. No extension update or reload is needed. The tab-local continuation is consumed before work, expires after two minutes, and contains only job/request identity and hashes. Ordinary reloads without this continuation still start no work.
+
+Renewal is limited to pre-delivery failure. Unknown/malformed/identity-rejected responses, manual access gates and uncertain delivery are not automatically replayed. Missing/outdated extensions retain Documents ready. A second silent preflight stops for explicit recovery instead of looping. Open editors/import/options dialogs, active document work and pending document sync prevent automatic page renewal. Form filling remains review-only; Raven never submits.

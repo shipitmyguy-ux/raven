@@ -6,8 +6,21 @@ Live published UI on a Saved Dutchie Senior Project Manager / GTM Launch job: ba
 
 QA audit found no active local test runners or GitHub QA jobs at startup. Changes remove duplicate safety browser execution, give one browser workflow full UI coverage or a focused backend/extension selection, separate152 local browser cases from14 production smoke cases, run production smoke only after successful deployment or explicit dispatch (not docs/test pushes), use locked installs, and cancel superseded PR runs. Linux/Windows recovery/concurrency matrix remains. Local four existing adapter/security tests, syntax, test discovery and secret/diff checks passed; CI/live completion pending.
 
-## Prior execution context
+## Concurrent execution context
 
+## Automatic stale extension recovery - October 15, 2026 MDT
+
+Web app100 / preparation module8 detects a silent destination preflight after capability response, or the known invalidated-context transport error. After exact canonical document hashes and live Drive receipts are saved, Raven performs one automatic page renewal and resumes the same preparation/request identity. Tab-local metadata expires after two minutes and is consumed before boot work; repeat failure stops with documents ready. Recovery never starts generation from missing/changed/expired metadata, never retries uncertain form delivery automatically, and does not refresh while a document editor/import/options dialog, active writer or pending document sync exists. No extension change/reload, new permissions, remote code, helper restart, approval or application submission.
+
+Verified:52 preparation Node cases; both new Edge recovery cases pass (successful renewal and persistently unavailable bridge). Existing missing/outdated extension cases pass. All71 core workflow commands and all168 Edge browser cases passed; secret and whitespace checks passed. Fixtures use synthetic API/helper/PDF data; no live employer forms or personal documents used for this implementation. Prior real Nex city/two-attachment acceptance remains separate. Publication and hosted acceptance pending.
+
+## Nex destination recovery and live acceptance - October 14, 2026 MDT
+
+Resolved destination confirmation by refreshing Raven after the owner reloaded extension2.4.6, then explicitly resuming from the job drawer. Browser diagnostics showed Extension context invalidated from the old content bridge. No extension update, permission change, helper restart or application-code change needed.
+
+A newly created Nex tab passed preflight/delivery. Before agent form interaction, committed profile-qualified city and both Nex PDF filenames with Remove file controls were visible. Raven reported country/city and known contact fields filled, resume/coverLetter accepted. Automatic city and both attachments PASSED. Authorization/sponsorship/salary remained blank; Saved retained; no submission. Later interaction only positioned the screenshot and closed the city menu without selecting. Private contact values/screenshots excluded from Git.
+
+After extension reload, refresh Raven to renew its context, then use drawer Resume preparation. Banner Resume first opens the drawer. No permanent prevention of stale contexts claimed. Live acceptance only; no code release.
 ## Completed document request concurrency regressions — October 14, 2026 MDT
 
 Added three real-helper process cases: repeated Generate both, resume-first overlap, and cover-letter-first overlap for the same synthetic job. Eight simultaneous duplicate requests share each active run; paired/single conflicts return409 while independent resume and cover-letter work proceeds. Deterministic IPC writing gates hold the race window open. Each case asserts exactly two total generations, saves, renders, uploads, physical Drive fixture PDFs and canonical export records; one per document, correct job/hash/file links, unchanged control job, reuse after completion and fresh-client refresh readback. Browser coverage now sends eight bursts across stale Generate both/resume/cover controls and checks two saved links after refresh.
