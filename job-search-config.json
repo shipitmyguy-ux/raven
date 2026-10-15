@@ -85,14 +85,15 @@
       "url": "https://docs.google.com/spreadsheets/d/1Kue4iGy1WNpItNyCpaMT9__A_228NmbQ9s_uUcc3wb8/edit",
       "snapshot": "data/remote-games-sheet-jobs.json",
       "track": "Games / 3D",
-      "status": "snapshot-imported-refresh-not-automated",
+      "status": "scheduled-github-snapshot-refresh-live-db-sync-pending",
       "deduplication": {
         "primary": "canonicalized application URL",
         "secondary": "normalized company + role + location",
         "same_role_different_location": "retain separately",
         "preserve_existing_status": true
       },
-      "verification": "Source spreadsheet may contain stale or geographically restricted openings; verify before active classification."
+      "verification": "Source spreadsheet may contain stale or geographically restricted openings; verify before active classification.",
+      "refresh_workflow": ".github/workflows/refresh-remote-games-sheet.yml"
     }
   ]
 }
