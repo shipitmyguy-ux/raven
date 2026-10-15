@@ -71,7 +71,7 @@ test('validated resume saves to the right job, readback persists and second save
  const f=await fixture(),args={job_id:'JT-test',expected_version:f.getJob().last_updated,document:draft};
  const r=(await f.call('save_generated_document',args)).body.result;assert.equal(r.isError,false);assert.equal(r.structuredContent.saved,true);assert.equal(r.structuredContent.review_required,true);
  const persisted=f.getJob().resume;assert.match(persisted,/^data:text\/html;charset=utf-8,/);
- const html=decodeURIComponent(persisted.split(',').slice(1).join(','));for(const text of ['Test Candidate','Studio','BFA','Example Game','human-review-required'])assert.ok(html.includes(text));
+ const html=decodeURIComponent(persisted.split(',').slice(1).join(','));for(const text of ['Mike Rodriguez','Studio','BFA','Example Game','human-review-required'])assert.ok(html.includes(text));
  assert.equal((await f.call('get_job',{job_id:'JT-test'})).body.result.structuredContent.job.has_resume,true);
  assert.equal((await f.call('save_generated_document',{...args,expected_version:f.getJob().last_updated})).body.result.content[0].text,'DOCUMENT_EXISTS');assert.equal(f.getJob().resume,persisted);
 });

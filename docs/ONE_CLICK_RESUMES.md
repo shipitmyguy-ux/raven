@@ -88,3 +88,9 @@ Automated coverage was merged in [PR88](https://github.com/shipitmyguy-ux/raven/
 
 ## Validation repair, October 15, 2026
 Explicit application phrases referencing the exact advertised title no longer count as unsupported past seniority. Historical title claims remain checked. Bounded repairs include the validator explanation. Exact rejected cover drafts pass local replay; live save/export retry requires user approval after automatic review rejection.
+
+## Candidate identity and character limits
+
+The owner-directed document policy restores **Mike Rodriguez** in every newly validated resume name and cover-letter signature. This applies to local generation, server writing, manual imports and full revisions. Existing saved documents are preserved. Prompts and structured schemas share the passage maxima enforced at save time.
+
+Explicit document-specific character caps found in supplied posting text or revision instructions override word-count targets. The final gate counts rendered visible text, including identity/contact/section labels, with whitespace collapsed to a single space. It rejects overlong output and provides bounded repair feedback rather than slicing prose or dropping required facts. Summary-only revisions preserve every other saved section and validate supplied summary and complete-resume caps. Employer limits that are not supplied or detectable from posting/instruction text remain unknown; this is not a claim to inspect every employer form limit.

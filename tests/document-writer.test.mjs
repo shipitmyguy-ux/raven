@@ -114,7 +114,7 @@ function sequence(values,requests=[]){return async args=>{requests.push(args);as
 test("writer sees the entire verified profile, posting and existing draft",async()=>{
  const requests=[];
  const result=await writeDocument({kind:"resume",profile,target,currentDocument:"Prior draft",instructions:"Make it more direct",complete:sequence([resume,accepted],requests)});
- assert.deepEqual(requests[0].input.verifiedBackground,profile);
+ assert.deepEqual(requests[0].input.verifiedBackground,{...profile,name:"Mike Rodriguez"});
  assert.equal(requests[0].input.target.description,target.description);
  assert.equal(requests[0].input.currentDraft,"Prior draft");
  assert.equal(requests[0].input.revisionRequest,"Make it more direct");
@@ -128,7 +128,7 @@ test("writer sees the entire verified profile, posting and existing draft",async
 });
 test("identity, employer metadata and education remain immutable",()=>{
  const document=validateDraft("resume",{...resume,name:"Invented",education:[],experience:[{...resume.experience[0],company:"Invented",dates:"Now"}]},profile);
- assert.equal(document.name,profile.name);assert.equal(document.contact,profile.contact);
+ assert.equal(document.name,"Mike Rodriguez");assert.equal(document.contact,profile.contact);
  assert.equal(document.experience[0].company,"Studio");assert.equal(document.experience[0].dates,"2020–2025");
  assert.deepEqual(document.education,profile.education);
  assert.throws(()=>validateDraft("resume",{...resume,skills:["PhD"]},profile),/unverified skill/);
@@ -136,7 +136,7 @@ test("identity, employer metadata and education remain immutable",()=>{
 });
 test("cover letter body is model-authored and signature is canonical",async()=>{
  const r=await writeDocument({kind:"coverLetter",profile,target,complete:sequence([cover,accepted])});
- assert.deepEqual(r.document.paragraphs,cover.paragraphs.map(p=>p.text));assert.equal(r.document.signature,profile.name);
+ assert.deepEqual(r.document.paragraphs,cover.paragraphs.map(p=>p.text));assert.equal(r.document.signature,"Mike Rodriguez");
 });
 test("unsupported claims receive a bounded deterministic repair",async()=>{
  const requests=[],bad={...resume,summary:claim("Led a team of 50.",["f2"])};
@@ -277,7 +277,7 @@ test("cover letter preserves grounded multi-sentence prose and canonical signatu
  const letter={...cover,paragraphs:[claim("I built game environments. I mentored newer artists.",["f1","f2"]),claim("I would welcome a conversation.",[])],closing:"Sincerely, Test Candidate"};
  const r=await writeDocument({kind:"coverLetter",profile,target,complete:sequence([letter],requests)});
  assert.equal(r.document.closing,"Sincerely,");
- assert.equal(r.document.signature,profile.name);
+ assert.equal(r.document.signature,"Mike Rodriguez");
  assert.equal(requests.length,1);
  assert.equal(r.document.paragraphs[0],"I built game environments. I mentored newer artists.");
 });
@@ -414,4 +414,53 @@ test('company-named cover repair enums exclude general facts while separate gene
  assert.deepEqual(allowed.find(e=>e.path==='paragraphs.0').facts.map(f=>f.id),['f1','f2']);
  assert.ok(allowed.find(e=>e.path==='paragraphs.1').facts.some(f=>f.id==='x1'));
  assert.deepEqual(result.document.paragraphs,fixed.paragraphs.map(c=>c.text));
+});
+
+
+import {CANDIDATE_NAME,characterLimit,documentPolicyGuidance,visibleDocumentText} from '../supabase/functions/_shared/document-policy.mjs';
+import {generatedResumeHtml,generatedCoverLetterHtml} from '../supabase/functions/_shared/mcp-resume-renderer.mjs';
+test('every validated document restores Mike Rodriguez without modifying source profile or trusting model identity',()=>{
+ const source={...profile,name:'Different Name'};
+ const r=validateDraft('resume',{...resume,name:'Your Name'},source,{target});
+ const c=validateDraft('coverLetter',{...cover,signature:'Wrong Name'},source,{target});
+ assert.equal(r.name,CANDIDATE_NAME);assert.equal(c.signature,CANDIDATE_NAME);assert.equal(source.name,'Different Name');
+ assert.match(generatedResumeHtml(target,r),/<h1>Mike Rodriguez<\/h1>/);assert.match(generatedCoverLetterHtml(target,c),/<br>Mike Rodriguez/);
+});
+test('character caps are scoped to their document and exclude word/token/salary/other-answer numbers',()=>{
+ for(const [text,kind,expected] of [
+  ['Cover letter maximum 2,000 characters including spaces','coverLetter',2000],
+  ['Resume: no more than 5000 characters','resume',5000],
+  ['A 3000-character cover letter','coverLetter',3000],
+  ['Cover letter under 2000 chars','coverLetter',1999],
+  ['Cover letter 2000 characters max','coverLetter',2000],
+  ['Salary $120,000; 5 years experience; cover letter maximum 300 words','coverLetter',null],
+  ['Answer: maximum 200 characters. Please upload a cover letter.','coverLetter',null],
+  ['Resume maximum 4000 characters. Cover letter maximum 2000 characters','resume',4000]
+ ])assert.equal(characterLimit(kind,{description:text}),expected,text);
+ assert.equal(characterLimit('coverLetter',{},'Keep under 1500 chars.'),1499);
+ assert.equal(characterLimit('resume',{},'Summary maximum 100 characters.'),null);
+ assert.equal(characterLimit('resume',{description:'Resume summary under 100 characters.'}),null);
+ assert.equal(characterLimit('resume',{},'Cover letter maximum 2000 characters.'),null);
+});
+test('complete rendered document character limit includes owner name and letter furniture with exact boundary',()=>{
+ const base=validateDraft('coverLetter',cover,profile,{target});
+ const length=visibleDocumentText(generatedCoverLetterHtml(target,base)).length;
+ assert.ok(length>base.paragraphs.join(' ').length);
+ assert.doesNotThrow(()=>validateDraft('coverLetter',cover,profile,{target:{...target,description:'Cover letter maximum '+length+' characters.'}}));
+ assert.throws(()=>validateDraft('coverLetter',cover,profile,{target:{...target,description:'Cover letter maximum '+(length-1)+' characters.'}}),/character limit/);
+ assert.ok(!visibleDocumentText('<html><style>not visible</style><body>A &amp; B<br>C</body></html>').includes('not visible'));
+});
+test('oversized passages fail clearly and explicit section caps apply to revisions',()=>{
+ assert.throws(()=>validateDraft('resume',{...resume,summary:claim('x'.repeat(1601))},profile,{target}),/1600-character limit/);
+ assert.throws(()=>validateDraft('resume',resume,profile,{target,instructions:'Summary maximum 20 characters.'}),/summary exceeds its 20-character limit/);
+ for(const kind of ['resume','coverLetter','both']){
+  const prompt=buildExternalChatPrompt(kind,profile,target);assert.match(prompt,/Mike Rodriguez/);assert.match(prompt,/summary 1600/);assert.match(prompt,/paragraph 2200/);
+ }
+ assert.match(documentPolicyGuidance('coverLetter',{description:'Cover letter maximum 1800 characters.'}),/at most 1800 characters/);
+});
+test('writer retries an overlong document with the concrete character limit and can save the shorter grounded result',async()=>{
+ const requests=[],long={...cover,paragraphs:[...cover.paragraphs,claim('I would welcome the opportunity to discuss how my experience could serve this role.',[])]};
+ const length=visibleDocumentText(generatedCoverLetterHtml(target,validateDraft('coverLetter',cover,profile,{target}))).length;
+ const result=await writeDocument({kind:'coverLetter',profile,target:{...target,description:'Cover letter maximum '+length+' characters.'},complete:sequence([long,cover],requests)});
+ assert.equal(result.document.signature,'Mike Rodriguez');assert.equal(requests.length,2);assert.ok(visibleDocumentText(generatedCoverLetterHtml(target,result.document)).length<=length);
 });
