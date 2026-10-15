@@ -1,3 +1,13 @@
+## Remote games spreadsheet: live scheduled ingestion — October 14, 2026 (MDT)
+
+Verified Tim Plöger's public spreadsheet CSV responds without sign-in and reports 656 rows (source last updated October 11). GitHub retains the full snapshot in `data/remote-games-sheet-jobs.json`; its daily refresh is backup-only. Do not put service-role credentials into GitHub Actions: the existing authenticated Supabase studio cron is the sole live importer.
+
+Deployed `raven-studio-scan` version 15 with fixed-source `remotegamessheet` collector, strict CSV/header/row-count validation, US-compatible remote-scope filter, shared landing-page hold, cross-source duplicate checks, and non-destructive `last_seen` refreshes. Migration `20261015003800_remote_games_sheet_source.sql` registered one verified enabled source, due every 24 hours. The existing 15-minute scanner cron automatically executed the initial pull on October 15 at 00:30 UTC: status `ok`, fetched 656, eligible art leads 28, scan duration 1,118ms, no error, next check October 16 at 00:30 UTC.
+
+Live database audit after the pull: 836 discovery records, 836 unique URLs, 106 Games / 3D discoveries, 30 original spreadsheet-sourced records, and zero exact company/title/location duplicate groups. Read-only Raven API `action=listResults&track=Games%20%2F%203D` returned 26 visible results, 19 spreadsheet-sourced, with no repeated URLs. These are discovery leads; the sheet does not independently verify each job is still open.
+
+Migration `20261015003900_sheet_studio_candidates.sql` added 204 previously missing company directory candidates; total source registry is now 373. New studio candidates are **disabled and unverified** until a trustworthy official careers/ATS connection is confirmed. The existing 168 studio/board records were preserved. Pending: verify source endpoints, extend description-similarity review to all ingestion paths, review restrictive geographies in older sheet rows, and complete latest CI end-to-end checks. No private documents, submitted applications or saved-job statuses were changed.
+
 # Raven Status
 
 ## Live keep-awake acceptance - October 14, 2026
