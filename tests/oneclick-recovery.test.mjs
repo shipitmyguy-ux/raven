@@ -11,6 +11,8 @@ import {createOneClickClient} from '../oneclick-client.mjs';
 
 const origin='https://shipitmyguy-ux.github.io',jobId='recovery-job',folderId='recovery_fixture_folder';
 const fixture=fileURLToPath(new URL('./fixtures/oneclick-recovery-helper.mjs',import.meta.url));
+const helpers=new Map();
+let snapshotId=0;
 const sha=value=>createHash('sha256').update(value).digest('hex');
 async function bounded(promise,label,ms=10000){
  let timer;
@@ -38,7 +40,7 @@ async function start(root,mode,type,port=0){
   return messages.find(message=>message.type===type);
  };
  const helper={child,message};
- try{const ready=await message('ready');assert.notEqual(ready.port,8766);assert.notEqual(ready.port,8767);return {...helper,...ready,base:'http://127.0.0.1:'+ready.port};}
+ try{const ready=await message('ready');assert.notEqual(ready.port,8766);assert.notEqual(ready.port,8767);const running={...helper,...ready,base:'http://127.0.0.1:'+ready.port};helpers.set(root,running);return running;}
  catch(error){await stop(helper);throw error;}
 }
 function clientFor(helper){
@@ -49,7 +51,16 @@ function clientFor(helper){
  }});
  return {client,calls};
 }
-async function database(root){return JSON.parse(await readFile(join(root,'database.json'),'utf8'));}
+async function database(root){
+ const helper=helpers.get(root);
+ if(helper&&helper.child.exitCode===null&&helper.child.signalCode===null){
+  // Windows cannot atomically replace the synthetic DB while the parent has it
+  // open. Read a serialized IPC snapshot instead of racing its writer's rename.
+  const type='snapshot-'+(++snapshotId);helper.child.send({type:'snapshot',reply:type});
+  return (await helper.message(type)).database;
+ }
+ return JSON.parse(await readFile(join(root,'database.json'),'utf8'));
+}
 async function pdfSnapshot(root){
  const result={};
  for(const name of await readdir(join(root,'pdf'))){const file=join(root,'pdf',name),bytes=await readFile(file),info=await stat(file);result[name]={sha256:sha(bytes),mtime_ms:info.mtimeMs,size:info.size};}
@@ -67,7 +78,7 @@ for(const scenario of ['fail-once','crash'])for(const documentType of ['resume',
    await stop(helper);
    // Remove only the uniquely created test directory, never a supplied/private runtime path.
    assert.ok(resolve(root).startsWith(resolve(tmpdir())+sep)&&basename(root).startsWith('raven-recovery-'));
-   await rm(root,{recursive:true,force:true});
+   helpers.delete(root);await rm(root,{recursive:true,force:true});
   });
   helper=await start(root,scenario,documentType);
   const {client,calls}=clientFor(helper),input={job_id:jobId,document_type:documentType};
@@ -136,7 +147,7 @@ for(const firstType of ['both','resume','coverLetter']){
   const control={version:1,status:'Applied',resume:'preserved control resume'};
   await writeFile(join(root,'database.json'),JSON.stringify({jobs:{[jobId]:{version:1,status:'Saved'},'control-job':control},files:[],events:[],counts:{generate:0,save:0,render:0,upload:0,verify:0,record:0,blocked:0}}));
   let helper;
-  t.after(async()=>{await stop(helper);assert.ok(resolve(root).startsWith(resolve(tmpdir())+sep)&&basename(root).startsWith('raven-recovery-'));await rm(root,{recursive:true,force:true});});
+  t.after(async()=>{await stop(helper);assert.ok(resolve(root).startsWith(resolve(tmpdir())+sep)&&basename(root).startsWith('raven-recovery-'));helpers.delete(root);await rm(root,{recursive:true,force:true});});
   helper=await start(root,'hold-writing','both');
   const headers={'X-Raven-Local-Client':'raven-web-v1',Origin:origin,Referer:origin+'/raven/','Content-Type':'application/json'};
   const session=await fetch(helper.base+'/session',{method:'POST',headers,body:'{}'});assert.equal(session.status,200);
