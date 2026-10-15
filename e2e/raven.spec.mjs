@@ -1583,7 +1583,7 @@ test("listing and direct application remain available without approved documents
   }
   await openDetailSection(page,"Job details");
   await jobDetail(page, "[data-approved-apply]").click();
-  await expect(page.locator("#syncStatus")).toContainText("Approve the resume and cover letter");
+  await expect(page.locator("#syncStatus")).toContainText("Writer offline in this fixture");
 });
 
 test("remote watermark keeps one visual treatment across card states",async({page})=>{
@@ -1665,7 +1665,7 @@ test("requested document changes show persistent AI processing feedback",async({
   await expect(page.locator("#reviewFeedback")).toHaveClass(/is-processing/);
   await expect(page.locator("#reviewFeedback")).toContainText("AI is rewriting and fact-checking");
   await expect(page.locator("#reviewSubmit")).toBeEnabled({timeout:5000});
-  await expect(page.locator("#reviewFeedback")).toContainText("Updated draft saved");
+  await expect(page.locator("#reviewFeedback")).toContainText("Changes saved");
   await expect(page.locator("#reviewFeedback")).not.toHaveClass(/is-processing/);
 });
 
@@ -1954,7 +1954,7 @@ test("summary-only revision preserves exact saved HTML through reload and reject
   await page.locator('[data-generate="resume"]').click();
   await page.locator("#reviewInstructions").fill("Rewrite only the summary in a punchy tone.");
   await page.locator("#reviewSubmit").click();
-  await expect(page.locator("#reviewFeedback")).toContainText("Updated draft saved");
+  await expect(page.locator("#reviewFeedback")).toContainText("Changes saved");
   const expected="data:text/html;charset=utf-8,"+encodeURIComponent(original.replace('Original summary.','Experienced delivery leader. Updated to apply the requested revision.'));
   expect(api.getJob().resume).toBe(expected);
   expect(api.getGenerationBodies()[0].revisionSection).toBe("summary");
