@@ -30,6 +30,9 @@ export function usCompatibleScope(value) {
  }
  return false;
 }
+export function spreadsheetArtRoleAllowed(job) {
+ return /environment artist|world artist|level artist|prop artist|3d artist|world build|material artist|texture artist|hard.surface|asset artist|lighting artist/i.test(String(job?.title||''));
+}
 export function parseRemoteGameSheet(source,raw) {
  if(source?.provider!=='remotegamessheet'||source?.board_key!==REMOTE_GAME_SHEET_KEY)throw Error('Unexpected remote game sheet source');
  if(typeof raw!=='string'||raw.length<100||raw.length>MAX_BYTES)throw Error('Invalid remote game sheet response size');
