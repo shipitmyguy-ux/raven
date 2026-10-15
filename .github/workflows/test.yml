@@ -117,6 +117,7 @@ jobs:
           node --test tests/listing-availability.test.mjs tests/listing-persistence.test.mjs
           node tests/raven-core.test.mjs
           node tests/job-dedup.test.mjs
+          node --test tests/job-duplicate-evidence.test.mjs
           node tests/assistant-core.test.mjs
           node tests/ats-csv.test.mjs
           node tests/drive-source.test.mjs
