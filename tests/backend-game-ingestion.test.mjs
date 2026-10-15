@@ -38,14 +38,14 @@ function harness(existing=[],saved=[]){
 }
 const job=(extra={})=>({track:'Games / 3D',title:'Senior Environment Artist',company:'Studio A',location:'USA',remote:true,url:'https://example.org/new',source:'ATS:Greenhouse',score:10,snippet:'',...extra});
 
-test('broad ATS rejects geographic mismatches and holds ambiguous cross-board matches privately',async()=>{
+test('broad ATS retains Canada-only roles, holds ambiguous matches, and excludes mandatory work visas',async()=>{
  const prior=job({location:'United States',url:'https://example.org/old',source:'Studio:ashby',status:'Discovered'});
  const harnessed=harness([prior]);
- await harnessed.upsertResults([job(),job({title:'Lead Prop Artist',company:'Studio B',url:'https://example.org/new-b'}),job({title:'3D Artist',company:'Studio C',location:'Canada',url:'https://example.org/ca'})]);
+ await harnessed.upsertResults([job(),job({title:'Lead Prop Artist',company:'Studio B',url:'https://example.org/new-b'}),job({title:'3D Artist',company:'Studio C',location:'Canada',url:'https://example.org/ca'}),job({title:'Level Artist',company:'Studio D',location:'Worldwide (-/+ 2h from GMT+1)',url:'https://example.org/gmt'}),job({title:'3D Artist',company:'Studio Visa',location:'Canada',snippet:'A valid work visa is required.',url:'https://example.org/visa'})]);
  const inserted=harnessed.writes.find(w=>w.path.startsWith('raven_search_results?on_conflict'));
  const reviewed=harnessed.writes.find(w=>w.path.startsWith('raven_job_duplicate_reviews'));
- assert.equal(inserted.body.length,1);
- assert.equal(inserted.body[0].company,'Studio B');
+ assert.equal(inserted.body.length,3);
+ assert.deepEqual(inserted.body.map(j=>j.company).sort(),['Studio B','Studio C','Studio D']);
  assert.equal(reviewed.body.length,1);
  assert.equal(reviewed.body[0].candidate_url,'https://example.org/new');
  assert.match(reviewed.prefer,/ignore-duplicates/);
