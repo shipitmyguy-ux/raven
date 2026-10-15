@@ -59,7 +59,7 @@ async function filterGameDiscovery(rows:Candidate[]){
  for(const row of rows){
   if(!usStudioScopeAllowed(row))continue;
   const plan=planStudioIngestion([row],existing,String(row.source||"Discovery"),{isSheet:false});
-  safe.push(...plan.inserts as Candidate[],...plan.updates as Candidate[]);
+  safe.push(...plan.inserts,...plan.updates);
   review.push(...plan.reviews);
   for(const inserted of plan.inserts)existing.push({...inserted,status:"Discovered",track:"Games / 3D"});
  }
