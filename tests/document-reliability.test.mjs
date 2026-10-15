@@ -26,7 +26,7 @@ test('successful free rewrite returns prose and completes the budget event',asyn
  const cover={greeting:'Dear Hiring Manager,',paragraphs:[claim('Built environments.'),claim('Thank you for considering my application.',[])],closing:'Sincerely,'};
  const {handler,calls}=service('coverLetter',{modelData:cover});
  const result=await handler(request());const data=await result.json();assert.equal(result.status,200);
- assert.equal(data.ai_used,true);assert.equal(data.coverLetter.signature,'Candidate');assert.equal(calls.at(-1).body.p_status,'success');
+ assert.equal(data.ai_used,true);assert.equal(data.coverLetter.signature,'Mike Rodriguez');assert.equal(calls.at(-1).body.p_status,'success');
 });
 test('scoped resume handler returns a patch, validates its input, and never falls back',async()=>{
  const {handler}=service('resume',{modelData:{summary:claim('Built environments.')}});
@@ -49,7 +49,7 @@ test('initial resume and revision use the same structured writer without exact s
   assert.equal(data.ai_used,true);assert.equal(data.resume.experience[0].bullets.length,1);
   const providerCall=calls.find(c=>c.url.includes('openrouter'));
   const context=JSON.parse(providerCall.body.messages[1].content);
-  assert.deepEqual(context.verifiedBackground,profile);
+  assert.deepEqual(context.verifiedBackground,{...profile,name:"Mike Rodriguez"});
   assert.equal(context.revisionRequest,instructions);
  }
 });

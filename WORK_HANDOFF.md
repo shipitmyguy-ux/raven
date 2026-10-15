@@ -1,3 +1,9 @@
+## Candidate name and character-limit policy - October 15, 2026 MDT
+
+Implemented an owner-directed shared document policy: initial/resaved/revised resumes restore Mike Rodriguez in the name field; cover letters restore Mike Rodriguez in the signature. Model identity is never authoritative, source career facts remain unchanged and existing saved documents are not rewritten. Shared schemas and all writer prompts carry exact passage maxima (headline160, summary1600, skill160, bullet/highlight850, greeting/closing160, cover paragraph2200). Explicit document-specific character caps in posting text and revision instructions are checked against complete rendered visible text including name, contact and section labels; whitespace is collapsed to one space. Unknown limits cannot be inferred from employer forms; word counts, salaries and unrelated answer limits do not become document caps. Oversized drafts receive specific bounded-repair feedback and cannot be saved as compliant; no blind truncation.
+
+Validation:98 focused writer/handler/MCP/security/private tests,30 focused reliability/revision/private checks and62 document workflow/recovery checks passed (overlapping groups). Added rendered name/signature checks, exact total-cap boundary, document/section scoping, irrelevant numbers, schema limits and bounded rewrite acceptance. Secret, renderer freshness and whitespace checks passed. No personal documents generated or replaced, no employer submissions. Publication/production function deployment/helper activation pending.
+
 # Raven execution handoff
 
 ## Nex live Apply review passed; exact Drive-byte reuse gap — October 15, 2026 MDT

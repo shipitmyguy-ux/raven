@@ -1,3 +1,4 @@
+import {documentPolicyGuidance,documentProfile} from './document-policy.mjs';
 import {generationProfile} from "./document-profile.mjs";
 import {getStudioContext} from "./studio-context.mjs";
 import {cloudflareFreeStatus} from "./cloudflare-free.mjs";
@@ -34,7 +35,7 @@ export function buildDeterministicCover(profile,target){
 }
 
 export function buildExternalChatPrompt(requestedKind,profile,target){
-  profile=generationProfile(profile,target);
+  profile=generationProfile(documentProfile(profile),target);
   const kind=requestedKind==="both"?"both":requestedKind==="coverLetter"?"coverLetter":"resume";
   // Identity/contact stay device-local. The external writer only receives the
   // verified evidence needed to draft application content.
@@ -89,6 +90,7 @@ export function buildExternalChatPrompt(requestedKind,profile,target){
   if(kind==="resume"||kind==="both")output.resume=resumeShape;
   if(kind==="coverLetter"||kind==="both")output.coverLetter=coverShape;
   const rules=[
+    documentPolicyGuidance(kind,target),
     "Write polished material tailored to the target using only the verified candidate evidence below.",
     "Never invent employers, roles, dates, titles, tools, credentials, metrics, duties, outcomes, experience years, or motivations; job requirements are not candidate evidence.",
     "Cite every factual headline, summary, resume bullet, highlight, and cover-letter paragraph with supporting fact_ids from the evidence below. Interest-only cover-letter paragraphs may use an empty fact_ids array.",

@@ -1,3 +1,4 @@
+import {documentProfile} from './document-policy.mjs';
 import {validateDraft} from './document-writer.mjs';
 import {reviewDocument} from './document-review.mjs';
 import {buildExternalChatPrompt} from './document-handler.mjs';
@@ -55,7 +56,7 @@ export function createMcpHandler({getEnv,fetchImpl=fetch,now=()=>Date.now(),veri
  }
  async function getProfile(){
   const rows=await rest('raven_canonical_profiles?select=profile&profile_key=eq.default&limit=1');
-  const p=rows?.[0]?.profile;requireValue(p&&JSON.stringify(p).length<=150000,'PROFILE_UNAVAILABLE',503);return p;
+  const p=rows?.[0]?.profile;requireValue(p&&JSON.stringify(p).length<=150000,'PROFILE_UNAVAILABLE',503);return documentProfile(p);
  }
  async function call(grant,name,args){
   const needed={list_jobs:'jobs:read',get_document:'jobs:read',get_job:'jobs:read',get_verified_profile:'profile:read',save_generated_document:'documents:create'}[name];
