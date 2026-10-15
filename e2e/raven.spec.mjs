@@ -448,6 +448,7 @@ test("local master resume and track assignments persist through reload",async({p
   const masterId=before[0].id;
 
   await page.reload();
+  await expect(page.locator("#syncStatus")).toHaveText("Up to date");
   const persisted=await page.evaluate(async(id)=>{
     const metadata=JSON.parse(localStorage.getItem("ravenMasterResumesV1")||"[]");
     const file=await new Promise((resolve,reject)=>{
