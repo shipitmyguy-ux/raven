@@ -23,6 +23,9 @@ function update(action){
  writes=next.catch(()=>{});return next;
 }
 async function snapshot(){await writes;return structuredClone(db);}
+process.on('message',async message=>{
+ if(message.type==='snapshot')process.send?.({type:message.reply,database:await snapshot()});
+});
 const waiters=new Map(kinds.map(kind=>[kind,{}]));
 for(const waiter of waiters.values())waiter.promise=new Promise(resolve=>waiter.resolve=resolve);
 const blocked=new Set();
