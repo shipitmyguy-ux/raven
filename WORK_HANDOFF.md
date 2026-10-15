@@ -1,3 +1,7 @@
+## Final PR87 activation acceptance — October 14, 2026 MDT
+
+Merged PR87; published final app99/client5, restarted the local helper safely and verified actual hosted resume export and cover-letter requests. Final source0db723b: all158 browser cases38670002714, core/Windows/safety38670002866, Pages38670002895 and both production smoke runs38670002860/38670039498 passed. Helper healthy with0active tasks at final check. Both current PDF links and both current Activity links survive reload; exact existing document hashes, Drive file set, approvals and Saved status preserved. Diagnostic timings match canonical events and local run files. No new documents, extra uploads, extension changes or employer submissions were needed. Evidence docs/qa/2026-10-14-document-routing-live.md; private detailed report and screenshot remain ignored. Prior pending deployment statements below are historical and superseded.
+
 # Raven execution handoff
 
 ## PR87 merged, published and helper live verification — October 14, 2026 MDT
@@ -6,7 +10,7 @@ PR87 merged as f18e5d25609f797020212b08c9bf790eeb87d2cb after all final checks p
 
 Updated existing runtime checkout to merged source and restarted exact idle helper (old17184,new25996) with existing protected configuration, original private state and grants. Real hosted app98 resume Review→Save PDF to Drive and cover ChatGPT action both completed through actual helper and connected Drive metadata verification. Both existing document hashes, all prior Drive file IDs, approval state and Saved status preserved. Full reload verified two Current PDF links plus two current Activity links; diagnostic timings match durable local run JSON and canonical resume_workflow events. Zero ChatGPT popups. Existing artifacts were reused, not fresh generated or uploaded; failure/redaction cases verified by regressions rather than injected into real data. Private report/screenshot in managed worktree private/diagnostics-live-report.json and diagnostics-live.png.
 
-Live review found remaining helper-client imports still using cache version4. App99 follow-up changes every helper consumer to version5 and adds a cache-version consistency regression;94 focused tests and all71 core workflow commands passed. Publishing this frontend-only correction; no additional helper restart needed. Unrelated live Apply status rejection remains historically observed; cache mismatch was found but its causal link to that earlier incident is not independently proven.
+Live review found remaining helper-client imports still using cache version4. App99 follow-up changes every helper consumer to version5 and adds a cache-version consistency regression;94 focused tests and all71 core workflow commands passed. Frontend-only correction is published and verified; no additional helper restart needed. Unrelated live Apply status rejection remains historically observed; cache mismatch was found but its causal link to that earlier incident is not independently proven.
 
 Carry forward separate Apply acceptance follow-ups and owner visa policy below. Helper is running; do not restart while busy. No extension update, employer submission, approval change or credential change made by this rollout.
 

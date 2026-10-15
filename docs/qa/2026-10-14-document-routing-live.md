@@ -1,0 +1,13 @@
+# Document routing production acceptance — October 14, 2026 MDT
+
+[PR87](https://github.com/shipitmyguy-ux/raven/pull/87) merged at f18e5d2 after all158 browser cases, core, Windows and safety checks passed. Published final app99/client5 includes follow-up0db723b aligning every browser helper-client import to cache version5. That follow-up passed all71 local core commands and94 focused application/document checks, including the new cache consistency guard.
+
+Final GitHub results: [158 browser cases](https://github.com/shipitmyguy-ux/raven/actions/runs/38670002714), [core/Windows/safety](https://github.com/shipitmyguy-ux/raven/actions/runs/38670002866), [Pages](https://github.com/shipitmyguy-ux/raven/actions/runs/38670002895), [push smoke](https://github.com/shipitmyguy-ux/raven/actions/runs/38670002860), [post-publication smoke](https://github.com/shipitmyguy-ux/raven/actions/runs/38670039498) all passed.
+
+The original helper finished its active work before restart. Its existing runtime checkout was fast-forwarded, and the same protected launcher/configuration/private state were retained. Replacement listener PID25996 reported healthy, concurrency2 and0active tasks after verification. No credentials were read into reports or changed.
+
+A real Edge browser loaded published app99 without asset or API interception. On an existing saved job with both documents and verified Drive exports, Resume Review→Save PDF to Drive and the cover-letter ChatGPT action each called the real restarted helper, completed Drive metadata checks and canonical readback, and produced durable stage-timing events. Exact run IDs98df2803-e149-4b97-98dc-3f1e71f6a098 and ca611237-1feb-429d-9494-4e2f1cf49706 map to the correct job in private evidence. Both completed run files and canonical activity retain identical diagnostics.
+
+A full reload and separate browser readback confirmed two Current PDF links and two Open current PDF in Drive links under Activity. Original document hashes, Drive file set, approval state and Saved status remained unchanged. Zero ChatGPT popups. Existing artifacts were reused; fresh generation/upload and deliberately induced production failures were not needed or claimed. Error-stage, redaction, persistence-failure and sibling-failure behavior are covered by synthetic regressions.
+
+The private detailed report/screenshots remain ignored in the managed document-routing-integration worktree. Initial test-selector corrections addressed duplicate Close controls and the redesigned Current PDF/Activity labels; they required no product workaround. The separate earlier Apply-status incident is not proven to have the same cause as the client-cache mismatch. No extension update or employer submission was performed.
