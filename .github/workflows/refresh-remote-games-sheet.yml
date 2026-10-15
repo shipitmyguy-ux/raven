@@ -1,6 +1,13 @@
 name: Refresh Remote Games Spreadsheet
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/refresh-remote-games-sheet.yml'
+      - 'scripts/refresh-remote-games-sheet.mjs'
+      - 'scripts/import-remote-games-sheet.mjs'
+      - 'supabase/functions/_shared/job-duplicate-evidence.mjs'
   schedule:
     - cron: '17 11 * * *'
 permissions:
