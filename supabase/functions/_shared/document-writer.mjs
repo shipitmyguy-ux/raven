@@ -656,13 +656,14 @@ export async function writeDocument({kind,profile,target,instructions="",current
         finalReview.factual_review={status:"passed",provider:facts.provider,model:facts.model};
         written.providerAttempts=facts.providerAttempts||written.providerAttempts;
       }
+      if(kind==='coverLetter')document=validateDraft(kind,draft,profile,{target,instructions,shortCover:true});
       return {document,final_review:finalReview,provider:written.provider||"llm",model:written.model||"",
       provider_attempts:Number(written.providerAttempts||attempt+1),
       verification_provider:"raven",verification_model:"evidence-v1",architecture:WRITER_VERSION,
       source_fact_passages:sourcePaths.size+sourceFactPassages,validation_details:diagnostics};
     };
     try{
-      const approved=await result(validateDraft(kind,draft,profile,{target,instructions,shortCover:true}));
+      const approved=await result(validateDraft(kind,draft,profile,{target,instructions}));
       traceNumbers({kind,draft,profile,target,instructions,attempt,outcome:"passed",onEvidenceTrace});
       return approved;
     }catch(error){
@@ -703,7 +704,7 @@ export async function writeDocument({kind,profile,target,instructions="",current
             if(!facts.length||facts.some(f=>!f))continue;
             replacePath(repaired,check.path,{text:facts.map(f=>f.text).join(" "),fact_ids:ids});replaced++;
           }
-          try{if(replaced===failed.length)return await result(validateDraft(kind,repaired,profile,{target,instructions,shortCover:true}),replaced);}
+          try{if(replaced===failed.length)return await result(validateDraft(kind,repaired,profile,{target,instructions}),replaced);}
           catch(repairError){
             diagnostics.push("Source replacement: "+repairError.message);onDiagnostic(diagnostics.slice(-12));
             throw repairError;
