@@ -118,6 +118,7 @@ jobs:
           node tests/raven-core.test.mjs
           node tests/job-dedup.test.mjs
           node --test tests/job-duplicate-evidence.test.mjs
+          node --test tests/studio-sheet-feed.test.mjs
           node tests/assistant-core.test.mjs
           node tests/ats-csv.test.mjs
           node tests/drive-source.test.mjs
