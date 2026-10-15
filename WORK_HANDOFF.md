@@ -1,3 +1,15 @@
+# Raven execution handoff
+
+## Nex live Apply review passed; exact Drive-byte reuse gap — October 15, 2026 MDT
+
+Owner authorized choosing an open saved role for a focused live Apply test. Selected Nex Senior Game Environment Artist. Fresh employer page had an open application with eight empty textboxes and empty attachments. Raven showed Apply job with both canonical PDFs. Clicked Apply job once in the published UI; no mocks, manual field filling or manual attachment replacement. Existing helper run reused both documents with no writing/saving/PDF/uploading stages. Additional receipt verification passed, and the application-documents endpoint supplied attachment PDFs. Raven opened one fresh exact Nex employer tab, filled profile-matching first/last name, email, phone, city, portfolio and LinkedIn; country displayed the expected phone prefix. Employer confirmed Nex-resume.pdf and Nex-cover-letter.pdf with removal controls. Authorization, sponsorship and salary remained blank. Submit application remained visible and untouched; Raven's review banner explicitly left these questions for the user. Form remains open for review. Only later agent interaction focused the empty salary box to frame the screenshot; no answer entered.
+
+Before/after canonical audit confirmed unchanged Saved status, document hashes, original Drive file identities and exactly two export events. Independent Drive searches confirmed one resume70454bytes and one cover33094bytes, same creation/modification metadata; no duplicate Drive PDFs. Correct canonical document versions PASSED. Strict byte-identical Drive PDF reuse DID NOT PASS: application-documents re-renders stored HTML locally, and both attachment PDF hashes differ from the original canonical Drive receipt PDF hashes. Do not describe this as exact Drive-binary reuse or all criteria passing. Record a focused follow-up to reuse verified original PDF bytes while preserving job/hash/receipt checks; no code change made in this QA-only task.
+
+QA limited to this one live Apply flow, field/attachment observations, helper response hashes, and before/after canonical/Drive identity checks. No automated suites, CI dispatch, helper restart or extension reload. Private reports remain ignored in private/nex-apply-* and screenshot/UI evidence in this chat's private visualization output; no contact values, IDs or hashes added to Git.
+
+## Prior execution context
+
 ## Live stale-extension recovery and Nex acceptance - October 15, 2026 MDT
 
 Owner reloaded Raven Application Assistant and explicitly left Raven untouched. The existing app100 page logged a real Extension context invalidated error before the test. Clicked Nex Apply job once; no agent/user Raven reload and no second Apply/Resume action. Raven renewed itself, loaded current app101 and opened one fresh Nex tab. Read-only developer inspection confirmed the one-shot reconnect record contains both saved hashes and is consumed (pending=false). The event buffer was truncated, so no precise navigation count/timing is claimed.

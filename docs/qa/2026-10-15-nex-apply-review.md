@@ -1,0 +1,11 @@
+# Nex Apply job live acceptance — October 15, 2026 MDT
+
+Selected saved Nex Senior Game Environment Artist after verifying an open employer form. A separate fresh inspection page had eight blank textboxes and no selected attachments. The normal published Raven Apply job action ran once; no API interception, manual field fill, file replacement, extension change or helper restart.
+
+The helper reused both existing saved documents and verified their original Drive receipts. Raven opened a new tab bound to the exact Nex role, filled first name, last name, email, phone, committed city and country, portfolio and LinkedIn. Private field comparison confirmed all six textbox values match the Application profile (phone comparison normalized formatting); city matched the profile. Employer UI accepted both Nex PDF filenames with Remove file controls. Authorization/sponsorship/salary remained unanswered; Submit application remained visible and was never activated. The review banner confirmed both accepted PDFs and named the unanswered required questions. The filled employer tab remains open for owner review.
+
+Canonical document versions match the job's unchanged saved HTML hashes. Before/after job status remained Saved; there are exactly two unchanged canonical export records and two original Drive files, resume70454bytes and cover33094bytes, with the same IDs and timestamps. No new drafts or Drive uploads occurred. The authenticated attachment endpoint did render local PDFs, as its current implementation specifies.
+
+**Not passed: byte-identical reuse of the original Drive PDFs.** The attachment endpoint's two PDF SHA256 values differ from the original Drive receipt PDF SHA256 values. The same canonical resume/cover versions were used, but they were re-rendered into different PDF binaries. Do not conflate correct document selection with exact existing-file reuse. Follow-up: retrieve/reuse verified original PDF bytes, preserve job/document/receipt identity checks, and verify the actual attachment byte hashes against the canonical Drive copies.
+
+This was a focused live test only: no automated suites or CI dispatch. Private baseline/final audit and packet metadata reports are ignored; the screenshot is retained in the private chat visualization output. No application submission, approval mutation or user qualification changes.
