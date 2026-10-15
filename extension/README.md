@@ -3,10 +3,10 @@
 Chrome extension for saving jobs to Raven and assisting with applications.
 
 ## Safety model
-- Raven requires explicit approval of the exact resume and cover letter before Apply unlocks.
+- Apply is available even when no resume or cover letter has been generated. The extension uses any saved compatible documents.
 - The extension fills only known profile fields.
 - It never clicks Submit and never fills legal attestations, demographic questions, assessments, CAPTCHAs, salary, sponsorship, or unknown questions automatically.
-- The user reviews the employer form before submission.
+- The user decides whether and when to submit the employer form.
 
 ## Install
 1. Download the Raven extension package.
@@ -15,7 +15,7 @@ Chrome extension for saving jobs to Raven and assisting with applications.
 4. Enable Developer mode.
 5. Choose Load unpacked and select the extracted extension folder.
 
-Use Save to Raven from Chrome's context menu to capture a posting. Start applications from Raven after approving both documents.
+Use Save to Raven from Chrome's context menu to capture a posting. Start applications from Raven whenever you are ready; document generation runs separately.
 
 ## ChatGPT JSON handoff (2.2.0)
 Update/reload the unpacked extension, accept the Downloads permission, and reload Raven and ChatGPT after installing. Use Raven's ChatGPT button to create a job-bound request. Send the prompt in ChatGPT with file creation available. The extension clicks the matching JSON attachment, reads the completed download from its ChatGPT URL, and queues its contents for Raven. Keep Raven open; it validates, saves, and opens review. Results remain queued until Raven acknowledges saving, including across reloads.

@@ -1,6 +1,14 @@
-# Prepare application — independent documents, optional form filling
+# Apply directly — documents generate independently
 
-Prepare application first generates or reuses both canonical documents through the existing local signed-in Codex writer and verifies their saved hashes and live Drive PDF receipts. Once both documents are saved, the primary action is labelled Apply job and uses this same verified flow. This finishes independently of the Chrome extension. When a compatible extension is available, Raven can then inspect the employer destination, retrieve verified attachment bytes, and send the browser-local applicant profile and PDFs to that inspected tab. The extension fills recognized fields, selects PDFs in matching upload controls, and stops for human review. It never submits, grants document approval, or changes the application status. Applied jobs offer Prepare again for review.
+Apply job opens the employer application without waiting for resume or cover-letter generation, document review, Drive export, or a saved preparation. When the browser extension is available, Raven sends the current profile, remembered answers, and whichever documents already exist. The extension fills recognized fields, adds the saved cover-letter text where supported, selects compatible available files, and never submits the application. Missing documents or rejected file types do not block applying.
+
+Newly discovered feed jobs queue resume and cover-letter generation in the background. Generation uses Raven's existing factual and rendered-document validation and persistence path. It does not open a review dialog or hold up Apply. Background generation currently uses the normal save-before-generation behavior, so generated feed jobs can appear in Saved. A document preview remains optional.
+
+The verified PDF preparation/recovery path remains available as an optional action beside direct Apply. It may also resume an already-started recovery, but does not gate direct Apply. Existing recovery metadata is left intact.
+
+## Legacy version-2 preparation implementation
+
+The remaining sections document the optional verified-PDF prepare path and its extension protocol. None of those steps is required by the current Apply job action described above.
 
 ## Employer access gates
 

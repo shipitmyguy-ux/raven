@@ -44,6 +44,7 @@
   const GENERATION_CACHE_KEY="ravenGenerationCacheV1";
   const JOB_ANALYSIS_CACHE_KEY="ravenJobAnalysisCacheV1";
   const PENDING_DOCUMENT_SYNC_KEY="ravenPendingDocumentSyncV1";
+  const AUTO_GENERATION_QUEUE_KEY="ravenAutoGenerationQueueV1";
   const DEVICE_BACKUP_KEYS=[
     MASTER_RESUMES_KEY,APPLICATION_PROFILE_KEY,ANSWER_MEMORY_KEY,GENERATOR_PREFS_KEY,
     USER_SETTINGS_KEY,DOCUMENT_APPROVALS_KEY,VIEWED_JOBS_KEY
@@ -51,6 +52,8 @@
   const RESUME_TEMPLATE_VERSION="modern-v17-job-evidence-final-review";
   const DEFAULT_FOLLOW_UP_DAYS=7;
   const activeGeneration=new Map();
+  const queuedDiscoveryDocuments=new Set();
+  let discoveryDocumentQueue=Promise.resolve();
   const GENERATION_ERRORS_KEY="ravenGenerationErrorsV1";
   const generationErrors=new Map(Object.entries(readCache(GENERATION_ERRORS_KEY,{})).filter(([,value])=>typeof value==="string"));
   const saveGenerationErrorState=()=>writeCache(GENERATION_ERRORS_KEY,Object.fromEntries([...generationErrors].slice(-100)));
@@ -607,17 +610,20 @@
       return {track,rows:normalizeDiscovered(payload.results)};
     }));
     let loaded=0;
+    const newlyDiscovered=[];
     for(const result of results){
       if(result.status!=="fulfilled"){
         console.warn("Discovered jobs unavailable.",result.reason);
         continue;
       }
+      const previousUrls=new Set((state.discovered[result.value.track]||[]).map(job=>normalizeComparableUrl(job.url)));
+      newlyDiscovered.push(...result.value.rows.filter(job=>!previousUrls.has(normalizeComparableUrl(job.url))));
       state.discovered[result.value.track]=result.value.rows;
       loaded+=result.value.rows.length;
     }
     writeCache(CACHE_DISCOVERED_KEY,state.discovered);
     render();
-    return loaded;
+    return {loaded,newlyDiscovered};
   }
 
   async function runJobSearch() {
@@ -633,7 +639,9 @@
       setStatus("Refreshing all jobs · "+(i+1)+"/"+JOB_TRACKS.length+" · "+track);
       try{
         const payload=await window.RavenAPI.searchJobs(track);
+        const previousUrls=new Set((state.discovered[track]||[]).map(job=>normalizeComparableUrl(job.url)));
         state.discovered[track]=normalizeDiscovered(payload.results);
+        queueDiscoveredDocuments(state.discovered[track].filter(job=>!previousUrls.has(normalizeComparableUrl(job.url))));
         total+=Number(payload.count||state.discovered[track].length||0);
         if(payload.budget_limited) limited.push(track);
         writeCache(CACHE_DISCOVERED_KEY,state.discovered);
@@ -1347,7 +1355,7 @@
     detailPanel.hidden=!visible;
     detailScrim.hidden=!visible;
     document.body.classList.toggle("job-detail-open",visible);
-    [list,document.querySelector(".topbar"),document.querySelector(".track-tabs"),document.querySelector(".toolbar"),document.getElementById("preparationRecoveryBanner")].forEach(item=>{if(item)item.inert=visible;});
+    [list,document.querySelector(".topbar"),document.querySelector(".track-tabs"),document.querySelector(".toolbar")].forEach(item=>{if(item)item.inert=visible;});
     if(!job){detailPanel.dataset.jobId="";return;}
     const sameJob=detailPanel.dataset.jobId===String(job.id);
     const body=detailPanel.querySelector(".job-detail-body");
@@ -1384,7 +1392,20 @@
     }
   }
   function bindDetailActions(job,expanded) {
-            expanded.querySelectorAll("[data-approved-apply]").forEach((button)=>{ button.addEventListener("click",(event)=>{ event.stopPropagation(); beginApprovedApplication(job); }); });
+            expanded.querySelectorAll("[data-apply-job]").forEach((button)=>{ button.addEventListener("click",(event)=>{ event.stopPropagation(); void beginApplication(job,button); }); });
+            expanded.querySelectorAll("[data-approved-apply]").forEach((button)=>{ button.addEventListener("click",event=>{event.stopPropagation();void prepareApplication(job,button);}); });
+            expanded.querySelectorAll("[data-prepare-application]").forEach(button=>{
+              button.addEventListener("click",event=>{event.stopPropagation();prepareApplication(job,button);});
+            });
+            expanded.querySelectorAll("[data-review-paused-preparation]").forEach(button=>{
+              button.addEventListener("click",event=>{
+                event.stopPropagation();closeJobDetail();
+                requestAnimationFrame(()=>{
+                  const banner=document.getElementById("preparationRecoveryBanner");
+                  if(banner&&!banner.hidden){banner.scrollIntoView({block:"center"});banner.querySelector("[data-resume-preparation]:not([hidden]),[data-clear-preparation]")?.focus();}
+                });
+              });
+            });
             expanded.querySelectorAll("[data-apply-status]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
                 event.stopPropagation();
@@ -1419,19 +1440,6 @@
             });
             expanded.querySelectorAll("[data-generate-both]").forEach(button=>{
               button.addEventListener("click",event=>{event.stopPropagation();generateBothForJob(job);});
-            });
-            expanded.querySelectorAll("[data-prepare-application]").forEach(button=>{
-              button.addEventListener("click",event=>{event.stopPropagation();prepareApplication(job,button);});
-            });
-            expanded.querySelectorAll("[data-review-paused-preparation]").forEach(button=>{
-              button.addEventListener("click",event=>{
-                event.stopPropagation();
-                closeJobDetail();
-                requestAnimationFrame(()=>{
-                  const banner=document.getElementById("preparationRecoveryBanner");
-                  if(banner&&!banner.hidden){banner.scrollIntoView({block:"center"});banner.querySelector("[data-resume-preparation]:not([hidden]),[data-clear-preparation]")?.focus();}
-                });
-              });
             });
             expanded.querySelectorAll("[data-chatgpt-prompt]").forEach((button)=>{
               button.addEventListener("click",(event)=>{
@@ -1583,11 +1591,13 @@
     const savedPreparation=preparationRecovery?.load();
     const pausedElsewhere=savedPreparation&&!savedPreparation.expired&&savedPreparation.state!=="opened"&&String(savedPreparation.jobId)!==String(job.id);
     const pausedJobTitle=pausedElsewhere?(knownJobById(savedPreparation.jobId)?.title||"another job"):"";
+    const applyAction=job.url&&job.listing_state!=="closed"&&statusLower!=="closed"&&!postApplication
+      ? '<button class="workflow-action is-primary" type="button" data-apply-job><span>Apply job</span></button>':"";
     const applyGate=job.url&&job.listing_state!=="closed"&&!postApplication&&!pausedElsewhere?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply><span>'+(docsReady?'Continue with documents':'Prepare documents')+'</span></button>':"";
     const resumePreparation=savedPreparation&&!savedPreparation.expired&&savedPreparation.state!=="opened"&&String(savedPreparation.jobId)===String(job.id);
     const prepareAction=state.runtime?.settings?.["chatgpt-one-click"]===true&&job.url&&job.listing_state!=="closed"&&statusLower!=="closed"&&(!postApplication||isAppliedJob)
       ? pausedElsewhere?'<button class="workflow-action is-secondary" type="button" data-review-paused-preparation>Review paused preparation</button>'
-        : '<button class="workflow-action'+(isAppliedJob?' is-secondary':' is-primary')+'" type="button" data-prepare-application'+(prepareBusy?' disabled aria-busy="true"':'')+'><span>'+(resumePreparation?'Resume preparation':isAppliedJob?'Prepare again for review':bothDocumentsSaved?'Apply job':'Prepare application')+'</span></button>':"";
+        : '<button class="workflow-action is-secondary" type="button" data-prepare-application'+(prepareBusy?' disabled aria-busy="true"':'')+'><span>'+(resumePreparation?'Resume preparation':isAppliedJob?'Prepare again for review':'Optional verified PDF preparation')+'</span></button>':"";
     const postingUrl=/^https?:\/\//i.test(String(job.url||""))?job.url:"";
     const actions=postingUrl
       ? '<a class="employer-link" data-employer-link href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener">Open employer listing ↗</a>'
@@ -1595,34 +1605,27 @@
     const fullDescription=cleanJobDescription(job.notes)||"Full job description not yet available.";
     const summary=conciseJobSummary(job);
     const generating=generationSession(job);
-    const progress=oneClickProgress(job)|| (prepareBusy?'Preparing application…':generating?'Creating '+documentLabel(generating.type)+'…':'');
+    const progress=oneClickProgress(job)||(prepareBusy?'Preparing application…':generating?'Creating '+documentLabel(generating.type)+'…':'');
     const liveFeedback=state.preparationFeedback?.jobId===String(job.id)?state.preparationFeedback:null;
-    const savedError=savedPreparation?.state==="needs-review"&&String(savedPreparation.jobId)===String(job.id)?savedPreparation.reason:"";
-    const savedManual=savedPreparation?.state==="documents-ready"&&savedPreparation.reason&&String(savedPreparation.jobId)===String(job.id)
-      ? savedPreparation.reasonType==="extension-unavailable"
-        ? "Documents ready; form filling is unavailable. "+savedPreparation.reason+" Resume preparation after the extension is ready."
-        : "Documents ready; employer form needs manual access. "+savedPreparation.reason+" Resume preparation after access is restored.":"";
     const progressHtml=progress?'<p class="job-detail-progress" role="status" aria-live="polite"><span class="generation-spinner" aria-hidden="true"></span>'+escapeHtml(progress)+'</p>':
-      liveFeedback?'<p class="job-detail-feedback is-'+escapeAttr(liveFeedback.kind)+'" role="'+(liveFeedback.kind==="error"?'alert':'status')+'">'+escapeHtml(liveFeedback.message)+'</p>':
-      savedError?'<p class="job-detail-feedback is-error" role="alert">'+escapeHtml(savedError)+'</p>':
-      savedManual?'<p class="job-detail-feedback is-success" role="status">'+escapeHtml(savedManual)+'</p>':'';
+      liveFeedback?'<p class="job-detail-feedback is-'+escapeAttr(liveFeedback.kind)+'" role="'+(liveFeedback.kind==="error"?'alert':'status')+'">'+escapeHtml(liveFeedback.message)+'</p>':'';
     const documentRows=[["resume","Resume"],["coverLetter","Cover letter"]].map(([key,label])=>{
       const exportEvent=(state.jobActivity[String(job.id)]?.events||[]).find(event=>event.event_type==="document_drive_export"&&currentDocumentExport(job,event,key)&&/^https:\/\/drive\.google\.com\/file\/d\/[A-Za-z0-9_-]{10,160}\/view$/.test(event.metadata?.drive_url||""));
       const currentPdf=exportEvent?'<a class="document-current-export" href="'+escapeAttr(exportEvent.metadata.drive_url)+'" target="_blank" rel="noopener noreferrer">Current PDF</a>':"";
-      return '<div class="document-row" data-document-type="'+key+'"><div class="document-row-label"><strong>'+label+'</strong><span>'+(job[key]?'Ready for review':'Needs a document')+'</span>'+currentPdf+'</div>'+documentControl(job,key,label)+'</div>';
+      return '<div class="document-row" data-document-type="'+key+'"><div class="document-row-label"><strong>'+label+'</strong><span>'+(job[key]?'Ready':'Needs a document')+'</span>'+currentPdf+'</div>'+documentControl(job,key,label)+'</div>';
     }).join("");
     const createDocuments=(!job.resume||!job.coverLetter)&&featureEnabled("resume-generation")&&featureEnabled("cover-letter-generation")
-      ? '<button class="workflow-action'+(prepareAction?' is-secondary':' is-primary')+'" type="button" data-generate-both'+(generating||bothBusy||prepareBusy?' disabled aria-busy="true"':'')+'>Create missing documents</button>':"";
+      ? '<button class="workflow-action is-secondary" type="button" data-generate-both'+(generating||bothBusy||prepareBusy?' disabled aria-busy="true"':'')+'>Create missing documents</button>':"";
     const nextStep=isApplied
       ? '<div class="job-next-step"><h3>Next step</h3><p class="next-action">'+escapeHtml(nextAction||'Set a follow-up date')+'</p><label class="follow-up-control"><span>Follow up</span><input type="date" data-follow-up-date value="'+escapeAttr(followUpValue)+'" aria-label="Follow-up date"></label>'+prepareAction+'</div>'
-      : '<div class="job-next-step"><h3>Next step</h3>'+(prepareAction||createDocuments||'<p>Review this role and choose its stage.</p>')+
-        (prepareAction?'<p class="next-step-help">'+(pausedElsewhere?'Preparation for '+escapeHtml(pausedJobTitle)+' is paused. Resume or dismiss it above before starting this application.':(bothDocumentsSaved?'Opens the employer application in a new tab when available, fills recognized fields, and attaches verified PDFs for your review.':'Creates any missing documents and, when available, opens the employer application for review.')+' It never submits the application.')+'</p>':'')+'</div>';
+      : '<div class="job-next-step"><h3>Next step</h3>'+(applyAction||'<p>Review this role and choose its stage.</p>')+
+        (applyAction?'<p class="next-step-help">Opens the employer application and fills recognized fields using available documents. It never submits automatically; complete the employer form when you are ready.'+(pausedElsewhere?' Optional verified-PDF preparation for '+escapeHtml(pausedJobTitle)+' is paused; Apply job remains available.':'')+'</p>':'')+prepareAction+createDocuments+'</div>';
     return '<section class="inline-job-detail">'+
       lifecycleControl+
       '<p class="job-detail-summary">'+escapeHtml(summary)+'</p>'+progressHtml+nextStep+
       '<section class="document-checklist" aria-label="Application documents"><h3>Documents</h3>'+documentRows+'</section>'+
       '<div class="job-detail-actions">'+actions+'</div>'+
-      '<details class="job-detail-disclosure"><summary>Job details</summary><div class="job-detail-disclosure-content"><dl>'+detailHtml+'</dl><h3>Full posting</h3><p class="job-description-text full-description">'+escapeHtml(fullDescription)+'</p>'+(applyGate||prepareAction&&createDocuments?'<div class="advanced-application-actions"><h3>Other application actions</h3>'+(prepareAction?createDocuments:'')+applyGate+'</div>':'')+'</div></details>'+
+      '<details class="job-detail-disclosure"><summary>Job details</summary><div class="job-detail-disclosure-content"><dl>'+detailHtml+'</dl><h3>Full posting</h3><p class="job-description-text full-description">'+escapeHtml(fullDescription)+'</p>'+(applyGate?'<div class="advanced-application-actions"><h3>Other application actions</h3>'+applyGate+'</div>':'')+'</div></details>'+
       '<details class="job-detail-disclosure"><summary>Evidence</summary><div class="job-detail-disclosure-content">'+renderCoverage(job)+'</div></details>'+
       '<details class="job-detail-disclosure"><summary>Activity</summary><div class="job-detail-disclosure-content">'+renderJobActivity(job)+'</div></details>'+
     '</section>';
@@ -1832,14 +1835,14 @@
     finally{ generationPreparation.delete(job); }
   }
 
-  async function generateBothForJob(job){
-    return routeDocumentRequest(job,"both",null,{intent:"generate"});
+  async function generateBothForJob(job,options={}){
+    return routeDocumentRequest(job,"both",null,{intent:"generate",autoOpen:options.autoOpen!==false});
   }
-  async function generateBothLegacy(job){
+  async function generateBothLegacy(job,{autoOpen=true}={}){
     if(generationSession(job))return;
     const missing=["resume","coverLetter"].filter(type=>!job[type]);
     if(!missing.length)return openDocumentReview(job,"resume");
-    const session={type:missing[0],autoOpen:state.selectedId===job.id,startedAt:Date.now(),phase:"Preparing documents"};
+    const session={type:missing[0],autoOpen:autoOpen&&state.selectedId===job.id,startedAt:Date.now(),phase:"Preparing documents"};
     activeGeneration.set(generationKey(job),session);
     const completed=[],failed=[];
     try{
@@ -1861,8 +1864,60 @@
     }
     const fallback=completed.some(item=>item.mode==="source-facts"||item.mode==="mixed");
     setStatus(failed.length?(completed.length?"Saved "+completed.length+" document(s). Retry the remaining document below.":"No documents created. See the errors below."):
-      "Both documents ready"+(fallback?" · includes verified source wording":"")+" · review required");
+      "Both documents ready"+(fallback?" · includes verified source wording":""));
     if(completed.length&&session.autoOpen&&state.selectedId===job.id)openDocumentReview(job,completed[0].type);
+  }
+
+  function queueDiscoveredDocuments(rows,{markPending=true}={}){
+    let pending=new Set(readCache(AUTO_GENERATION_QUEUE_KEY,[])||[]);
+    if(markPending){
+      for(const job of rows||[]){
+        const key=normalizeComparableUrl(job?.url);
+        const alreadySaved=state.jobs.some(saved=>normalizeComparableUrl(saved.url)===key||window.RavenJobDedup.sameJob(saved,job));
+        if(key&&!alreadySaved&&job.listing_state!=="closed")pending.add(key);
+      }
+      writeCache(AUTO_GENERATION_QUEUE_KEY,[...pending]);
+    }
+    const available=[...state.jobs,...JOB_TRACKS.flatMap(track=>state.discovered[track]||[])];
+    const candidates=[];
+    for(const key of pending){
+      const job=available.find(item=>normalizeComparableUrl(item.url)===key);
+      if(job)candidates.push(job);
+    }
+    const batchKeys=new Set();
+    const terminal=new Set(["applied","interview","offer","rejected","ignored","closed"]);
+    const jobs=candidates.map(job=>{
+      const saved=state.jobs.find(item=>normalizeComparableUrl(item.url)===normalizeComparableUrl(job.url)||window.RavenJobDedup.sameJob(item,job));
+      return saved||job;
+    }).filter(job=>{
+      const key=normalizeComparableUrl(job.url);
+      if(terminal.has(String(job.status||"").toLowerCase())){pending.delete(key);return false;}
+      if(job.resume&&job.coverLetter){pending.delete(key);return false;}
+      if(!key||batchKeys.has(key)||queuedDiscoveryDocuments.has(key))return false;
+      batchKeys.add(key);
+      return true;
+    });
+    writeCache(AUTO_GENERATION_QUEUE_KEY,[...pending]);
+    for(const job of jobs)queuedDiscoveryDocuments.add(normalizeComparableUrl(job.url));
+    if(!jobs.length)return discoveryDocumentQueue;
+    discoveryDocumentQueue=discoveryDocumentQueue.then(async()=>{
+      for(const job of jobs){
+        const key=normalizeComparableUrl(job.url);
+        try{
+          if(!job.resume||!job.coverLetter)await generateBothForJob(job,{autoOpen:false,propagateErrors:true});
+        }catch(error){
+          console.warn("Background documents were not completed for a newly discovered job.",error);
+        }finally{
+          if(job.resume&&job.coverLetter){
+            const remaining=new Set(readCache(AUTO_GENERATION_QUEUE_KEY,[])||[]);
+            remaining.delete(key);
+            writeCache(AUTO_GENERATION_QUEUE_KEY,[...remaining]);
+          }
+          queuedDiscoveryDocuments.delete(key);
+        }
+      }
+    }).catch(error=>console.warn("Background document queue stopped.",error));
+    return discoveryDocumentQueue;
   }
 
   async function generateForJob(job,type,button=null,options={}) {
@@ -1914,7 +1969,7 @@
     const {reviewRenderedDocument}=await import("./supabase/functions/_shared/document-review.mjs?v=2");
     const renderedReview=reviewRenderedDocument(type,html,document);
     if(renderedReview.status!=="passed")throw new Error(renderedReview.issues.join(" ")+" Your previous document is unchanged.");
-    if(!document.revisionSection)html=html.replace("</head>",'<meta name="raven-review" content="final-review-v1; factual-and-rendered-checks; human-review-required"></head>');
+    if(!document.revisionSection)html=html.replace("</head>",'<meta name="raven-review" content="final-review-v1; factual-and-rendered-checks; optional-user-review"></head>');
     const dataUrl="data:text/html;charset=utf-8,"+encodeURIComponent(html);
     if(!job._discovered){
       job[type]=dataUrl;
@@ -2035,10 +2090,10 @@
     if(!["generate","chatgpt","export"].includes(intent))throw Error("Invalid document action.");
     if(intent==="export"&&!job[type]){setStatus("Save a document in Raven before exporting to Drive.");return;}
     if(intent==="generate"&&type!=="both"&&job[type]&&!options.force)return openDocumentReview(job,type);
-    if(state.runtime?.settings?.["chatgpt-one-click"]===true&&!options.force)return generateOneClick(job,type,button,{autoOpen:options.autoOpen!==false});
+    if(state.runtime?.settings?.["chatgpt-one-click"]===true&&!options.force)return generateOneClick(job,type,button,{autoOpen:options.autoOpen!==false,propagateErrors:options.propagateErrors===true});
     if(intent==="export")return saveDocumentToDriveLegacy(job,type);
     if(intent==="chatgpt")return launchChatGptLegacy(job,type,button);
-    return type==="both"?generateBothLegacy(job):generateLegacy(job,type,button,options);
+    return type==="both"?generateBothLegacy(job,options):generateLegacy(job,type,button,options);
   }
 
   const activeOneClickJobs=new Map();
@@ -2133,7 +2188,7 @@
       if(!saved||!result.documents.every(doc=>saved[doc.document_type]===doc.document_url&&(eventsPayload.events||[]).some(event=>event.event_type==="document_drive_export"&&event.metadata?.document_type===doc.document_type&&event.metadata?.document_sha256===doc.document_sha256&&event.metadata?.file_id===doc.file_id&&event.metadata?.drive_url===doc.drive_url)))throw Error("Generation finished, but Raven could not confirm the saved document and Drive link. Refresh before retrying.");
       state.jobs=mergePendingDocuments(freshJobs);writeCache(CACHE_JOBS_KEY,state.jobs);
       await loadJobActivity(saved,true);render();
-      setStatus(result.documents.some(doc=>doc.reused_existing)?"Existing Raven document preserved and copied to Drive · review required":"Saved in Raven and copied to Drive · review required");
+    setStatus(result.documents.some(doc=>doc.reused_existing)?"Existing Raven document preserved and copied to Drive":"Saved in Raven and copied to Drive");
       if(session.autoOpen&&state.selectedId===saved.id&&!document.querySelector("dialog[open]"))await openDocumentReview(saved,type==="both"?"resume":type);
       return {job:saved,result};
     }catch(error){setStatus("One-click generation: "+error.message);if(propagateErrors)throw error;}
@@ -2382,7 +2437,7 @@
       for(const item of validated)await saveGeneratedDocument(job,item.type,item.document);
       const remaining=readCache(REQUEST_KEY,{})||{};
       delete remaining[parsed.request_id];writeCache(REQUEST_KEY,remaining);
-      render();setStatus("ChatGPT file imported and fact-checked · review required");
+      render();setStatus("ChatGPT file imported and fact-checked");
       if(!document.querySelector("dialog[open]"))await openDocumentReview(job,types[0]);
     }finally{activeChatImports.delete(parsed.request_id);}
   }
@@ -2425,7 +2480,7 @@
         const a=document.createElement("a");a.href=url;
         a.download=[job.company,job.title,type].filter(Boolean).join(" - ").replace(/[<>:"/\\|?*\x00-\x1f]/g,"_").slice(0,180)+".docx";
         a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
-        setStatus("Word document downloaded · review before submitting");
+        setStatus("Word document downloaded");
       }
     }catch(error){setStatus("Download failed: "+error.message);}
   }
@@ -2524,7 +2579,7 @@
       state.manualImportJob=null;
       state.manualImportType=null;
       render();
-      setStatus("ChatGPT draft"+(validated.length>1?"s":"")+" imported and fact-checked · review required");
+      setStatus("ChatGPT draft"+(validated.length>1?"s":"")+" imported and fact-checked");
       if(first) await openDocumentReview(job,first);
     }catch(error){
       if(feedback) feedback.textContent=error.message;
@@ -2607,7 +2662,7 @@
       if(options.refreshDescription&&job[type]) return {generationMode:"existing"};
       await saveGeneratedDocument(job,type,document);
       setDocumentApproved(job,type,false);
-      setStatus(label[0].toUpperCase()+label.slice(1)+" draft checked"+(document.generationMode==="source-facts"?" · built from verified facts; AI unavailable":document.generationMode==="mixed"?" · includes verified source wording":"")+" · approval required");
+      setStatus(label[0].toUpperCase()+label.slice(1)+" saved"+(document.generationMode==="source-facts"?" · built from verified facts; AI unavailable":document.generationMode==="mixed"?" · includes verified source wording":""));
       return document;
     }catch(error){
       const failedCache=generationCache();delete failedCache[generationCacheId(job,null,type)];writeCache(GENERATION_CACHE_KEY,failedCache);
@@ -2638,11 +2693,58 @@
     setStatus(documentLabel(type)+(approved?" approved":" approval removed"));
     render();
   }
-  function documentsReadyForApplication(job){
-    return Boolean(job.resume&&job.coverLetter);
+  function documentsReadyForApplication(job){return Boolean(job?.resume&&job?.coverLetter);}
+  function applicationDocumentText(value){
+    const raw=String(value||"");
+    if(!/^data:text\/html(?:;charset=utf-8)?,/i.test(raw))return "";
+    try{
+      const html=decodeURIComponent(raw.slice(raw.indexOf(",")+1));
+      const parsed=new DOMParser().parseFromString(html,"text/html");
+      parsed.querySelectorAll("script,style,noscript").forEach(node=>node.remove());
+      parsed.querySelectorAll("br").forEach(node=>node.replaceWith("\n"));
+      parsed.querySelectorAll("p,h1,h2,h3,div,li").forEach(node=>node.append("\n"));
+      return (parsed.body.textContent||"").replace(/[ \t]+/g," ").replace(/\n[ \t]+/g,"\n").replace(/\n{3,}/g,"\n\n").trim().slice(0,20000);
+    }catch{return "";}
   }
-  function beginApprovedApplication(job){
-    return prepareApplication(job,null);
+  async function beginApplication(job,button){
+    if(!job?.url||job.listing_state==="closed")return;
+    let listing;
+    try{listing=new URL(job.url);if(listing.protocol!=="https:")throw Error();}
+    catch{setStatus("This listing does not have a secure HTTPS URL.");return;}
+    const tab=window.open("about:blank","_blank");
+    if(!tab){setStatus("Allow pop-ups for Raven, then click Apply job again.");return;}
+    if(button){button.disabled=true;button.setAttribute("aria-busy","true");}
+    setStatus("Opening employer application and preparing available autofill…");
+    let targetUrl=listing.href;
+    try{
+      if(job._discovered){
+        const saved=await window.RavenAPI.addJob({track:job.track||"Professional",title:job.title||"",company:job.company||"",location:job.location||"",remote:isRemoteJob(job),salaryText:job.salaryText||"",url:job.url,source:job.source||"",status:"Saved",viewed:true,notes:job.notes||""});
+        if(saved?.id){Object.assign(job,window.RavenCore?.fromApiJob?window.RavenCore.fromApiJob(saved):saved,{_discovered:false});state.jobs.push(job);writeCache(CACHE_JOBS_KEY,state.jobs);}
+      }
+      const {applicationTargetUrl}=await import("./application-prepare.mjs?v=8");
+      let destination=job.url;
+      try{
+        if(!localPreparationClient){const {createOneClickClient}=await import("./oneclick-client.mjs?v=6");localPreparationClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});}
+        if(localPreparationClient.resolveApplicationDestination)destination=await localPreparationClient.resolveApplicationDestination(job);
+      }catch(error){console.warn("Employer destination could not be resolved; opening the saved listing.",error);}
+      targetUrl=applicationTargetUrl(destination);
+    }catch(error){console.warn("Application destination could not be normalized; opening the saved listing.",error);}
+    const packet={version:1,createdAt:new Date().toISOString(),jobId:String(job.id||""),jobUrl:targetUrl,title:job.title||"",company:job.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory(),resume:job.resume||"",coverLetter:job.coverLetter||"",coverLetterText:applicationDocumentText(job.coverLetter)};
+    const bridge=document.getElementById("ravenExtensionBridge");
+    if(bridge){
+      const packetSaved=new Promise(resolve=>{
+        let settled=false;
+        const finish=()=>{if(settled)return;settled=true;resolve();};
+        document.addEventListener("raven-application-packet-saved",finish,{once:true});
+        window.setTimeout(finish,800);
+      });
+      bridge.dataset.packet=JSON.stringify(packet);
+      document.dispatchEvent(new CustomEvent("raven-application-packet"));
+      await packetSaved;
+    }
+    try{tab.location.replace(targetUrl);}catch{}
+    setStatus((bridge?"Application opened; Raven filled recognized fields and attached available documents where supported.":"Application opened; connect the Raven extension to autofill fields.")+" Submit the employer form yourself when ready.");
+    if(button){button.disabled=false;button.removeAttribute("aria-busy");}
   }
 
   function previewableDocumentUrl(value) {
@@ -2949,8 +3051,7 @@
       if(!job){setStatus("Saved preparation found. Wait for jobs to finish loading, then try Resume preparation again.");return;}
       if(job.track)state.activeTrack=job.track;
       trackTabs.forEach(tab=>{const active=tab.dataset.track===state.activeTrack;tab.classList.toggle("active",active);tab.setAttribute("aria-selected",String(active));});
-      state.selectedId=job.id;
-      render();
+      state.selectedId=job.id;render();
       requestAnimationFrame(()=>detailPanel?.querySelector("[data-close-job-detail]")?.focus({preventScroll:true}));
       void prepareApplication(job,detailPanel?.querySelector("[data-prepare-application]"));
     });
@@ -3325,17 +3426,23 @@
     const includeDiscovered=options.includeDiscovered!==false;
     const tasks=[loadJobs()];
     if(includeDiscovered) tasks.push(loadAllDiscovered());
-    await Promise.allSettled(tasks);
+    const results=await Promise.allSettled(tasks);
+    if(options.waitForRuntime)await options.waitForRuntime.catch(()=>{});
+    if(includeDiscovered){
+      const discoveredResult=results[1];
+      if(discoveredResult?.status==="fulfilled")queueDiscoveredDocuments(discoveredResult.value?.newlyDiscovered||[]);
+      queueDiscoveredDocuments([],{markPending:false});
+    }
     render();
   }
   async function boot() {
     bindEvents();
     applySharedParams();
     hydrateImmediateData();
-    await getPreparationRecovery().then(updatePreparationRecoveryBanner).catch(error=>console.warn("Preparation recovery is unavailable",error));
 
+    await getPreparationRecovery().then(updatePreparationRecoveryBanner).catch(error=>console.warn("Preparation recovery is unavailable",error));
     const runtimePromise=loadRuntimeConfig();
-    const refreshPromise=refreshAllJobs();
+    const refreshPromise=refreshAllJobs({waitForRuntime:runtimePromise});
     await Promise.allSettled([runtimePromise,refreshPromise]);
     try{
       const reconnect=(await getExtensionReconnect()).take(preparationRecovery?.load());
