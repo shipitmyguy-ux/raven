@@ -7,6 +7,7 @@ import { webcrypto, createHash } from 'node:crypto';
 const source = fs.readFileSync(new URL('../extension/src/apply-background.js', import.meta.url), 'utf8');
 const contentSource = fs.readFileSync(new URL('../extension/src/apply-content.js', import.meta.url), 'utf8');
 const adapterSource = fs.readFileSync(new URL('../extension/src/prepare-content.js', import.meta.url), 'utf8');
+const coreSource = fs.readFileSync(new URL('../extension/src/assistant-core.js', import.meta.url), 'utf8');
 const bridgeSource = fs.readFileSync(new URL('../extension/src/content.js', import.meta.url), 'utf8');
 const backgroundSource = fs.readFileSync(new URL('../extension/src/background.js', import.meta.url), 'utf8');
 const ravenUrl = 'https://shipitmyguy-ux.github.io/raven/';
@@ -328,7 +329,7 @@ test('navigation during file-input wait aborts before any file assignment', asyn
     get files() { return []; },
     set files(value) { assignments++; },
     getAttribute: name => name === 'aria-label' ? 'Resume' : null,
-    closest: () => null
+    closest: () => null, dispatchEvent() {}
   };
   const document = { querySelectorAll: selector =>
     selector === 'input[type="file"]' && available ? [input] : [] };
@@ -371,4 +372,99 @@ test('legacy v1 mailbox is absent while JSON capture and import remain wired', (
   assert.match(bridgeSource, /raven-chatgpt-result/);
   assert.match(backgroundSource, /ravenChatGptRequests/);
   assert.match(backgroundSource, /save-to-raven/);
+});
+
+function atsFixture({ hostname, selector = '', accept = 'application/pdf', existingFile = false,
+  coverText = false } = {}) {
+  let assignments = 0;
+  const container = { innerText: '' };
+  let chosen = existingFile ? [{ name: 'existing.pdf', type: 'application/pdf' }] : [];
+  const input = selector ? {
+    tagName: 'INPUT', type: 'file', id: 'resume', name: 'resume', accept, parentElement: container,
+    get files() { return chosen; },
+    set files(files) {
+      assignments++;
+      chosen = [...files];
+      container.innerText = chosen[0]?.name + ' attached';
+    },
+    getAttribute: name => name === 'aria-label' ? 'Resume' : null,
+    closest: () => null
+  } : null;
+  class CoverTextArea {
+    constructor() { this.tagName = 'TEXTAREA'; this.name = 'coverLetter'; this.id = '';
+      this.maxLength = -1; this.current = ''; }
+    get value() { return this.current; }
+    set value(next) { this.current = next; }
+    getClientRects() { return [{ width: 1, height: 1 }]; }
+    getAttribute(name) { return name === 'aria-label' ? 'Cover letter' : null; }
+    closest() { return null; }
+    dispatchEvent() {}
+  }
+  const field = coverText ? new CoverTextArea() : null;
+  const document = { querySelectorAll: query => {
+    if (query === 'textarea') return field ? [field] : [];
+    if (query === 'input[type="file"]' || query === selector) return input ? [input] : [];
+    return [];
+  } };
+  const context = {
+    chrome: { runtime: { sendMessage: (message, callback) => callback(null),
+      onMessage: { addListener() {} }, lastError: null } },
+    document, location: { protocol: 'https:', hostname, href: 'https://' + hostname + '/apply' },
+    HTMLTextAreaElement: CoverTextArea, HTMLInputElement: class {},
+    Event: class {}, File: class {
+      constructor(bytes, name, options) { this.name = name; this.type = options.type; }
+    },
+    DataTransfer: class {
+      constructor() { this.files = []; this.items = { add: file => this.files.push(file) }; }
+    },
+    URL, Date, Object, String, Array, RegExp, atob, setTimeout, clearTimeout
+  };
+  vm.createContext(context);
+  vm.runInContext(coreSource, context);
+  vm.runInContext(adapterSource, context);
+  return { dom: context.RavenPrepareDom, adapter: context.RavenAssistantCore.detectAdapter(hostname),
+    field, assignments: () => assignments };
+}
+
+test('protocol 3 selects recognized Greenhouse, Lever, and Ashby resume inputs', async () => {
+  for (const [hostname, selector, adapterId] of [
+    ['boards.greenhouse.io', '#resume', 'greenhouse'],
+    ['jobs.lever.co', 'input[type="file"][name="resume"]', 'lever'],
+    ['jobs.ashbyhq.com', 'input[type="file"][id="_systemfield_resume"]', 'ashby']
+  ]) {
+    const fixture = atsFixture({ hostname, selector });
+    assert.equal(fixture.adapter.id, adapterId);
+    const result = await fixture.dom.applyOperation('resume',
+      { document: { kind: 'resume', dataUrl: pdfData } });
+    assert.equal(result.state, 'page_confirmed', hostname);
+    assert.equal(fixture.assignments(), 1, hostname);
+    assert.match(result.result.evidence, /Raven-resume\.pdf attached/);
+  }
+});
+
+test('protocol 3 preserves an existing ATS file and leaves unsupported format manual', async () => {
+  const existing = atsFixture({ hostname: 'boards.greenhouse.io', selector: '#resume', existingFile: true });
+  const preserved = await existing.dom.applyOperation('resume',
+    { document: { kind: 'resume', dataUrl: pdfData } });
+  assert.equal(preserved.state, 'no_control');
+  assert.match(preserved.result.reason, /Existing attachment preserved/);
+  assert.equal(existing.assignments(), 0);
+
+  const unsupported = atsFixture({ hostname: 'jobs.lever.co',
+    selector: 'input[type="file"][name="resume"]', accept: '.docx' });
+  const result = await unsupported.dom.applyOperation('resume',
+    { document: { kind: 'resume', dataUrl: pdfData } });
+  assert.equal(result.state, 'rejected');
+  assert.match(result.result.reason, /does not accept PDF/);
+  assert.equal(unsupported.assignments(), 0);
+});
+
+test('protocol 3 fills a Breezy text-only cover field without a file input', async () => {
+  const fixture = atsFixture({ hostname: 'studio.breezy.hr', coverText: true });
+  assert.equal(fixture.adapter.id, 'breezy');
+  const result = await fixture.dom.applyOperation('coverLetterText',
+    { coverLetterText: { text: 'Saved synthetic cover text', documentSha256: 'a'.repeat(64) } });
+  assert.equal(result.state, 'filled');
+  assert.equal(fixture.field.value, 'Saved synthetic cover text');
+  assert.equal(fixture.assignments(), 0);
 });
