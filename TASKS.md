@@ -2,7 +2,7 @@
 
 - [x] Resolve Panic Stations Workable job-detail URLs directly to the `/apply/` form route; recognize Workable public job detail pages for existing verified Apply-link resolution.
 - [x] Send current saved PDF documents to the employer tab asynchronously after Apply, and match upload controls by semantic label and accepted file format.
-- [~] PR #101 merged and Pages deployed. PR core/browser CI passed. Main production smoke revealed Workday/Taleo selector compatibility; preserve explicit adapter selectors while validating accepted format. Follow-up CI and production smoke pending; no tests run locally.
+- [x] PR #101 and follow-up PR #103 merged. Pages deployment, main core/browser checks and production smoke passed. Extension 2.5.0 is published; owner reload and a live Mad Head/Panic employer-form acceptance check remain. No tests run locally.
 
 ## Apply without document gating — October 15, 2026
 
