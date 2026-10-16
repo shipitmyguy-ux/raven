@@ -4,27 +4,27 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const source=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
-const code=source.slice(source.indexOf('  async function beginApplication(job,button){'),source.indexOf('  function previewableDocumentUrl(value) {'))
+const code=source.slice(source.indexOf('  async function beginApplication(job,button,options={})'),source.indexOf('  function previewableDocumentUrl(value) {'))
   .replaceAll(/await import\("\.\/application-prepare\.mjs\?v=\d+"\)/g,'mockApi')
   .replaceAll(/import\("\.\/application-prepare\.mjs\?v=\d+"\)/g,'Promise.resolve(mockApi)')
   .replaceAll(/await import\("\.\/oneclick-client\.mjs\?v=\d+"\)/g,'({createOneClickClient:()=>client})');
 const job=()=>({id:'JT-test',url:'https://example.test/listing',title:'Artist',company:'Acme',resume:'saved resume',coverLetter:''});
-function harness({bridge=true,ready=true,coverReady=false,slowResume=false,savedAttempt=false,closedOnce=false}={}){
- const calls=[],statuses=[],fileCalls=[];let saved=savedAttempt?[{attemptId:'11111111-1111-4111-8111-111111111111',jobId:'JT-test',jobUrl:'https://example.test/listing'}]:[];let closedReported=false;
+function harness({bridge=true,ready=true,coverReady=false,slowResume=false,savedAttempt=false,closedOnce=false,staleErrorOnce=false,changedOnRetry=false}={}){
+ const calls=[],statuses=[],fileCalls=[],attemptRecords=[],timers=[];let saved=savedAttempt?[{attemptId:'11111111-1111-4111-8111-111111111111',jobId:'JT-test',jobUrl:'https://example.test/listing'}]:[];let closedReported=false;
  const mockApi={applicationTargetUrl:x=>x};
  const client={resolveApplicationDestination:async()=>{calls.push('resolve');return 'https://example.test/apply';}};
  const ctx={job:job(),mockApi,client,console:{warn(){}},URL,Promise,crypto:{randomUUID:()=>String(++ctx.ids).padStart(8,'0')+'-1111-4111-8111-111111111111'},ids:0,
-  activeApplyAttempts:new Map(),savedApplyAttempts:()=>saved,closeSavedApplyAttempt:id=>{saved=saved.map(value=>value.attemptId===id?{...value,closed:true}:value);calls.push('closed:'+id);},render:()=>{},Event,document:{getElementById:()=>bridge?{dataset:{},dispatchEvent(event){this.dataset.applyCapability=bridge==='v2'?'2':'3';return true;}}:null},window:{open:url=>{calls.push('manual:'+url);return {location:{replace:x=>calls.push('navigate:'+x)}}},RavenAPI:{listJobs:async()=>[{...ctx.job,coverLetter:coverReady?'saved cover':''}]}},
+  activeApplyAttempts:new Map(),savedApplyAttempts:()=>saved,closeSavedApplyAttempt:id=>{saved=saved.map(value=>value.attemptId===id?{...value,closed:true}:value);calls.push('closed:'+id);},render:()=>{},Event,document:{getElementById:()=>bridge?{dataset:{},dispatchEvent(event){this.dataset.applyCapability=bridge==='v2'?'2':'3';return true;}}:null},window:{open:url=>{calls.push('manual:'+url);return {location:{replace:x=>calls.push('navigate:'+x)}}},RavenAPI:{listJobs:async()=>[{...ctx.job,url:changedOnRetry&&closedReported?'https://example.test/changed':'https://example.test/listing',coverLetter:coverReady?'saved cover':''}]}},
   state:{jobs:[],jobDocumentHashes:{},runtime:{settings:{}}},setStatus:x=>statuses.push(x),applicationDocumentText:()=> 'cover text',
   prepareApplyDocument:async(_job,kind)=>{calls.push('prepare:'+kind);if(kind==='resume'&&slowResume)await new Promise(resolve=>setTimeout(resolve,20));if(kind==='coverLetter'&&!coverReady)throw Error('cover unavailable');return {kind,documentSha256:'a'.repeat(64)};},
-  applyExtensionRequest:async(_api,_attempt,action,payload)=>{calls.push(action+(payload.targetUrl?':'+payload.targetUrl:payload.useCurrentPage?':current-page':''));if(closedOnce&&action==='status'&&!closedReported){closedReported=true;return {phase:'closed',status:'closed'};}return {phase:'reserved',status:'reserved'};},
+  applyExtensionRequest:async(_api,_attempt,action,payload)=>{calls.push(action+(payload.targetUrl?':'+payload.targetUrl:payload.useCurrentPage?':current-page':''));attemptRecords.push({action,attemptId:_attempt.attemptId,payload});if(staleErrorOnce&&action==='status'&&!closedReported){closedReported=true;throw Error('No tab with id: 42');}if(closedOnce&&action==='status'&&!closedReported){closedReported=true;return {phase:'closed',status:'closed'};}return {phase:'reserved',status:'reserved'};},
   waitForApplyReady:async()=>({phase:ready?'ready':'needs_user'}),deliverApplyOperation:async(_api,_attempt,payload)=>{if(payload.coverLetterText)calls.push('cover-text:'+payload.coverLetterText.text);return {phase:'ready'};},
   deliverApplyDocument:async(_job,kind)=>{fileCalls.push(kind);return {phase:'ready'};},
   rememberApplyAttempt:(attempt,url)=>{saved=saved.filter(value=>value.attemptId!==attempt.attemptId);saved.push({attemptId:attempt.attemptId,jobId:attempt.jobId,jobUrl:url});},applyOutcomeMessage:()=> 'manual review',readCache:()=>({}),readAnswerMemory:()=>({}),APPLICATION_PROFILE_KEY:'profile',
   normalizeJobs:x=>x,refreshCurrentDocumentHashes:async()=>{ctx.state.jobDocumentHashes['JT-test']={coverLetter:{sha256:'a'.repeat(64)}};},localPreparationClient:client,
-  setTimeout,clearTimeout};
+  setTimeout:fn=>{timers.push(fn);return timers.length;},clearTimeout:()=>{}};
  vm.createContext(ctx);vm.runInContext(code,ctx);
- return {apply:()=>vm.runInContext('beginApplication(job,null)',ctx),calls,statuses,fileCalls,saved:()=>saved};
+ return {apply:()=>vm.runInContext('beginApplication(job,null)',ctx),flush:async()=>{while(timers.length)await timers.shift()();},calls,statuses,fileCalls,attemptRecords,saved:()=>saved};
 }
 test('primary Apply reserves one owned tab before destination resolution and delivers resume without cover',async()=>{
  const h=harness();await h.apply();
@@ -68,14 +68,27 @@ test('reloaded Apply continues the owned tab and reinspects a landing page',asyn
  assert.deepEqual(h.fileCalls,['resume']);
 });
 
-test('closed employer tab preserves history and requires an explicit fresh Apply click',async()=>{
- const h=harness({savedAttempt:true,closedOnce:true});await h.apply();
- assert.equal(h.calls.filter(x=>x==='open').length,0);
- assert.equal(h.saved()[0].closed,true);
- assert.ok(h.statuses.some(x=>/previous employer tab closed/.test(x)));
- await h.apply();
- assert.equal(h.calls.filter(x=>x==='open').length,1,JSON.stringify({calls:h.calls,statuses:h.statuses,saved:h.saved()}));
+test('stale employer tab reconnects automatically and delivers the saved resume in one Apply action',async()=>{
+ const h=harness({savedAttempt:true,closedOnce:true});await h.apply();await h.flush();
  assert.equal(h.saved().length,2);
  assert.equal(h.saved()[0].closed,true);
  assert.notEqual(h.saved()[0].attemptId,h.saved()[1].attemptId);
+ assert.ok(h.attemptRecords.some(value=>value.action==='open'&&value.payload.listingUrl==='https://example.test/listing'));
+ assert.ok(h.attemptRecords.some(value=>value.action==='open'&&value.payload.targetUrl==='https://example.test/apply'));
+ assert.deepEqual(h.fileCalls,['resume']);
+ assert.ok(h.statuses.some(x=>/Employer form opened|manual review/.test(x)));
+ assert.equal(h.attemptRecords.some(value=>value.action==='submit'),false);
+});
+test('stale tab transport error automatically reconnects once',async()=>{
+ const h=harness({savedAttempt:true,staleErrorOnce:true});await h.apply();await h.flush();
+ assert.equal(h.saved().length,2);
+ assert.equal(h.saved()[0].closed,true);
+ assert.ok(h.fileCalls.includes('resume'));
+});
+test('automatic reconnect stops when the canonical saved job URL changed',async()=>{
+ const h=harness({savedAttempt:true,closedOnce:true,changedOnRetry:true});await h.apply();await h.flush();
+ assert.equal(h.saved().length,1);
+ assert.equal(h.saved()[0].closed,true);
+ assert.deepEqual(h.fileCalls,[]);
+ assert.ok(h.statuses.some(x=>/saved job link changed/.test(x)));
 });
