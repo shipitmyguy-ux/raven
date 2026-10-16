@@ -498,44 +498,66 @@ test('protocol 3 fills a Breezy text-only cover field without a file input', asy
 });
 
 
-function doverFixture() {
+function doverFixture(preselectedCountry = '') {
   const form = { tagName: 'FORM' };
   const radioLabels = ['United States', 'France', 'United Kingdom', 'Ireland'];
-  let selectedCountry = '';
+  let selectedCountry = preselectedCountry;
   const scope = { innerText: 'Your location (Country) *\n' + radioLabels.join('\n'), parentElement: form,
     querySelectorAll: selector => selector === 'input[type="radio"]' ? radios : [] };
   const radios = radioLabels.map(value => {
     const label = { innerText: value, parentElement: scope };
-    const radio = { type: 'radio', name: 'country-group', value, checked: false, disabled: false, form,
+    const radio = { type: 'radio', name: 'country-group', value, checked: value === preselectedCountry, disabled: false, form,
       labels: [label], getClientRects: () => [{ width: 1, height: 1 }],
       closest: selector => selector === 'label' ? label : null,
       getAttribute: () => null,
       click() { for (const item of radios) item.checked = item === radio; selectedCountry = value; } };
     return radio;
   });
-  const autoContainer = { innerText: 'Autofill from resume\nDrag & drop or upload to autofill your application.\nUpload file', parentElement: form };
-  const resumeUpload = { innerText: 'Drag and drop file or browse computer\n(PDF, 5 MB maximum)', parentElement: null };
-  const resumeGroup = { innerText: 'Resume *\nDrag and drop file or browse computer\n(PDF, 5 MB maximum)', parentElement: form };
-  resumeUpload.parentElement = { innerText: 'Drag and drop file or browse computer\n(PDF, 5 MB maximum)', parentElement: resumeGroup };
-  const assigned = [0, 0], containers = [autoContainer, resumeUpload.parentElement];
+  const sharedFileWrapper = { innerText: 'Portfolio upload\nResume *\nDrag and drop file or browse computer\n(PDF, 5 MB maximum)',
+    parentElement: form, querySelectorAll: selector => selector === 'input[type="file"]' ? fileInputs : [] };
+  const containers = [
+    { innerText: 'Autofill from resume\nUpload file', parentElement: sharedFileWrapper },
+    { innerText: 'Upload file', parentElement: sharedFileWrapper },
+    { innerText: 'Resume *\nDrag and drop file or browse computer\n(PDF, 5 MB maximum)', parentElement: sharedFileWrapper }
+  ];
+  const assigned = [0, 0, 0];
   const makeInput = index => ({
     tagName: 'INPUT', type: 'file', name: '', id: '', accept: 'application/pdf', disabled: false,
     parentElement: containers[index], form,
     get files() { return this.currentFiles || []; },
-    set files(files) { assigned[index]++; this.currentFiles = [...files]; containers[index].innerText = (containers[index].innerText || '') + '\n' + files[0]?.name + ' attached'; },
+    set files(files) { assigned[index]++; this.currentFiles = [...files]; containers[index].innerText += '\n' + files[0]?.name + ' attached'; },
     getAttribute: name => name === 'aria-label' ? null : null,
     closest: () => null, dispatchEvent() {}
   });
-  const fileInputs = [makeInput(0), makeInput(1)];
+  const fileInputs = [makeInput(0), makeInput(1), makeInput(2)];
+  const textValues = { portfolio: '', discord: '' };
+  const fieldContainers = {
+    portfolio: { innerText: 'Link to your portfolio (If any)', parentElement: form },
+    discord: { innerText: 'Discord ID (If any)', parentElement: form }
+  };
+  const textFields = Object.keys(textValues).map(key => ({
+    tagName: 'INPUT', type: 'text', name: key, id: '', form, parentElement: fieldContainers[key],
+    get value() { return textValues[key]; },
+    set value(value) { textValues[key] = value; },
+    getClientRects: () => [{ width: 1, height: 1 }],
+    getAttribute: () => null, closest: () => null, dispatchEvent() {}
+  }));
+  for (const key of Object.keys(fieldContainers)) {
+    const input = textFields.find(field => field.name === key);
+    fieldContainers[key].querySelectorAll = selector => selector.includes('input:not') ? [input] : [];
+  }
+  for (const container of containers) {
+    container.querySelectorAll = selector => selector === 'input[type="file"]' ? fileInputs.filter(input => input.parentElement === container) : [];
+  }
   const document = {
     body: { innerText: 'Senior 3D Artist' },
     querySelectorAll(selector) {
       if (selector === 'input[type="file"]') return fileInputs;
       if (selector === 'input[type="radio"]') return radios;
-      if (selector === 'input,textarea,select') return radios;
+      if (selector === 'input,textarea,select') return [...textFields, ...radios];
       if (selector === 'input[type="password"]' || selector === 'iframe[src]' ||
           selector === 'a[aria-label],img[alt],[role="img"][aria-label]') return [];
-      if (selector === 'input:not([type="file"]):not([type="hidden"]),textarea,select') return [];
+      if (selector === 'input:not([type="file"]):not([type="hidden"]),textarea,select') return [...textFields, ...radios];
       return [];
     },
     querySelector: () => null
@@ -554,20 +576,29 @@ function doverFixture() {
   vm.createContext(context);
   vm.runInContext(coreSource, context);
   vm.runInContext(adapterSource, context);
-  return { dom: context.RavenPrepareDom, assigned, get selectedCountry() { return selectedCountry; } };
+  return { dom: context.RavenPrepareDom, assigned, textValues, get selectedCountry() { return selectedCountry; } };
 }
 
-test('Dover exact tenant route, country field, and Resume upload avoid the resume-autofill parser', async () => {
+test('Dover bounds profile and upload labels to their own MUI field and preserves existing country choice', async () => {
   const fixture = doverFixture();
   assert.equal(fixture.dom.inspect({ title: 'Senior 3D Artist', company: 'Warpfrog' }).status, 'ready');
   const profile = await fixture.dom.applyOperation('profile',
-    { profile: { country: 'United States' }, answers: {} });
+    { profile: { country: 'United States', portfolio: 'https://portfolio.example', discord: 'artist#1234' }, answers: {} });
   assert.equal(profile.state, 'filled');
-  assert.deepEqual(Array.from(profile.result.filled), ['country']);
+  assert.deepEqual(Array.from(profile.result.filled), ['portfolio', 'discord', 'country']);
+  assert.equal(fixture.textValues.portfolio, 'https://portfolio.example');
+  assert.equal(fixture.textValues.discord, 'artist#1234');
   assert.equal(fixture.selectedCountry, 'United States');
   const upload = await fixture.dom.applyOperation('resume',
     { document: { kind: 'resume', dataUrl: pdfData } });
   assert.equal(upload.state, 'page_confirmed');
   assert.equal(fixture.assigned[0], 0, 'Autofill from resume input must remain untouched');
-  assert.equal(fixture.assigned[1], 1, 'Resume attachment input must receive the PDF');
+  assert.equal(fixture.assigned[1], 0, 'Portfolio wrapper must not inherit Resume label from shared wrapper');
+  assert.equal(fixture.assigned[2], 1, 'Resume attachment input must receive the PDF');
+
+  const preserved = doverFixture('France');
+  const result = await preserved.dom.applyOperation('profile',
+    { profile: { country: 'United States' }, answers: {} });
+  assert.deepEqual(Array.from(result.result.filled), []);
+  assert.equal(preserved.selectedCountry, 'France');
 });
