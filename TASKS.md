@@ -7,8 +7,8 @@
 - [x] Verify PR checks: core 38927559259 and Browser regression 38927559110 passed; the PR browser run included all 14 smoke cases.
 - [x] Verify release: Pages 38927988522, core 38927988467, and Browser regression 38927988474 passed; post-deploy production smoke 38928036428 passed all 14 cases.
 - [x] Update the staged unpacked v2.6.1 package's `prepare-content.js` from merged main.
-- [ ] Reload the unpacked extension once and rerun the read-only inspector on the real Mad Head page.
-- [ ] Keep the portfolio PDF control untouched until Raven supports a verified portfolio document. Before any personal data/document transmission, confirm exact fields/files and destination at action time; never submit.
+- [x] User reloaded the extension and Mad Head tab; the live isolated extension context reports v2.6.1 and inspector status `ready`. Read-only mapping confirms the `Resume` CV input and one portfolio URL input.
+- [x] Leave the separate portfolio PDF control untouched; the current Apply payload does not support it. No fields were filled, no files attached, no personal data transmitted, and no application submitted. Any later personal-data/document transmission requires action-time confirmation of exact fields/files and destination.
 
 No personal data was entered or transmitted, no PDFs were uploaded, and no application was submitted. CI smoke verification is not live employer acceptance.
 
