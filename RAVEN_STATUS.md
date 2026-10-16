@@ -2,7 +2,7 @@
 
 Follow-up on merged PR #100. The Workable application route now maps job-detail URLs such as `apply.workable.com/panic-stations/j/<id>` to the actual `/apply/` form before opening the employer tab. Public-board listings on `jobs.workable.com` are recognized for the existing explicit Apply-link resolver. Direct Apply sends only existing PDF documents initially; Raven then verifies the job's current saved documents and matching Drive export receipts, fetches the exact saved PDFs through the local helper, and sends them to the already-open employer tab. The extension chooses an enabled, empty resume/cover-letter file input whose label and `accept` type match the file, avoiding resume-import controls and incompatible formats. Employer submission remains manual.
 
-Branch `codex/raven-fix-apply-uploads` is based on current `origin/main` (`284cb08`). Implementation and docs are in progress. No test suite has been run; do not claim the fix is live until PR CI, merge and publication are verified. Extension version is staged at 2.5.0, which will require one reload after release.
+Branch `codex/raven-fix-apply-uploads` is based on current `origin/main` (`284cb08`). PR #101's core CI passed. Its first browser CI run exposed that the controlled extension fixture omits Chrome's `storage.onChanged` API; the listener is now optional for that compatibility environment, and PR CI must rerun. No tests have been run locally. Do not claim the fix is live until CI, merge and publication are verified. Extension version is staged at 2.5.0, which will require one reload after release.
 
 ## Apply without document gating — October 15, 2026
 

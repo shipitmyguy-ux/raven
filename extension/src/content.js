@@ -335,7 +335,7 @@
     }
     return session;
   }
-  chrome.storage.onChanged.addListener(changes=>{
+  chrome.storage.onChanged?.addListener?.(changes=>{
     const packet=changes[PACKET_KEY]?.newValue;
     if(!packet?.version||!packet?.jobUrl)return;
     chrome.storage.local.get(SESSION_KEY,values=>{
