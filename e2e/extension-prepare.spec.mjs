@@ -166,7 +166,7 @@ for(const mode of ['empty','existing','too-long','ambiguous'])test('cover-letter
 test("Mad Head Workable form recognizes placeholder contact fields and the labeled CV upload", async ({ page }) => {
   const madHeadPacket = { ...packet, jobUrl: "https://careers.madheadgames.com/jobs/lead-environment-artist-ckS9/new",
     title: "Lead Environment Artist", company: "Mad Head Games",
-    profile: { firstName: "Ari", lastName: "Lee", email: "ari@example.test" },
+    profile: { firstName: "Ari", lastName: "Lee", email: "ari@example.test", portfolio: "https://portfolio.example/ari" },
     coverLetter: "", resume: pdf };
   await page.addInitScript(value => {
     const messages = [], listeners = [];
@@ -197,6 +197,7 @@ test("Mad Head Workable form recognizes placeholder contact fields and the label
         <input name="FirstName" placeholder="First name (required)">
         <input name="LastName" placeholder="Last name (required)">
         <input name="Email" type="email" placeholder="Your email (required)">
+        <div class="form-group"><label>You can share previous work through Artstation, Behance, Github etc. Add your links here:</label><input name="Answers[4].Body" placeholder=" ex. https://www.example.com"></div>
         <div class="form-group file-type">
           <label>CV / Resume (please provide your CV in pdf, word or rtf document format)</label>
           <input class="form-control input-file" type="file" name="Resume" accept=".pdf">
@@ -225,6 +226,7 @@ test("Mad Head Workable form recognizes placeholder contact fields and the label
   await expect(page.locator('input[name="FirstName"]')).toHaveValue("Ari");
   await expect(page.locator('input[name="LastName"]')).toHaveValue("Lee");
   await expect(page.locator('input[name="Email"]')).toHaveValue("ari@example.test");
+  await expect(page.locator('input[name="Answers[4].Body"]')).toHaveValue("https://portfolio.example/ari");
   await expect.poll(() => page.locator('input[name="Resume"]').evaluate(input => input.files.length)).toBe(1);
   expect(await page.locator('input[name="Answers[3].File"]').evaluate(input => input.files.length)).toBe(0);
   const result = await page.evaluate(() => window.__ravenMessages.find(message => message.type === "raven-prepare-result"));
