@@ -908,16 +908,23 @@ test('primary Apply reserves and routes one owned attempt without delivering to 
  expect(api.getJob().status).toBe('Saved');
 });
 
-test('closed owned tab offers an explicit fresh Apply while preserving attempt history',async({page})=>{
+test('closed owned tab reconnects automatically and preserves attempt history',async({page})=>{
  await mockRaven(page,{initialJob:{...savedJob,resume:'',cover_letter:''}});
  await page.route('http://127.0.0.1:8766/**',route=>route.abort());
  await page.addInitScript(()=>{
-  window.applyRequests=[];window.statusCalls=0;
+  window.applyRequests=[];window.oldAttempt='11111111-1111-4111-8111-111111111111';let oldInspectCalls=0;
   const attach=bridge=>{
    bridge.addEventListener('raven-apply-probe',()=>{bridge.dataset.applyCapability='3';});
    bridge.addEventListener('raven-apply-request',()=>{
     const request=JSON.parse(bridge.dataset.applyRequest);window.applyRequests.push(request);
-    const phase=request.action==='status'?(++window.statusCalls===1?'ready':'closed'):request.payload?.targetUrl?'opening':'reserved';
+    let phase;
+    if(request.attemptId===window.oldAttempt){
+     if(request.action==='status')phase='ready';
+     else if(request.action==='inspect')phase=(++oldInspectCalls===1?'reserved':'closed');
+     else phase='reserved';
+    }else{
+     phase=request.action==='open'?(request.payload.targetUrl?'opening':'reserved'):'ready';
+    }
     bridge.dataset.applyResponse=JSON.stringify({version:3,ok:true,kind:'snapshot',requestId:request.requestId,attemptId:request.attemptId,jobId:request.jobId,bindingRevision:1,sequence:window.applyRequests.length,phase,status:phase});
     bridge.dispatchEvent(new Event('raven-apply-response'));
    });
@@ -930,13 +937,14 @@ test('closed owned tab offers an explicit fresh Apply while preserving attempt h
  await openDetailSection(page,'Job details');
  await expect(jobDetail(page,'[data-apply-job]')).toContainText('Continue / inspect current employer tab');
  await jobDetail(page,'[data-apply-job]').click();
- await expect(jobDetail(page,'[data-apply-job]')).toContainText('Start new application tab');
- const before=await page.evaluate(()=>window.applyRequests.map(value=>value.attemptId));
- expect(new Set(before)).toEqual(new Set(['11111111-1111-4111-8111-111111111111']));
- await jobDetail(page,'[data-apply-job]').click();
  await expect.poll(()=>page.evaluate(()=>new Set(window.applyRequests.map(value=>value.attemptId)).size)).toBe(2);
+ const requests=await page.evaluate(()=>window.applyRequests);
+ expect(requests.some(value=>value.attemptId!=='11111111-1111-4111-8111-111111111111'&&value.action==='open'&&value.payload.targetUrl===window.savedJob?.url)).toBe(false);
+ expect(requests.some(value=>value.attemptId!=='11111111-1111-4111-8111-111111111111'&&value.action==='open'&&value.payload.targetUrl===document.querySelector('[data-apply-job]')?.dataset.jobUrl)).toBe(false);
  const history=await page.evaluate(()=>JSON.parse(sessionStorage.getItem('raven.apply-attempts.v3')));
  expect(history).toHaveLength(2);expect(history[0].closed).toBe(true);
+ expect(history[1].closed).not.toBe(true);
+ expect(requests.some(value=>value.action==='submit')).toBe(false);
 });
 
 test('saved resume Drive action requests exact PDF export to configured folder and preserves resume',async({page})=>{
