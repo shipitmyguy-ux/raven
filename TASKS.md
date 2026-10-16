@@ -1,16 +1,16 @@
 ## Live employer-page acceptance — October 16, 2026
 
-- [x] Inspect the actual Mad Head Games Lead Environment Artist form in Chrome.
-- [x] Confirm Raven Application Assistant v2.6.0 injects into the real employer page. The absence of Raven's web-page bridge on the employer host was not a valid injection check; the extension uses an isolated content-script context.
-- [x] Run Raven's read-only live form inspector with the job title/company. It returns manual because the page uses placeholder-only contact labels and a generic file input named `Resume`.
-- [x] Fix matching against placeholders and nearest form-group labels; recognize generic file uploads by semantic control name and group text while preserving resume-import and sensitive-question exclusions.
-- [x] Add a browser regression based on observed Mad Head form markup. It checks contact fields, portfolio URL, CV input, leaves the portfolio-file input untouched, and does not submit.
-- [x] PR #107 core CI and full browser regression pass (runs 38924679490 and 38924678795).
-- [ ] Merge and publish the updated extension package; unpacked Chrome installations need one final reload to activate the fix.
-- [ ] Re-run the read-only inspector on the real Mad Head page. Before any personal data or PDF upload, confirm the exact fields/files and Mad Head Games destination at action time. Never submit the application.
-- [ ] Determine whether Raven should support portfolio-file documents; current direct Apply payload supports resume and cover letter only, while this form separately requests a portfolio PDF and portfolio URL.
+- [x] Inspect the actual Mad Head Games Lead Environment Artist application in Chrome and confirm v2.6.0 injects in the employer page's isolated extension context.
+- [x] Identify the observed form: first/last/email use placeholders; CV / Resume uses a file control named `Resume`; portfolio URL is described by its field group; a separate portfolio PDF input exists.
+- [x] PR #107 added placeholder, field-group, and CV file matching. Its post-merge smoke caught an upload-safety bug where full-form text made unrelated sensitive questions suppress uploads.
+- [x] PR #108 fixed upload context to use only the control label/field group and added production smoke to every Browser regression run. Merged as `691eeb9`.
+- [x] Verify PR checks: core 38927559259 and Browser regression 38927559110 passed; the PR browser run included all 14 smoke cases.
+- [x] Verify release: Pages 38927988522, core 38927988467, and Browser regression 38927988474 passed; post-deploy production smoke 38928036428 passed all 14 cases.
+- [x] Update the staged unpacked v2.6.1 package's `prepare-content.js` from merged main.
+- [ ] Reload the unpacked extension once and rerun the read-only inspector on the real Mad Head page.
+- [ ] Keep the portfolio PDF control untouched until Raven supports a verified portfolio document. Before any personal data/document transmission, confirm exact fields/files and destination at action time; never submit.
 
-No personal data was entered or transmitted, no PDFs were uploaded, and no application was submitted. Synthetic/CI regression is supplementary and is not live employer acceptance.
+No personal data was entered or transmitted, no PDFs were uploaded, and no application was submitted. CI smoke verification is not live employer acceptance.
 
 ## Mad Head and Panic Stations direct Apply fixes — October 16, 2026
 
