@@ -2,7 +2,7 @@
 
 ## Current task — Mad Head live application support — October 16, 2026
 
-Main is at `691eeb9128b6cf44a424800909c10a20cb5d209b`. PR #107 added live-form matching; PR #108 fixed a cross-form upload exclusion and added smoke coverage to Browser regression. Both are merged. Published extension package is v2.6.1.
+Application code merged at `691eeb9128b6cf44a424800909c10a20cb5d209b`; documentation updates followed on main. PR #107 added live-form matching; PR #108 fixed a cross-form upload exclusion and added smoke coverage to Browser regression. Both are merged. Published extension package is v2.6.1.
 
 ## Verification
 
