@@ -16,4 +16,6 @@ The published main Apply path already resolves the employer destination, obtains
 
 ## Apply reconnect — October 16, 2026
 
-Implemented automatic recovery when Raven’s existing Apply attempt refers to an employer tab that has closed or disappeared. Raven closes the stale attempt, rechecks the canonical saved job ID and HTTPS URL, opens one new employer tab for that same listing, and reuses the current verified resume PDF. The retry is bounded to one attempt and never submits the employer application. Regression coverage and GitHub CI verification are pending. Live attachment acceptance on a real employer form remains unverified.
+PR #109 merged as `337a2bac32f09b76f21d1d4b3b3a0a8e5fa4029b`. The published Apply flow now detects a stale saved employer tab during initial status checks, inspection, or form readiness; it closes that attempt, verifies the same canonical saved job ID and HTTPS listing URL, opens one fresh tab, and reuses the saved verified resume PDF. A changed URL or second failure stops safely. There is no employer submission action.
+
+PR checks passed: core 38940222200 and browser regression 38940222213. Main checks passed: core 38940717613, browser regression 38940717421, Pages deploy 38940717384, and production smoke 38940765951. The deployed page reloads `app.js?v=105`. No personal data was transmitted and no application was submitted. Live attachment acceptance on real employer forms remains pending.
