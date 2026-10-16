@@ -12,15 +12,6 @@
 
 No user personal data was sent to an employer; no application was submitted.
 
-## Apply attempt engine — October 16, 2026
-
-- [x] Consolidate active Apply execution into protocol v3 with per-attempt/job/tab/document correlation and truthful acknowledgement/outcome handling.
-- [x] Deliver independently verified resume/cover PDFs as each becomes ready; retain canonical cover text; prevent delivery when the inspected employer form is not authorized.
-- [x] Add explicit recovery for extension absence, reload/navigation, stale bindings and closed tabs; retire legacy v1 mailbox and v2 dispatch while preserving saved metadata.
-- [x] Wire the v3 web/extension tests and syntax checks into core CI; exact branch checks passed on Linux and Windows.
-- [x] Run the full browser regression on the exact branch; 153 tests passed.
-- [ ] Merge and install the change, then verify a representative employer form in the user's browser before claiming live upload acceptance. Do not submit the application.
-
 ## Mad Head and Panic Stations direct Apply fixes — October 16, 2026
 
 - [x] Resolve Panic Stations Workable job-detail URLs directly to the `/apply/` form route; recognize Workable public job detail pages for existing verified Apply-link resolution.
