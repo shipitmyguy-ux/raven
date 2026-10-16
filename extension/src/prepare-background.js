@@ -66,6 +66,11 @@
     serial(async () => { const all = await get(); if (all[id]) { delete all[id]; await save(all); } });
   }
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message?.type === "raven-preflight-application" || message?.type === "raven-prepare-application") {
+      reply(sendResponse, { requestId: message.requestId, ok: false, status: "unsupported",
+        reason: "Protocol 2 form delivery is retired. Update Raven and use Apply protocol 3." });
+      return false;
+    }
     if (message?.type === "raven-preflight-context") {
       serial(async () => {
         const all = await get();

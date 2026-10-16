@@ -1,6 +1,6 @@
 const RAVEN_URL = "https://shipitmyguy-ux.github.io/raven/";
 const RAVEN_MATCH = "https://shipitmyguy-ux.github.io/raven/*";
-importScripts("prepare-background.js");
+importScripts("prepare-background.js", "apply-background.js");
 
 const trustedRaven=sender=>sender?.tab?.url?.startsWith(RAVEN_URL);
 let transferQueue=Promise.resolve();
@@ -68,12 +68,3 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   chrome.tabs.create({ url: target.toString() });
 });
 
-chrome.runtime.onMessage.addListener((message) => {
-  if(message?.type!=="raven-application-complete"||!message.completion) return;
-  chrome.tabs.query({url:RAVEN_MATCH},(tabs)=>{
-    tabs.forEach((tab)=>{
-      if(!tab.id) return;
-      chrome.tabs.sendMessage(tab.id,{type:"raven-application-complete",completion:message.completion},()=>void chrome.runtime.lastError);
-    });
-  });
-});

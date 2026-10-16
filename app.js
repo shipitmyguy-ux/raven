@@ -1393,9 +1393,9 @@
   }
   function bindDetailActions(job,expanded) {
             expanded.querySelectorAll("[data-apply-job]").forEach((button)=>{ button.addEventListener("click",(event)=>{ event.stopPropagation(); void beginApplication(job,button); }); });
-            expanded.querySelectorAll("[data-approved-apply]").forEach((button)=>{ button.addEventListener("click",event=>{event.stopPropagation();void prepareApplication(job,button);}); });
+            expanded.querySelectorAll("[data-approved-apply]").forEach((button)=>{ button.addEventListener("click",event=>{event.stopPropagation();void beginApplication(job,button);}); });
             expanded.querySelectorAll("[data-prepare-application]").forEach(button=>{
-              button.addEventListener("click",event=>{event.stopPropagation();prepareApplication(job,button);});
+              button.addEventListener("click",event=>{event.stopPropagation();beginApplication(job,button);});
             });
             expanded.querySelectorAll("[data-review-paused-preparation]").forEach(button=>{
               button.addEventListener("click",event=>{
@@ -1591,13 +1591,13 @@
     const savedPreparation=preparationRecovery?.load();
     const pausedElsewhere=savedPreparation&&!savedPreparation.expired&&savedPreparation.state!=="opened"&&String(savedPreparation.jobId)!==String(job.id);
     const pausedJobTitle=pausedElsewhere?(knownJobById(savedPreparation.jobId)?.title||"another job"):"";
+    const savedAttemptsForJob=savedApplyAttempts().filter(value=>value.jobId===String(job.id)&&value.jobUrl===job.url);
+    const savedApply=savedAttemptsForJob.some(value=>!value.closed);
+    const priorApplyClosed=!savedApply&&savedAttemptsForJob.some(value=>value.closed);
     const applyAction=job.url&&job.listing_state!=="closed"&&statusLower!=="closed"&&!postApplication
-      ? '<button class="workflow-action is-primary" type="button" data-apply-job><span>Apply job</span></button>':"";
-    const applyGate=job.url&&job.listing_state!=="closed"&&!postApplication&&!pausedElsewhere?'<button class="workflow-action application-gate'+(docsReady?' is-ready':'')+'" type="button" data-approved-apply><span>'+(docsReady?'Continue with documents':'Prepare documents')+'</span></button>':"";
-    const resumePreparation=savedPreparation&&!savedPreparation.expired&&savedPreparation.state!=="opened"&&String(savedPreparation.jobId)===String(job.id);
-    const prepareAction=state.runtime?.settings?.["chatgpt-one-click"]===true&&job.url&&job.listing_state!=="closed"&&statusLower!=="closed"&&(!postApplication||isAppliedJob)
-      ? pausedElsewhere?'<button class="workflow-action is-secondary" type="button" data-review-paused-preparation>Review paused preparation</button>'
-        : '<button class="workflow-action is-secondary" type="button" data-prepare-application'+(prepareBusy?' disabled aria-busy="true"':'')+'><span>'+(resumePreparation?'Resume preparation':isAppliedJob?'Prepare again for review':'Optional verified PDF preparation')+'</span></button>':"";
+      ? '<button class="workflow-action is-primary" type="button" data-apply-job'+(activeApplyAttempts.has(String(job.id))?' disabled aria-busy="true"':'')+'><span>'+(savedApply?"Continue / inspect current employer tab":priorApplyClosed?"Start new application tab":"Apply job")+'</span></button>':"";
+    const applyGate="";
+    const prepareAction="";
     const postingUrl=/^https?:\/\//i.test(String(job.url||""))?job.url:"";
     const actions=postingUrl
       ? '<a class="employer-link" data-employer-link href="'+escapeAttr(postingUrl)+'" target="_blank" rel="noopener">Open employer listing ↗</a>'
@@ -2120,15 +2120,11 @@
     banner.hidden=!active;
     if(!active)return;
     const job=knownJobById(intent.jobId);
-    banner.querySelector("[data-preparation-recovery-text]").textContent=intent.expired
-      ? "A saved preparation expired. Review the role before starting again."
-      : intent.state==="documents-ready"&&intent.reason
-        ? intent.reasonType==="extension-unavailable"
-          ? "Documents ready for "+(job?.title||"a saved job")+"; form filling is unavailable. "+intent.reason+" Resume preparation after the extension is ready."
-          : "Documents ready for "+(job?.title||"a saved job")+"; employer form needs manual access. "+intent.reason+" Resume preparation after access is restored."
-        : "Preparation for "+(job?.title||"a saved job")+" is ready to resume.";
-    banner.querySelector("[data-resume-preparation]").hidden=Boolean(intent.expired);
-    banner.querySelector("[data-clear-preparation]").textContent=intent.expired?"Clear expired preparation":"Dismiss";
+    banner.querySelector("[data-preparation-recovery-text]").textContent="Previous preparation retained for "+(job?.title||"a saved job")+". Review the job's Current PDF links, then Continue with Apply to inspect the employer form again.";
+    const continueButton=banner.querySelector("[data-resume-preparation]");
+    continueButton.hidden=!job;
+    continueButton.textContent="Continue with Apply";
+    banner.querySelector("[data-clear-preparation]").hidden=true;
   }
   function oneClickSession(job,type){
     const key=String(job.id||job.url);
@@ -2157,7 +2153,7 @@
       if(savedKey!==key){kinds.forEach(kind=>{activeOneClickJobs.delete(key+":"+kind);activeOneClickJobs.set(savedKey+":"+kind,session);});key=savedKey;}
       if(forceLocal){
         if(!localPreparationClient){
-          const {createOneClickClient}=await import("./oneclick-client.mjs?v=6");
+          const {createOneClickClient}=await import("./oneclick-client.mjs?v=7");
           localPreparationClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
         }
         client=localPreparationClient;
@@ -2166,7 +2162,7 @@
         const pairedToken=localStorage.getItem(PAIR_KEY);
         if(pairedToken)oneClickClient=createRemoteWriterClient({token:pairedToken});
         else{
-          const {createOneClickClient}=await import("./oneclick-client.mjs?v=6");
+          const {createOneClickClient}=await import("./oneclick-client.mjs?v=7");
           oneClickClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
         }
       }
@@ -2194,13 +2190,13 @@
     }catch(error){setStatus("One-click generation: "+error.message);if(propagateErrors)throw error;}
     finally{kinds.forEach(kind=>activeOneClickJobs.delete(key+":"+kind));setGenerationButton(button,false);render();}
   }
-  async function verifiedPreparationDocuments(jobId,expectedHashes,expectedUrl){
+  async function verifiedPreparationDocuments(jobId,expectedHashes,expectedUrl,kinds=["resume","coverLetter"]){
     const [jobsPayload,eventsPayload]=await Promise.all([window.RavenAPI.listJobs(),window.RavenAPI.listJobEvents(String(jobId))]);
     const canonical=normalizeJobs(jobsPayload).find(item=>String(item.id)===String(jobId));
     if(!canonical)throw Error("The saved job could not be verified. Refresh Raven before resuming.");
     if(expectedUrl&&new URL(canonical.url).href!==new URL(expectedUrl).href)throw Error("The saved employer URL changed. Review the listing before starting again.");
     await refreshCurrentDocumentHashes(canonical);
-    const documents=["resume","coverLetter"].map(kind=>{
+    const documents=kinds.map(kind=>{
       const sha=state.jobDocumentHashes[String(jobId)]?.[kind]?.sha256;
       if(!sha||!canonical[kind]||expectedHashes?.[kind]?.documentSha256&&expectedHashes[kind].documentSha256!==sha)throw Error("A saved document changed. Review it before preparing the employer form.");
       const event=(eventsPayload.events||[]).find(item=>item.event_type==="document_drive_export"&&item.metadata?.document_type===kind&&item.metadata?.document_sha256===sha&&item.metadata?.file_id&&/^https:\/\/drive\.google\.com\/file\/d\/[A-Za-z0-9_-]{10,160}\/view$/.test(item.metadata?.drive_url||""));
@@ -2232,7 +2228,7 @@
       if(intent&&String(intent.jobId)!==String(job.id))throw Error("Another application preparation is saved. Resume or dismiss it before starting this role.");
       if(intent&&new URL(intent.jobUrl).href!==new URL(job.url).href)throw Error("The saved employer URL changed. Review the listing before starting again.");
       if(!localPreparationClient){
-        const {createOneClickClient}=await import("./oneclick-client.mjs?v=6");
+        const {createOneClickClient}=await import("./oneclick-client.mjs?v=7");
         localPreparationClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
       }
       await localPreparationClient.ensureApplicationPreparation();
@@ -2706,37 +2702,132 @@
       return (parsed.body.textContent||"").replace(/[ \t]+/g," ").replace(/\n[ \t]+/g,"\n").replace(/\n{3,}/g,"\n\n").trim().slice(0,20000);
     }catch{return "";}
   }
-  function sendApplicationPacket(bridge,packet){
-    if(!bridge)return Promise.resolve(false);
-    return new Promise(resolve=>{
-      let settled=false;
-      const finish=()=>{if(settled)return;settled=true;resolve(true);};
-      document.addEventListener("raven-application-packet-saved",finish,{once:true});
-      window.setTimeout(finish,800);
-      bridge.dataset.packet=JSON.stringify(packet);
-      document.dispatchEvent(new CustomEvent("raven-application-packet"));
-    });
+  const activeApplyAttempts=new Map();
+  const APPLY_ATTEMPTS_KEY="raven.apply-attempts.v3";
+  function savedApplyAttempts(){
+    try{const values=JSON.parse(sessionStorage.getItem(APPLY_ATTEMPTS_KEY)||"[]");return Array.isArray(values)?values.filter(value=>value&&/^[a-f0-9-]{36}$/i.test(value.attemptId||"")&&/^[A-Za-z0-9_-]{1,160}$/.test(value.jobId||"")&&/^https:\/\//.test(value.jobUrl||"")&&Date.now()-Date.parse(value.createdAt)<2*60*60*1000).slice(-8):[];}catch{return [];}
   }
-  async function attachSavedApplicationPdfs(job,targetUrl,bridge){
-    if(!bridge||!job?.id||!job.resume||!job.coverLetter)return;
+  function rememberApplyAttempt(attempt,jobUrl){
+    const values=savedApplyAttempts().filter(value=>value.attemptId!==attempt.attemptId);
+    values.push({attemptId:attempt.attemptId,jobId:String(attempt.jobId),jobUrl,createdAt:new Date().toISOString()});
+    try{sessionStorage.setItem(APPLY_ATTEMPTS_KEY,JSON.stringify(values.slice(-8)));}catch{}
+  }
+  function closeSavedApplyAttempt(attemptId){
+    const values=savedApplyAttempts().map(value=>value.attemptId===attemptId?{...value,closed:true}:value);
+    try{sessionStorage.setItem(APPLY_ATTEMPTS_KEY,JSON.stringify(values));}catch{}
+    render();
+  }
+  async function recoverApplyAttemptStatus(){
+    const values=savedApplyAttempts();if(!values.length)return;
     try{
-      const verified=await verifiedPreparationDocuments(job.id,null,job.url);
-      if(!localPreparationClient){
-        const {createOneClickClient}=await import("./oneclick-client.mjs?v=6");
-        localPreparationClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
+      const api=await import("./application-prepare.mjs?v=10");
+      for(const value of values){
+        if(value.closed)continue;
+        const attempt={attemptId:value.attemptId,jobId:value.jobId,bindingRevision:undefined,sequence:0};
+        const result=await applyExtensionRequest(api,attempt,"status");
+        if(result.phase==="closed"||result.phase==="cancelled"){closeSavedApplyAttempt(value.attemptId);continue;}
+        setStatus("Saved application attempt for "+(knownJobById(value.jobId)?.title||"a job")+": "+applyOutcomeMessage(result));
       }
-      const prepared=await localPreparationClient.prepareApplicationDocuments({
-        job_id:String(job.id),
-        documents:verified.result.documents.map(doc=>({document_type:doc.document_type,document_sha256:doc.document_sha256}))
-      });
-      const packet={version:1,createdAt:new Date().toISOString(),jobId:String(job.id),jobUrl:targetUrl,title:job.title||"",company:job.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory(),resume:"",coverLetter:"",coverLetterText:applicationDocumentText(verified.job.coverLetter)};
-      for(const doc of prepared.documents)packet[doc.document_type==="resume"?"resume":"coverLetter"]=doc.data_url;
-      if(!packet.resume||!packet.coverLetter)throw Error("The helper did not return both saved PDF files.");
-      await sendApplicationPacket(bridge,packet);
-      setStatus("Application opened; Raven sent the current saved PDF files to the employer form. Submit the application yourself when ready.");
+    }catch(error){console.warn("Saved Apply attempt status is unavailable.",error);}
+  }
+
+  function applyOutcomeMessage(snapshot){
+    const docs=snapshot?.documents||{};
+    const parts=["Employer form opened"];
+    for(const kind of ["resume","coverLetter"]){
+      const state=docs[kind]?.state||docs[kind]?.status;
+      if(state==="page_confirmed")parts.push((kind==="resume"?"resume":"cover letter")+" confirmed by the employer page");
+      else if(state==="selected"||state==="unconfirmed")parts.push((kind==="resume"?"resume":"cover letter")+" selected but unconfirmed; check the employer page");
+      else if(state==="rejected"||state==="unavailable_on_page"||state==="preserved_existing")parts.push((kind==="resume"?"resume":"cover letter")+" needs manual review");
+    }
+    if(snapshot?.phase==="needs_user"||snapshot?.ok===false){
+      const reason=typeof snapshot?.reason==="string"?snapshot.reason:snapshot?.reason?.message;
+      parts.push(reason||"check the employer tab and use any Current PDF links shown in Raven");
+    }
+    parts.push("submit the employer form yourself");
+    return parts.join("; ")+".";
+  }
+  async function applyExtensionRequest(api,attempt,action,payload={},bindingRevision){
+    const request={version:3,requestId:crypto.randomUUID(),attemptId:attempt.attemptId,action,jobId:String(attempt.jobId),...(bindingRevision===undefined?{}:{bindingRevision}),payload};
+    const result=await api.requestApplyExtension(request);
+    if(result?.kind==="error"||result?.ok===false)throw Error(result?.reason?.message||"Chrome could not complete the Apply request.");
+    if(!Number.isInteger(result?.sequence)||result.sequence<attempt.sequence)throw Error("Chrome returned an out-of-order Apply response.");
+    attempt.sequence=result.sequence;
+    if(Number.isInteger(result?.bindingRevision))attempt.bindingRevision=result.bindingRevision;
+    return result;
+  }
+  async function waitForApplyReady(api,attempt){
+    for(let i=0;i<12;i++){
+      const result=await applyExtensionRequest(api,attempt,i===0?"inspect":"status",{},attempt.bindingRevision);
+      if(result.phase==="ready"||result.status==="ready")return result;
+      if(result.phase==="needs_user"||result.phase==="closed")return result;
+      await new Promise(resolve=>setTimeout(resolve,1000));
+    }
+    return {phase:"needs_user",reason:{message:"Employer fields did not become ready. Check the employer tab."}};
+  }
+  async function waitForApplyOperation(api,attempt,operationId,kind){
+    for(let i=0;i<40;i++){
+      const snapshot=await applyExtensionRequest(api,attempt,"status");
+      const operation=snapshot.operations?.[operationId];
+      const documentState=kind&&(snapshot.documents?.[kind]?.state||snapshot.documents?.[kind]?.status);
+      if(["filled","page_confirmed","selected","rejected","no_control","failed"].includes(operation?.state)||["page_confirmed","rejected","unconfirmed","unavailable_on_page","preserved_existing"].includes(documentState)||snapshot.phase==="needs_user"||snapshot.phase==="closed")return snapshot;
+      await new Promise(resolve=>setTimeout(resolve,1000));
+    }
+    return {phase:"needs_user",reason:{message:"Chrome acknowledged delivery but did not confirm the result. Check the employer tab."}};
+  }
+  async function deliverApplyOperation(api,attempt,payload,kind){
+    const operationId=crypto.randomUUID();
+    let response;
+    try{response=await applyExtensionRequest(api,attempt,"deliver",{operationId,...payload},attempt.bindingRevision);}
+    catch(error){
+      if(error.code!=="APPLY_RESULT_TIMEOUT")throw error;
+      const snapshot=await applyExtensionRequest(api,attempt,"status");
+      setStatus(applyOutcomeMessage(snapshot));
+      return snapshot;
+    }
+    if(response.kind==="ack")return waitForApplyOperation(api,attempt,operationId,kind);
+    return response;
+  }
+  async function prepareApplyDocument(job,kind){
+    let verified;
+    try{verified=await verifiedPreparationDocuments(job.id,null,job.url,[kind]);}
+    catch(error){
+      if(/saved employer URL changed|saved job could not be verified|saved document changed/.test(error.message)&&!/A saved document changed/.test(error.message))throw error;
+      const current=normalizeJobs(await window.RavenAPI.listJobs()).find(item=>String(item.id)===String(job.id));
+      if(!current||new URL(current.url).href!==new URL(job.url).href)throw Error("The saved job changed. Review it before attaching a file.");
+      const activeKey=String(job.id)+":"+kind;
+      if(activeOneClickJobs.has(activeKey)){
+        for(let i=0;i<180&&activeOneClickJobs.has(activeKey);i++)await new Promise(resolve=>setTimeout(resolve,1000));
+        if(activeOneClickJobs.has(activeKey))throw Error("The existing "+documentLabel(kind)+" writer is still active. Use its Current PDF link when ready.");
+      }else{
+        // The writer reuses canonical saved content when only its Drive export is missing.
+        const generated=await generateOneClick(job,kind,null,{autoOpen:false,propagateErrors:true,forceLocal:true});
+        if(!generated)throw Error("The "+documentLabel(kind)+" was not prepared.");
+      }
+      verified=await verifiedPreparationDocuments(job.id,null,job.url,[kind]);
+    }
+    if(!localPreparationClient){
+      const {createOneClickClient}=await import("./oneclick-client.mjs?v=7");
+      localPreparationClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
+    }
+    const source=verified.result.documents[0];
+    const prepared=await localPreparationClient.prepareApplicationDocuments({job_id:String(job.id),documents:[{document_type:kind,document_sha256:source.document_sha256}]});
+    const pdf=prepared.documents?.[0];
+    if(pdf?.document_type!==kind||pdf?.document_sha256!==source.document_sha256)throw Error("The current "+documentLabel(kind)+" PDF could not be verified.");
+    return {kind,documentSha256:source.document_sha256,pdfSha256:pdf.pdf_sha256,filename:pdf.file_name,dataUrl:pdf.data_url};
+  }
+  async function deliverApplyDocument(job,kind,attempt,api,prepared){
+    try{
+      const documentPayload=await prepared;
+      const snapshot=await applyExtensionRequest(api,attempt,"status");
+      if(!["ready","page_confirmed","unconfirmed","needs_user"].includes(snapshot.phase))throw Error("The employer tab is no longer ready for this application.");
+      const result=await deliverApplyOperation(api,attempt,{document:documentPayload},kind);
+      setStatus(applyOutcomeMessage(result));
+      return result;
     }catch(error){
-      console.info("Saved PDFs could not be attached in the background; Apply remains open.",error);
-      setStatus("Application opened. Raven could not confirm the saved PDF attachments; attach the resume manually if the employer form requires it.");
+      console.warn("Current "+kind+" was not attached to the employer form.",error);
+      setStatus("Employer form opened; "+documentLabel(kind)+" attachment is unconfirmed. "+error.message+" Use Raven's Current PDF link if shown for this job.");
+      return null;
     }
   }
   async function beginApplication(job,button){
@@ -2744,31 +2835,110 @@
     let listing;
     try{listing=new URL(job.url);if(listing.protocol!=="https:")throw Error();}
     catch{setStatus("This listing does not have a secure HTTPS URL.");return;}
-    const tab=window.open("about:blank","_blank");
-    if(!tab){setStatus("Allow pop-ups for Raven, then click Apply job again.");return;}
+    const key=String(job.id||job.url);
+    if(activeApplyAttempts.has(key)){setStatus("This application is already opening or preparing documents.");return;}
+    const savedAttempt=savedApplyAttempts().find(value=>!value.closed&&value.jobId===String(job.id)&&value.jobUrl===job.url);
+    const attempt={attemptId:savedAttempt?.attemptId||crypto.randomUUID(),jobId:String(job.id||""),bindingRevision:undefined,sequence:0};
+    activeApplyAttempts.set(key,attempt);
+    const bridge=document.getElementById("ravenExtensionBridge");
+    let bridgePresent=false;
+    if(bridge&&typeof bridge.dispatchEvent==="function"&&String(job.title||"").trim()&&String(job.company||"").trim()){
+      delete bridge.dataset.applyCapability;
+      bridge.dispatchEvent(new Event("raven-apply-probe",{bubbles:true}));
+      bridgePresent=bridge.dataset.applyCapability==="3";
+    }
+    // A missing bridge can use this click's pop-up permission immediately.
+    const manualTab=bridgePresent?null:window.open(listing.href,"_blank");
+    let reserved=null;
+    if(bridgePresent&&!job._discovered){
+      reserved=import("./application-prepare.mjs?v=10").then(async api=>({api,result:await applyExtensionRequest(api,attempt,savedAttempt?"status":"open",savedAttempt?{}:{listingUrl:job.url,title:job.title||"",company:job.company||""})}));
+    }
     if(button){button.disabled=true;button.setAttribute("aria-busy","true");}
-    setStatus("Opening employer application and preparing available autofill…");
-    let targetUrl=listing.href;
+    setStatus("Opening employer application…");
     try{
       if(job._discovered){
         const saved=await window.RavenAPI.addJob({track:job.track||"Professional",title:job.title||"",company:job.company||"",location:job.location||"",remote:isRemoteJob(job),salaryText:job.salaryText||"",url:job.url,source:job.source||"",status:"Saved",viewed:true,notes:job.notes||""});
-        if(saved?.id){Object.assign(job,window.RavenCore?.fromApiJob?window.RavenCore.fromApiJob(saved):saved,{_discovered:false});state.jobs.push(job);writeCache(CACHE_JOBS_KEY,state.jobs);}
+        if(!saved?.id)throw Error("The job could not be saved.");
+        Object.assign(job,window.RavenCore?.fromApiJob?window.RavenCore.fromApiJob(saved):saved,{_discovered:false});
+        state.jobs.push(job);writeCache(CACHE_JOBS_KEY,state.jobs);
+        activeApplyAttempts.delete(key);activeApplyAttempts.set(String(job.id),attempt);
       }
-      const {applicationTargetUrl}=await import("./application-prepare.mjs?v=9");
+      attempt.jobId=String(job.id);
+      if(bridgePresent&&!reserved)reserved=import("./application-prepare.mjs?v=10").then(async api=>({api,result:await applyExtensionRequest(api,attempt,"open",{listingUrl:job.url,title:job.title||"",company:job.company||""})}));
+      // Start both writers independently before form inspection. A saved document
+      // is reused, including when only its matching PDF export is missing.
+      const preparedDocs={};
+      for(const kind of ["resume","coverLetter"])preparedDocs[kind]=prepareApplyDocument(job,kind).then(value=>({value}),error=>({error}));
+      let api,opened;
+      if(bridgePresent){({api,result:opened}=await reserved);}
+      else api=await import("./application-prepare.mjs?v=10");
       let destination=job.url;
       try{
-        if(!localPreparationClient){const {createOneClickClient}=await import("./oneclick-client.mjs?v=6");localPreparationClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});}
+        if(!localPreparationClient){const {createOneClickClient}=await import("./oneclick-client.mjs?v=7");localPreparationClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});}
         if(localPreparationClient.resolveApplicationDestination)destination=await localPreparationClient.resolveApplicationDestination(job);
       }catch(error){console.warn("Employer destination could not be resolved; opening the saved listing.",error);}
-      targetUrl=applicationTargetUrl(destination);
-    }catch(error){console.warn("Application destination could not be normalized; opening the saved listing.",error);}
-    const bridge=document.getElementById("ravenExtensionBridge");
-    const packet={version:1,createdAt:new Date().toISOString(),jobId:String(job.id||""),jobUrl:targetUrl,title:job.title||"",company:job.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory(),resume:/^data:application\/pdf;base64,/i.test(job.resume||"")?job.resume:"",coverLetter:/^data:application\/pdf;base64,/i.test(job.coverLetter||"")?job.coverLetter:"",coverLetterText:applicationDocumentText(job.coverLetter)};
-    await sendApplicationPacket(bridge,packet);
-    try{tab.location.replace(targetUrl);}catch{}
-    setStatus((bridge?"Application opened; Raven is attaching current saved PDF files in the background.":"Application opened; connect the Raven extension to autofill fields.")+" Submit the employer form yourself when ready.");
-    void attachSavedApplicationPdfs(job,targetUrl,bridge);
-    if(button){button.disabled=false;button.removeAttribute("aria-busy");}
+      const targetUrl=api.applicationTargetUrl(destination);
+      if(!bridgePresent){
+        if(!manualTab){setStatus("Allow pop-ups for Raven, then click Apply job again.");return;}
+        try{manualTab.location.replace(targetUrl);}catch{}
+        setStatus("Employer page opened. Preparing exact PDFs for manual attachment; check this job's document status in Raven.");
+        void Promise.all([preparedDocs.resume,preparedDocs.coverLetter]).then(([resume,cover])=>{
+          setStatus("Employer page opened. "+(resume.value?"Resume PDF verified. ":"Resume PDF unavailable: "+resume.error.message+". ")+(cover.value?"Cover-letter PDF verified. ":"Cover-letter PDF unavailable: "+cover.error.message+". ")+"Use any Current PDF links shown for this job and submit the employer form yourself.");
+        });
+        return;
+      }
+      rememberApplyAttempt(attempt,job.url);
+      render();
+      if(opened.phase==="closed"||opened.phase==="cancelled"){closeSavedApplyAttempt(attempt.attemptId);setStatus("The previous employer tab closed. Click Apply job again to start a new attempt; saved documents remain unchanged.");return;}
+      const routed=savedAttempt
+        ? await applyExtensionRequest(api,attempt,"inspect",{useCurrentPage:true},attempt.bindingRevision)
+        : await applyExtensionRequest(api,attempt,"open",{listingUrl:job.url,targetUrl,title:job.title||"",company:job.company||""},attempt.bindingRevision);
+      if(routed.phase==="closed"||routed.phase==="cancelled"){closeSavedApplyAttempt(attempt.attemptId);setStatus("The previous employer tab closed. Click Apply job again to start a new attempt; saved documents remain unchanged.");return;}
+      const ready=await waitForApplyReady(api,attempt);
+      if(ready.phase!=="ready"){setStatus(applyOutcomeMessage(ready));return;}
+      setStatus("Employer form opened; filling recognized fields. Submit the form yourself when ready.");
+      try{
+        const profile=readCache(APPLICATION_PROFILE_KEY,{})||{};
+        const answers=readAnswerMemory();
+        const result=await deliverApplyOperation(api,attempt,{profile,answers});
+        setStatus(applyOutcomeMessage(result));
+      }catch(error){setStatus("Employer form opened; field fill is unconfirmed. "+error.message);}
+      // Deliver whichever verified file becomes ready first; one writer cannot
+      // keep the other ready file waiting.
+      const pending=["resume","coverLetter"].map(kind=>preparedDocs[kind].then(result=>({kind,result})));
+      const failures=[];
+      while(pending.length){
+        const next=await Promise.race(pending.map((promise,index)=>promise.then(value=>({index,...value}))));
+        pending.splice(next.index,1);
+        if(next.result.value){
+          if(next.kind==="coverLetter"){
+            try{
+              const canonical=normalizeJobs(await window.RavenAPI.listJobs()).find(item=>String(item.id)===String(job.id));
+              if(!canonical||new URL(canonical.url).href!==new URL(job.url).href)throw Error("Saved job changed.");
+              await refreshCurrentDocumentHashes(canonical);
+              const documentSha256=state.jobDocumentHashes[String(job.id)]?.coverLetter?.sha256;
+              if(documentSha256!==next.result.value.documentSha256)throw Error("Saved cover letter changed.");
+              const text=applicationDocumentText(canonical.coverLetter);
+              if(text)await deliverApplyOperation(api,attempt,{coverLetterText:{text,documentSha256}});
+            }catch(error){failures.push("Cover-letter text: "+error.message);}
+          }
+          await deliverApplyDocument(job,next.kind,attempt,api,Promise.resolve(next.result.value));
+        }else failures.push(documentLabel(next.kind)+": "+next.result.error.message);
+      }
+      const finalSnapshot=await applyExtensionRequest(api,attempt,"status");
+      setStatus(applyOutcomeMessage(finalSnapshot)+(failures.length?" Files still needing manual preparation: "+failures.join("; ")+".":""));
+      return {status:"opened",attemptId:attempt.attemptId};
+    }catch(error){
+      console.warn("Apply could not be confirmed.",error);
+      if(savedAttempt&&/tab closed|No tab with id|Attempt identity does not match|Application attempt is unavailable/i.test(error.message)){
+        closeSavedApplyAttempt(attempt.attemptId);
+        setStatus("The previous employer tab is unavailable. Click Apply job again to start a new attempt; saved documents remain unchanged.");
+      }else setStatus("Application could not be confirmed: "+error.message+" Review the saved employer link and Raven document status.");
+    }finally{
+      for(const [activeKey,value] of activeApplyAttempts)if(value===attempt)activeApplyAttempts.delete(activeKey);
+      if(button){button.disabled=false;button.removeAttribute("aria-busy");}
+      render();
+    }
   }
 
   function previewableDocumentUrl(value) {
@@ -3077,13 +3247,7 @@
       trackTabs.forEach(tab=>{const active=tab.dataset.track===state.activeTrack;tab.classList.toggle("active",active);tab.setAttribute("aria-selected",String(active));});
       state.selectedId=job.id;render();
       requestAnimationFrame(()=>detailPanel?.querySelector("[data-close-job-detail]")?.focus({preventScroll:true}));
-      void prepareApplication(job,detailPanel?.querySelector("[data-prepare-application]"));
-    });
-    document.querySelector("[data-clear-preparation]")?.addEventListener("click",()=>{
-      const intent=preparationRecovery?.load();
-      if(intent)preparationRecovery.clear(intent.preparationId);
-      updatePreparationRecoveryBanner();render();
-      setStatus("Saved preparation dismissed. Saved documents remain available.");
+      void beginApplication(job,detailPanel?.querySelector("[data-prepare-application]"));
     });
     detailPanel?.querySelector("[data-close-job-detail]")?.addEventListener("click",closeJobDetail);
     detailScrim?.addEventListener("click",closeJobDetail);
@@ -3126,7 +3290,7 @@
         try{
           const baseUrl=state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766";
           if(!powerClient||powerClientUrl!==baseUrl){
-            const {createOneClickClient}=await import("./oneclick-client.mjs?v=6");
+            const {createOneClickClient}=await import("./oneclick-client.mjs?v=7");
             powerClient=createOneClickClient({baseUrl});powerClientUrl=baseUrl;
           }
           renderPower(await (stop?powerClient.stopKeepingAwake():powerClient.getPowerStatus()));
@@ -3389,27 +3553,7 @@
     document.querySelectorAll("[data-review-close]").forEach((button)=>{
       button.addEventListener("click",closeDocumentReview);
     });
-    document.addEventListener("raven-application-complete",async()=>{
-      const bridge=document.getElementById("ravenExtensionBridge");
-      if(!bridge?.dataset.completion) return;
-      let completion;
-      try{ completion=JSON.parse(bridge.dataset.completion); }catch{return;}
-      delete bridge.dataset.completion;
-      const age=Date.now()-Date.parse(completion?.completedAt||0);
-      if(!completion?.jobId||!Number.isFinite(age)||age<0||age>24*60*60*1000) return;
-      const job=state.jobs.find((item)=>String(item.id)===String(completion.jobId));
-      if(!job||job._discovered) return;
-      let jobHost="",completionHost=String(completion.host||"").toLowerCase();
-      try{jobHost=new URL(job.url).hostname.toLowerCase();}catch{}
-      if(!jobHost||jobHost!==completionHost) return;
-      if(String(job.status||"").toLowerCase()==="applied") return;
-      const appliedDate=completion.completedAt||new Date().toISOString();
-      await transitionJob(job,"Applied",{
-        occurredAt:appliedDate,
-        pendingMessage:"Application completion confirmed · updating status...",
-        statusMessage:"Application completion confirmed · marked Applied"
-      });
-    });
+
   }
   function applySharedParams() {
     const params=new URLSearchParams(window.location.search);
@@ -3468,13 +3612,8 @@
     const runtimePromise=loadRuntimeConfig();
     const refreshPromise=refreshAllJobs({waitForRuntime:runtimePromise});
     await Promise.allSettled([runtimePromise,refreshPromise]);
-    try{
-      const reconnect=(await getExtensionReconnect()).take(preparationRecovery?.load());
-      if(reconnect){
-        const job=state.jobs.find(item=>String(item.id)===String(reconnect.jobId));
-        if(job&&!job._discovered){state.selectedId=job.id;render();await prepareApplication(job,null,{automaticReconnect:true});}
-      }
-    }catch(error){console.warn("Extension connection recovery stopped",error);}
+    await recoverApplyAttemptStatus();
+
 
     let lastRefresh=Date.now();
     document.addEventListener("visibilitychange",()=>{

@@ -39,22 +39,26 @@
     if (el.tagName !== "INPUT") return false;
     return ["text", "email", "tel", "url"].includes(String(el.type || "text").toLowerCase());
   }
-  function setValue(el, value, comboSearch = false) {
-    if (!safeControl(el) || el.value || value == null || String(value).trim() === "") return false;
+  function setValue(el, value, comboSearch = false, localAuthority = () => true) {
+    if (!localAuthority() || !safeControl(el) || el.value || value == null || String(value).trim() === "") return false;
     if (el.getAttribute("role") === "combobox" && !comboSearch) return false;
     if (el.tagName === "SELECT") {
       const key = normalized(value);
       const option = [...el.options].find(item => normalized(item.textContent) === key || normalized(item.value) === key);
       if (!option) return false;
+      if (!localAuthority()) return false;
       el.value = option.value;
     } else {
+      if (!localAuthority()) return false;
       const proto = el.tagName === "TEXTAREA" ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
       const setter = Object.getOwnPropertyDescriptor(proto, "value")?.set;
       setter ? setter.call(el, String(value)) : (el.value = String(value));
     }
+    if (!localAuthority()) return false;
     el.dispatchEvent(new Event("input", { bubbles: true }));
+    if (!localAuthority()) return false;
     el.dispatchEvent(new Event("change", { bubbles: true }));
-    return true;
+    return localAuthority();
   }
   function countryNames(value) {
     const name = normalized(value);
@@ -67,7 +71,8 @@
     if (el.id === "country" && selected?.querySelector(".iti__us")) return "United States";
     return selected?.textContent?.trim() || "";
   }
-  async function setLocationCombo(el, key, value, profile) {
+  async function setLocationCombo(el, key, value, profile, authorize = async () => true) {
+    const localAuthority = authorize.local || (() => true);
     // Only these two known Greenhouse contact controls may select options. Legal choices stay manual.
     if (!((key === "country" && el.id === "country") || (key === "city" && el.id === "candidate-location")) ||
         el.getAttribute("role") !== "combobox" || el.value || selectedLocation(el) || !safeControl(el) || sensitive(el, labelFor(el))) return false;
@@ -81,41 +86,56 @@
       return normalized(text) === normalized(query) ||
         (parts[0] === city && (!region || parts.includes(region)) && countries.some(country => country && parts.includes(country)));
     };
+    if (!await authorize() || !localAuthority()) return false;
     el.focus();
     // Greenhouse controls menuIsOpen through its Control onMouseUp, not onMouseDown.
     // Complete that bounded input gesture before typing so the controlled menu can render.
     if (el.getAttribute("aria-expanded") !== "true") {
+      if (!await authorize() || !localAuthority()) return false;
       el.dispatchEvent(new MouseEvent("mousedown", {bubbles: true, button: 0}));
+      if (!await authorize() || !localAuthority()) return false;
       el.dispatchEvent(new MouseEvent("mouseup", {bubbles: true, button: 0}));
       await new Promise(resolve => setTimeout(resolve, 150));
+      if (!await authorize() || !localAuthority()) return false;
     }
-    if (!setValue(el, query, true)) return false;
+    if (!await authorize() || !setValue(el, query, true, localAuthority)) return false;
     const deadline = Date.now() + 6000;
     while (Date.now() < deadline && el.isConnected && el.value === query) {
+      if (!await authorize() || !localAuthority()) return false;
       const list = document.getElementById(el.getAttribute("aria-controls") || "");
       const options = list?.getAttribute("role") === "listbox" ? [...list.querySelectorAll('[role="option"]')].filter(option =>
         option.getAttribute("aria-disabled") !== "true" && option.getClientRects().length && matches(option.innerText || "")) : [];
       if (options.length === 1) {
         const option = options[0];
+        if (!await authorize() || !localAuthority()) return false;
         option.dispatchEvent(new MouseEvent("mousedown", {bubbles: true, button: 0}));
+        if (!await authorize() || !localAuthority()) return false;
         option.dispatchEvent(new MouseEvent("mouseup", {bubbles: true, button: 0}));
+        if (!await authorize() || !localAuthority()) return false;
         option.dispatchEvent(new MouseEvent("click", {bubbles: true, button: 0}));
         // City selection resolves location details asynchronously before rendering its value.
         const commitDeadline = Date.now() + 6000;
         while (Date.now() < commitDeadline && el.isConnected) {
+          if (!await authorize() || !localAuthority()) return false;
           if (el.getAttribute("aria-expanded") === "false" && matches(selectedLocation(el))) return true;
           await new Promise(resolve => setTimeout(resolve, 150));
+          if (!await authorize() || !localAuthority()) return false;
         }
         break;
       }
       if (options.length > 1) break;
       await new Promise(resolve => setTimeout(resolve, 150));
+      if (!await authorize() || !localAuthority()) return false;
     }
     // A typed query is not a committed city/country. Clear only our own unfinished search.
     if (el.isConnected && el.value === query && !selectedLocation(el)) {
+      if (!await authorize() || !localAuthority()) return false;
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(el, "");
+      if (!await authorize() || !localAuthority()) return false;
       el.dispatchEvent(new Event("input", {bubbles: true}));
+      if (!await authorize() || !localAuthority()) return false;
       el.dispatchEvent(new Event("change", {bubbles: true}));
+      if (!await authorize() || !localAuthority()) return false;
       el.dispatchEvent(new KeyboardEvent("keydown", {key: "Escape", bubbles: true}));
     }
     return false;
@@ -332,6 +352,109 @@
     banner("Raven prepared this application. Fields filled: " + filledText + ". PDFs accepted by form: " + attachedText + "." + unconfirmedText + requiredText + absentText + " Review every field and attachment, then submit manually.");
     chrome.runtime.sendMessage({ type: "raven-prepare-result", result });
   }
+
+  // Shared DOM adapter for protocol 3. The version 2 preparation path below remains intact.
+  async function applyAttemptOperation(kind, payload, authorize = async () => true) {
+    const localAuthority = authorize.local || (() => true);
+    const aborted = () => ({ state: "aborted", result: { reason: "Application binding changed during operation." } });
+    if (!await authorize() || !localAuthority()) return aborted();
+    if (kind === "profile") {
+      const profile = payload.profile || {}, answers = payload.answers || {};
+      const adapter = core.detectAdapter(location.hostname), filled = [];
+      for (const key of Object.keys(profileTerms)) {
+        if (!await authorize() || !localAuthority()) return aborted();
+        const value = valueFor(profile, key);
+        if (!value) continue;
+        const el = candidateFor(adapter, key, allFields());
+        if (!el) continue;
+        if (!await authorize() || !localAuthority()) return aborted();
+        const changed = adapter.id === "greenhouse" && ["country", "city"].includes(key) &&
+          el.getAttribute("role") === "combobox" ? await setLocationCombo(el, key, value, profile, authorize) :
+          setValue(el, value, false, localAuthority);
+        if (!localAuthority()) return aborted();
+        if (changed) filled.push(key);
+      }
+      for (const el of allFields()) {
+        if (!await authorize() || !localAuthority()) return aborted();
+        const label = labelFor(el), answer = answers[normalized(label)];
+        if (!safeControl(el) || sensitive(el, label) || answer == null ||
+            !Object.values(profileTerms).some(terms => terms.some(term => normalized(label) === normalized(term)))) continue;
+        if (!await authorize() || !localAuthority()) return aborted();
+        if (setValue(el, answer, false, localAuthority)) filled.push("remembered answer");
+        if (!localAuthority()) return aborted();
+      }
+      if (!await authorize() || !localAuthority()) return aborted();
+      return { state: "filled", result: { filled, requiredUnanswered: requiredLabels() } };
+    }
+    if (kind === "coverLetterText") {
+      const text = payload.coverLetterText?.text || "";
+      const adapter = core.detectAdapter(location.hostname);
+      const fields = [...document.querySelectorAll("textarea")].filter(el => safeControl(el) && !sensitive(el, labelFor(el)) &&
+        (/^cover letter$/i.test(labelFor(el)) || /^(?:cCoverLetter|cover[_-]?letter)$/i.test(el.name) ||
+         /^cover[_-]?letter$/i.test(el.id)));
+      if (fileCandidate(adapter, "coverLetter") || fields.length !== 1)
+        return { state: "no_control", result: { reason: "No unique cover-letter text field." } };
+      const el = fields[0];
+      if (el.value) return { state: "filled", result: { preserved: true } };
+      if (!text || text.length > 20000 || el.maxLength >= 0 && text.length > el.maxLength)
+        return { state: "no_control", result: { reason: "Cover text does not fit the employer field." } };
+      if (!await authorize() || !localAuthority()) return aborted();
+      const changed = setValue(el, text, false, localAuthority);
+      if (!localAuthority()) return aborted();
+      return { state: changed ? "filled" : "no_control", result: { filled: ["cover letter"] } };
+    }
+    const pdfDocument = payload.document;
+    if (!pdfDocument || pdfDocument.kind !== kind) return { state: "failed", result: { reason: "Document identity mismatch." } };
+    const adapter = core.detectAdapter(location.hostname);
+    const deadline = Date.now() + 10000;
+    let input = fileCandidate(adapter, kind);
+    while (!input && Date.now() < deadline) {
+      await new Promise(resolve => setTimeout(resolve, 250));
+      if (!await authorize() || !localAuthority()) return aborted();
+      input = fileCandidate(adapter, kind);
+    }
+    if (!await authorize() || !localAuthority()) return aborted();
+    if (!input) return { state: "no_control", result: { reason: "No matching file input on this page." } };
+    if (input.files?.length) return { state: "no_control", result: { reason: "Existing attachment preserved." } };
+    const packet = { company: payload.company || "Raven", title: payload.title || "Application" };
+    const file = makePdfFile(pdfDocument.dataUrl, kind, packet);
+    if (!file || !core.acceptsFile(input.accept, file.name, file.type))
+      return { state: "rejected", result: { reason: "Employer file type does not accept PDF." } };
+    const container = input.closest(".ashby-file-upload,.file-upload,.upload-field,[data-testid*='resume' i],[data-testid*='cover' i]") || input.parentElement;
+    const beforeText = String(container?.innerText || "").slice(0, 500);
+    try {
+      if (!await authorize() || !localAuthority()) return aborted();
+      const transfer = new DataTransfer(); transfer.items.add(file);
+      if (!localAuthority()) return aborted();
+      input.files = transfer.files;
+      if (!await authorize() || !localAuthority()) return aborted();
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      if (!await authorize() || !localAuthority()) return aborted();
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      if (!await authorize() || !localAuthority()) return aborted();
+      if (![...(input.files || [])].some(value => value.name === file.name && value.type === "application/pdf"))
+        return { state: "rejected", result: { reason: "Browser did not retain selected file." } };
+      const deadline = Date.now() + 15000;
+      while (Date.now() < deadline) {
+        if (!await authorize() || !localAuthority()) return aborted();
+        const evidence = String(container?.innerText || "").slice(0, 500);
+        if (/\b(upload failed|file rejected|unsupported file|invalid file|could not upload)\b/i.test(evidence))
+          return { state: "rejected", result: { evidence } };
+        if (evidence !== beforeText && evidence.includes(file.name) &&
+            /\b(attached|uploaded|upload complete|successfully added)\b/i.test(evidence) &&
+            !/\b(uploading|upload in progress|processing upload|pending upload)\b/i.test(evidence))
+          return { state: "page_confirmed", result: { evidence: evidence.slice(0, 240) } };
+        await new Promise(resolve => setTimeout(resolve, 250));
+        if (!await authorize() || !localAuthority()) return aborted();
+      }
+      return { state: "selected", result: { evidence: "File selected; employer acceptance unconfirmed." } };
+    } catch (error) {
+      if (!localAuthority()) return aborted();
+      return { state: "rejected", result: { reason: error?.message || "File selection failed." } };
+    }
+  }
+  globalThis.RavenPrepareDom = { inspect: inspection, applyOperation: applyAttemptOperation };
+
   if (location.protocol !== "https:") return;
   let delivered = false;
   chrome.runtime.onMessage.addListener((message, sender, respond) => {

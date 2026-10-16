@@ -145,7 +145,7 @@ export async function createOneClickServer({runWorkflow,rest,authorizeJob,pairRe
    }
    if(req.method==='POST'&&path==='/application-documents'){
     if(typeof prepareApplicationDocuments!=='function')return send(503,{error:'Application document preparation is not configured.'});
-    if(!body||Object.keys(body).sort().join(',')!=='documents,job_id'||!/^[A-Za-z0-9_-]{1,160}$/.test(body.job_id||'')||!Array.isArray(body.documents)||body.documents.length!==2||body.documents.some(d=>!d||Object.keys(d).sort().join(',')!=='document_sha256,document_type'||!['resume','coverLetter'].includes(d.document_type)||!/^[a-f0-9]{64}$/.test(d.document_sha256||''))||new Set(body.documents.map(d=>d.document_type)).size!==2)return send(400,{error:'Invalid application documents request.'});
+    if(!body||Object.keys(body).sort().join(',')!=='documents,job_id'||!/^[A-Za-z0-9_-]{1,160}$/.test(body.job_id||'')||!Array.isArray(body.documents)||(body.documents.length<1||body.documents.length>2)||body.documents.some(d=>!d||Object.keys(d).sort().join(',')!=='document_sha256,document_type'||!['resume','coverLetter'].includes(d.document_type)||!/^[a-f0-9]{64}$/.test(d.document_sha256||''))||new Set(body.documents.map(d=>d.document_type)).size!==body.documents.length)return send(400,{error:'Invalid application documents request.'});
     try{
      await authorizeJob(body.job_id);
      return send(200,await activity.run(()=>prepareApplicationDocuments(body)));
