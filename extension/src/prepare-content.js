@@ -5,7 +5,7 @@
   const profileTerms = {
     firstName: ["first name", "given name"], lastName: ["last name", "surname", "family name"], fullName: ["full name", "name"],
     email: ["email", "email address"], phone: ["phone", "phone number", "mobile"], linkedin: ["linkedin"],
-    portfolio: ["portfolio", "website", "personal website", "previous work"], address1: ["address line 1", "street address", "address"],
+    portfolio: ["portfolio", "website", "personal website", "previous work"], discord: ["discord"], address1: ["address line 1", "street address", "address"],
     address2: ["address line 2", "apartment", "suite"], city: ["city"], region: ["state", "province", "region"],
     postalCode: ["zip", "postal code", "postcode"], country: ["country"]
   };
@@ -28,8 +28,19 @@
     const primary = [explicit?.innerText, el.closest("label")?.innerText, el.getAttribute("aria-label"), described].find(value => String(value || "").trim());
     return String(primary || (allowPlaceholder && el.getAttribute("placeholder")) || "").trim();
   }
+  function doverFieldContext(el) {
+    if (location.hostname.toLowerCase() !== "app.dover.com") return "";
+    const pieces = [];
+    for (let node = el.parentElement, depth = 0; node && node !== el.form && depth < 6; node = node.parentElement, depth++) {
+      const controls = node.querySelectorAll('input:not([type="file"]):not([type="hidden"]),textarea,select');
+      if (controls.length > 1) break;
+      const text = String(node.innerText || "").replace(/\s+/g, " ").trim().slice(0, 250);
+      if (text) pieces.push(text);
+    }
+    return pieces.join(" ").slice(0, 500);
+  }
   function sensitive(el, label) {
-    const metadata = [label, el.name, el.id, el.getAttribute("autocomplete"), el.getAttribute("placeholder"), el.getAttribute("data-testid")].filter(Boolean).join(" ");
+    const metadata = [label, doverFieldContext(el), el.name, el.id, el.getAttribute("autocomplete"), el.getAttribute("placeholder"), el.getAttribute("data-testid")].filter(Boolean).join(" ");
     return core.isSensitiveQuestion(metadata) || sensitiveRe.test(metadata);
   }
   function safeControl(el) {
@@ -231,7 +242,7 @@
   function valueFor(profile, key) { return key === "fullName" ? profile.fullName || [profile.firstName, profile.lastName].filter(Boolean).join(" ") : profile[key] || ""; }
   function matchesTerms(el, terms) {
     const field = el.closest(".form-group,.form-field,[role='group']");
-    const labels = [labelFor(el), String(field?.innerText || "").slice(0, 500)]
+    const labels = [labelFor(el), String(field?.innerText || "").slice(0, 500), doverFieldContext(el)]
       .map(normalized).filter(Boolean);
     if (terms === profileTerms.fullName)
       return labels.some(label => label === "name" || label === "full name");
@@ -275,7 +286,9 @@
   }
   function setDoverCountry(radio, localAuthority = () => true) {
     if (!radio || radio.disabled || !localAuthority()) return false;
-    if (radio.checked) return false;
+    const peers = [...document.querySelectorAll('input[type="radio"]')].filter(peer =>
+      peer !== radio && peer.name === radio.name && peer.form === radio.form);
+    if (radio.checked || peers.some(peer => peer.checked)) return false;
     radio.click();
     return Boolean(localAuthority() && radio.checked);
   }
@@ -301,6 +314,7 @@
     const field = el.closest(".form-group,.form-field,[role='group']");
     const localDoverLabel = location.hostname.toLowerCase() === "app.dover.com" ? (() => {
       for (let node = el.parentElement, depth = 0; node && node !== el.form && depth < 6; node = node.parentElement, depth++) {
+        if (node.querySelectorAll('input[type="file"]').length > 1) break;
         const text = String(node.innerText || "").replace(/\s+/g, " ").trim().slice(0, 350);
         if (text && /\b(?:autofill|resume|cv|cover letter)\b/i.test(text)) return text;
       }
