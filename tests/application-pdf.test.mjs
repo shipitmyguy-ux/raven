@@ -64,5 +64,7 @@ test('application document HTTP route enforces origin, session, authorization, e
   assert.equal(authorizations,1);assert.equal(preparations,0);
   assert.equal((await send({job_id:'job-1',documents:requestDocs()},auth)).status,200);
   assert.equal(authorizations,2);assert.equal(preparations,1);
+  assert.equal((await send({job_id:'job-1',documents:requestDocs().slice(0,1)},auth)).status,200);
+  assert.equal(authorizations,3);assert.equal(preparations,2);
  }finally{await new Promise(resolve=>runtime.server.close(resolve));await rm(dir,{recursive:true,force:true});}
 });

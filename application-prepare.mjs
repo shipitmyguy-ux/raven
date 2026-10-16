@@ -128,6 +128,10 @@ export function requestApplyExtension(request,{documentRef=globalThis.document,t
     const onResponse=()=>{
       let value;try{value=JSON.parse(bridge.dataset.applyResponse||'');}catch{return;}
       if(value?.version!==3||value.requestId!==request.requestId||value.attemptId!==request.attemptId||String(value.jobId)!==String(request.jobId))return;
+      if(value.kind==='error'||value.ok===false){finish(Error(typeof value.reason==='string'?value.reason:value.reason?.message||value.error||'Chrome rejected Apply.'));return;}
+      if(!Number.isInteger(value.bindingRevision)||value.bindingRevision<1||!Number.isInteger(value.sequence)||value.sequence<1){finish(Error('Chrome returned an unbound Apply response.'));return;}
+      if(request.action==='deliver'&&value.operationId!==request.payload?.operationId){finish(Error('Chrome returned a mismatched Apply operation.'));return;}
+      if(request.action==='deliver'&&value.bindingRevision!==request.bindingRevision){finish(Error('Chrome returned a stale Apply binding.'));return;}
       if(value.kind==='ack'){acknowledged=true;if(request.action==='deliver')finish(null,value);return;}
       if(!['result','snapshot','error'].includes(value.kind)){finish(Error('Chrome returned an invalid Apply result.'));return;}
       finish(null,value);

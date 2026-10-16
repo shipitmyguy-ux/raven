@@ -214,9 +214,9 @@ test('app reload identifies extension setup as form filling unavailable',()=>{
  const text={textContent:''},resume={hidden:false},clear={textContent:''},banner={hidden:true,querySelector:selector=>selector.includes('text')?text:selector.includes('resume')?resume:clear};
  const ctx={document:{getElementById:()=>banner},preparationRecovery:{load:()=>({jobId:'JT-test',state:'documents-ready',reason:'The Raven Chrome extension is unavailable. Install or enable it.',reasonType:'extension-unavailable',expired:false})},knownJobById:()=>({title:'Artist'})};
  vm.createContext(ctx);vm.runInContext(code+'\nupdatePreparationRecoveryBanner()',ctx);
- assert.match(text.textContent,/Documents ready for Artist; form filling is unavailable/);
- assert.match(text.textContent,/Resume preparation after the extension is ready/);
- assert.doesNotMatch(text.textContent,/employer form needs manual access/);
+ assert.match(text.textContent,/Previous preparation retained for Artist/);
+ assert.match(text.textContent,/Continue with Apply/);
+ assert.equal(clear.hidden,true);
  assert.equal(resume.hidden,false);
 });
 test('already prepared destination verifies saved hashes and receipts but skips writer, PDF and packet dispatch',async()=>{
@@ -437,6 +437,6 @@ test('primary Apply bridge ignores acknowledgements until completion and rejects
  bridge.addEventListener('raven-apply-probe',()=>{bridge.dataset.applyCapability='3';bridge.dispatchEvent(new Event('raven-apply-capability'));});
  assert.equal(await probeApplyExtension({documentRef:documentFor(bridge)}),true);
  const request={version:3,requestId:'11111111-1111-4111-8111-111111111111',attemptId:'22222222-2222-4222-8222-222222222222',action:'open',jobId:'job-1',payload:{listingUrl:'https://example.test/job',targetUrl:'https://example.test/job',title:'Role',company:'Company'}};
- bridge.addEventListener('raven-apply-request',()=>{bridge.dataset.applyResponse=JSON.stringify({...request,kind:'ack',ok:true});bridge.dispatchEvent(new Event('raven-apply-response'));});
+ bridge.addEventListener('raven-apply-request',()=>{bridge.dataset.applyResponse=JSON.stringify({...request,kind:'ack',ok:true,bindingRevision:1,sequence:1});bridge.dispatchEvent(new Event('raven-apply-response'));});
  await assert.rejects(requestApplyExtension(request,{documentRef:documentFor(bridge),timeoutMs:5}),/acknowledged Apply but did not complete/);
 });
