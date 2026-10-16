@@ -248,7 +248,9 @@
     return fields.find(el => safeControl(el) && !sensitive(el, labelFor(el)) && matchesTerms(el, profileTerms[key])) || null;
   }
   function fileContext(el) {
-    const field = el.closest(".form-group,.form-field,[role='group']") || el.parentElement;
+    // A form-level fallback can include unrelated sensitive questions and suppress every upload.
+    // Use only a field-specific group; input metadata remains available when no group exists.
+    const field = el.closest(".form-group,.form-field,[role='group']");
     return [labelFor(el, false), el.name, el.id, el.getAttribute("aria-label"),
       String(field?.innerText || "").slice(0, 500)].filter(Boolean).join(" ");
   }
