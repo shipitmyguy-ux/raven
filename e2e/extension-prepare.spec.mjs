@@ -161,3 +161,74 @@ for(const mode of ['empty','existing','too-long','ambiguous'])test('cover-letter
  await expect(page.locator('[name=smsConsent]')).not.toBeChecked();
  expect(await page.evaluate(()=>window.__submitted||false)).toBe(false);
 });
+
+
+test("Mad Head Workable form recognizes placeholder contact fields and the labeled CV upload", async ({ page }) => {
+  const madHeadPacket = { ...packet, jobUrl: "https://careers.madheadgames.com/jobs/lead-environment-artist-ckS9/new",
+    title: "Lead Environment Artist", company: "Mad Head Games",
+    profile: { firstName: "Ari", lastName: "Lee", email: "ari@example.test" },
+    coverLetter: "", resume: pdf };
+  await page.addInitScript(value => {
+    const messages = [], listeners = [];
+    Object.defineProperty(window, "__ravenMessages", { value: messages });
+    Object.defineProperty(window, "__ravenDeliver", { value: message => {
+      let accepted = false;
+      for (const listener of listeners) listener(message, {}, response => { accepted = !!response?.accepted; });
+      return accepted;
+    } });
+    Object.defineProperty(window, "chrome", { configurable: true, value: {
+      runtime: {
+        lastError: null,
+        onMessage: { addListener(listener) { listeners.push(listener); } },
+        sendMessage(message, callback) {
+          messages.push(message);
+          callback?.(message.type === "raven-preflight-context"
+            ? { title: value.title, company: value.company } : {});
+        }
+      }
+    } });
+  }, madHeadPacket);
+  await page.route("https://careers.madheadgames.com/**", route => route.fulfill({
+    status: 200,
+    contentType: "text/html",
+    body: `<!doctype html><html><body>
+      <h1>Lead Environment Artist</h1><div>Mad Head Games</div>
+      <form id="jobForm" onsubmit="window.__submitted=true;event.preventDefault()">
+        <input name="FirstName" placeholder="First name (required)">
+        <input name="LastName" placeholder="Last name (required)">
+        <input name="Email" type="email" placeholder="Your email (required)">
+        <div class="form-group file-type">
+          <label>CV / Resume (please provide your CV in pdf, word or rtf document format)</label>
+          <input class="form-control input-file" type="file" name="Resume" accept=".pdf">
+        </div>
+        <div class="form-group file-type">
+          <label>Show us your work! Attach your portfolio here:</label>
+          <input class="form-control input-file" type="file" name="Answers[3].File">
+        </div>
+        <button type="submit">Submit your application</button>
+      </form>
+    </body></html>`
+  }));
+  await page.goto(madHeadPacket.jobUrl);
+  await page.evaluate(() => document.addEventListener("change", event => {
+    const input = event.target;
+    if (input?.type === "file" && input.files?.[0]) input.parentElement.append(input.files[0].name);
+  }));
+  await page.addScriptTag({ content: fs.readFileSync(new URL("../extension/src/assistant-core.js", import.meta.url), "utf8") });
+  await page.addScriptTag({ content: fs.readFileSync(new URL("../extension/src/prepare-content.js", import.meta.url), "utf8") });
+  await expect.poll(() => page.evaluate(() => window.__ravenMessages.find(message => message.type === "raven-preflight-result")?.status)).toBe("ready");
+  expect(await page.evaluate(value => window.__ravenDeliver({
+    type: "raven-prepare-deliver", packet: value, preflightId: "12345678-1234-4234-8234-123456789abc",
+    expectedUrl: location.href
+  }), madHeadPacket)).toBe(true);
+  await expect(page.locator("#raven-assistant-banner")).toContainText("Review every field and attachment, then submit manually", { timeout: 5000 });
+  await expect(page.locator('input[name="FirstName"]')).toHaveValue("Ari");
+  await expect(page.locator('input[name="LastName"]')).toHaveValue("Lee");
+  await expect(page.locator('input[name="Email"]')).toHaveValue("ari@example.test");
+  await expect.poll(() => page.locator('input[name="Resume"]').evaluate(input => input.files.length)).toBe(1);
+  expect(await page.locator('input[name="Answers[3].File"]').evaluate(input => input.files.length)).toBe(0);
+  const result = await page.evaluate(() => window.__ravenMessages.find(message => message.type === "raven-prepare-result"));
+  expect(result.result.attached).toEqual(["resume"]);
+  expect(result.result.notRequested).toContain("coverLetter");
+  expect(await page.evaluate(() => Boolean(window.__submitted))).toBe(false);
+});
