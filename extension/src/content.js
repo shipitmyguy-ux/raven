@@ -224,15 +224,16 @@
   function fileInputFor(kind,file){
     const terms=kind==="resume"?["resume","cv","curriculum vitae"]:["cover letter"];
     const normalizeFileLabel=value=>core.normalizeQuestion(String(value||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,""));
+    const selectors=core.selectorsFor(adapter,"files",kind);
+    const matchesAdapterSelector=el=>selectors.some(selector=>{try{return el.matches(selector);}catch{return false;}});
     const isUploadField=el=>{
       const label=normalizeFileLabel(labelFor(el));
       if(/\b(?:autofill|auto fill|import from|parse resume|resume parser)\b/.test(label))return false;
-      return terms.some(term=>label.includes(normalizeFileLabel(term)));
+      return terms.some(term=>label.includes(normalizeFileLabel(term)))||matchesAdapterSelector(el);
     };
     const candidates=[...document.querySelectorAll('input[type="file"]')].filter(el=>
       !el.disabled&&!el.files?.length&&isUploadField(el)&&core.acceptsFile(el.accept,file.name,file.type));
-    const selectors=core.selectorsFor(adapter,"files",kind);
-    return candidates.find(el=>selectors.some(selector=>{try{return el.matches(selector);}catch{return false;}}))||candidates[0]||null;
+    return candidates.find(matchesAdapterSelector)||candidates[0]||null;
   }
 
   function uploadAvailableDocument(packet,kind){
