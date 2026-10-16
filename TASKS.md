@@ -1,3 +1,13 @@
+## Apply reliability audit — October 16, 2026
+
+A deeper audit of main 9126d2c disproved the prior conclusion that only extension reload/live acceptance remained. Controlled execution of the primary version-1 Apply code reproduced same-host wrong-job filling, unrelated-tab packet deletion, acknowledgement timeout reported as success, and resume retrieval skipped when cover is missing. No personal data was transmitted. The stronger optional preparation engine is a separate code path; its checks do not prove direct Apply reliability. Read-only Raven UI inspection showed Panic Stations has neither document. See docs/qa/2026-10-16-apply-reliability-audit.md for evidence, limitations and the repair acceptance contract. Diagnosis complete; remediation and live acceptance are NOT complete.
+
+- [x] Reproduce primary Apply delivery failures with synthetic inputs.
+- [ ] Consolidate execution with exact request/job/tab ownership and truthful acknowledgement/upload results.
+- [ ] Support independent documents and continuation after missing-document preparation.
+- [ ] Verify one in-page fallback and actual installed capabilities.
+- [ ] Complete representative real-employer acceptance before claiming the Apply workflow works.
+
 ## Mad Head and Panic Stations direct Apply fixes — October 16, 2026
 
 - [x] Resolve Panic Stations Workable job-detail URLs directly to the `/apply/` form route; recognize Workable public job detail pages for existing verified Apply-link resolution.
