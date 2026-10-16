@@ -1,3 +1,17 @@
+## Apply attempt engine delivery — October 16, 2026
+
+- [x] Merge PR #105 (`c6127e7`) and PR #106 (`49f0586`); publish protocol 3 extension package v2.6.0.
+- [x] Migrate seven stale v1 ATS smoke fixtures to protocol 3 synthetic form operations.
+- [x] Update review persistence smoke to current Apply UI and exact saved approval records.
+- [x] Pass core CI 38920102857, browser regression 38920103042, Pages deploy 38920102689 and production smoke 38920178847 (14 cases).
+- [x] Stage the published v2.6.0 ZIP contents in `C:\Users\damsp\.codex\visualizations\2026\10\16\01a144e3-10d6-7d33-87ed-bdd5f1d5e822\raven-extension-2.6.0`.
+- [ ] User manually load/reload v2.6.0 in Chrome; browser-control policy blocks interacting with `chrome://extensions`.
+- [ ] Update/activate the running local helper: branch `codex/apply-existing-drive-pdfs` at `661066e` rejects single-document requests and has 16 local branch commits; preserve them during integration.
+- [ ] Verify a representative supported employer form with synthetic or specifically approved documents; confirm visible profile values and file selections; stop before submission.
+- [ ] Decide whether direct right-click Apply on employer pages is required. Current menu action is Save to Raven; application starts from Raven's Apply job button.
+
+No user personal data was sent to an employer; no application was submitted.
+
 ## Apply attempt engine — October 16, 2026
 
 - [x] Consolidate active Apply execution into protocol v3 with per-attempt/job/tab/document correlation and truthful acknowledgement/outcome handling.
