@@ -94,6 +94,19 @@ test('click-time reservation routes the same extension-owned tab after destinati
   assert.equal(env.tabs.size, 1);
 });
 
+test('initial about:blank and target loading events do not revoke the first binding', async () => {
+  const env = harness();
+  const opened = await env.open();
+  assert.equal(opened.status, 'opening');
+  env.navigate(40, 'about:blank');
+  env.navigate(40, firstUrl);
+  await env.tick(); await env.tick();
+  const status = await env.request(envelope('status'));
+  assert.equal(status.bindingRevision, 1);
+  assert.equal(status.status, 'opening');
+  assert.equal(status.tabId, 40);
+});
+
 test('same-host wrong job and unrelated tabs cannot inspect or receive personal operations', async () => {
   const env = harness();
   const opened = await env.open();
@@ -127,6 +140,21 @@ test('operation ID replay never redispatches; changed payload is rejected', asyn
     { bindingRevision: 1 }));
   assert.equal(changed.ok, false);
   assert.match(changed.error, /different content/);
+  assert.equal(env.sent.filter(call => call.message.type === 'raven-apply-v3-deliver').length, 1);
+});
+
+test('an uncertain selected PDF cannot be resent under a new operation ID', async () => {
+  const env = harness();
+  await env.open(); await env.inspectReady();
+  const document = { kind: 'resume', documentSha256: 'a'.repeat(64), pdfSha256,
+    filename: 'resume.pdf', dataUrl: pdfData };
+  await env.request(envelope('deliver', { operationId: 'resume-1', document }, { bindingRevision: 1 }));
+  env.emit({ type: 'raven-apply-v3-result', requestId, attemptId, jobId, revision: 1,
+    operationId: 'resume-1', kind: 'resume', state: 'selected', result: {} }, employer(40));
+  await env.tick(); await env.tick();
+  const retry = await env.request(envelope('deliver', { operationId: 'resume-2', document }, { bindingRevision: 1 }));
+  assert.equal(retry.ok, false);
+  assert.match(retry.error, /already be selected/);
   assert.equal(env.sent.filter(call => call.message.type === 'raven-apply-v3-deliver').length, 1);
 });
 
@@ -170,34 +198,24 @@ test('service worker restart preserves uncertain operation and refuses automatic
 });
 
 test('selected, confirmed, and rejected uploads remain distinct', async () => {
-  const env = harness();
-  await env.open(); await env.inspectReady();
   const document = { kind: 'resume', documentSha256: 'a'.repeat(64), pdfSha256,
     filename: 'resume.pdf', dataUrl: pdfData };
-  await env.request(envelope('deliver', { operationId: 'resume-1', document }, { bindingRevision: 1 }));
-  env.emit({ type: 'raven-apply-v3-result', requestId, attemptId, jobId, revision: 1,
-    operationId: 'resume-1', kind: 'resume', state: 'selected', result: {} }, employer(40));
-  await env.tick(); await env.tick();
-  let status = await env.request(envelope('status'));
-  assert.equal(status.status, 'unconfirmed');
-  assert.equal(status.documents.resume.state, 'selected');
-  await env.request(envelope('deliver', { operationId: 'resume-2', document }, { bindingRevision: 1 }));
-  env.emit({ type: 'raven-apply-v3-result', requestId, attemptId, jobId, revision: 1,
-    operationId: 'resume-2', kind: 'resume', state: 'page_confirmed',
-    result: { evidence: 'resume.pdf' } }, employer(40));
-  await env.tick(); await env.tick();
-  status = await env.request(envelope('status'));
-  assert.equal(status.documents.resume.state, 'page_confirmed');
-  assert.equal(status.documents.resume.evidence, 'resume.pdf');
-  await env.request(envelope('deliver', { operationId: 'cover-1',
-    document: { ...document, kind: 'coverLetter' } }, { bindingRevision: 1 }));
-  env.emit({ type: 'raven-apply-v3-result', requestId, attemptId, jobId, revision: 1,
-    operationId: 'cover-1', kind: 'coverLetter', state: 'rejected',
-    result: { evidence: 'file rejected' } }, employer(40));
-  await env.tick(); await env.tick();
-  status = await env.request(envelope('status'));
-  assert.equal(status.documents.coverLetter.state, 'rejected');
-  assert.equal(status.status, 'needs_user');
+  for (const [outcome, expectedStatus] of [
+    ['selected', 'unconfirmed'], ['page_confirmed', 'page_confirmed'], ['rejected', 'needs_user']
+  ]) {
+    const env = harness();
+    await env.open(); await env.inspectReady();
+    await env.request(envelope('deliver', { operationId: 'resume-1', document }, { bindingRevision: 1 }));
+    env.emit({ type: 'raven-apply-v3-result', requestId, attemptId, jobId, revision: 1,
+      operationId: 'resume-1', kind: 'resume', state: outcome,
+      result: { evidence: outcome === 'page_confirmed' ? 'resume.pdf attached' : outcome } }, employer(40));
+    await env.tick(); await env.tick();
+    const status = await env.request(envelope('status'));
+    assert.equal(status.status, expectedStatus);
+    assert.equal(status.documents.resume.state, outcome);
+    assert.equal(status.documents.resume.evidence,
+      outcome === 'page_confirmed' ? 'resume.pdf attached' : outcome);
+  }
 });
 
 test('browser content never submits and keeps version 2 adapters available', () => {

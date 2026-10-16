@@ -385,6 +385,7 @@
     if (!file || !core.acceptsFile(input.accept, file.name, file.type))
       return { state: "rejected", result: { reason: "Employer file type does not accept PDF." } };
     const container = input.closest(".ashby-file-upload,.file-upload,.upload-field,[data-testid*='resume' i],[data-testid*='cover' i]") || input.parentElement;
+    const beforeText = String(container?.innerText || "").slice(0, 500);
     try {
       const transfer = new DataTransfer(); transfer.items.add(file); input.files = transfer.files;
       input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -396,8 +397,10 @@
         const evidence = String(container?.innerText || "").slice(0, 500);
         if (/\b(upload failed|file rejected|unsupported file|invalid file|could not upload)\b/i.test(evidence))
           return { state: "rejected", result: { evidence } };
-        if (evidence.includes(file.name) && !/\b(uploading|upload in progress|processing upload|pending upload)\b/i.test(evidence))
-          return { state: "page_confirmed", result: { evidence: file.name } };
+        if (evidence !== beforeText && evidence.includes(file.name) &&
+            /\b(attached|uploaded|upload complete|successfully added)\b/i.test(evidence) &&
+            !/\b(uploading|upload in progress|processing upload|pending upload)\b/i.test(evidence))
+          return { state: "page_confirmed", result: { evidence: evidence.slice(0, 240) } };
         await new Promise(resolve => setTimeout(resolve, 250));
       }
       return { state: "selected", result: { evidence: "File selected; employer acceptance unconfirmed." } };

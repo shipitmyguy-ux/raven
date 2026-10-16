@@ -252,6 +252,12 @@
           throw Error("Operation ID was already used with different content.");
         return reply(sendResponse, snapshot(item, message.requestId));
       }
+      if (op.kind === "resume" || op.kind === "coverLetter") {
+        const existingFile = Object.entries(item.operations).find(([, value]) =>
+          value.kind === op.kind && value.pdfSha256 === op.pdfSha256 &&
+          ["dispatching", "selected", "page_confirmed", "uncertain"].includes(value.state));
+        if (existingFile) throw Error("This PDF may already be selected. Inspect the employer page before another operation.");
+      }
       item.operations[op.id] = { kind: op.kind, hash: op.hash, pdfSha256: op.pdfSha256,
         documentSha256: message.payload?.document?.documentSha256 || null,
         revision: item.revision, state: "dispatching", startedAt: Date.now() };
@@ -279,7 +285,7 @@
         if (item.tabId !== tabId || item.phase === "cancelled") continue;
         // The first navigation belongs to open. Every later document load revokes old authority.
         if (item.phase === "reserved" && (!info.url || info.url === "about:blank")) continue;
-        if (item.phase === "opening" && (!info.url || same(info.url, item.expectedUrl))) continue;
+        if (item.phase === "opening" && (!info.url || info.url === "about:blank" || same(info.url, item.expectedUrl))) continue;
         item.revision++;
         item.sequence++;
         item.documentId = null;
