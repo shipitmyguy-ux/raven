@@ -1,16 +1,13 @@
 # Raven execution handoff
 
-## Current task — one-click Apply acceptance — October 16, 2026
+## One-click Apply — October 16, 2026
 
-The stale employer-tab bug is fixed and published. PR #109 merged as `337a2bac32f09b76f21d1d4b3b3a0a8e5fa4029b`. On a saved Apply attempt whose tab closes during status, inspection, or form readiness, Raven closes the old attempt, verifies the canonical saved job ID and HTTPS listing URL, opens one fresh employer tab, and continues with the verified saved resume PDF. The retry is bounded to one. A changed job link or a second failure stops safely. The employer form remains for review; Raven never submits it.
+PR #110 merged at 9e819773124ba701cae903055368a2d15a6d86f5. It fixes Dover same-job tracking redirects, exact company/title inspection, bounded MUI profile labels, Resume-vs-Autofill file selection, and preserving an existing country radio choice. Regression tests cover these cases. PR CI passed core, Windows/Linux recovery, full browser regression, production smoke and Pages deployment.
 
-## Changes and verification
+Commit da1e03580e3c05ce01a473a44f313ae83a95e7a2 changed the app cache key to app.js?v=106; Pages deploy passed. Post-cache-bust browser and production smoke checks were running at handoff.
 
-- Web asset cache tag v105 is deployed and was observed after a live Raven reload.
-- PR core 38940222200 and browser regression 38940222213 passed.
-- Main core 38940717613, browser regression 38940717421, Pages 38940717384, and production smoke 38940765951 passed.
-- No personal data was transmitted and no application was submitted.
+The installed local package directory is C:\Users\damsp\.codex\visualizations\2026\10\16\01a144e3-10d6-7d33-87ed-bdd5f1d5e822\raven-extension-2.6.0. Its apply-background.js and prepare-content.js now contain merged source; original files were kept as .before-dover. The Chrome extension still needs Reload.
 
-## Remaining acceptance
+Chrome Browser Use policy blocked chrome://extensions/ because it permits only HTTP(S) URLs and explicitly forbids alternate reload routes, raw CDP, or another browser surface. This is a hard browser control boundary, not missing authorization. The owner needs to open Chrome Extensions, reload Raven Application Assistant, and refresh the Raven tab.
 
-Verify visible resume attachment on five real Games / 3D employer forms. The first known ready case is Warpfrog Senior 3D Artist: the saved resume is the current Raven Resume PDF, and the blank live Dover application is open at `https://app.dover.com/apply/Warpfrog/908eb274-5ac8-4d37-9b0f-5108fd12a47c/?rs=76643084`. Before personal data or files are transmitted, confirm the exact resume and employer destination at action time. Once authorized, check the visible filename and recognized fields, then stop before Submit. Continue with the next eligible real listing until five successes or a concrete unsupported-site blocker is documented.
+The Warpfrog Dover form at https://app.dover.com/apply/Warpfrog/908eb274-5ac8-4d37-9b0f-5108fd12a47c/?rs=76643084 is still blank. The user authorized only the profile fields and resume for this destination. No data or file has been transmitted and no application has been submitted. After reload, resume Raven's normal Apply flow and verify the visible fields and attached PDF. Stop before Submit. Other employer uploads need approval at action time for the exact employer and file.
