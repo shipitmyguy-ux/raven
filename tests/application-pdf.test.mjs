@@ -25,6 +25,13 @@ test('Apply reuses byte-for-byte existing Drive PDFs and never invokes renderer 
  assert.deepEqual(f.downloads.map(d=>d.fileId),['file1234567890resume','file1234567890coverLetter']);
  assert.ok(f.downloads.every(d=>d.folderId==='folder12345'));
 });
+test('primary Apply retrieves the saved resume independently when cover is absent',async()=>{
+ const f=fixture();
+ const result=await f.prepare({job_id:'job-1',documents:requestDocs().slice(0,1)});
+ assert.deepEqual(result.documents.map(d=>d.document_type),['resume']);
+ assert.deepEqual(f.downloads.map(d=>d.fileId),['file1234567890resume']);
+ assert.deepEqual(f.calls,['get_document','get_document']);
+});
 test('Apply fails closed for stale documents, missing or invalid receipts and altered PDF bytes',async()=>{
  await assert.rejects(fixture().prepare({job_id:'job-1',documents:requestDocs().map((d,i)=>i?d:{...d,document_sha256:'a'.repeat(64)})}),/VERSION_CONFLICT/);
  await assert.rejects(fixture({changeAtEnd:true}).prepare({job_id:'job-1',documents:requestDocs()}),/VERSION_CONFLICT/);

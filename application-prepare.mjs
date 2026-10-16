@@ -104,6 +104,41 @@ export function dispatchPreparedApplication(packet,{documentRef=globalThis.docum
   });
 }
 
+export function probeApplyExtension({documentRef=globalThis.document,timeoutMs=1200}={}){
+  const bridge=documentRef?.getElementById('ravenExtensionBridge');
+  if(!bridge)return Promise.resolve(false);
+  return new Promise(resolve=>{
+    let settled=false;
+    const finish=value=>{if(settled)return;settled=true;clearTimeout(timer);bridge.removeEventListener('raven-apply-capability',onCapability);resolve(value);};
+    const onCapability=()=>finish(bridge.dataset.applyCapability==='3');
+    const timer=setTimeout(()=>finish(false),timeoutMs);
+    delete bridge.dataset.applyCapability;
+    bridge.addEventListener('raven-apply-capability',onCapability);
+    bridge.dispatchEvent(new Event('raven-apply-probe',{bubbles:true}));
+  });
+}
+
+export function requestApplyExtension(request,{documentRef=globalThis.document,timeoutMs=30000}={}){
+  const bridge=documentRef?.getElementById('ravenExtensionBridge');
+  if(!bridge)throw unavailable('The Raven Chrome extension is unavailable.');
+  if(request?.version!==3||!uuidPattern.test(request.requestId||'')||!uuidPattern.test(request.attemptId||'')||!String(request.jobId||'').match(/^[A-Za-z0-9_-]{1,160}$/)||!['open','inspect','deliver','status','cancel'].includes(request.action))throw Error('Invalid Apply request.');
+  return new Promise((resolve,reject)=>{
+    let settled=false,acknowledged=false;
+    const finish=(error,result)=>{if(settled)return;settled=true;clearTimeout(timer);bridge.removeEventListener('raven-apply-response',onResponse);error?reject(error):resolve(result);};
+    const onResponse=()=>{
+      let value;try{value=JSON.parse(bridge.dataset.applyResponse||'');}catch{return;}
+      if(value?.version!==3||value.requestId!==request.requestId||value.attemptId!==request.attemptId||String(value.jobId)!==String(request.jobId))return;
+      if(value.kind==='ack'){acknowledged=true;if(request.action==='deliver')finish(null,value);return;}
+      if(!['result','snapshot','error'].includes(value.kind)){finish(Error('Chrome returned an invalid Apply result.'));return;}
+      finish(null,value);
+    };
+    const timer=setTimeout(()=>finish(Object.assign(Error(acknowledged?'Chrome acknowledged Apply but did not complete it. Check the form and retry status.':'Chrome did not confirm the Apply request. Check the form before retrying.'),{code:'APPLY_RESULT_TIMEOUT',acknowledged})),timeoutMs);
+    bridge.addEventListener('raven-apply-response',onResponse);
+    bridge.dataset.applyRequest=JSON.stringify(request);
+    bridge.dispatchEvent(new Event('raven-apply-request',{bubbles:true}));
+  });
+}
+
 const uuidPattern=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const shaPattern=/^[a-f0-9]{64}$/i;
 const states=new Set(['generating','documents-ready','dispatching','opened','needs-review']);

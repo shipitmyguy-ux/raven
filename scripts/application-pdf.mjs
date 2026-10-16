@@ -21,15 +21,15 @@ export function createApplicationDocumentPreparer({dispatch,rest,downloadPdf,con
   return doc;
  };
  return async({job_id,documents})=>{
-  if(!idPattern.test(job_id||'')||!Array.isArray(documents)||documents.length!==2||documents.some(d=>!d||Object.keys(d).sort().join(',')!=='document_sha256,document_type'||!kinds.includes(d.document_type)||!hashPattern.test(d.document_sha256||''))||new Set(documents.map(d=>d.document_type)).size!==2)throw Error('INVALID_APPLICATION_DOCUMENTS');
+  if(!idPattern.test(job_id||'')||!Array.isArray(documents)||(documents.length<1||documents.length>2)||documents.some(d=>!d||Object.keys(d).sort().join(',')!=='document_sha256,document_type'||!kinds.includes(d.document_type)||!hashPattern.test(d.document_sha256||''))||new Set(documents.map(d=>d.document_type)).size!==documents.length)throw Error('INVALID_APPLICATION_DOCUMENTS');
   const initial={};
-  for(const kind of kinds){
+  for(const kind of documents.map(d=>d.document_type)){
    initial[kind]=await current(job_id,kind);
    const requested=documents.find(d=>d.document_type===kind);
    if(initial[kind].document_sha256!==requested.document_sha256)throw Error('VERSION_CONFLICT');
   }
   const result=[];
-  for(const kind of kinds){
+  for(const kind of documents.map(d=>d.document_type)){
    const doc=initial[kind];
    // Resolve canonical export history; callers cannot select URLs or local paths.
    const events=await rest('raven_job_events?job_id=eq.'+encodeURIComponent(job_id)+'&event_type=eq.document_drive_export&metadata->>document_type=eq.'+kind+'&metadata->>document_sha256=eq.'+doc.document_sha256+'&metadata->>folder_id=eq.'+encodeURIComponent(config.driveFolderId)+'&select=metadata&limit=20');
@@ -41,7 +41,7 @@ export function createApplicationDocumentPreparer({dispatch,rest,downloadPdf,con
    if(exported.pdf_sha256!==pdf_sha256)throw Error('PDF_READBACK_NOT_CONFIRMED');
    result.push({document_type:kind,document_sha256:doc.document_sha256,pdf_sha256,file_name:`${job_id}-${kind}-${doc.document_sha256.slice(0,12)}.pdf`,data_url:`data:application/pdf;base64,${bytes.toString('base64')}`});
   }
-  for(const kind of kinds)if((await current(job_id,kind)).document_sha256!==initial[kind].document_sha256)throw Error('VERSION_CONFLICT');
+  for(const kind of documents.map(d=>d.document_type))if((await current(job_id,kind)).document_sha256!==initial[kind].document_sha256)throw Error('VERSION_CONFLICT');
   return {job_id,documents:result};
  };
 }

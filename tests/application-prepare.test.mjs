@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {applicationTargetUrl,createPreparationRecovery,dispatchPreparedApplication,extensionUnavailableReason,preflightPreparationApplication,probePreparationExtension} from '../application-prepare.mjs';
+import {applicationTargetUrl,createPreparationRecovery,dispatchPreparedApplication,extensionUnavailableReason,preflightPreparationApplication,probePreparationExtension,probeApplyExtension,requestApplyExtension} from '../application-prepare.mjs';
 
 test('only bounded same-job posting routes gain their verified application paths',()=>{
  const lever='https://jobs.lever.co/blackbirdinteractive/98050e1b-0adb-4842-96e9-a6b9c987b799';
@@ -428,4 +428,15 @@ for(const unsafe of ['dispatching','form_delivery','dialog','pending-sync'])test
   await flow.prepare();const saved=flow.recovery.load();flow.recovery.update(saved.preparationId,unsafe==='dispatching'?{state:'dispatching'}:{lastStage:'form_delivery'});armed=0;
  }
  await flow.prepare();assert.equal(armed,0);assert.equal(flow.counts.dispatch,0);assert.equal(flow.counts.pdfs,0);
+});
+
+// The direct Apply button uses this bridge contract; acknowledgement alone cannot
+// stand for an employer-page result.
+test('primary Apply bridge ignores acknowledgements until completion and rejects silence',async()=>{
+ const bridge=new EventTarget();bridge.dataset={};
+ bridge.addEventListener('raven-apply-probe',()=>{bridge.dataset.applyCapability='3';bridge.dispatchEvent(new Event('raven-apply-capability'));});
+ assert.equal(await probeApplyExtension({documentRef:documentFor(bridge)}),true);
+ const request={version:3,requestId:'11111111-1111-4111-8111-111111111111',attemptId:'22222222-2222-4222-8222-222222222222',action:'open',jobId:'job-1',payload:{listingUrl:'https://example.test/job',targetUrl:'https://example.test/job',title:'Role',company:'Company'}};
+ bridge.addEventListener('raven-apply-request',()=>{bridge.dataset.applyResponse=JSON.stringify({...request,kind:'ack',ok:true});bridge.dispatchEvent(new Event('raven-apply-response'));});
+ await assert.rejects(requestApplyExtension(request,{documentRef:documentFor(bridge),timeoutMs:5}),/acknowledged Apply but did not complete/);
 });
