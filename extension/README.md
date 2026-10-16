@@ -8,12 +8,23 @@ Chrome extension for saving jobs to Raven and assisting with applications.
 - It never clicks Submit and never fills legal attestations, demographic questions, assessments, CAPTCHAs, salary, sponsorship, or unknown questions automatically.
 - The user decides whether and when to submit the employer form.
 
-## Install
-1. Download the Raven extension package.
-2. Extract it.
-3. Open chrome://extensions.
-4. Enable Developer mode.
-5. Choose Load unpacked and select the extracted extension folder.
+## Install and update
+GitHub Pages builds the installable ZIP from committed `extension/src/` files on each
+eligible `main` deployment. Download
+[the Raven extension ZIP](https://shipitmyguy-ux.github.io/raven/extension/raven-capture-extension.zip)
+and extract it. The extracted folder must contain `manifest.json` at its top level.
+
+For a new installation, open `chrome://extensions`, enable Developer mode, and
+choose **Load unpacked** with that extracted folder. For an existing unpacked
+installation, replace the files in the folder Chrome already loads or load the
+new extracted folder, then click **Reload** for Raven Application Assistant and
+refresh the Raven tab. A GitHub Pages deployment does not update an already
+loaded unpacked extension automatically.
+
+The protocol 3 Apply bridge ships in manifest version 2.6.0. Verify the
+installed extension shows that version before testing Apply. It opens and binds
+the employer tab, inspects the current form, and handles each document
+independently; the user remains responsible for final submission.
 
 Use Save to Raven from Chrome's context menu to capture a posting. Start applications from Raven whenever you are ready; document generation runs separately.
 
