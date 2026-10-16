@@ -513,7 +513,7 @@ test("saved documents can continue without separate approval",async({page})=>{
  await mockRaven(page,{initialJob:{resume,cover_letter:letter}});
  await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
  await openDetailSection(page,'Job details');
- await expect(jobDetail(page,'[data-approved-apply]')).toHaveText('Continue with documents');
+ await expect(jobDetail(page,'[data-apply-job]')).toHaveText('Apply job');
  await page.locator('[data-generate="coverLetter"]').click();
  await expect(page.locator('#reviewApprove')).toHaveText('OK');
  await page.locator('#reviewApprove').click();
@@ -562,7 +562,7 @@ test("review preserves approved document and revision invalidates approval",asyn
   await page.locator('[data-track="Professional"]').click();
   await page.locator(".job-card-summary").first().click();
   await openDetailSection(page,"Job details");
-  await expect(jobDetail(page, "[data-approved-apply]")).toContainText("Continue with documents");
+  await expect(jobDetail(page, "[data-apply-job]")).toContainText("Apply job");
 
   await page.locator('[data-generate="resume"]').click();
   await expect(page.locator("#documentReviewDialog")).toBeVisible();
@@ -582,7 +582,7 @@ test("review preserves approved document and revision invalidates approval",asyn
 
   await page.locator('[data-review-close]').first().click();
   await openDetailSection(page,"Job details");
-  await expect(jobDetail(page, "[data-approved-apply]")).toContainText("Continue with documents");
+  await expect(jobDetail(page, "[data-apply-job]")).toContainText("Apply job");
 });
 
 test("failed revision keeps the saved document and its approval",async({page})=>{
@@ -618,7 +618,7 @@ test("failed revision keeps the saved document and its approval",async({page})=>
   await page.locator('[data-track="Professional"]').click();
   await page.locator(".job-card-summary").first().click();
   await openDetailSection(page,"Job details");
-  await expect(jobDetail(page, "[data-approved-apply]")).toContainText("Continue with documents");
+  await expect(jobDetail(page, "[data-apply-job]")).toContainText("Apply job");
 
   await page.locator('[data-generate="resume"]').click();
   await expect(page.locator("#documentReviewDialog")).toBeVisible();
@@ -859,493 +859,84 @@ test('saved documents retain optional PDF preparation beside immediate Apply',as
  await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=true;await route.fulfill({json:config});});
  await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
  await expect(jobDetail(page,'[data-apply-job]')).toHaveText('Apply job');
- await expect(jobDetail(page,'[data-prepare-application]')).toHaveText('Optional verified PDF preparation');
+ await expect(jobDetail(page,'[data-prepare-application]')).toHaveCount(0);
  await expect(jobDetail(page,'.next-step-help')).toContainText('It never submits automatically');
 });
 
-test('another paused preparation is explicit and preserved until the user dismisses it',async({page})=>{
+test('previous preparation metadata is retained while Apply remains available',async({page})=>{
  const current={...savedJob,resume:'data:text/html,Resume',cover_letter:'data:text/html,Cover'};
- const paused={...savedJob,id:'paused-job',title:'Material Artist',company:"Fool's Theory",url:'https://example.com/material-artist',resume:'data:text/html,Paused resume',cover_letter:'data:text/html,Paused cover'};
- const api=await mockRaven(page,{initialJob:current});
- await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=true;await route.fulfill({json:config});});
+ const paused={...savedJob,id:'paused-job',title:'Material Artist',company:"Fool's Theory",url:'https://example.com/material-artist'};
+ await mockRaven(page,{initialJob:current});
  await page.route('**/functions/v1/raven-backend-v3**',route=>new URL(route.request().url()).searchParams.get('action')==='jobs'?route.fulfill({json:{ok:true,jobs:[current,paused]}}):route.fallback());
- let helperCalls=0;await page.route('http://127.0.0.1:8766/**',route=>{helperCalls++;return route.abort();});
  const now=new Date().toISOString();
  const intent={version:1,preparationId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',extensionRequestId:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',jobId:paused.id,jobUrl:paused.url,createdAt:now,updatedAt:now,state:'documents-ready',reason:'Application requires sign-in.',reasonType:'manual-access',documents:{resume:{documentSha256:'a'.repeat(64)},coverLetter:{documentSha256:'b'.repeat(64)}}};
  await page.addInitScript(value=>localStorage.setItem('raven.application-preparation.v1',JSON.stringify(value)),intent);
  await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').filter({hasText:current.title}).click();
- await expect(jobDetail(page,'[data-review-paused-preparation]')).toHaveText('Review paused preparation');
- await expect(jobDetail(page,'[data-prepare-application]')).toHaveCount(0);
- await expect(jobDetail(page,'.next-step-help')).toContainText('Material Artist');
- await jobDetail(page,'[data-review-paused-preparation]').click();
- await expect(page.locator('#jobDetailPanel')).toBeHidden();
- await expect(page.locator('#preparationRecoveryBanner [data-resume-preparation]')).toBeFocused();
+ await expect(jobDetail(page,'[data-apply-job]')).toBeVisible();
+ await expect(page.locator('#preparationRecoveryBanner')).toBeVisible();
+ await expect(page.locator('#preparationRecoveryBanner')).toContainText('Previous preparation retained');
+ await expect(page.locator('#preparationRecoveryBanner [data-resume-preparation]')).toHaveText('Continue with Apply');
+ await expect(page.locator('#preparationRecoveryBanner [data-clear-preparation]')).toBeHidden();
  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('raven.application-preparation.v1')))).toEqual(intent);
- await page.locator('#preparationRecoveryBanner [data-clear-preparation]').click();
- await expect(page.locator('#preparationRecoveryBanner')).toBeHidden();
- await page.locator('.job-card-summary').filter({hasText:current.title}).click();
- await expect(jobDetail(page,'[data-prepare-application]')).toHaveText('Optional verified PDF preparation');
- expect(helperCalls).toBe(0);expect(api.getGenerationCalls()).toBe(0);
 });
 
-test('Prepare application opens verified attachments for an Applied job without changing its status',async({page})=>{
- const api=await mockRaven(page,{initialJob:{...savedJob,status:'Applied',resume:'',cover_letter:''}});
- const htmlResume='data:text/html;charset=utf-8,'+encodeURIComponent('<html><body><h1>Verified resume</h1></body></html>');
- const htmlCover='data:text/html;charset=utf-8,'+encodeURIComponent('<html><body><p>Verified cover letter</p></body></html>');
- const resumeSha=createHash('sha256').update(htmlResume).digest('hex'),coverSha=createHash('sha256').update(htmlCover).digest('hex');
- const runId='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',pdf=Buffer.from('%PDF-1.4\nfixture\n%%EOF'),pdfHash=createHash('sha256').update(pdf).digest('hex');
- let runCalls=0,documentCalls=0;
- await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=true;await route.fulfill({json:config});});
- await page.route('http://127.0.0.1:8766/**',async route=>{
-  const path=new URL(route.request().url()).pathname;
-  if(path==='/health')return route.fulfill({json:{application_prepare_supported:true,application_receipts_supported:true}});
-  if(path==='/session')return route.fulfill({json:{token:'fixture-token'}});
-  expect(route.request().headers().authorization).toBe('Bearer fixture-token');
-  if(path==='/runs'){
-   runCalls++;expect(route.request().postDataJSON()).toEqual({job_id:'job-1',document_type:'both'});
-   const documents=[
-    {document_type:'resume',document_url:htmlResume,document_sha256:resumeSha,file_id:'resume1234567890',drive_url:'https://drive.google.com/file/d/resume1234567890/view'},
-    {document_type:'coverLetter',document_url:htmlCover,document_sha256:coverSha,file_id:'cover1234567890',drive_url:'https://drive.google.com/file/d/cover1234567890/view'}
-   ];
-   api.getJob().resume=htmlResume;api.getJob().cover_letter=htmlCover;
-   for(const doc of documents)await page.evaluate(async data=>window.RavenAPI.addJobEvent('job-1',{eventType:'document_drive_export',metadata:data}),doc);
-   return route.fulfill({json:{run_id:runId,job_id:'job-1',stage:'complete',documents}});
-  }
-  if(path==='/application-receipts'){
-   const request=route.request().postDataJSON();
-   expect(request.job_id).toBe('job-1');
-   expect(request.documents.map(doc=>doc.document_sha256)).toEqual([resumeSha,coverSha]);
-   return route.fulfill({json:{job_id:'job-1',documents:request.documents}});
-  }
-  if(path==='/application-documents'){
-   documentCalls++;expect(route.request().postDataJSON()).toEqual({job_id:'job-1',documents:[{document_type:'resume',document_sha256:resumeSha},{document_type:'coverLetter',document_sha256:coverSha}]});
-   return route.fulfill({json:{job_id:'job-1',documents:['resume','coverLetter'].map((document_type,i)=>({document_type,document_sha256:i?coverSha:resumeSha,pdf_sha256:pdfHash,file_name:document_type+'.pdf',data_url:'data:application/pdf;base64,'+pdf.toString('base64')}))}});
-  }
-  throw new Error('Unexpected local writer request '+path);
- });
+test('primary Apply reserves and routes one owned attempt without delivering to a blocked form',async({page})=>{
+ const api=await mockRaven(page,{initialJob:{...savedJob,resume:'',cover_letter:''}});
+ await page.route('http://127.0.0.1:8766/**',route=>route.abort());
  await page.addInitScript(()=>{
-  window.preparedPacket=null;
-  window.preflightRequest=null;
-  window.extensionSawReadyDocuments=[];
-  const documentsReady=()=>{
-   const intent=JSON.parse(localStorage.getItem('raven.application-preparation.v1')||'null');
-   return intent?.state==='documents-ready'&&!!intent.documents?.resume?.documentSha256&&!!intent.documents?.coverLetter?.documentSha256;
-  };
+  window.applyRequests=[];
   const attach=bridge=>{
-   bridge.addEventListener('raven-prepare-probe',()=>{window.extensionSawReadyDocuments.push(documentsReady());bridge.dataset.prepareCapability='2';bridge.dispatchEvent(new Event('raven-prepare-capability'));});
-   bridge.addEventListener('raven-preflight-application',()=>{
-    window.preflightSawReadyDocuments=documentsReady();
-    const req=JSON.parse(bridge.dataset.preparePreflightRequest);window.preflightRequest=req;
-    bridge.dataset.preparePreflightResponse=JSON.stringify({requestId:req.requestId,ok:true,status:'ready',preflightId:'12345678-1234-4234-8234-123456789abc',tabId:19,observedUrl:req.jobUrl});
-    bridge.dispatchEvent(new Event('raven-preflight-response'));
-   });
-   bridge.addEventListener('raven-prepare-application',()=>{
-    const req=JSON.parse(bridge.dataset.prepareRequest);
-    if(req.requestId!==window.preflightRequest?.requestId||req.preflightId!=='12345678-1234-4234-8234-123456789abc')throw Error('Packet binding differs from preflight.');
-    window.preparedPacket=req.packet;bridge.dataset.prepareResponse=JSON.stringify({requestId:req.requestId,ok:true,tabId:19});bridge.dispatchEvent(new Event('raven-prepare-response'));
+   bridge.addEventListener('raven-apply-probe',()=>{bridge.dataset.applyCapability='3';bridge.dispatchEvent(new Event('raven-apply-capability'));});
+   bridge.addEventListener('raven-apply-request',()=>{
+    const request=JSON.parse(bridge.dataset.applyRequest);window.applyRequests.push(request);
+    const phase=request.action==='open'?(request.payload.targetUrl?'opening':'reserved'):'needs_user';
+    const response={version:3,ok:true,kind:'snapshot',requestId:request.requestId,attemptId:request.attemptId,jobId:request.jobId,bindingRevision:1,sequence:window.applyRequests.length,phase,status:phase,reason:phase==='needs_user'?'Sign-in required':''};
+    bridge.dataset.applyResponse=JSON.stringify(response);bridge.dispatchEvent(new Event('raven-apply-response'));
    });
   };
   const observer=new MutationObserver(()=>{const bridge=document.getElementById('ravenExtensionBridge');if(bridge){observer.disconnect();attach(bridge);}});observer.observe(document,{childList:true,subtree:true});
  });
  await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
- await expect(page.getByRole('button',{name:'Prepare again for review'})).toBeVisible();
- await page.getByRole('button',{name:'Prepare again for review'}).click();
- await expect(page.locator('#syncStatus')).toHaveText('Application opened for preparation—review fields and attachments in Chrome');
- const packet=await page.evaluate(()=>window.preparedPacket);
- expect(await page.evaluate(()=>window.extensionSawReadyDocuments)).toEqual([true,true]);
- expect(await page.evaluate(()=>window.preflightSawReadyDocuments)).toBe(true);
- expect(packet.version).toBe(2);expect(packet.mode).toBe('prepare');expect(packet.jobId).toBe('job-1');expect(packet.resume).toMatch(/^data:application\/pdf;base64,/);expect(packet.coverLetter).toMatch(/^data:application\/pdf;base64,/);
- expect(runCalls).toBe(1);expect(documentCalls).toBe(1);expect(api.getJob().status).toBe('Applied');
+ await jobDetail(page,'[data-apply-job]').click();
+ await expect.poll(()=>page.evaluate(()=>window.applyRequests.length)).toBe(3);
+ const requests=await page.evaluate(()=>window.applyRequests);
+ expect(requests.map(value=>value.action)).toEqual(['open','open','inspect']);
+ expect(requests[0].payload.targetUrl).toBeUndefined();
+ expect(requests[1].payload.targetUrl).toBe(savedJob.url);
+ expect(new Set(requests.map(value=>value.attemptId)).size).toBe(1);
+ expect(requests.every(value=>value.payload.document===undefined&&value.payload.profile===undefined)).toBe(true);
+ expect(api.getJob().status).toBe('Saved');
 });
 
-test('access-gated Prepare saves verified PDFs and explicit Resume reuses them without early dispatch',async({page})=>{
- const api=await mockRaven(page,{initialJob:{...savedJob,resume:'',cover_letter:''}});
- const htmlResume='data:text/html;charset=utf-8,'+encodeURIComponent('<html><body><h1>Verified resume</h1></body></html>');
- const htmlCover='data:text/html;charset=utf-8,'+encodeURIComponent('<html><body><p>Verified cover letter</p></body></html>');
- const resumeSha=createHash('sha256').update(htmlResume).digest('hex'),coverSha=createHash('sha256').update(htmlCover).digest('hex');
- const runId='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',pdf=Buffer.from('%PDF-1.4\nfixture\n%%EOF'),pdfHash=createHash('sha256').update(pdf).digest('hex');
- let runCalls=0,receiptCalls=0,pdfCalls=0;
- await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=true;await route.fulfill({json:config});});
- await page.route('http://127.0.0.1:8766/**',async route=>{
-  const path=new URL(route.request().url()).pathname;
-  if(path==='/health')return route.fulfill({json:{application_prepare_supported:true,application_receipts_supported:true}});
-  if(path==='/session')return route.fulfill({json:{token:'fixture-token'}});
-  expect(route.request().headers().authorization).toBe('Bearer fixture-token');
-  if(path==='/runs'){
-   runCalls++;expect(route.request().postDataJSON()).toEqual({job_id:'job-1',document_type:'both'});
-   const documents=[
-    {document_type:'resume',document_url:htmlResume,document_sha256:resumeSha,file_id:'resume1234567890',drive_url:'https://drive.google.com/file/d/resume1234567890/view'},
-    {document_type:'coverLetter',document_url:htmlCover,document_sha256:coverSha,file_id:'cover1234567890',drive_url:'https://drive.google.com/file/d/cover1234567890/view'}
-   ];
-   api.getJob().resume=htmlResume;api.getJob().cover_letter=htmlCover;
-   for(const doc of documents)await page.evaluate(async data=>window.RavenAPI.addJobEvent('job-1',{eventType:'document_drive_export',metadata:data}),doc);
-   return route.fulfill({json:{run_id:runId,job_id:'job-1',stage:'complete',documents}});
-  }
-  if(path==='/application-receipts'){
-   receiptCalls++;const request=route.request().postDataJSON();
-   expect(request.documents.map(doc=>doc.document_sha256)).toEqual([resumeSha,coverSha]);
-   return route.fulfill({json:{job_id:'job-1',documents:request.documents}});
-  }
-  if(path==='/application-documents'){
-   pdfCalls++;const request=route.request().postDataJSON();
-   expect(request.documents.map(doc=>doc.document_sha256)).toEqual([resumeSha,coverSha]);
-   return route.fulfill({json:{job_id:'job-1',documents:['resume','coverLetter'].map((document_type,i)=>({document_type,document_sha256:i?coverSha:resumeSha,pdf_sha256:pdfHash,file_name:document_type+'.pdf',data_url:'data:application/pdf;base64,'+pdf.toString('base64')}))}});
-  }
-  throw new Error('Unexpected local writer request '+path);
- });
+test('closed owned tab offers an explicit fresh Apply while preserving attempt history',async({page})=>{
+ await mockRaven(page,{initialJob:{...savedJob,resume:'',cover_letter:''}});
+ await page.route('http://127.0.0.1:8766/**',route=>route.abort());
  await page.addInitScript(()=>{
-  window.gateOpen=true;window.preparedPackets=[];window.preflightRequests=[];
+  window.applyRequests=[];window.statusCalls=0;
   const attach=bridge=>{
-   bridge.addEventListener('raven-prepare-probe',()=>{bridge.dataset.prepareCapability='2';bridge.dispatchEvent(new Event('raven-prepare-capability'));});
-   bridge.addEventListener('raven-preflight-application',()=>{
-    const req=JSON.parse(bridge.dataset.preparePreflightRequest);window.preflightRequests.push(req);
-    bridge.dataset.preparePreflightResponse=JSON.stringify(window.gateOpen
-      ? {requestId:req.requestId,ok:false,status:'manual',reason:'Application requires sign-in or an account.'}
-      : {requestId:req.requestId,ok:true,status:'ready',preflightId:'12345678-1234-4234-8234-123456789abc',tabId:19,observedUrl:req.jobUrl});
-    bridge.dispatchEvent(new Event('raven-preflight-response'));
-   });
-   bridge.addEventListener('raven-prepare-application',()=>{
-    const req=JSON.parse(bridge.dataset.prepareRequest);window.preparedPackets.push(req.packet);
-    bridge.dataset.prepareResponse=JSON.stringify({requestId:req.requestId,ok:true,tabId:19});bridge.dispatchEvent(new Event('raven-prepare-response'));
+   bridge.addEventListener('raven-apply-probe',()=>{bridge.dataset.applyCapability='3';});
+   bridge.addEventListener('raven-apply-request',()=>{
+    const request=JSON.parse(bridge.dataset.applyRequest);window.applyRequests.push(request);
+    const phase=request.action==='status'?(++window.statusCalls===1?'ready':'closed'):request.payload?.targetUrl?'opening':'reserved';
+    bridge.dataset.applyResponse=JSON.stringify({version:3,ok:true,kind:'snapshot',requestId:request.requestId,attemptId:request.attemptId,jobId:request.jobId,bindingRevision:1,sequence:window.applyRequests.length,phase,status:phase});
+    bridge.dispatchEvent(new Event('raven-apply-response'));
    });
   };
   const observer=new MutationObserver(()=>{const bridge=document.getElementById('ravenExtensionBridge');if(bridge){observer.disconnect();attach(bridge);}});observer.observe(document,{childList:true,subtree:true});
  });
  await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
- await jobDetail(page,'[data-prepare-application]').click();
- await expect(page.locator('#syncStatus')).toContainText('Documents ready; employer form needs manual access');
- await expect(jobDetail(page,'[data-prepare-application]')).toHaveText('Resume preparation');
- await expect(page.getByRole('link',{name:'Current PDF'})).toHaveCount(2);
- const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('raven.application-preparation.v1')));
- expect(saved.state).toBe('documents-ready');expect(saved.documents.resume.documentSha256).toBe(resumeSha);expect(saved.documents.coverLetter.documentSha256).toBe(coverSha);
- expect(await page.evaluate(()=>window.preparedPackets.length)).toBe(0);
- expect(runCalls).toBe(1);expect(receiptCalls).toBe(1);expect(pdfCalls).toBe(0);
+ await page.evaluate(url=>sessionStorage.setItem('raven.apply-attempts.v3',JSON.stringify([{attemptId:'11111111-1111-4111-8111-111111111111',jobId:'job-1',jobUrl:url,createdAt:new Date().toISOString()}])),savedJob.url);
  await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
- await expect(jobDetail(page,'[data-prepare-application]')).toHaveText('Resume preparation');
- expect(runCalls).toBe(1);expect(await page.evaluate(()=>window.preparedPackets.length)).toBe(0);
- await page.evaluate(()=>{window.gateOpen=false;});
- await jobDetail(page,'[data-prepare-application]').click();
- await expect(page.locator('#syncStatus')).toContainText('Application opened for preparation');
- expect(runCalls).toBe(1);expect(receiptCalls).toBe(2);expect(pdfCalls).toBe(1);
- expect(await page.evaluate(()=>window.preparedPackets.length)).toBe(1);
- expect(api.getJob().status).toBe('Saved');
-});
-
-test('Resume recovers completed canonical documents instead of replaying a failed writer run',async({page})=>{
- const api=await mockRaven(page,{initialJob:{...savedJob,resume:'',cover_letter:''}});
- const htmlResume='data:text/html;charset=utf-8,'+encodeURIComponent('<html><body><h1>Verified resume</h1></body></html>');
- const htmlCover='data:text/html;charset=utf-8,'+encodeURIComponent('<html><body><p>Verified cover letter</p></body></html>');
- const resumeSha=createHash('sha256').update(htmlResume).digest('hex'),coverSha=createHash('sha256').update(htmlCover).digest('hex');
- const runId='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',pdf=Buffer.from('%PDF-1.4\nfixture\n%%EOF'),pdfHash=createHash('sha256').update(pdf).digest('hex');
- let runCalls=0,receiptCalls=0,pdfCalls=0;
- await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=true;await route.fulfill({json:config});});
- await page.route('http://127.0.0.1:8766/**',async route=>{
-  const path=new URL(route.request().url()).pathname;
-  if(path==='/health')return route.fulfill({json:{application_prepare_supported:true,application_receipts_supported:true}});
-  if(path==='/session')return route.fulfill({json:{token:'fixture-token'}});
-  expect(route.request().headers().authorization).toBe('Bearer fixture-token');
-  if(path==='/runs'){
-   runCalls++;expect(route.request().postDataJSON()).toEqual({job_id:'job-1',document_type:'both'});
-   const documents=[
-    {document_type:'resume',document_url:htmlResume,document_sha256:resumeSha,file_id:'resume1234567890',drive_url:'https://drive.google.com/file/d/resume1234567890/view'},
-    {document_type:'coverLetter',document_url:htmlCover,document_sha256:coverSha,file_id:'cover1234567890',drive_url:'https://drive.google.com/file/d/cover1234567890/view'}
-   ];
-   api.getJob().resume=htmlResume;api.getJob().cover_letter=htmlCover;
-   for(const doc of documents)await page.evaluate(async data=>window.RavenAPI.addJobEvent('job-1',{eventType:'document_drive_export',metadata:data}),doc);
-   return route.fulfill({json:{run_id:runId,job_id:'job-1',stage:'complete',documents}});
-  }
-  if(path==='/application-receipts'){
-   receiptCalls++;const request=route.request().postDataJSON();
-   expect(request.documents.map(doc=>doc.document_sha256)).toEqual([resumeSha,coverSha]);
-   return route.fulfill({json:{job_id:'job-1',documents:request.documents}});
-  }
-  if(path==='/application-documents'){
-   pdfCalls++;const request=route.request().postDataJSON();
-   expect(request.documents.map(doc=>doc.document_sha256)).toEqual([resumeSha,coverSha]);
-   return route.fulfill({json:{job_id:'job-1',documents:['resume','coverLetter'].map((document_type,i)=>({document_type,document_sha256:i?coverSha:resumeSha,pdf_sha256:pdfHash,file_name:document_type+'.pdf',data_url:'data:application/pdf;base64,'+pdf.toString('base64')}))}});
-  }
-  throw new Error('Unexpected local writer request '+path);
- });
- await page.addInitScript(()=>{
-  window.gateOpen=true;window.preparedPackets=[];window.preflightRequests=[];
-  const attach=bridge=>{
-   bridge.addEventListener('raven-prepare-probe',()=>{bridge.dataset.prepareCapability='2';bridge.dispatchEvent(new Event('raven-prepare-capability'));});
-   bridge.addEventListener('raven-preflight-application',()=>{
-    const req=JSON.parse(bridge.dataset.preparePreflightRequest);window.preflightRequests.push(req);
-    bridge.dataset.preparePreflightResponse=JSON.stringify(window.gateOpen
-      ? {requestId:req.requestId,ok:false,status:'manual',reason:'Application requires sign-in or an account.'}
-      : {requestId:req.requestId,ok:true,status:'ready',preflightId:'12345678-1234-4234-8234-123456789abc',tabId:19,observedUrl:req.jobUrl});
-    bridge.dispatchEvent(new Event('raven-preflight-response'));
-   });
-   bridge.addEventListener('raven-prepare-application',()=>{
-    const req=JSON.parse(bridge.dataset.prepareRequest);window.preparedPackets.push(req.packet);
-    bridge.dataset.prepareResponse=JSON.stringify({requestId:req.requestId,ok:true,tabId:19});bridge.dispatchEvent(new Event('raven-prepare-response'));
-   });
-  };
-  const observer=new MutationObserver(()=>{const bridge=document.getElementById('ravenExtensionBridge');if(bridge){observer.disconnect();attach(bridge);}});observer.observe(document,{childList:true,subtree:true});
- });
- await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
- await jobDetail(page,'[data-prepare-application]').click();
- await expect(page.locator('#syncStatus')).toContainText('Documents ready; employer form needs manual access');
- await expect(jobDetail(page,'[data-prepare-application]')).toHaveText('Resume preparation');
- await expect(page.getByRole('link',{name:'Current PDF'})).toHaveCount(2);
- const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('raven.application-preparation.v1')));
- expect(saved.state).toBe('documents-ready');expect(saved.documents.resume.documentSha256).toBe(resumeSha);expect(saved.documents.coverLetter.documentSha256).toBe(coverSha);
- expect(await page.evaluate(()=>window.preparedPackets.length)).toBe(0);
- expect(runCalls).toBe(1);expect(receiptCalls).toBe(1);expect(pdfCalls).toBe(0);
- await page.evaluate(()=>{const key='raven.application-preparation.v1',intent=JSON.parse(localStorage.getItem(key));intent.state='needs-review';intent.lastStage='saving';intent.reason='The draft did not pass Raven validation.';delete intent.documents;localStorage.setItem(key,JSON.stringify(intent));});
- await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
- await expect(jobDetail(page,'[data-prepare-application]')).toHaveText('Resume preparation');
- expect(runCalls).toBe(1);expect(await page.evaluate(()=>window.preparedPackets.length)).toBe(0);
- await page.evaluate(()=>{window.gateOpen=false;});
- await jobDetail(page,'[data-prepare-application]').click();
- await expect(page.locator('#syncStatus')).toContainText('Application opened for preparation');
- expect(runCalls).toBe(1);expect(receiptCalls).toBe(2);expect(pdfCalls).toBe(1);
- expect(await page.evaluate(()=>window.preparedPackets.length)).toBe(1);
- expect(api.getJob().status).toBe('Saved');
-});
-
-test('Resume refreshes missing exports for saved documents without replaying the failed writer',async({page})=>{
- const api=await mockRaven(page,{initialJob:{...savedJob,resume:'',cover_letter:''}});
- const htmlResume='data:text/html;charset=utf-8,'+encodeURIComponent('<html><body><h1>Verified resume</h1></body></html>');
- const htmlCover='data:text/html;charset=utf-8,'+encodeURIComponent('<html><body><p>Verified cover letter</p></body></html>');
- const resumeSha=createHash('sha256').update(htmlResume).digest('hex'),coverSha=createHash('sha256').update(htmlCover).digest('hex');
- const runId='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',pdf=Buffer.from('%PDF-1.4\nfixture\n%%EOF'),pdfHash=createHash('sha256').update(pdf).digest('hex');
- let runCalls=0,receiptCalls=0,pdfCalls=0;
- await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=true;await route.fulfill({json:config});});
- await page.route('http://127.0.0.1:8766/**',async route=>{
-  const path=new URL(route.request().url()).pathname;
-  if(path==='/health')return route.fulfill({json:{application_prepare_supported:true,application_receipts_supported:true}});
-  if(path==='/session')return route.fulfill({json:{token:'fixture-token'}});
-  expect(route.request().headers().authorization).toBe('Bearer fixture-token');
-  if(path==='/runs'){
-   runCalls++;expect(route.request().postDataJSON()).toEqual({job_id:'job-1',document_type:'both'});
-   const documents=[
-    {document_type:'resume',document_url:htmlResume,document_sha256:resumeSha,file_id:'resume1234567890',drive_url:'https://drive.google.com/file/d/resume1234567890/view'},
-    {document_type:'coverLetter',document_url:htmlCover,document_sha256:coverSha,file_id:'cover1234567890',drive_url:'https://drive.google.com/file/d/cover1234567890/view'}
-   ];
-   api.getJob().resume=htmlResume;api.getJob().cover_letter=htmlCover;
-   for(const doc of documents)await page.evaluate(async data=>window.RavenAPI.addJobEvent('job-1',{eventType:'document_drive_export',metadata:data}),doc);
-   return route.fulfill({json:{run_id:runId,job_id:'job-1',stage:'complete',documents}});
-  }
-  if(path==='/application-receipts'){
-   receiptCalls++;const request=route.request().postDataJSON();
-   expect(request.documents.map(doc=>doc.document_sha256)).toEqual([resumeSha,coverSha]);
-   return route.fulfill({json:{job_id:'job-1',documents:request.documents}});
-  }
-  if(path==='/application-documents'){
-   pdfCalls++;const request=route.request().postDataJSON();
-   expect(request.documents.map(doc=>doc.document_sha256)).toEqual([resumeSha,coverSha]);
-   return route.fulfill({json:{job_id:'job-1',documents:['resume','coverLetter'].map((document_type,i)=>({document_type,document_sha256:i?coverSha:resumeSha,pdf_sha256:pdfHash,file_name:document_type+'.pdf',data_url:'data:application/pdf;base64,'+pdf.toString('base64')}))}});
-  }
-  throw new Error('Unexpected local writer request '+path);
- });
- await page.addInitScript(()=>{
-  window.gateOpen=true;window.preparedPackets=[];window.preflightRequests=[];
-  const attach=bridge=>{
-   bridge.addEventListener('raven-prepare-probe',()=>{bridge.dataset.prepareCapability='2';bridge.dispatchEvent(new Event('raven-prepare-capability'));});
-   bridge.addEventListener('raven-preflight-application',()=>{
-    const req=JSON.parse(bridge.dataset.preparePreflightRequest);window.preflightRequests.push(req);
-    bridge.dataset.preparePreflightResponse=JSON.stringify(window.gateOpen
-      ? {requestId:req.requestId,ok:false,status:'manual',reason:'Application requires sign-in or an account.'}
-      : {requestId:req.requestId,ok:true,status:'ready',preflightId:'12345678-1234-4234-8234-123456789abc',tabId:19,observedUrl:req.jobUrl});
-    bridge.dispatchEvent(new Event('raven-preflight-response'));
-   });
-   bridge.addEventListener('raven-prepare-application',()=>{
-    const req=JSON.parse(bridge.dataset.prepareRequest);window.preparedPackets.push(req.packet);
-    bridge.dataset.prepareResponse=JSON.stringify({requestId:req.requestId,ok:true,tabId:19});bridge.dispatchEvent(new Event('raven-prepare-response'));
-   });
-  };
-  const observer=new MutationObserver(()=>{const bridge=document.getElementById('ravenExtensionBridge');if(bridge){observer.disconnect();attach(bridge);}});observer.observe(document,{childList:true,subtree:true});
- });
- await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
- await jobDetail(page,'[data-prepare-application]').click();
- await expect(page.locator('#syncStatus')).toContainText('Documents ready; employer form needs manual access');
- await expect(jobDetail(page,'[data-prepare-application]')).toHaveText('Resume preparation');
- await expect(page.getByRole('link',{name:'Current PDF'})).toHaveCount(2);
- const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('raven.application-preparation.v1')));
- expect(saved.state).toBe('documents-ready');expect(saved.documents.resume.documentSha256).toBe(resumeSha);expect(saved.documents.coverLetter.documentSha256).toBe(coverSha);
- expect(await page.evaluate(()=>window.preparedPackets.length)).toBe(0);
- expect(runCalls).toBe(1);expect(receiptCalls).toBe(1);expect(pdfCalls).toBe(0);
- for(const event of api.getEvents())if(event.event_type==='document_drive_export')event.metadata.document_sha256='e'.repeat(64);
- await page.evaluate(()=>{const key='raven.application-preparation.v1',intent=JSON.parse(localStorage.getItem(key));intent.state='needs-review';intent.lastStage='saving';intent.reason='The draft did not pass Raven validation.';delete intent.documents;localStorage.setItem(key,JSON.stringify(intent));});
- await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
- await expect(jobDetail(page,'[data-prepare-application]')).toHaveText('Resume preparation');
- expect(runCalls).toBe(1);expect(await page.evaluate(()=>window.preparedPackets.length)).toBe(0);
- await page.evaluate(()=>{window.gateOpen=false;});
- await jobDetail(page,'[data-prepare-application]').click();
- await expect(page.locator('#syncStatus')).toContainText('Application opened for preparation');
- expect(runCalls).toBe(2);expect(receiptCalls).toBe(2);expect(pdfCalls).toBe(1);
- expect(await page.evaluate(()=>window.preparedPackets.length)).toBe(1);
- expect(api.getJob().status).toBe('Saved');
-});
-
-for(const extensionMode of ['missing','outdated'])test(`Prepare finishes documents with ${extensionMode} extension, then explicit Resume delivers them`,async({page})=>{
- const api=await mockRaven(page,{initialJob:{...savedJob,resume:'',cover_letter:''}});
- const htmlResume='data:text/html;charset=utf-8,'+encodeURIComponent('<html><body><h1>Verified resume</h1></body></html>');
- const htmlCover='data:text/html;charset=utf-8,'+encodeURIComponent('<html><body><p>Verified cover letter</p></body></html>');
- const resumeSha=createHash('sha256').update(htmlResume).digest('hex'),coverSha=createHash('sha256').update(htmlCover).digest('hex');
- const pdf=Buffer.from('%PDF-1.4\nfixture\n%%EOF'),pdfHash=createHash('sha256').update(pdf).digest('hex');
- let runCalls=0,receiptCalls=0,pdfCalls=0;
- await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=true;await route.fulfill({json:config});});
- await page.route('http://127.0.0.1:8766/**',async route=>{
-  const path=new URL(route.request().url()).pathname;
-  if(path==='/health')return route.fulfill({json:{application_prepare_supported:true,application_receipts_supported:true}});
-  if(path==='/session')return route.fulfill({json:{token:'fixture-token'}});
-  expect(route.request().headers().authorization).toBe('Bearer fixture-token');
-  if(path==='/runs'){
-   runCalls++;expect(route.request().postDataJSON()).toEqual({job_id:'job-1',document_type:'both'});
-   const documents=[
-    {document_type:'resume',document_url:htmlResume,document_sha256:resumeSha,file_id:'resume1234567890',drive_url:'https://drive.google.com/file/d/resume1234567890/view'},
-    {document_type:'coverLetter',document_url:htmlCover,document_sha256:coverSha,file_id:'cover1234567890',drive_url:'https://drive.google.com/file/d/cover1234567890/view'}
-   ];
-   api.getJob().resume=htmlResume;api.getJob().cover_letter=htmlCover;
-   for(const doc of documents)await page.evaluate(async data=>window.RavenAPI.addJobEvent('job-1',{eventType:'document_drive_export',metadata:data}),doc);
-   return route.fulfill({json:{run_id:'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',job_id:'job-1',stage:'complete',documents}});
-  }
-  if(path==='/application-receipts'){
-   receiptCalls++;const request=route.request().postDataJSON();
-   expect(request.job_id).toBe('job-1');expect(request.documents.map(doc=>doc.document_sha256)).toEqual([resumeSha,coverSha]);
-   return route.fulfill({json:{job_id:'job-1',documents:request.documents}});
-  }
-  if(path==='/application-documents'){
-   pdfCalls++;const request=route.request().postDataJSON();
-   expect(request.documents.map(doc=>doc.document_sha256)).toEqual([resumeSha,coverSha]);
-   return route.fulfill({json:{job_id:'job-1',documents:['resume','coverLetter'].map((document_type,i)=>({document_type,document_sha256:i?coverSha:resumeSha,pdf_sha256:pdfHash,file_name:document_type+'.pdf',data_url:'data:application/pdf;base64,'+pdf.toString('base64')}))}});
-  }
-  throw new Error('Unexpected local writer request '+path);
- });
- await page.addInitScript(mode=>{
-  window.extensionMode=mode;window.preflightRequests=[];window.preparedPackets=[];window.extensionProbeCount=0;
-  const attach=bridge=>{
-   bridge.addEventListener('raven-prepare-probe',()=>{
-    window.extensionProbeCount++;
-    if(window.extensionMode==='missing')return;
-    bridge.dataset.prepareCapability=window.extensionMode==='outdated'?'1':'2';
-    bridge.dispatchEvent(new Event('raven-prepare-capability'));
-   });
-   bridge.addEventListener('raven-preflight-application',()=>{
-    const req=JSON.parse(bridge.dataset.preparePreflightRequest);window.preflightRequests.push(req);
-    bridge.dataset.preparePreflightResponse=JSON.stringify({requestId:req.requestId,ok:true,status:'ready',preflightId:'12345678-1234-4234-8234-123456789abc',tabId:19,observedUrl:req.jobUrl});
-    bridge.dispatchEvent(new Event('raven-preflight-response'));
-   });
-   bridge.addEventListener('raven-prepare-application',()=>{
-    const req=JSON.parse(bridge.dataset.prepareRequest);window.preparedPackets.push(req.packet);
-    bridge.dataset.prepareResponse=JSON.stringify({requestId:req.requestId,ok:true,tabId:19});
-    bridge.dispatchEvent(new Event('raven-prepare-response'));
-   });
-  };
-  const observer=new MutationObserver(()=>{const bridge=document.getElementById('ravenExtensionBridge');if(bridge){observer.disconnect();attach(bridge);}});observer.observe(document,{childList:true,subtree:true});
- },extensionMode);
- await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
- // Wait for runtime settings so this click uses the configured local writer.
- await expect(jobDetail(page,'[data-prepare-application]')).toBeVisible();
- await jobDetail(page,'[data-prepare-application]').click();
- await expect(page.locator('#syncStatus')).toContainText('Documents ready; form filling is unavailable');
- await expect(jobDetail(page,'[data-prepare-application]')).toHaveText('Resume preparation');
- await expect(page.getByRole('link',{name:'Current PDF'})).toHaveCount(2);
- const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('raven.application-preparation.v1')));
- expect(saved.state).toBe('documents-ready');expect(saved.documents.resume.documentSha256).toBe(resumeSha);expect(saved.documents.coverLetter.documentSha256).toBe(coverSha);
- expect(saved.reason).toMatch(extensionMode==='missing'?/install|enable/i:/update|reload/i);
- expect(runCalls).toBe(1);expect(receiptCalls).toBe(1);expect(pdfCalls).toBe(0);
- expect(await page.evaluate(()=>window.preflightRequests.length)).toBe(0);
- expect(await page.evaluate(()=>window.preparedPackets.length)).toBe(0);
- expect(api.getJob().status).toBe('Saved');
-
- await page.reload();await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
- await expect(jobDetail(page,'[data-prepare-application]')).toHaveText('Resume preparation');
- const restored=await page.evaluate(()=>JSON.parse(localStorage.getItem('raven.application-preparation.v1')));
- expect(restored.state).toBe('documents-ready');expect(restored.reason).toBe(saved.reason);
- expect(runCalls).toBe(1);expect(pdfCalls).toBe(0);
- expect(await page.evaluate(()=>window.preflightRequests.length)).toBe(0);
- await page.evaluate(()=>{window.extensionMode='ready';});
- await jobDetail(page,'[data-prepare-application]').click();
- await expect(page.locator('#syncStatus')).toContainText('Application opened for preparation');
- expect(runCalls).toBe(1);expect(receiptCalls).toBe(2);expect(pdfCalls).toBe(1);
- expect(await page.evaluate(()=>window.preflightRequests.length)).toBe(1);
- const packets=await page.evaluate(()=>window.preparedPackets);
- expect(packets).toHaveLength(1);expect(packets[0].jobId).toBe('job-1');
- expect(packets[0].resume).toMatch(/^data:application\/pdf;base64,/);expect(packets[0].coverLetter).toMatch(/^data:application\/pdf;base64,/);
- expect(api.getJob().status).toBe('Saved');
-});
-for(const extensionMode of ['stale','stale-persistent'])test(`Prepare automatically reconnects ${extensionMode} bridge without duplicate work`,async({page})=>{
- const api=await mockRaven(page,{initialJob:{...savedJob,resume:'',cover_letter:''}});
- const htmlResume='data:text/html;charset=utf-8,'+encodeURIComponent('<html><body><h1>Verified resume</h1></body></html>');
- const htmlCover='data:text/html;charset=utf-8,'+encodeURIComponent('<html><body><p>Verified cover letter</p></body></html>');
- const resumeSha=createHash('sha256').update(htmlResume).digest('hex'),coverSha=createHash('sha256').update(htmlCover).digest('hex');
- const pdf=Buffer.from('%PDF-1.4\nfixture\n%%EOF'),pdfHash=createHash('sha256').update(pdf).digest('hex');
- let runCalls=0,receiptCalls=0,pdfCalls=0;
- await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=true;await route.fulfill({json:config});});
- await page.route('http://127.0.0.1:8766/**',async route=>{
-  const path=new URL(route.request().url()).pathname;
-  if(path==='/health')return route.fulfill({json:{application_prepare_supported:true,application_receipts_supported:true}});
-  if(path==='/session')return route.fulfill({json:{token:'fixture-token'}});
-  expect(route.request().headers().authorization).toBe('Bearer fixture-token');
-  if(path==='/runs'){
-   runCalls++;expect(route.request().postDataJSON()).toEqual({job_id:'job-1',document_type:'both'});
-   const documents=[
-    {document_type:'resume',document_url:htmlResume,document_sha256:resumeSha,file_id:'resume1234567890',drive_url:'https://drive.google.com/file/d/resume1234567890/view'},
-    {document_type:'coverLetter',document_url:htmlCover,document_sha256:coverSha,file_id:'cover1234567890',drive_url:'https://drive.google.com/file/d/cover1234567890/view'}
-   ];
-   api.getJob().resume=htmlResume;api.getJob().cover_letter=htmlCover;
-   for(const doc of documents)await page.evaluate(async data=>window.RavenAPI.addJobEvent('job-1',{eventType:'document_drive_export',metadata:data}),doc);
-   return route.fulfill({json:{run_id:'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',job_id:'job-1',stage:'complete',documents}});
-  }
-  if(path==='/application-receipts'){
-   receiptCalls++;const request=route.request().postDataJSON();
-   expect(request.job_id).toBe('job-1');expect(request.documents.map(doc=>doc.document_sha256)).toEqual([resumeSha,coverSha]);
-   return route.fulfill({json:{job_id:'job-1',documents:request.documents}});
-  }
-  if(path==='/application-documents'){
-   pdfCalls++;const request=route.request().postDataJSON();
-   expect(request.documents.map(doc=>doc.document_sha256)).toEqual([resumeSha,coverSha]);
-   return route.fulfill({json:{job_id:'job-1',documents:['resume','coverLetter'].map((document_type,i)=>({document_type,document_sha256:i?coverSha:resumeSha,pdf_sha256:pdfHash,file_name:document_type+'.pdf',data_url:'data:application/pdf;base64,'+pdf.toString('base64')}))}});
-  }
-  throw new Error('Unexpected local writer request '+path);
- });
- await page.addInitScript(mode=>{
-  if(window!==window.top)return; const visit=Number(sessionStorage.getItem('fixtureVisits')||0)+1;sessionStorage.setItem('fixtureVisits',String(visit));
-  const nativeTimeout=window.setTimeout.bind(window);window.setTimeout=(fn,ms,...args)=>nativeTimeout(fn,ms===30000?100:ms,...args);
-  window.extensionMode=mode==='stale'&&visit>1?'ready':mode;window.preflightRequests=[];window.preparedPackets=[];window.extensionProbeCount=0;
-  const attach=bridge=>{
-   bridge.addEventListener('raven-prepare-probe',()=>{
-    window.extensionProbeCount++;
-    if(window.extensionMode==='missing')return;
-    bridge.dataset.prepareCapability=window.extensionMode==='outdated'?'1':'2';
-    bridge.dispatchEvent(new Event('raven-prepare-capability'));
-   });
-   bridge.addEventListener('raven-preflight-application',()=>{
-    const req=JSON.parse(bridge.dataset.preparePreflightRequest);window.preflightRequests.push(req);
-    if(window.extensionMode.startsWith('stale'))return;
-    bridge.dataset.preparePreflightResponse=JSON.stringify({requestId:req.requestId,ok:true,status:'ready',preflightId:'12345678-1234-4234-8234-123456789abc',tabId:19,observedUrl:req.jobUrl});
-    bridge.dispatchEvent(new Event('raven-preflight-response'));
-   });
-   bridge.addEventListener('raven-prepare-application',()=>{
-    const req=JSON.parse(bridge.dataset.prepareRequest);window.preparedPackets.push(req.packet);
-    bridge.dataset.prepareResponse=JSON.stringify({requestId:req.requestId,ok:true,tabId:19});
-    bridge.dispatchEvent(new Event('raven-prepare-response'));
-   });
-  };
-  const observer=new MutationObserver(()=>{const bridge=document.getElementById('ravenExtensionBridge');if(bridge){observer.disconnect();attach(bridge);}});observer.observe(document,{childList:true,subtree:true});
- },extensionMode);
- await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
- // Wait for runtime settings so this click uses the configured local writer.
- await expect(jobDetail(page,'[data-prepare-application]')).toBeVisible();
- await jobDetail(page,'[data-prepare-application]').click();
-
- if(extensionMode==='stale-persistent'){
-  await expect.poll(async()=>{try{return await page.evaluate(()=>Number(sessionStorage.getItem('fixtureVisits')));}catch(error){if(/Execution context was destroyed/.test(error.message))return 0;throw error;}}).toBe(2);
-  await expect(page.locator('#syncStatus')).toContainText('Documents ready; form filling is unavailable');
-  expect(runCalls).toBe(1);expect(pdfCalls).toBe(0);expect(receiptCalls).toBe(2);
-  await page.waitForTimeout(250);expect(await page.evaluate(()=>sessionStorage.getItem('fixtureVisits'))).toBe('2');
- }else{
-  await expect(page.locator('#syncStatus')).toContainText('Application opened for preparation');
-  expect(await page.evaluate(()=>sessionStorage.getItem('fixtureVisits'))).toBe('2');
-  expect(runCalls).toBe(1);expect(receiptCalls).toBe(2);expect(pdfCalls).toBe(1);
-  const packets=await page.evaluate(()=>window.preparedPackets);expect(packets).toHaveLength(1);expect(packets[0].jobId).toBe('job-1');
-  expect(await page.evaluate(()=>localStorage.getItem('raven.application-preparation.v1'))).toBeNull();
- }
- expect(api.getJob().status).toBe('Saved');expect(api.getJob().resume).toBe(htmlResume);expect(api.getJob().cover_letter).toBe(htmlCover);
+ await openDetailSection(page,'Job details');
+ await expect(jobDetail(page,'[data-apply-job]')).toContainText('Continue / inspect current employer tab');
+ await jobDetail(page,'[data-apply-job]').click();
+ await expect(jobDetail(page,'[data-apply-job]')).toContainText('Start new application tab');
+ const before=await page.evaluate(()=>window.applyRequests.map(value=>value.attemptId));
+ expect(new Set(before)).toEqual(new Set(['11111111-1111-4111-8111-111111111111']));
+ await jobDetail(page,'[data-apply-job]').click();
+ await expect.poll(()=>page.evaluate(()=>new Set(window.applyRequests.map(value=>value.attemptId)).size)).toBe(2);
+ const history=await page.evaluate(()=>JSON.parse(sessionStorage.getItem('raven.apply-attempts.v3')));
+ expect(history).toHaveLength(2);expect(history[0].closed).toBe(true);
 });
 
 test('saved resume Drive action requests exact PDF export to configured folder and preserves resume',async({page})=>{
@@ -1442,7 +1033,7 @@ test("iPhone SE viewport keeps Raven usable without page overflow",async({page})
   await page.locator(".job-card-summary").first().click();
   await expect(page.locator('[data-generate="resume"]')).toBeVisible();
   await openDetailSection(page,"Job details");
-  await expect(jobDetail(page, "[data-approved-apply]")).toBeVisible();
+  await expect(jobDetail(page, "[data-apply-job]")).toBeVisible();
 
   layout=await page.evaluate(()=>({
     innerWidth:window.innerWidth,
@@ -1532,49 +1123,8 @@ test("device backup restores profile, answer memory, and local master resume",as
   expect(restored.fileText).toBe("MASTER BACKUP CONTENT");
 });
 
-for(const site of [
-  {name:"Greenhouse",url:"https://job-boards.greenhouse.io/raven-test/jobs/1",resume:'<input id="resume" type="file" accept=".html">',cover:'<input id="cover_letter" type="file" accept=".html">'},
-  {name:"Lever",url:"https://jobs.lever.co/raven-test/1",resume:'<input name="resume" type="file" accept=".html">',cover:'<input name="cover_letter" type="file" accept=".html">'},
-  {name:"Ashby",url:"https://jobs.ashbyhq.com/raven-test/1",resume:'<input name="resume" type="file" accept=".html">',cover:'<input name="cover_letter" type="file" accept=".html">'}
-]){
-  test(site.name+" assistant attaches exact approved documents without submitting",async({page})=>{
-    const resumeValue="data:text/html;charset=utf-8,"+encodeURIComponent("<html><body>APPROVED RESUME EXACT</body></html>");
-    const coverValue="data:text/html;charset=utf-8,"+encodeURIComponent("<html><body>APPROVED COVER EXACT</body></html>");
-    await page.addInitScript(({url,resumeValue,coverValue})=>{
-      const store={
-        ravenApplicationPacket:{
-          version:1,createdAt:new Date().toISOString(),jobId:"job-1",jobUrl:url,title:"Test Role",company:"Test Company",
-          profile:{firstName:"Raven",lastName:"Tester",email:"raven@example.com"},answers:{},
-          resume:resumeValue,coverLetter:coverValue
-        }
-      };
-      globalThis.chrome={
-        storage:{local:{
-          get(keys,cb){const list=Array.isArray(keys)?keys:[keys];cb(Object.fromEntries(list.map(k=>[k,store[k]]).filter(([,v])=>v!==undefined)));},
-          set(values,cb){Object.assign(store,values);if(cb)cb();},
-          remove(keys,cb){for(const k of (Array.isArray(keys)?keys:[keys])) delete store[k];if(cb)cb();}
-        }},
-        runtime:{lastError:null,sendMessage(_m,cb){if(cb)cb();}}
-      };
-    },{url:site.url,resumeValue,coverValue});
-    await page.route(site.url,route=>route.fulfill({status:200,contentType:"text/html",body:'<!doctype html><html><body><form><input id="first_name" name="name" type="text"><input id="last_name" type="text"><input id="email" type="email">'+site.resume+site.cover+'<button type="submit">Submit application</button></form></body></html>'}));
-    await page.goto(site.url);
-    await page.addScriptTag({path:"extension/src/assistant-core.js"});
-    await page.addScriptTag({path:"extension/src/content.js"});
-    await expect(page.locator("#raven-assistant-banner")).toContainText("available document");
-    const attached=await page.evaluate(async()=>{
-      const inputs=[...document.querySelectorAll('input[type="file"]')];
-      return Promise.all(inputs.map(async(input)=>({name:input.files?.[0]?.name||"",text:input.files?.[0]?await input.files[0].text():""})));
-    });
-    expect(attached).toHaveLength(2);
-    expect(attached[0].text).toContain("APPROVED RESUME EXACT");
-    expect(attached[1].text).toContain("APPROVED COVER EXACT");
-    expect(await page.locator("button[type=submit]").count()).toBe(1);
-  });
-}
-
 test("listing and direct application remain available without documents",async({page})=>{
-  await page.addInitScript(()=>{window.open=()=>({location:{replace(url){window.openedApplicationUrl=url;}}});});
+  await page.addInitScript(()=>{window.open=url=>{window.openedApplicationUrl=url;return {location:{replace(next){window.resolvedApplicationUrl=next;}}};};});
   await mockRaven(page);
   await page.goto("/");
   await page.locator('[data-track="Professional"]').click();
@@ -1755,39 +1305,15 @@ test("generators save discovery jobs and recover descriptions before generating 
   await expect(page.locator('[data-generate="coverLetter"]')).toHaveText("Review");
 });
 
-test("application preparation reservation follows a discovered job when it receives its saved id",async({page})=>{
- let releaseDescription;
- const descriptionGate=new Promise(resolve=>{releaseDescription=resolve;});
+test("primary Apply saves a discovered job once before opening its application",async({page})=>{
  const discovery={id:"DISC-prepare-race",track:"Professional",title:savedJob.title,company:savedJob.company,location:"Remote",remote:true,url:savedJob.url,source:"Mock",snippet:""};
  const api=await mockRaven(page,{discoveredJob:discovery,savedDiscoveryId:"JT-prepare-race"});
- let descriptionCalls=0;
- await page.route('**/runtime-config.json',async route=>{const response=await route.fetch();const config=await response.json();config.settings['chatgpt-one-click']=true;await route.fulfill({json:config});});
- await page.route('**/functions/v1/raven-enrich-v1**',async route=>{
-  descriptionCalls++;
-  await descriptionGate;
-  await route.fulfill({status:503,json:{ok:false,error:"fixture stopped before generation"}});
- });
- await page.route('http://127.0.0.1:8766/**',route=>route.fulfill({json:{application_prepare_supported:true}}));
- await page.addInitScript(()=>{
-  const attach=bridge=>{
-   bridge.addEventListener('raven-prepare-probe',()=>{bridge.dataset.prepareCapability='2';bridge.dispatchEvent(new Event('raven-prepare-capability'));});
-  };
-  const observer=new MutationObserver(()=>{const bridge=document.getElementById('ravenExtensionBridge');if(bridge){observer.disconnect();attach(bridge);}});observer.observe(document,{childList:true,subtree:true});
- });
+ await page.addInitScript(()=>{window.open=url=>{window.openedApplicationUrl=url;return {location:{replace(){}}};};});
  await page.goto('/');await page.locator('[data-track="Professional"]').click();await page.locator('.job-card-summary').first().click();
- await jobDetail(page, "[data-prepare-application]").click();
+ await jobDetail(page,"[data-apply-job]").click();
  await expect.poll(()=>api.getJob().id).toBe("JT-prepare-race");
- await expect.poll(()=>descriptionCalls).toBe(1);
- // Collapse/reopen forces a render from the saved ID. The live reservation must
- // still disable the control while the original preparation is waiting.
- await jobDetail(page,'[data-close-job-detail]').click();
- await page.locator('.job-card-summary').first().click();
- await expect(jobDetail(page, "[data-prepare-application]")).toBeDisabled();
- expect(api.getAddJobCalls()).toBe(1);expect(descriptionCalls).toBe(1);
- releaseDescription();
- await expect(page.locator('#syncStatus')).toContainText('fixture stopped before generation');
- await expect(jobDetail(page, "[data-prepare-application]")).toBeEnabled();
- expect(api.getAddJobCalls()).toBe(1);expect(descriptionCalls).toBe(1);
+ expect(api.getAddJobCalls()).toBe(1);
+ await expect.poll(()=>page.evaluate(()=>window.openedApplicationUrl)).toBe(savedJob.url);
 });
 
 for (const track of ["Games / 3D", "Professional", "Labor", "Wildcard"]) {
