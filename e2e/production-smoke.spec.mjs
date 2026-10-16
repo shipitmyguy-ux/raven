@@ -215,7 +215,7 @@ test.describe("Deployed Raven App Production Smoke Tests", () => {
 
     await mockRavenBackend(page);
     await page.addInitScript(({ jobId, resumeUrl, coverUrl }) => {
-      localStorage.setItem("ravenDocumentApprovalsV1", JSON.stringify({
+      if (!localStorage.getItem("ravenDocumentApprovalsV1")) localStorage.setItem("ravenDocumentApprovalsV1", JSON.stringify({
         [`${jobId}|resume`]: { value: resumeUrl, approvedAt: new Date().toISOString() },
         [`${jobId}|coverLetter`]: { value: coverUrl, approvedAt: new Date().toISOString() }
       }));
@@ -226,13 +226,14 @@ test.describe("Deployed Raven App Production Smoke Tests", () => {
     await page.locator('.track-tab[data-track="Professional"]').click();
     await page.locator(`.job-card[data-job-id="${syntheticTestJob.id}"] .job-card-summary`).click();
 
-    // Approved-document navigation now lives in the drawer's Job details disclosure.
     await page.locator('.job-detail-disclosure > summary').filter({ hasText: /^Job details$/ }).click();
-    // Verify approved docs state enables Apply button
-    const applyGate = page.locator("[data-approved-apply]");
-    await expect(applyGate).toBeVisible();
-    await expect(applyGate).toContainText("Continue with documents");
-    await expect(applyGate).toBeEnabled();
+    // Apply stays available for this saved job; review remains a separate action.
+    await expect(page.locator("[data-apply-job]")).toBeVisible();
+    await expect(page.locator("[data-apply-job]")).toContainText("Apply job");
+    await expect(page.locator("[data-apply-job]")).toBeEnabled();
+    const approvalsBefore=await page.evaluate(()=>JSON.parse(localStorage.getItem("ravenDocumentApprovalsV1")||"{}"));
+    expect(approvalsBefore[syntheticTestJob.id+"|resume"]?.value).toBe(resumeUrl);
+    expect(approvalsBefore[syntheticTestJob.id+"|coverLetter"]?.value).toBe(coverUrl);
 
     // Click Review for resume to exercise non-destructive Review Documents flow
     await page.locator('[data-generate="resume"]').first().click();
@@ -243,14 +244,15 @@ test.describe("Deployed Raven App Production Smoke Tests", () => {
     await page.locator("[data-review-close]").first().click();
     await expect(page.locator("#documentReviewDialog")).not.toBeVisible();
 
-    // Verify approval survived reload
+    // The exact saved approval records survive reload and opening Review.
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.locator('.track-tab[data-track="Professional"]').click();
     await page.locator(`.job-card[data-job-id="${syntheticTestJob.id}"] .job-card-summary`).click();
     await page.locator('.job-detail-disclosure > summary').filter({ hasText: /^Job details$/ }).click();
-    await expect(page.locator("[data-approved-apply]")).toBeVisible();
-    await expect(page.locator("[data-approved-apply]")).toContainText("Continue with documents");
-    await expect(page.locator("[data-approved-apply]")).toBeEnabled();
+    await expect(page.locator("[data-apply-job]")).toBeVisible();
+    await expect(page.locator("[data-apply-job]")).toBeEnabled();
+    const approvalsAfter=await page.evaluate(()=>JSON.parse(localStorage.getItem("ravenDocumentApprovalsV1")||"{}"));
+    expect(approvalsAfter).toEqual(approvalsBefore);
   });
 });
 
