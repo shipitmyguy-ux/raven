@@ -21,7 +21,7 @@ new extracted folder, then click **Reload** for Raven Application Assistant and
 refresh the Raven tab. A GitHub Pages deployment does not update an already
 loaded unpacked extension automatically.
 
-The protocol 3 Apply bridge ships in manifest version 2.6.0. Verify the
+The protocol 3 Apply bridge and Mad Head placeholder/file-control recognition ship in manifest version 2.6.1. Verify the
 installed extension shows that version before testing Apply. It opens and binds
 the employer tab, inspects the current form, and handles each document
 independently; the user remains responsible for final submission.
