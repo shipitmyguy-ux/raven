@@ -22,7 +22,9 @@ PR74 merged/published at 144ac07eb08a0c0861e2a4772e8dfd7a34349ba8. PR core/Windo
 
 ## Apply reconnect
 
-A previously open Apply attempt can outlive its Chrome tab. If the next Apply click finds that tab missing or closed, Raven records the old attempt as closed, verifies the same saved job ID and HTTPS URL still exist, then opens one fresh employer tab automatically and reuses the exact saved PDF. The automatic retry happens once; if the new tab or form is unavailable, Raven reports the error for manual review. Raven never submits the employer application. Regression coverage checks stale-tab phase responses, missing-tab transport errors, canonical URL changes, and resume delivery. Live employer acceptance remains pending until the verified saved PDF is visibly attached to a real form.
+A previously open Apply attempt can outlive its Chrome tab. If Apply finds that tab closed or missing during status, employer inspection, or form readiness, Raven records the old attempt as closed, verifies the same saved job ID and HTTPS URL still exist, then opens one fresh employer tab automatically and reuses the exact saved verified PDF. The retry happens once; if the new tab or form is unavailable, Raven reports the error for manual review. Raven never submits the employer application.
+
+PR #109 passed core, browser regression, and production smoke before merging; main core, full browser regression, Pages, and production smoke all passed after merge. The published asset was verified at `app.js?v=105`. Synthetic regression covers closed tab responses, missing-tab transport errors, a changed canonical URL, and resume delivery. Live real-form attachment acceptance remains pending.
 
 ## Document controls
 
