@@ -1,3 +1,13 @@
+## One-click Apply — 2026-10-16
+
+- [x] Fix Dover same-posting route rebinding, tenant identity, profile-field context, actual Resume input selection, and existing country-choice preservation.
+- [x] Add regression coverage for route changes, shared upload wrappers, MUI portfolio/Discord fields, country selection, and avoiding the Autofill parser.
+- [x] Merge PR #110 and pass PR core/Windows recovery/browser/smoke/Pages checks.
+- [x] Publish the cache bust to app.js?v=106; Pages deployment succeeded.
+- [ ] Owner reloads the installed Chrome extension and refreshes Raven. Browser policy prevents agent access to chrome://extensions and prohibits workarounds.
+- [ ] Verify visible fields and Resume attachment on the already-approved Warpfrog live form; stop before Submit.
+- [ ] Continue the five-real-job acceptance target only with per-destination approval before each personal-data/document upload. No application submissions.
+
 ## Live employer-page acceptance — October 16, 2026
 
 - [x] Inspect the actual Mad Head Games Lead Environment Artist application in Chrome and confirm v2.6.0 injects in the employer page's isolated extension context.
