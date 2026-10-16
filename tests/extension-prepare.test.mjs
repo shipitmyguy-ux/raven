@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
 
+// Historical version 2 fixtures stay visible while protocol 3 owns all active form dispatch.
 const requestId = '12345678-1234-4234-8234-123456789abc';
 const jobId = 'JT-179';
 const pdf = 'data:application/pdf;base64,JVBERi0xLjQK';
@@ -47,7 +48,7 @@ function setup() {
   return { state, calls, tabs, events, request, emit, tick, preflight };
 }
 
-test('preflight opens an inspected tab before any PDF packet exists', async () => {
+test.skip('preflight opens an inspected tab before any PDF packet exists', async () => {
   const env = setup();
   const pending = env.preflight();
   await env.tick(); await env.tick();
@@ -69,7 +70,7 @@ test('preflight opens an inspected tab before any PDF packet exists', async () =
   assert.equal(duplicate.ok, false);
 });
 
-test('login, closed and unknown form inspection stop before PDF delivery', async () => {
+test.skip('login, closed and unknown form inspection stop before PDF delivery', async () => {
   for (const outcome of [
     { status: 'blocked', reason: 'Application requires sign-in.' },
     { status: 'blocked', reason: 'Listing is closed.' },
@@ -87,7 +88,7 @@ test('login, closed and unknown form inspection stop before PDF delivery', async
   }
 });
 
-test('wrong tab, path, job and token cannot deliver', async () => {
+test.skip('wrong tab, path, job and token cannot deliver', async () => {
   const env = setup();
   const pending = env.preflight();
   await env.tick(); await env.tick();
@@ -108,7 +109,7 @@ test('wrong tab, path, job and token cannot deliver', async () => {
   assert.equal(env.calls.includes('send'), false);
 });
 
-test('a sign-in redirect during inspection permits documents only and invalidates delivery', async () => {
+test.skip('a sign-in redirect during inspection permits documents only and invalidates delivery', async () => {
   const env = setup();
   const pending = env.preflight();
   await env.tick(); await env.tick();
@@ -124,7 +125,7 @@ test('a sign-in redirect during inspection permits documents only and invalidate
   assert.equal(env.calls.includes('send'), false);
 });
 
-test('navigation or closed tab invalidates same-tab delivery', async () => {
+test.skip('navigation or closed tab invalidates same-tab delivery', async () => {
   for (const removed of [false, true]) {
     const env = setup();
     const pending = env.preflight();
@@ -141,7 +142,7 @@ test('navigation or closed tab invalidates same-tab delivery', async () => {
   }
 });
 
-test('Ashby derives only the same-job application path', async () => {
+test.skip('Ashby derives only the same-job application path', async () => {
   const env = setup();
   const listing = 'https://jobs.ashbyhq.com/believer/f031cf45-a4dd-40c5-8c00-b26c1c431dd8';
   const pending = env.preflight(listing);
@@ -155,7 +156,7 @@ test('Ashby derives only the same-job application path', async () => {
   assert.equal(result.ok, true);
 });
 
-test('explicit retry with the same durable request ID replaces the old tab binding', async () => {
+test.skip('explicit retry with the same durable request ID replaces the old tab binding', async () => {
   const env = setup();
   const firstPending = env.preflight();
   await env.tick(); await env.tick();
@@ -172,7 +173,7 @@ test('explicit retry with the same durable request ID replaces the old tab bindi
   assert.equal(fresh.ok, true);
   assert.equal(fresh.tabId, 41);
 });
-test('lost delivery acknowledgement reuses completed tab and never delivers twice',async()=>{
+test.skip('lost delivery acknowledgement reuses completed tab and never delivers twice',async()=>{
  const env=setup(),pending=env.preflight();await env.tick();await env.tick();
  env.emit({type:'raven-preflight-result',url,status:'ready'},employer());
  const ready=await pending;
@@ -187,7 +188,7 @@ test('lost delivery acknowledgement reuses completed tab and never delivers twic
  assert.equal(env.calls.filter(call=>call==='create').length,1);
  assert.equal(env.calls.filter(call=>call==='send').length,1);
 });
-test('uncertain delivery stops for manual inspection without a second tab',async()=>{
+test.skip('uncertain delivery stops for manual inspection without a second tab',async()=>{
  const env=setup(),pending=env.preflight();await env.tick();await env.tick();
  env.emit({type:'raven-preflight-result',url,status:'ready'},employer());await pending;
  env.state.ravenPreparedApplications[requestId].stage='delivering';
@@ -196,7 +197,7 @@ test('uncertain delivery stops for manual inspection without a second tab',async
  assert.equal(env.calls.filter(call=>call==='send').length,0);
 });
 
-test('untrusted source and invalid PDF are rejected without dispatch', async () => {
+test.skip('untrusted source and invalid PDF are rejected without dispatch', async () => {
   const env = setup();
   const bad = await env.request({ type: 'raven-preflight-application', ...identity() },
     { frameId: 0, url: 'https://evil.example/raven/', tab: { url: 'https://evil.example/raven/' } });
@@ -211,7 +212,7 @@ test('untrusted source and invalid PDF are rejected without dispatch', async () 
   assert.equal(result.ok, false);
   assert.equal(env.calls.includes('send'), false);
 });
-test('only the inspected top frame may clear a delivered preparation',async()=>{
+test.skip('only the inspected top frame may clear a delivered preparation',async()=>{
  const env=setup(),pending=env.preflight();await env.tick();await env.tick();
  env.emit({type:'raven-preflight-result',url,status:'ready'},employer());
  const ready=await pending;
@@ -224,10 +225,23 @@ test('only the inspected top frame may clear a delivered preparation',async()=>{
  assert.equal(env.state.ravenPreparedApplications[requestId].stage,'complete');
 });
 
-test('content never submits or clicks navigation', () => {
+test.skip('content never submits or clicks navigation', () => {
   const source = fs.readFileSync(new URL('../extension/src/prepare-content.js', import.meta.url), 'utf8');
   assert.match(source, /raven-preflight-result/);
   assert.match(source, /raven-prepare-deliver/);
   assert.match(source, /new DataTransfer\(\)/);
   assert.doesNotMatch(source, /\.click\s*\(|requestSubmit\s*\(|\.submit\s*\(/);
+});
+
+test('retired version 2 messages return unsupported without opening or delivering', async () => {
+  const env = setup();
+  const preflight = await env.preflight();
+  assert.equal(preflight.ok, false);
+  assert.equal(preflight.status, 'unsupported');
+  const delivery = await env.request({ type: 'raven-prepare-application', requestId,
+    preflightId: 'old', packet: packet() }, raven);
+  assert.equal(delivery.ok, false);
+  assert.equal(delivery.status, 'unsupported');
+  assert.equal(env.calls.includes('create'), false);
+  assert.equal(env.calls.includes('send'), false);
 });
