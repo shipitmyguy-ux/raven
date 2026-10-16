@@ -7,6 +7,8 @@ import { webcrypto, createHash } from 'node:crypto';
 const source = fs.readFileSync(new URL('../extension/src/apply-background.js', import.meta.url), 'utf8');
 const contentSource = fs.readFileSync(new URL('../extension/src/apply-content.js', import.meta.url), 'utf8');
 const adapterSource = fs.readFileSync(new URL('../extension/src/prepare-content.js', import.meta.url), 'utf8');
+const bridgeSource = fs.readFileSync(new URL('../extension/src/content.js', import.meta.url), 'utf8');
+const backgroundSource = fs.readFileSync(new URL('../extension/src/background.js', import.meta.url), 'utf8');
 const ravenUrl = 'https://shipitmyguy-ux.github.io/raven/';
 const firstUrl = 'https://apply.workable.com/studio-a/j/JOB-A/apply/';
 const otherUrl = 'https://apply.workable.com/studio-b/j/JOB-B/apply/';
@@ -223,4 +225,13 @@ test('browser content never submits and keeps version 2 adapters available', () 
   assert.match(contentSource, /raven-apply-v3-context/);
   assert.doesNotMatch(contentSource, /\.click\s*\(|requestSubmit\s*\(|\.submit\s*\(/);
   assert.doesNotMatch(adapterSource, /requestSubmit\s*\(|\.submit\s*\(/);
+});
+
+test('legacy v1 mailbox is absent while JSON capture and import remain wired', () => {
+  assert.doesNotMatch(bridgeSource, /ravenApplicationPacket|ravenApplicationSession|raven-application-packet-saved/);
+  assert.doesNotMatch(backgroundSource, /raven-application-complete/);
+  assert.match(bridgeSource, /raven-chatgpt-request/);
+  assert.match(bridgeSource, /raven-chatgpt-result/);
+  assert.match(backgroundSource, /ravenChatGptRequests/);
+  assert.match(backgroundSource, /save-to-raven/);
 });
