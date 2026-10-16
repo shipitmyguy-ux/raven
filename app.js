@@ -2904,6 +2904,11 @@
         return;
       }
       const ready=await waitForApplyReady(api,attempt);
+      if(ready.phase==="closed"||ready.phase==="cancelled"){
+        if(savedAttempt){closeSavedApplyAttempt(attempt.attemptId);reconnectFresh=true;setStatus("The previous employer tab expired; reconnecting automatically.");}
+        else setStatus(applyOutcomeMessage(ready));
+        return;
+      }
       if(ready.phase!=="ready"){setStatus(applyOutcomeMessage(ready));return;}
       setStatus("Employer form opened; filling recognized fields. Submit the form yourself when ready.");
       try{
