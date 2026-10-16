@@ -5,7 +5,7 @@
   const profileTerms = {
     firstName: ["first name", "given name"], lastName: ["last name", "surname", "family name"], fullName: ["full name", "name"],
     email: ["email", "email address"], phone: ["phone", "phone number", "mobile"], linkedin: ["linkedin"],
-    portfolio: ["portfolio", "website", "personal website"], address1: ["address line 1", "street address", "address"],
+    portfolio: ["portfolio", "website", "personal website", "previous work"], address1: ["address line 1", "street address", "address"],
     address2: ["address line 2", "apartment", "suite"], city: ["city"], region: ["state", "province", "region"],
     postalCode: ["zip", "postal code", "postcode"], country: ["country"]
   };
@@ -224,10 +224,13 @@
   }
   function valueFor(profile, key) { return key === "fullName" ? profile.fullName || [profile.firstName, profile.lastName].filter(Boolean).join(" ") : profile[key] || ""; }
   function matchesTerms(el, terms) {
-    const label = normalized(labelFor(el));
-    if (terms === profileTerms.fullName) return label === "name" || label === "full name";
-    if (terms === profileTerms.address1 && /\b(address line 2|apartment|suite)\b/.test(label)) return false;
-    return label && terms.some(term => label.includes(normalized(term)));
+    const field = el.closest(".form-group,.form-field,[role='group']");
+    const labels = [labelFor(el), String(field?.innerText || "").slice(0, 500)]
+      .map(normalized).filter(Boolean);
+    if (terms === profileTerms.fullName)
+      return labels.some(label => label === "name" || label === "full name");
+    if (terms === profileTerms.address1 && labels.some(label => /\b(address line 2|apartment|suite)\b/.test(label))) return false;
+    return labels.some(label => terms.some(term => label.includes(normalized(term))));
   }
   function candidateFor(adapter, key, fields) {
     for (const selector of adapter?.id !== "generic" ? (adapter?.profile?.[key] || []) : []) {
