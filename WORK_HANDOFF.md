@@ -1,20 +1,34 @@
 # Raven execution handoff
 
-## Apply reliability audit — October 16, 2026
+## Current state — October 16, 2026
 
-A deeper audit of main 9126d2c disproved the prior conclusion that only extension reload/live acceptance remained. Controlled execution of the primary version-1 Apply code reproduced same-host wrong-job filling, unrelated-tab packet deletion, acknowledgement timeout reported as success, and resume retrieval skipped when cover is missing. No personal data was transmitted. The stronger optional preparation engine is a separate code path; its checks do not prove direct Apply reliability. Read-only Raven UI inspection showed Panic Stations has neither document. See docs/qa/2026-10-16-apply-reliability-audit.md for evidence, limitations and the repair acceptance contract. Diagnosis complete; remediation and live acceptance are NOT complete.
+The Apply reliability work is implemented on draft PR #105:
+https://github.com/shipitmyguy-ux/raven/pull/105
 
+Latest implementation commit before these handoff-only commits:
+`2f0a86452125fd165837daa6df9716e33d5e1715`
 
-## Current priority
-User requests a candid diagnosis and a working result, permitting replacement if necessary. Recommended scope is consolidation of Apply execution, not a full project rewrite. Preserve open-form access and independent document generation; do not reintroduce review/approval gates. The repair is not yet implemented.
+The user asked for a working way to open employer applications, fill recognized fields, and upload generated/current documents without manually copying a destination URL into ChatGPT. The implementation keeps the existing Raven Apply action as the entry point. It binds every operation to one extension-owned tab, job, document and page revision. Missing/outdated extension fallback opens the saved listing in the click gesture, then routes to a resolved form when available. Documents are delivered independently when verified; field fill waits for current-form inspection. Navigation cancels stale work. Reload can continue the same attempt. A closed tab requires another explicit Apply click for a fresh attempt. The system never submits the employer application.
 
-## Required next implementation
-Base a clean isolated checkout on latest GitHub main; the existing cwd has unrelated uncommitted document-routing work. Reuse exact tab/job/request binding and employer-acceptance machinery from the stronger preparation path. Eliminate the global packet race and false timeout success. Support each document independently and explicitly continue attachment when requested missing documents become ready. Add an in-page fallback preserving job and document context. Read the audit for exact source locations and release criteria.
+Legacy v1 mailbox and v2 dispatch were retired from the active path; historical metadata and saved documents are retained. Recognized ATS adapters have synthetic fixtures. Unsupported sites/formats require manual handling.
 
-## Verified this session
-Four controlled failures reproduced using exact GitHub main source and a synthetic DOM/storage harness. Existing Raven UI inspected read-only: Panic Stations shows both documents missing; another job's preparation remains parked. No live uploads, submissions, data changes, extension update or application-code changes. Installed extension version was not confirmed.
+## Verified
 
-## Release baseline and cautions
-PR100/101/103/104 are merged. v2.5.0 package is published; previously recorded CI/Pages/smoke passed, but live Mad Head/Panic acceptance remains absent. Those release checks do not negate the newly reproduced defects. Earlier IllFonic acceptance applies to its tested path/version and is not proof of today's direct Apply engine. No claim of user data actually reaching a wrong employer.
+- Core CI passed at implementation commit `2f0a864`: test job plus Ubuntu and Windows document recovery/concurrency checks and private-tunnel Windows check. Both v3 Apply suites ran; new extension runtime scripts were syntax-checked.
+- Full Playwright browser regression passed at the same implementation commit: 153 passed.
+- The planner reviewed the final harness corrections and found no blocker in the reviewed delta.
+- No user personal information was sent to an employer; no application was submitted.
 
-Existing canonical jobs/documents/history, factual validation, manual final submission and standing push authorization remain. Keep the extension small and batch any required reload. Automatic document work for discovered jobs has shipped queue code, but end-to-end usefulness must be checked rather than inferred from enqueue success. Other discovery/phone/cloud tasks should not displace the current Apply acceptance objective.
+## Not verified
+
+- PR #105 is draft and unmerged. The implementation is not installed or deployed from this branch.
+- Synthetic adapter results do not prove real ATS/employer-side acceptance of selected files.
+- No live application form was opened with the user's profile or documents.
+
+## Next action
+
+After the user approves merging PR #105, install/reload the resulting extension in the user's browser. With the user present, run one representative employer form to verify destination routing, recognized profile fields, resume and cover-letter file selection, fallback behavior, and closed-tab recovery. Stop before the final submit button; confirm actual visible selected files. Record each observed result and any unsupported control in `RAVEN_STATUS.md`, `TASKS.md`, and this handoff. Do not claim universal site compatibility.
+
+## Source of truth
+
+GitHub is canonical for code, documentation, task state and handoff. The PR remains draft until the owner chooses to merge. The local checkout was intentionally left untouched because it was stale and contained unrelated dirty/untracked files.
