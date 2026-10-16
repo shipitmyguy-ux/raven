@@ -1,14 +1,16 @@
 ## Live employer-page acceptance — October 16, 2026
 
-- [x] Open Raven's retained Lead Environment Artist preparation on the real Mad Head Games careers page: https://careers.madheadgames.com/jobs/lead-environment-artist-ckS9.
-- [x] Reveal and inspect the actual employer form. It requests a CV/resume, a portfolio PDF, portfolio URL, contact details, and employer-specific questions.
-- [x] Reload the real employer page and check extension injection. Raven's bridge/content script is absent after reload, so autofill/upload did not run.
-- [ ] Find or install Raven Application Assistant v2.6.0 in the same Chrome profile, ensure site access covers all sites, and reload the real employer page.
-- [ ] Once injection works, verify profile fill and both PDF selections on this real form. Do not submit. Before transmitting personal details or PDFs, confirm the exact data/documents and Mad Head Games destination at action time.
-- [ ] Safely integrate the running helper's single-document request fix without losing its 16 local branch commits. Current helper rejects one-document requests; main source accepts one or two.
-- [ ] Decide whether direct right-click Apply on employer pages is required. The current context menu only saves jobs to Raven; Apply starts in Raven.
+- [x] Inspect the actual Mad Head Games Lead Environment Artist form in Chrome.
+- [x] Confirm Raven Application Assistant v2.6.0 injects into the real employer page. The absence of Raven's web-page bridge on the employer host was not a valid injection check; the extension uses an isolated content-script context.
+- [x] Run Raven's read-only live form inspector with the job title/company. It returns manual because the page uses placeholder-only contact labels and a generic file input named `Resume`.
+- [x] Fix matching against placeholders and nearest form-group labels; recognize generic file uploads by semantic control name and group text while preserving resume-import and sensitive-question exclusions.
+- [x] Add a browser regression based on observed Mad Head form markup. It checks contact fields, portfolio URL, CV input, leaves the portfolio-file input untouched, and does not submit.
+- [x] PR #107 core CI and full browser regression pass (runs 38924679490 and 38924678795).
+- [ ] Merge and publish the updated extension package; unpacked Chrome installations need one final reload to activate the fix.
+- [ ] Re-run the read-only inspector on the real Mad Head page. Before any personal data or PDF upload, confirm the exact fields/files and Mad Head Games destination at action time. Never submit the application.
+- [ ] Determine whether Raven should support portfolio-file documents; current direct Apply payload supports resume and cover letter only, while this form separately requests a portfolio PDF and portfolio URL.
 
-No application data was entered, no personal files were uploaded, and no application was submitted. Synthetic CI passing does not establish live employer-site acceptance.
+No personal data was entered or transmitted, no PDFs were uploaded, and no application was submitted. Synthetic/CI regression is supplementary and is not live employer acceptance.
 
 ## Mad Head and Panic Stations direct Apply fixes — October 16, 2026
 

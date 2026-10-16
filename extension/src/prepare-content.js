@@ -5,7 +5,7 @@
   const profileTerms = {
     firstName: ["first name", "given name"], lastName: ["last name", "surname", "family name"], fullName: ["full name", "name"],
     email: ["email", "email address"], phone: ["phone", "phone number", "mobile"], linkedin: ["linkedin"],
-    portfolio: ["portfolio", "website", "personal website"], address1: ["address line 1", "street address", "address"],
+    portfolio: ["portfolio", "website", "personal website", "previous work"], address1: ["address line 1", "street address", "address"],
     address2: ["address line 2", "apartment", "suite"], city: ["city"], region: ["state", "province", "region"],
     postalCode: ["zip", "postal code", "postcode"], country: ["country"]
   };
@@ -224,10 +224,13 @@
   }
   function valueFor(profile, key) { return key === "fullName" ? profile.fullName || [profile.firstName, profile.lastName].filter(Boolean).join(" ") : profile[key] || ""; }
   function matchesTerms(el, terms) {
-    const label = normalized(labelFor(el, false));
-    if (terms === profileTerms.fullName) return label === "name" || label === "full name";
-    if (terms === profileTerms.address1 && /\b(address line 2|apartment|suite)\b/.test(label)) return false;
-    return label && terms.some(term => label.includes(normalized(term)));
+    const field = el.closest(".form-group,.form-field,[role='group']");
+    const labels = [labelFor(el), String(field?.innerText || "").slice(0, 500)]
+      .map(normalized).filter(Boolean);
+    if (terms === profileTerms.fullName)
+      return labels.some(label => label === "name" || label === "full name");
+    if (terms === profileTerms.address1 && labels.some(label => /\b(address line 2|apartment|suite)\b/.test(label))) return false;
+    return labels.some(label => terms.some(term => label.includes(normalized(term))));
   }
   function candidateFor(adapter, key, fields) {
     for (const selector of adapter?.id !== "generic" ? (adapter?.profile?.[key] || []) : []) {
@@ -244,7 +247,15 @@
     }
     return fields.find(el => safeControl(el) && !sensitive(el, labelFor(el)) && matchesTerms(el, profileTerms[key])) || null;
   }
-  function isExcludedUpload(el) { return /\b(autofill|auto fill|import from|parse resume)\b/i.test(labelFor(el)) || sensitive(el, labelFor(el)); }
+  function fileContext(el) {
+    const field = el.closest(".form-group,.form-field,[role='group']") || el.parentElement;
+    return [labelFor(el, false), el.name, el.id, el.getAttribute("aria-label"),
+      String(field?.innerText || "").slice(0, 500)].filter(Boolean).join(" ");
+  }
+  function isExcludedUpload(el) {
+    const label = fileContext(el);
+    return /\b(autofill|auto fill|import from|parse resume)\b/i.test(label) || sensitive(el, label);
+  }
   function fileCandidate(adapter, key) {
     const fields = [...document.querySelectorAll('input[type="file"]')];
     for (const selector of adapter?.id !== "generic" ? (adapter?.files?.[key] || []) : []) {
@@ -257,7 +268,8 @@
       } catch {}
     }
     const terms = key === "resume" ? ["resume", "cv"] : ["cover letter", "cover"];
-    return fields.find(el => matchesTerms(el, terms) && !isExcludedUpload(el)) || null;
+    return fields.find(el => terms.some(term =>
+      normalized(fileContext(el)).includes(normalized(term))) && !isExcludedUpload(el)) || null;
   }
   function makePdfFile(data, key, packet) {
     const match = String(data || "").match(/^data:application\/pdf;base64,([A-Za-z0-9+/]+={0,2})$/i);
