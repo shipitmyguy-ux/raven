@@ -243,6 +243,7 @@ test('browser content never submits and keeps version 2 adapters available', () 
 test('legacy v1 mailbox is absent while JSON capture and import remain wired', () => {
   assert.doesNotMatch(bridgeSource, /ravenApplicationPacket|ravenApplicationSession|raven-application-packet-saved/);
   assert.doesNotMatch(backgroundSource, /raven-application-complete/);
+  assert.match(bridgeSource, /prepareCapability = "0"/);
   assert.match(bridgeSource, /raven-chatgpt-request/);
   assert.match(bridgeSource, /raven-chatgpt-result/);
   assert.match(backgroundSource, /ravenChatGptRequests/);

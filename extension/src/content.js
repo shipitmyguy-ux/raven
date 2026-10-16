@@ -6,7 +6,7 @@
   const bridge = document.getElementById("ravenExtensionBridge");
   if (!bridge) return;
   function capability() {
-    bridge.dataset.prepareCapability = "2";
+    bridge.dataset.prepareCapability = "0";
     bridge.dispatchEvent(new CustomEvent("raven-prepare-capability"));
     bridge.dataset.applyCapability = "3";
     bridge.dispatchEvent(new CustomEvent("raven-apply-capability"));
