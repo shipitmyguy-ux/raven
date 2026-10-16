@@ -22,6 +22,6 @@ No personal data was entered or transmitted, no PDFs were uploaded, and no appli
 
 No personal document was generated or transmitted in this session. The writer reported ready, but its HTTP health endpoint could not be read from the tool sandbox; the optional phone queue is unavailable.
 
-- [ ] Verify GitHub CI for automatic stale-tab reconnect and fix any failures.
-- [ ] Merge and publish the web-only reconnect fix, then verify the deployed Raven asset.
+- [x] Verify GitHub CI for automatic stale-tab reconnect; PR and main checks pass.
+- [x] Merge and publish the web-only reconnect fix; verify deployed `app.js?v=105`.
 - [ ] After confirming exact resume PDF and employer destinations at action time, verify visible resume attachment on eligible real Games / 3D forms; never submit.
