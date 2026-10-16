@@ -215,7 +215,7 @@ test.describe("Deployed Raven App Production Smoke Tests", () => {
 
     await mockRavenBackend(page);
     await page.addInitScript(({ jobId, resumeUrl, coverUrl }) => {
-      localStorage.setItem("ravenDocumentApprovalsV1", JSON.stringify({
+      if (!localStorage.getItem("ravenDocumentApprovalsV1")) localStorage.setItem("ravenDocumentApprovalsV1", JSON.stringify({
         [`${jobId}|resume`]: { value: resumeUrl, approvedAt: new Date().toISOString() },
         [`${jobId}|coverLetter`]: { value: coverUrl, approvedAt: new Date().toISOString() }
       }));
@@ -226,13 +226,14 @@ test.describe("Deployed Raven App Production Smoke Tests", () => {
     await page.locator('.track-tab[data-track="Professional"]').click();
     await page.locator(`.job-card[data-job-id="${syntheticTestJob.id}"] .job-card-summary`).click();
 
-    // Approved-document navigation now lives in the drawer's Job details disclosure.
     await page.locator('.job-detail-disclosure > summary').filter({ hasText: /^Job details$/ }).click();
-    // Verify approved docs state enables Apply button
-    const applyGate = page.locator("[data-approved-apply]");
-    await expect(applyGate).toBeVisible();
-    await expect(applyGate).toContainText("Continue with documents");
-    await expect(applyGate).toBeEnabled();
+    // Apply stays available for this saved job; review remains a separate action.
+    await expect(page.locator("[data-apply-job]")).toBeVisible();
+    await expect(page.locator("[data-apply-job]")).toContainText("Apply job");
+    await expect(page.locator("[data-apply-job]")).toBeEnabled();
+    const approvalsBefore=await page.evaluate(()=>JSON.parse(localStorage.getItem("ravenDocumentApprovalsV1")||"{}"));
+    expect(approvalsBefore[syntheticTestJob.id+"|resume"]?.value).toBe(resumeUrl);
+    expect(approvalsBefore[syntheticTestJob.id+"|coverLetter"]?.value).toBe(coverUrl);
 
     // Click Review for resume to exercise non-destructive Review Documents flow
     await page.locator('[data-generate="resume"]').first().click();
@@ -243,14 +244,15 @@ test.describe("Deployed Raven App Production Smoke Tests", () => {
     await page.locator("[data-review-close]").first().click();
     await expect(page.locator("#documentReviewDialog")).not.toBeVisible();
 
-    // Verify approval survived reload
+    // The exact saved approval records survive reload and opening Review.
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.locator('.track-tab[data-track="Professional"]').click();
     await page.locator(`.job-card[data-job-id="${syntheticTestJob.id}"] .job-card-summary`).click();
     await page.locator('.job-detail-disclosure > summary').filter({ hasText: /^Job details$/ }).click();
-    await expect(page.locator("[data-approved-apply]")).toBeVisible();
-    await expect(page.locator("[data-approved-apply]")).toContainText("Continue with documents");
-    await expect(page.locator("[data-approved-apply]")).toBeEnabled();
+    await expect(page.locator("[data-apply-job]")).toBeVisible();
+    await expect(page.locator("[data-apply-job]")).toBeEnabled();
+    const approvalsAfter=await page.evaluate(()=>JSON.parse(localStorage.getItem("ravenDocumentApprovalsV1")||"{}"));
+    expect(approvalsAfter).toEqual(approvalsBefore);
   });
 });
 
@@ -263,15 +265,15 @@ const ADAPTER_FIXTURES = [
     url: "https://job-boards.greenhouse.io/raven-smoke-test/jobs/9999",
     formHtml: `
       <form id="application_form">
-        <input id="first_name" name="job_application[first_name]" type="text" />
-        <input id="last_name" name="job_application[last_name]" type="text" />
-        <input id="email" name="job_application[email]" type="text" />
-        <input id="phone" name="job_application[phone]" type="text" />
+        <input id="first_name" name="job_application[first_name]" type="text" aria-label="First name" />
+        <input id="last_name" name="job_application[last_name]" type="text" aria-label="Last name" />
+        <input id="email" name="job_application[email]" type="text" aria-label="Email" />
+        <input id="phone" name="job_application[phone]" type="text" aria-label="Phone" />
         <label>Are you willing to travel for business?<input type="text" /></label>
         <label>What is your expected annual salary?<input type="text" /></label>
         <label>Existing prefilled answer<input id="existing_field" type="text" value="Keep existing value" /></label>
-        <input id="resume" type="file" accept=".html,.pdf" />
-        <input id="cover_letter" type="file" accept=".html,.pdf" />
+        <input id="resume" type="file" accept=".pdf" aria-label="Resume" />
+        <input id="cover_letter" type="file" accept=".pdf" aria-label="Cover letter" />
         <button id="submit_app" type="submit">Submit Application</button>
       </form>
     `
@@ -282,13 +284,13 @@ const ADAPTER_FIXTURES = [
     url: "https://jobs.lever.co/raven-smoke-test/9999",
     formHtml: `
       <form id="application-form">
-        <input name="name" data-qa="name-input" type="text" />
-        <input name="email" data-qa="email-input" type="text" />
-        <input name="phone" data-qa="phone-input" type="text" />
+        <input name="name" data-qa="name-input" type="text" aria-label="Full name" />
+        <input name="email" data-qa="email-input" type="text" aria-label="Email" />
+        <input name="phone" data-qa="phone-input" type="text" aria-label="Phone" />
         <label>Willing to relocate?<input type="text" /></label>
         <label>Will you now or in the future require visa sponsorship?<input type="text" /></label>
-        <input name="resume" type="file" accept=".html,.txt" />
-        <input name="cover_letter" type="file" accept=".html,.txt" />
+        <input name="resume" type="file" accept=".pdf" aria-label="Resume" />
+        <input name="cover_letter" type="file" accept=".pdf" aria-label="Cover letter" />
         <button type="submit">Submit application</button>
       </form>
     `
@@ -299,13 +301,13 @@ const ADAPTER_FIXTURES = [
     url: "https://jobs.ashbyhq.com/raven-smoke-test/9999",
     formHtml: `
       <form>
-        <input name="full_name" type="text" />
-        <input name="email" type="email" />
-        <input name="phone" type="tel" />
+        <input name="full_name" type="text" aria-label="Full name" />
+        <input name="email" type="email" aria-label="Email" />
+        <input name="phone" type="tel" aria-label="Phone" />
         <label>Are you willing to travel?<input type="text" /></label>
         <label>What is your veteran status?<input type="text" /></label>
-        <input name="resume" type="file" accept=".html" />
-        <input name="cover_letter" type="file" accept=".html" />
+        <input name="resume" type="file" accept=".pdf" aria-label="Resume" />
+        <input name="cover_letter" type="file" accept=".pdf" aria-label="Cover letter" />
         <button type="submit">Submit</button>
       </form>
     `
@@ -316,13 +318,13 @@ const ADAPTER_FIXTURES = [
     url: "https://myworkdayjobs.com/raven-smoke-test/jobs/1",
     formHtml: `
       <form>
-        <input id="first_name" name="first_name" type="text" />
-        <input id="last_name" name="last_name" type="text" />
-        <input id="email" name="email" type="email" />
+        <input id="first_name" name="first_name" type="text" aria-label="First name" />
+        <input id="last_name" name="last_name" type="text" aria-label="Last name" />
+        <input id="email" name="email" type="email" aria-label="Email" />
         <label>Willing to travel for work?<input type="text" /></label>
         <label>Disability status disclosure<input type="text" /></label>
-        <input type="file" data-automation-id="resume-upload" accept=".html" />
-        <input type="file" data-automation-id="cover-upload" accept=".html" />
+        <input type="file" data-automation-id="resume-upload" accept=".pdf" aria-label="Resume" />
+        <input type="file" data-automation-id="cover-upload" accept=".pdf" aria-label="Cover letter" />
         <button type="submit">Submit</button>
       </form>
     `
@@ -333,13 +335,13 @@ const ADAPTER_FIXTURES = [
     url: "https://careers-icims.icims.com/jobs/100/job",
     formHtml: `
       <form>
-        <input id="first_name" name="first_name" type="text" />
-        <input id="last_name" name="last_name" type="text" />
-        <input id="email" name="email" type="email" />
+        <input id="first_name" name="first_name" type="text" aria-label="First name" />
+        <input id="last_name" name="last_name" type="text" aria-label="Last name" />
+        <input id="email" name="email" type="email" aria-label="Email" />
         <label>Willing to travel occasionally?<input type="text" /></label>
         <label>U.S. Citizenship or Work Authorization<input type="text" /></label>
-        <input id="resume" name="resume" type="file" accept=".html" />
-        <input id="cover_letter" name="cover_letter" type="file" accept=".html" />
+        <input id="resume" name="resume" type="file" accept=".pdf" aria-label="Resume" />
+        <input id="cover_letter" name="cover_letter" type="file" accept=".pdf" aria-label="Cover letter" />
         <button type="submit">Apply Now</button>
       </form>
     `
@@ -350,13 +352,13 @@ const ADAPTER_FIXTURES = [
     url: "https://raven.taleo.net/careersection/jobdetail.ftl",
     formHtml: `
       <form>
-        <input id="first_name" name="first_name" type="text" />
-        <input id="last_name" name="last_name" type="text" />
-        <input id="email" name="email" type="email" />
+        <input id="first_name" name="first_name" type="text" aria-label="First name" />
+        <input id="last_name" name="last_name" type="text" aria-label="Last name" />
+        <input id="email" name="email" type="email" aria-label="Email" />
         <label>Willingness to travel<input type="text" /></label>
         <label>Have you ever been convicted of a criminal offense?<input type="text" /></label>
-        <input id="resume_file" name="resume_file" type="file" accept=".html" />
-        <input id="cover_file" name="cover_file" type="file" accept=".html" />
+        <input id="resume_file" name="resume_file" type="file" accept=".pdf" aria-label="Resume" />
+        <input id="cover_file" name="cover_file" type="file" accept=".pdf" aria-label="Cover letter" />
         <button type="submit">Submit</button>
       </form>
     `
@@ -367,205 +369,106 @@ const ADAPTER_FIXTURES = [
     url: "https://careers.example.com/jobs/42",
     formHtml: `
       <form>
-        <input name="first_name" type="text" />
-        <input name="last_name" type="text" />
-        <input name="email" type="email" />
-        <input name="phone" type="tel" />
+        <input name="first_name" type="text" aria-label="First name" />
+        <input name="last_name" type="text" aria-label="Last name" />
+        <input name="email" type="email" aria-label="Email" />
+        <input name="phone" type="tel" aria-label="Phone" />
         <label>Willing to travel for role?<input type="text" /></label>
         <label>Target desired compensation<input type="text" /></label>
-        <input name="resume" type="file" accept=".html" />
-        <input name="cover_letter" type="file" accept=".html" />
+        <input name="resume" type="file" accept=".pdf" aria-label="Resume" />
+        <input name="cover_letter" type="file" accept=".pdf" aria-label="Cover letter" />
         <button type="submit">Submit Application</button>
       </form>
     `
   }
 ];
 
-test.describe("Synthetic Application Assistant Adapter Smoke Tests", () => {
+test.describe("Synthetic protocol 3 Application Assistant adapter smoke tests", () => {
   for (const fixture of ADAPTER_FIXTURES) {
-    test(`${fixture.name} adapter fills known fields and non-sensitive answers, blocks sensitive questions, attaches files, and NEVER submits`, async ({ page }) => {
-      const resumeContent = "APPROVED SYNTHETIC RESUME FOR " + fixture.name;
-      const coverContent = "APPROVED SYNTHETIC COVER LETTER FOR " + fixture.name;
-
-      const resumeDataUrl = "data:text/html;charset=utf-8," + encodeURIComponent(`<html><body>${resumeContent}</body></html>`);
-      const coverDataUrl = "data:text/html;charset=utf-8," + encodeURIComponent(`<html><body>${coverContent}</body></html>`);
-
-      // Mock Chrome extension storage and API bridge
-      await page.addInitScript(({ url, resumeDataUrl, coverDataUrl }) => {
-        const store = {
-          ravenApplicationPacket: {
-            version: 1,
-            createdAt: new Date().toISOString(),
-            jobId: "smoke-job-1",
-            jobUrl: url,
-            title: "Synthetic Role",
-            company: "Smoke Test Inc",
-            profile: {
-              firstName: "Raven",
-              lastName: "AutomatedTester",
-              fullName: "Raven AutomatedTester",
-              email: "raven.tester@example.com",
-              phone: "555-0199"
-            },
-            answers: {
-              "are you willing to travel for business": "Yes, up to 25%",
-              "willing to relocate": "Yes",
-              "are you willing to travel": "Yes",
-              "willing to travel for work": "Yes",
-              "willing to travel occasionally": "Yes",
-              "willingness to travel": "Yes",
-              "willing to travel for role": "Yes"
-            },
-            resume: resumeDataUrl,
-            coverLetter: coverDataUrl
-          }
-        };
-
-        globalThis.chrome = {
-          storage: {
-            local: {
-              get(keys, cb) {
-                const list = Array.isArray(keys) ? keys : [keys];
-                const res = Object.fromEntries(list.map((k) => [k, store[k]]).filter(([, v]) => v !== undefined));
-                if (cb) cb(res);
-                return Promise.resolve(res);
-              },
-              set(values, cb) {
-                Object.assign(store, values);
-                if (cb) cb();
-                return Promise.resolve();
-              },
-              remove(keys, cb) {
-                for (const k of (Array.isArray(keys) ? keys : [keys])) delete store[k];
-                if (cb) cb();
-                return Promise.resolve();
-              }
-            }
-          },
-          runtime: {
-            lastError: null,
-            sendMessage(_msg, cb) { if (cb) cb(); }
-          }
-        };
-      }, { url: fixture.url, resumeDataUrl, coverDataUrl });
-
-      // Mock network response for adapter URL
-      await page.route(fixture.url, (route) => {
-        route.fulfill({
-          status: 200,
-          contentType: "text/html",
-          body: `<!doctype html><html><body>${fixture.formHtml}</body></html>`
-        });
-      });
-
+    test(`${fixture.name} fills known fields, selects PDFs, preserves unrelated values, and never submits`, async ({ page }) => {
+      await page.route(fixture.url, route => route.fulfill({
+        status: 200, contentType: "text/html",
+        body: `<!doctype html><html><body>${fixture.formHtml}</body></html>`
+      }));
       const submissionRequests = [];
-      page.on("request", (request) => {
-        if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) {
+      page.on("request", request => {
+        if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method()))
           submissionRequests.push({ method: request.method(), url: request.url() });
-        }
       });
-
       await page.goto(fixture.url);
-
-      // Add two safety fixtures that the assistant must not alter:
-      // one prefilled unrelated upload and one resume-like input that rejects HTML.
       await page.evaluate(() => {
         const form = document.querySelector("form");
-        if (!form) return;
         const existing = document.createElement("input");
-        existing.type = "file";
-        existing.id = "existing_attachment";
-        existing.name = "portfolio_attachment";
-        existing.accept = ".txt";
+        existing.type = "file"; existing.id = "existing_attachment";
+        existing.name = "portfolio_attachment"; existing.accept = ".txt";
         form.appendChild(existing);
-
         const incompatible = document.createElement("input");
-        incompatible.type = "file";
-        incompatible.id = "incompatible_attachment";
-        incompatible.name = "resume_pdf_only";
-        incompatible.accept = ".pdf";
+        incompatible.type = "file"; incompatible.id = "incompatible_attachment";
+        incompatible.name = "resume_pdf_only"; incompatible.accept = ".docx";
         form.appendChild(incompatible);
+        form.addEventListener("submit", event => {
+          event.preventDefault();
+          window.__formSubmitted = true;
+        });
+        form.addEventListener("change", event => {
+          if (event.target?.type !== "file" || !event.target.files?.[0]) return;
+          const confirmation = document.createElement("span");
+          confirmation.textContent = event.target.files[0].name + " attached";
+          event.target.parentElement.appendChild(confirmation);
+        });
+        window.chrome = { runtime: {
+          lastError: null,
+          onMessage: { addListener() {} },
+          sendMessage(message, callback) { callback?.(null); }
+        } };
       });
       await page.locator("#existing_attachment").setInputFiles({
-        name: "existing-portfolio.txt",
-        mimeType: "text/plain",
+        name: "existing-portfolio.txt", mimeType: "text/plain",
         buffer: Buffer.from("KEEP EXISTING FILE")
       });
-
-      // Add submit listener to ensure form submit is NEVER triggered
-      await page.evaluate(() => {
-        const form = document.querySelector("form");
-        if (form) {
-          form.addEventListener("submit", (e) => {
-            e.preventDefault();
-            window.__formSubmitted = true;
-          });
-        }
-      });
-
-      // Inject Raven assistant core & content scripts
       await page.addScriptTag({ path: "extension/src/assistant-core.js" });
-      await page.addScriptTag({ path: "extension/src/content.js" });
+      await page.addScriptTag({ path: "extension/src/prepare-content.js" });
 
-      // Verify Assistant banner appears
-      await expect(page.locator("#raven-assistant-banner")).toBeVisible();
+      const pdf = "data:application/pdf;base64,JVBERi0xLjQK";
+      const results = await page.evaluate(async pdfData => {
+        const dom = window.RavenPrepareDom;
+        const profile = await dom.applyOperation("profile", { profile: {
+          firstName: "Raven", lastName: "Tester", fullName: "Raven Tester",
+          email: "raven.tester@example.test", phone: "555-0199"
+        }, answers: {} });
+        const resume = await dom.applyOperation("resume", {
+          document: { kind: "resume", dataUrl: pdfData }, company: "Smoke Test Inc"
+        });
+        const cover = await dom.applyOperation("coverLetter", {
+          document: { kind: "coverLetter", dataUrl: pdfData }, company: "Smoke Test Inc"
+        });
+        return { adapter: window.RavenAssistantCore.detectAdapter(location.hostname).id,
+          profile, resume, cover };
+      }, pdf);
+      expect(results.adapter).toBe(fixture.adapterId);
+      expect(results.profile.state).toBe("filled");
+      expect(results.resume.state).toBe("page_confirmed");
+      expect(results.cover.state).toBe("page_confirmed");
 
-      // 1. Verify known profile fields are filled
       const emailInput = page.locator('input[type="email"], input[name*="email" i], #email').first();
-      await expect(emailInput).toHaveValue("raven.tester@example.com");
-
-      // 2. Verify pre-filled field is NOT overwritten (for Greenhouse fixture)
+      await expect(emailInput).toHaveValue("raven.tester@example.test");
       const prefilledInput = page.locator("#existing_field");
-      if (await prefilledInput.count() > 0) {
-        await expect(prefilledInput).toHaveValue("Keep existing value");
-      }
+      if (await prefilledInput.count()) await expect(prefilledInput).toHaveValue("Keep existing value");
+      const sensitive = page.locator('input[id*="salary" i], input[name*="salary" i], input[id*="visa" i], input[id*="sponsorship" i], input[id*="veteran" i], input[id*="disability" i], input[id*="citizenship" i], input[id*="criminal" i]').first();
+      if (await sensitive.count()) await expect(sensitive).toHaveValue("");
 
-      // 3. Verify remembered non-sensitive answers are filled
-      const travelInputs = page.locator('input:not([type="file"]):not([type="hidden"])');
-      const inputValues = await travelInputs.evaluateAll((inputs) => inputs.map((i) => i.value));
-      expect(inputValues.some((v) => /Yes/i.test(v))).toBe(true);
-
-      // 4. Verify sensitive questions REMAIN BLOCKED / BLANK
-      const sensitiveInput = page.locator('input[id*="salary" i], input[name*="salary" i], input[id*="visa" i], input[id*="sponsorship" i], input[id*="veteran" i], input[id*="disability" i], input[id*="citizenship" i], input[id*="criminal" i]').first();
-      if (await sensitiveInput.count() > 0) {
-        const sensitiveVal = await sensitiveInput.inputValue();
-        expect(sensitiveVal).toBe(""); // Sensitive questions must not be auto-filled
-      }
-
-      // 5. Verify exact approved files are attached
-      const attachedFiles = await page.evaluate(async () => {
-        const fileInputs = [...document.querySelectorAll('input[type="file"]')];
-        return Promise.all(fileInputs.map(async (input) => ({
-          name: input.files?.[0]?.name || "",
+      const files = await page.evaluate(async () => Promise.all(
+        [...document.querySelectorAll('input[type="file"]')].map(async input => ({
+          id: input.id, name: input.name, accept: input.accept,
+          fileName: input.files?.[0]?.name || "",
           text: input.files?.[0] ? await input.files[0].text() : ""
-        })));
-      });
-
-      const resumeAttachment = attachedFiles.find((f) => f.text.includes(resumeContent));
-      const coverAttachment = attachedFiles.find((f) => f.text.includes(coverContent));
-      expect(resumeAttachment, "exact approved resume must be attached").toBeTruthy();
-      expect(coverAttachment, "exact approved cover letter must be attached").toBeTruthy();
-      expect(resumeAttachment.name).toMatch(/resume/i);
-      expect(coverAttachment.name).toMatch(/cover/i);
-
-      // 6. Existing unrelated file input must be preserved, and an incompatible
-      // resume-like .pdf-only input must not receive the approved HTML document.
-      const safetyFiles = await page.evaluate(async () => {
-        const existing = document.querySelector("#existing_attachment");
-        const incompatible = document.querySelector("#incompatible_attachment");
-        return {
-          existingName: existing?.files?.[0]?.name || "",
-          existingText: existing?.files?.[0] ? await existing.files[0].text() : "",
-          incompatibleCount: incompatible?.files?.length || 0
-        };
-      });
-      expect(safetyFiles.existingName).toBe("existing-portfolio.txt");
-      expect(safetyFiles.existingText).toBe("KEEP EXISTING FILE");
-      expect(safetyFiles.incompatibleCount).toBe(0);
-
-      // 7. Verify form was NEVER submitted and no finalization request escaped.
-      const wasSubmitted = await page.evaluate(() => window.__formSubmitted === true);
-      expect(wasSubmitted).toBe(false);
+        }))
+      ));
+      expect(files.filter(file => /resume/i.test(file.fileName) && file.text === "%PDF-1.4\n")).toHaveLength(1);
+      expect(files.filter(file => /cover-letter/i.test(file.fileName) && file.text === "%PDF-1.4\n")).toHaveLength(1);
+      expect(files.find(file => file.id === "existing_attachment")?.text).toBe("KEEP EXISTING FILE");
+      expect(files.find(file => file.id === "incompatible_attachment")?.fileName).toBe("");
+      expect(await page.evaluate(() => window.__formSubmitted === true)).toBe(false);
       expect(submissionRequests).toEqual([]);
     });
   }
