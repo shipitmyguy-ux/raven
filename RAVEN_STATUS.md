@@ -1,3 +1,9 @@
+## Mad Head and Panic Stations direct Apply fixes — October 16, 2026
+
+Follow-up on merged PR #100. The Workable application route now maps job-detail URLs such as `apply.workable.com/panic-stations/j/<id>` to the actual `/apply/` form before opening the employer tab. Public-board listings on `jobs.workable.com` are recognized for the existing explicit Apply-link resolver. Direct Apply sends only existing PDF documents initially; Raven then verifies the job's current saved documents and matching Drive export receipts, fetches the exact saved PDFs through the local helper, and sends them to the already-open employer tab. The extension chooses an enabled, empty resume/cover-letter file input whose label and `accept` type match the file, avoiding resume-import controls and incompatible formats. Employer submission remains manual.
+
+Branch `codex/raven-fix-apply-uploads` is based on current `origin/main` (`284cb08`). Implementation and docs are in progress. No test suite has been run; do not claim the fix is live until PR CI, merge and publication are verified. Extension version is staged at 2.5.0, which will require one reload after release.
+
 ## Apply without document gating — October 15, 2026
 
 Implementation is in progress on `codex/raven-apply-without-review`, based directly on current `main`. A primary Apply job action routes to a version-1 autofill packet with whatever saved documents are available; document readiness, review state, PDF export and another job's paused preparation are not Apply gates. Optional verified-PDF preparation remains available separately. Newly discovered feed jobs queue missing resume/cover generation in the background, without auto-opening the document preview. The extension v2.4.9 update fills saved cover text and no longer blocks the packet when a separate preparation is active. Existing factual and rendered validation still controls document persistence; employer submission remains manual.

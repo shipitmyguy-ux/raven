@@ -7,7 +7,11 @@ export function extensionUnavailableReason(error){
 export function applicationTargetUrl(jobUrl){
   const url=new URL(jobUrl);
   if(url.protocol!=='https:'||url.port||url.username||url.password)return jobUrl;
-  if(url.hostname==='jobs.lever.co'&&/^\/[a-z0-9-]{1,100}\/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\/?$/i.test(url.pathname))
+  if(url.hostname==='apply.workable.com'&&/^\/[a-z0-9-]{1,100}\/j\/[a-z0-9]{6,20}\/?$/i.test(url.pathname))
+    url.pathname=url.pathname.replace(/\/$/,'')+'/apply/';
+  else if(url.hostname==='apply.workable.com'&&/^\/j\/[a-z0-9]{6,20}\/?$/i.test(url.pathname))
+    url.pathname=url.pathname.replace(/\/$/,'')+'/apply/';
+  else if(url.hostname==='jobs.lever.co'&&/^\/[a-z0-9-]{1,100}\/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\/?$/i.test(url.pathname))
     url.pathname=url.pathname.replace(/\/$/,'')+'/apply';
   else if(url.hostname==='jobs.gusto.com'&&/^\/postings\/[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\/?$/i.test(url.pathname))
     url.pathname=url.pathname.replace(/\/$/,'')+'/applicants/new';

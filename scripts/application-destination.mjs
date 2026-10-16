@@ -1,6 +1,6 @@
 // Resolve public board Apply links without sending applicant data or following
 // arbitrary URLs. The saved job and its document identity never change.
-const boards=new Set(['hitmarker.net','www.workwithindies.com','remotegamejobs.com','www.artstation.com','www.gamesjobsdirect.com','ingamejob.com']);
+const boards=new Set(['hitmarker.net','www.workwithindies.com','remotegamejobs.com','www.artstation.com','www.gamesjobsdirect.com','ingamejob.com','jobs.workable.com']);
 const ats=new Set(['jobs.lever.co','jobs.ashbyhq.com','job-boards.greenhouse.io','boards.greenhouse.io','apply.workable.com','jobs.smartrecruiters.com']);
 const clean=s=>String(s||'').replace(/<[^>]*>/g,' ').replace(/&amp;/g,'&').replace(/&#39;|&apos;/g,"'").replace(/&quot;/g,'"').replace(/\s+/g,' ').trim();
 const key=s=>clean(s).normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();

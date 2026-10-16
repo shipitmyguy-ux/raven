@@ -2218,7 +2218,7 @@
     try{
       if(job.listing_state==="closed")throw Error("This listing is source-confirmed closed. Review the employer link before preparing documents.");
       if(!/^https:\/\//i.test(String(job.url||"")))throw Error("A secure employer listing URL is required to prepare this application.");
-      const {applicationTargetUrl,probePreparationExtension,preflightPreparationApplication,dispatchPreparedApplication,extensionUnavailableReason}=await import("./application-prepare.mjs?v=8");
+      const {applicationTargetUrl,probePreparationExtension,preflightPreparationApplication,dispatchPreparedApplication,extensionUnavailableReason}=await import("./application-prepare.mjs?v=9");
       const recovery=await getPreparationRecovery();
       const savedIntent=recovery.load();
       if(savedIntent&&!savedIntent.expired&&savedIntent.state!=="opened"&&String(savedIntent.jobId)!==String(job.id))throw Error("Another application preparation is saved. Resume or dismiss it before starting this role.");
@@ -2706,6 +2706,39 @@
       return (parsed.body.textContent||"").replace(/[ \t]+/g," ").replace(/\n[ \t]+/g,"\n").replace(/\n{3,}/g,"\n\n").trim().slice(0,20000);
     }catch{return "";}
   }
+  function sendApplicationPacket(bridge,packet){
+    if(!bridge)return Promise.resolve(false);
+    return new Promise(resolve=>{
+      let settled=false;
+      const finish=()=>{if(settled)return;settled=true;resolve(true);};
+      document.addEventListener("raven-application-packet-saved",finish,{once:true});
+      window.setTimeout(finish,800);
+      bridge.dataset.packet=JSON.stringify(packet);
+      document.dispatchEvent(new CustomEvent("raven-application-packet"));
+    });
+  }
+  async function attachSavedApplicationPdfs(job,targetUrl,bridge){
+    if(!bridge||!job?.id||!job.resume||!job.coverLetter)return;
+    try{
+      const verified=await verifiedPreparationDocuments(job.id,null,job.url);
+      if(!localPreparationClient){
+        const {createOneClickClient}=await import("./oneclick-client.mjs?v=6");
+        localPreparationClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});
+      }
+      const prepared=await localPreparationClient.prepareApplicationDocuments({
+        job_id:String(job.id),
+        documents:verified.result.documents.map(doc=>({document_type:doc.document_type,document_sha256:doc.document_sha256}))
+      });
+      const packet={version:1,createdAt:new Date().toISOString(),jobId:String(job.id),jobUrl:targetUrl,title:job.title||"",company:job.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory(),resume:"",coverLetter:"",coverLetterText:applicationDocumentText(verified.job.coverLetter)};
+      for(const doc of prepared.documents)packet[doc.document_type==="resume"?"resume":"coverLetter"]=doc.data_url;
+      if(!packet.resume||!packet.coverLetter)throw Error("The helper did not return both saved PDF files.");
+      await sendApplicationPacket(bridge,packet);
+      setStatus("Application opened; Raven sent the current saved PDF files to the employer form. Submit the application yourself when ready.");
+    }catch(error){
+      console.info("Saved PDFs could not be attached in the background; Apply remains open.",error);
+      setStatus("Application opened. Raven could not confirm the saved PDF attachments; attach the resume manually if the employer form requires it.");
+    }
+  }
   async function beginApplication(job,button){
     if(!job?.url||job.listing_state==="closed")return;
     let listing;
@@ -2721,7 +2754,7 @@
         const saved=await window.RavenAPI.addJob({track:job.track||"Professional",title:job.title||"",company:job.company||"",location:job.location||"",remote:isRemoteJob(job),salaryText:job.salaryText||"",url:job.url,source:job.source||"",status:"Saved",viewed:true,notes:job.notes||""});
         if(saved?.id){Object.assign(job,window.RavenCore?.fromApiJob?window.RavenCore.fromApiJob(saved):saved,{_discovered:false});state.jobs.push(job);writeCache(CACHE_JOBS_KEY,state.jobs);}
       }
-      const {applicationTargetUrl}=await import("./application-prepare.mjs?v=8");
+      const {applicationTargetUrl}=await import("./application-prepare.mjs?v=9");
       let destination=job.url;
       try{
         if(!localPreparationClient){const {createOneClickClient}=await import("./oneclick-client.mjs?v=6");localPreparationClient=createOneClickClient({baseUrl:state.runtime.settings["chatgpt-helper-url"]||"http://127.0.0.1:8766"});}
@@ -2729,21 +2762,12 @@
       }catch(error){console.warn("Employer destination could not be resolved; opening the saved listing.",error);}
       targetUrl=applicationTargetUrl(destination);
     }catch(error){console.warn("Application destination could not be normalized; opening the saved listing.",error);}
-    const packet={version:1,createdAt:new Date().toISOString(),jobId:String(job.id||""),jobUrl:targetUrl,title:job.title||"",company:job.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory(),resume:job.resume||"",coverLetter:job.coverLetter||"",coverLetterText:applicationDocumentText(job.coverLetter)};
     const bridge=document.getElementById("ravenExtensionBridge");
-    if(bridge){
-      const packetSaved=new Promise(resolve=>{
-        let settled=false;
-        const finish=()=>{if(settled)return;settled=true;resolve();};
-        document.addEventListener("raven-application-packet-saved",finish,{once:true});
-        window.setTimeout(finish,800);
-      });
-      bridge.dataset.packet=JSON.stringify(packet);
-      document.dispatchEvent(new CustomEvent("raven-application-packet"));
-      await packetSaved;
-    }
+    const packet={version:1,createdAt:new Date().toISOString(),jobId:String(job.id||""),jobUrl:targetUrl,title:job.title||"",company:job.company||"",profile:readCache(APPLICATION_PROFILE_KEY,{})||{},answers:readAnswerMemory(),resume:/^data:application\/pdf;base64,/i.test(job.resume||"")?job.resume:"",coverLetter:/^data:application\/pdf;base64,/i.test(job.coverLetter||"")?job.coverLetter:"",coverLetterText:applicationDocumentText(job.coverLetter)};
+    await sendApplicationPacket(bridge,packet);
     try{tab.location.replace(targetUrl);}catch{}
-    setStatus((bridge?"Application opened; Raven filled recognized fields and attached available documents where supported.":"Application opened; connect the Raven extension to autofill fields.")+" Submit the employer form yourself when ready.");
+    setStatus((bridge?"Application opened; Raven is attaching current saved PDF files in the background.":"Application opened; connect the Raven extension to autofill fields.")+" Submit the employer form yourself when ready.");
+    void attachSavedApplicationPdfs(job,targetUrl,bridge);
     if(button){button.disabled=false;button.removeAttribute("aria-busy");}
   }
 
