@@ -1,16 +1,14 @@
-## Apply attempt engine delivery — October 16, 2026
+## Live employer-page acceptance — October 16, 2026
 
-- [x] Merge PR #105 (`c6127e7`) and PR #106 (`49f0586`); publish protocol 3 extension package v2.6.0.
-- [x] Migrate seven stale v1 ATS smoke fixtures to protocol 3 synthetic form operations.
-- [x] Update review persistence smoke to current Apply UI and exact saved approval records.
-- [x] Pass core CI 38920102857, browser regression 38920103042, Pages deploy 38920102689 and production smoke 38920178847 (14 cases).
-- [x] Stage the published v2.6.0 ZIP contents in `C:\Users\damsp\.codex\visualizations\2026\10\16\01a144e3-10d6-7d33-87ed-bdd5f1d5e822\raven-extension-2.6.0`.
-- [ ] User manually load/reload v2.6.0 in Chrome; browser-control policy blocks interacting with `chrome://extensions`.
-- [ ] Update/activate the running local helper: branch `codex/apply-existing-drive-pdfs` at `661066e` rejects single-document requests and has 16 local branch commits; preserve them during integration.
-- [ ] Verify a representative supported employer form with synthetic or specifically approved documents; confirm visible profile values and file selections; stop before submission.
-- [ ] Decide whether direct right-click Apply on employer pages is required. Current menu action is Save to Raven; application starts from Raven's Apply job button.
+- [x] Open Raven's retained Lead Environment Artist preparation on the real Mad Head Games careers page: https://careers.madheadgames.com/jobs/lead-environment-artist-ckS9.
+- [x] Reveal and inspect the actual employer form. It requests a CV/resume, a portfolio PDF, portfolio URL, contact details, and employer-specific questions.
+- [x] Reload the real employer page and check extension injection. Raven's bridge/content script is absent after reload, so autofill/upload did not run.
+- [ ] Find or install Raven Application Assistant v2.6.0 in the same Chrome profile, ensure site access covers all sites, and reload the real employer page.
+- [ ] Once injection works, verify profile fill and both PDF selections on this real form. Do not submit. Before transmitting personal details or PDFs, confirm the exact data/documents and Mad Head Games destination at action time.
+- [ ] Safely integrate the running helper's single-document request fix without losing its 16 local branch commits. Current helper rejects one-document requests; main source accepts one or two.
+- [ ] Decide whether direct right-click Apply on employer pages is required. The current context menu only saves jobs to Raven; Apply starts in Raven.
 
-No user personal data was sent to an employer; no application was submitted.
+No application data was entered, no personal files were uploaded, and no application was submitted. Synthetic CI passing does not establish live employer-site acceptance.
 
 ## Mad Head and Panic Stations direct Apply fixes — October 16, 2026
 
