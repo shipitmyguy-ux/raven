@@ -21,3 +21,7 @@ No personal data was entered or transmitted, no PDFs were uploaded, and no appli
 - [ ] Verify a real attachment on the exact employer form when the user initiates the matching Raven Apply action; inspect the attached filename before submission. Do not submit.
 
 No personal document was generated or transmitted in this session. The writer reported ready, but its HTTP health endpoint could not be read from the tool sandbox; the optional phone queue is unavailable.
+
+- [ ] Verify GitHub CI for automatic stale-tab reconnect and fix any failures.
+- [ ] Merge and publish the web-only reconnect fix, then verify the deployed Raven asset.
+- [ ] After confirming exact resume PDF and employer destinations at action time, verify visible resume attachment on eligible real Games / 3D forms; never submit.
