@@ -56,13 +56,26 @@
       respond({ accepted: false }); return false;
     }
     globalThis.__ravenApplyV3Operations.add(message.operationId);
+    const bound = context, boundUrl = location.href, boundDocument = document;
+    const localAuthority = () => context === bound && document === boundDocument &&
+      same(location.href, boundUrl) && same(location.href, bound.expectedUrl);
+    const authorize = async () => {
+      if (!localAuthority()) return false;
+      const verified = await new Promise(resolve => chrome.runtime.sendMessage({
+        type: "raven-apply-v3-authority", attemptId: bound.attemptId, jobId: bound.jobId,
+        revision: bound.revision, operationId: message.operationId, expectedUrl: bound.expectedUrl
+      }, response => resolve(!chrome.runtime.lastError && response?.authorized === true)));
+      return localAuthority() && verified;
+    };
+    authorize.local = localAuthority;
     respond({ accepted: true });
     void (async () => {
       let outcome;
-      try { outcome = await dom.applyOperation(message.kind, message.payload || {}); }
+      try { outcome = await dom.applyOperation(message.kind, message.payload || {}, authorize); }
       catch (error) { outcome = { state: "failed", result: { reason: error?.message || "Employer form operation failed." } }; }
-      chrome.runtime.sendMessage({ type: "raven-apply-v3-result", requestId: context.requestId,
-        attemptId: context.attemptId, jobId: context.jobId, revision: context.revision,
+      if (!localAuthority()) return;
+      chrome.runtime.sendMessage({ type: "raven-apply-v3-result", requestId: bound.requestId,
+        attemptId: bound.attemptId, jobId: bound.jobId, revision: bound.revision,
         operationId: message.operationId, kind: message.kind, state: outcome.state,
         result: outcome.result }, () => void chrome.runtime.lastError);
     })();

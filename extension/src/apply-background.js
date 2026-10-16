@@ -139,6 +139,20 @@
       }).catch(() => reply(sendResponse, null));
       return true;
     }
+    if (message?.type === "raven-apply-v3-authority") {
+      serial(async () => {
+        const all = await read(), item = all[message.attemptId];
+        const op = item?.operations?.[message.operationId];
+        const valid = Boolean(item && op && op.state === "dispatching" &&
+          item.jobId === message.jobId && item.revision === message.revision &&
+          item.formReady && item.readyRevision === item.revision &&
+          item.readyDocumentId === item.documentId && boundSender(item, sender) &&
+          same(message.expectedUrl, item.expectedUrl) &&
+          same((await tab(item.tabId)).url, item.expectedUrl));
+        reply(sendResponse, { authorized: valid });
+      }).catch(() => reply(sendResponse, { authorized: false }));
+      return true;
+    }
     if (message?.type === "raven-apply-v3-inspection" || message?.type === "raven-apply-v3-result") {
       serial(async () => {
         const all = await read(), item = all[message.attemptId];

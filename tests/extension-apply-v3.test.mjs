@@ -307,6 +307,55 @@ test('saved cover text fills one matching field without a TDZ error', async () =
   assert.equal(field.value, 'Saved cover text');
 });
 
+test('background revokes an in-flight operation when its document navigates', async () => {
+  const env = harness();
+  await env.open(); await env.inspectReady();
+  await env.request(envelope('deliver', { operationId: 'profile-1',
+    profile: { email: 'synthetic@example.invalid' }, answers: {} }, { bindingRevision: 1 }));
+  const authority = { type: 'raven-apply-v3-authority', attemptId, jobId, revision: 1,
+    operationId: 'profile-1', expectedUrl: firstUrl };
+  assert.equal((await env.request(authority, employer(40))).authorized, true);
+  env.navigate(40, otherUrl);
+  await env.tick(); await env.tick();
+  assert.equal((await env.request(authority, employer(40, otherUrl))).authorized, false);
+});
+
+test('navigation during file-input wait aborts before any file assignment', async () => {
+  let available = false, assignments = 0;
+  const location = { protocol: 'https:', hostname: 'jobs.example', href: firstUrl };
+  const input = {
+    id: '', name: 'resume', accept: 'application/pdf', parentElement: { innerText: '' },
+    get files() { return []; },
+    set files(value) { assignments++; },
+    getAttribute: name => name === 'aria-label' ? 'Resume' : null,
+    closest: () => null
+  };
+  const document = { querySelectorAll: selector =>
+    selector === 'input[type="file"]' && available ? [input] : [] };
+  const global = { RavenAssistantCore: {
+    normalizeQuestion: value => String(value || '').toLowerCase().trim(),
+    isSensitiveQuestion: () => false, detectAdapter: () => ({ id: 'generic' }),
+    GENERIC: { profile: {} }, acceptsFile: () => true
+  } };
+  const context = {
+    globalThis: global, chrome: { runtime: { sendMessage: (message, callback) => callback(null),
+      onMessage: { addListener() {} }, lastError: null } },
+    document, location, URL, Date, Object, String, Array, RegExp, atob,
+    HTMLTextAreaElement: class {}, HTMLInputElement: class {}, Event: class {},
+    File: class { constructor(bytes, name, options) { this.name = name; this.type = options.type; } },
+    DataTransfer: class { constructor() { this.items = { add() {} }; this.files = []; } },
+    setTimeout: callback => { location.href = otherUrl; available = true; callback(); return 1; },
+    clearTimeout() {}
+  };
+  vm.runInNewContext(adapterSource, context);
+  const authorize = async () => location.href === firstUrl;
+  authorize.local = () => location.href === firstUrl;
+  const result = await global.RavenPrepareDom.applyOperation('resume',
+    { document: { kind: 'resume', dataUrl: pdfData } }, authorize);
+  assert.equal(result.state, 'aborted');
+  assert.equal(assignments, 0);
+});
+
 test('browser content never submits and keeps version 2 adapters available', () => {
   assert.match(adapterSource, /RavenPrepareDom/);
   assert.match(contentSource, /raven-apply-v3-context/);
