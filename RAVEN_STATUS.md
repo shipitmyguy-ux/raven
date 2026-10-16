@@ -12,3 +12,8 @@ The real employer form was inspected without entering personal data. The portfol
 ## Automatic resume connection — October 16, 2026
 
 The published main Apply path already resolves the employer destination, obtains the current saved resume as an exact verified PDF through the local helper, and delivers it to the extension's matching resume/CV control. Extension v2.6.1 is loaded and its live Mad Head form inspector previously returned `ready`. The local helper was stopped at the start of this task; the application-PDF-capable helper from existing worktree commit `0b92db5` is now running. A per-user Windows sign-in task, `Raven One Click Writer`, was registered to restart it automatically. The helper reports ready; its optional phone queue reports unavailable, while local generation remains available. The tool sandbox blocked a direct loopback health read, so the endpoint capability was not independently read back in this session. No document was generated, transmitted, or uploaded, and no application was submitted. Real live attachment acceptance remains unverified.
+
+
+## Apply reconnect — October 16, 2026
+
+Implemented automatic recovery when Raven’s existing Apply attempt refers to an employer tab that has closed or disappeared. Raven closes the stale attempt, rechecks the canonical saved job ID and HTTPS URL, opens one new employer tab for that same listing, and reuses the current verified resume PDF. The retry is bounded to one attempt and never submits the employer application. Regression coverage and GitHub CI verification are pending. Live attachment acceptance on a real employer form remains unverified.
