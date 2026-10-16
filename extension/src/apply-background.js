@@ -9,6 +9,24 @@
   const same = (a, b) => {
     try { return new URL(a).href === new URL(b).href; } catch { return false; }
   };
+  function sameDoverRouteForInspection(expected, current) {
+    try {
+      const a = new URL(expected), b = new URL(current);
+      if (a.protocol !== "https:" || b.protocol !== "https:" || a.origin !== b.origin ||
+          a.hostname !== "app.dover.com" || b.hostname !== "app.dover.com" ||
+          a.hash !== b.hash) return false;
+      const route = url => {
+        const match = url.pathname.match(/^\/apply\/([^/]+)\/([0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12})\/?$/i);
+        return match ? [match[1].toLowerCase(), match[2].toLowerCase()] : null;
+      };
+      const left = route(a), right = route(b);
+      if (!left || !right || left[0] !== right[0] || left[1] !== right[1]) return false;
+      const params = url => [...url.searchParams.entries()]
+        .filter(([key]) => key.toLowerCase() !== "rs" && !/^utm_[a-z0-9_]+$/i.test(key))
+        .sort(([ak, av], [bk, bv]) => ak.localeCompare(bk) || av.localeCompare(bv));
+      return JSON.stringify(params(a)) === JSON.stringify(params(b));
+    } catch { return false; }
+  }
   const trusted = sender => {
     try {
       const url = new URL(sender?.url || "");
@@ -246,7 +264,11 @@
       if (item.phase === "cancelled" || !item.tabId) throw Error("Application attempt is unavailable.");
       const current = await tab(item.tabId);
       if (!same(current.url, item.expectedUrl)) {
-        if (message.action !== "inspect" || message.payload?.useCurrentPage !== true)
+        const explicitlyReinspected = message.action === "inspect" && message.payload?.useCurrentPage === true;
+        const equivalentDoverRoute = message.action === "inspect" &&
+          message.payload?.allowEquivalentRoute === true &&
+          sameDoverRouteForInspection(item.expectedUrl, current.url);
+        if (!explicitlyReinspected && !equivalentDoverRoute)
           throw Error("Application tab navigated. Inspect this tab before delivery.");
         item.expectedUrl = safeUrl(current.url);
         item.observedUrl = item.expectedUrl;

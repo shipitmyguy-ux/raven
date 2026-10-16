@@ -142,6 +142,33 @@ test('a different hash route on the same host is not the bound job', async () =>
   assert.equal((await env.request(envelope('status'))).status, 'opening');
 });
 
+test('same-posting Dover tracking redirects can rebind for automatic inspection, but other route changes cannot', async () => {
+  const url = 'https://app.dover.com/apply/Warpfrog/908eb274-5ac8-4d37-9b0f-5108fd12a47c/';
+  const env = harness();
+  const opened = await env.request(envelope('open', { listingUrl: url, targetUrl: url,
+    title: 'Senior 3D Artist', company: 'Warpfrog' }));
+  assert.equal(opened.status, 'opening');
+  const redirected = url + '?rs=76643084&utm_source=raven';
+  env.navigate(40, redirected);
+  await env.tick(); await env.tick();
+  const moved = await env.request(envelope('status'));
+  assert.equal(moved.status, 'navigated');
+  const rebound = await env.request(envelope('inspect', { allowEquivalentRoute: true },
+    { bindingRevision: moved.bindingRevision }));
+  assert.equal(rebound.status, 'waiting_fields');
+  assert.equal(rebound.observedUrl, redirected);
+  assert.equal(env.sent.at(-1).message.type, 'raven-apply-v3-rebind');
+
+  const wrongUrl = 'https://app.dover.com/apply/Warpfrog/908eb274-5ac8-4d37-9b0f-5108fd12a47d/?rs=76643084&utm_source=raven';
+  env.navigate(40, wrongUrl);
+  await env.tick(); await env.tick();
+  const wrongStatus = await env.request(envelope('status'));
+  const wrong = await env.request(envelope('inspect', { allowEquivalentRoute: true },
+    { bindingRevision: wrongStatus.bindingRevision }));
+  assert.equal(wrong.ok, false);
+  assert.match(wrong.error, /navigated/);
+});
+
 test('operation ID replay never redispatches; changed payload is rejected', async () => {
   const env = harness();
   await env.open(); await env.inspectReady();
@@ -468,4 +495,110 @@ test('protocol 3 fills a Breezy text-only cover field without a file input', asy
   assert.equal(result.state, 'filled');
   assert.equal(fixture.field.value, 'Saved synthetic cover text');
   assert.equal(fixture.assignments(), 0);
+});
+
+
+function doverFixture(preselectedCountry = '') {
+  const form = { tagName: 'FORM' };
+  const radioLabels = ['United States', 'France', 'United Kingdom', 'Ireland'];
+  let selectedCountry = preselectedCountry;
+  const scope = { innerText: 'Your location (Country) *\n' + radioLabels.join('\n'), parentElement: form,
+    querySelectorAll: selector => selector === 'input[type="radio"]' ? radios : [] };
+  const radios = radioLabels.map(value => {
+    const label = { innerText: value, parentElement: scope };
+    const radio = { type: 'radio', name: 'country-group', value, checked: value === preselectedCountry, disabled: false, form,
+      labels: [label], getClientRects: () => [{ width: 1, height: 1 }],
+      closest: selector => selector === 'label' ? label : null,
+      getAttribute: () => null,
+      click() { for (const item of radios) item.checked = item === radio; selectedCountry = value; } };
+    return radio;
+  });
+  const sharedFileWrapper = { innerText: 'Portfolio upload\nResume *\nDrag and drop file or browse computer\n(PDF, 5 MB maximum)',
+    parentElement: form, querySelectorAll: selector => selector === 'input[type="file"]' ? fileInputs : [] };
+  const containers = [
+    { innerText: 'Autofill from resume\nUpload file', parentElement: sharedFileWrapper },
+    { innerText: 'Upload file', parentElement: sharedFileWrapper },
+    { innerText: 'Resume *\nDrag and drop file or browse computer\n(PDF, 5 MB maximum)', parentElement: sharedFileWrapper }
+  ];
+  const assigned = [0, 0, 0];
+  const makeInput = index => ({
+    tagName: 'INPUT', type: 'file', name: '', id: '', accept: 'application/pdf', disabled: false,
+    parentElement: containers[index], form,
+    get files() { return this.currentFiles || []; },
+    set files(files) { assigned[index]++; this.currentFiles = [...files]; containers[index].innerText += '\n' + files[0]?.name + ' attached'; },
+    getAttribute: name => name === 'aria-label' ? null : null,
+    closest: () => null, dispatchEvent() {}
+  });
+  const fileInputs = [makeInput(0), makeInput(1), makeInput(2)];
+  const textValues = { portfolio: '', discord: '' };
+  const fieldContainers = {
+    portfolio: { innerText: 'Link to your portfolio (If any)', parentElement: form },
+    discord: { innerText: 'Discord ID (If any)', parentElement: form }
+  };
+  const textFields = Object.keys(textValues).map(key => ({
+    tagName: 'INPUT', type: 'text', name: key, id: '', form, parentElement: fieldContainers[key],
+    get value() { return textValues[key]; },
+    set value(value) { textValues[key] = value; },
+    getClientRects: () => [{ width: 1, height: 1 }],
+    getAttribute: () => null, closest: () => null, dispatchEvent() {}
+  }));
+  for (const key of Object.keys(fieldContainers)) {
+    const input = textFields.find(field => field.name === key);
+    fieldContainers[key].querySelectorAll = selector => selector.includes('input:not') ? [input] : [];
+  }
+  for (const container of containers) {
+    container.querySelectorAll = selector => selector === 'input[type="file"]' ? fileInputs.filter(input => input.parentElement === container) : [];
+  }
+  const document = {
+    body: { innerText: 'Senior 3D Artist' },
+    querySelectorAll(selector) {
+      if (selector === 'input[type="file"]') return fileInputs;
+      if (selector === 'input[type="radio"]') return radios;
+      if (selector === 'input,textarea,select') return [...textFields, ...radios];
+      if (selector === 'input[type="password"]' || selector === 'iframe[src]' ||
+          selector === 'a[aria-label],img[alt],[role="img"][aria-label]') return [];
+      if (selector === 'input:not([type="file"]):not([type="hidden"]),textarea,select') return [...textFields, ...radios];
+      return [];
+    },
+    querySelector: () => null
+  };
+  const context = {
+    chrome: { runtime: { sendMessage: (_message, callback) => callback(null),
+      onMessage: { addListener() {} }, lastError: null } },
+    document, location: { protocol: 'https:', hostname: 'app.dover.com',
+      pathname: '/apply/Warpfrog/908eb274-5ac8-4d37-9b0f-5108fd12a47c/',
+      href: 'https://app.dover.com/apply/Warpfrog/908eb274-5ac8-4d37-9b0f-5108fd12a47c/' },
+    HTMLTextAreaElement: class {}, HTMLInputElement: class {}, Event: class {},
+    File: class { constructor(_bytes, name, options) { this.name = name; this.type = options.type; } },
+    DataTransfer: class { constructor() { this.files = []; this.items = { add: file => this.files.push(file) }; } },
+    URL, Date, Object, String, Array, RegExp, Map, Set, atob, setTimeout, clearTimeout
+  };
+  vm.createContext(context);
+  vm.runInContext(coreSource, context);
+  vm.runInContext(adapterSource, context);
+  return { dom: context.RavenPrepareDom, assigned, textValues, get selectedCountry() { return selectedCountry; } };
+}
+
+test('Dover bounds profile and upload labels to their own MUI field and preserves existing country choice', async () => {
+  const fixture = doverFixture();
+  assert.equal(fixture.dom.inspect({ title: 'Senior 3D Artist', company: 'Warpfrog' }).status, 'ready');
+  const profile = await fixture.dom.applyOperation('profile',
+    { profile: { country: 'United States', portfolio: 'https://portfolio.example', discord: 'artist#1234' }, answers: {} });
+  assert.equal(profile.state, 'filled');
+  assert.deepEqual(Array.from(profile.result.filled), ['portfolio', 'discord', 'country']);
+  assert.equal(fixture.textValues.portfolio, 'https://portfolio.example');
+  assert.equal(fixture.textValues.discord, 'artist#1234');
+  assert.equal(fixture.selectedCountry, 'United States');
+  const upload = await fixture.dom.applyOperation('resume',
+    { document: { kind: 'resume', dataUrl: pdfData } });
+  assert.equal(upload.state, 'page_confirmed');
+  assert.equal(fixture.assigned[0], 0, 'Autofill from resume input must remain untouched');
+  assert.equal(fixture.assigned[1], 0, 'Portfolio wrapper must not inherit Resume label from shared wrapper');
+  assert.equal(fixture.assigned[2], 1, 'Resume attachment input must receive the PDF');
+
+  const preserved = doverFixture('France');
+  const result = await preserved.dom.applyOperation('profile',
+    { profile: { country: 'United States' }, answers: {} });
+  assert.deepEqual(Array.from(result.result.filled), []);
+  assert.equal(preserved.selectedCountry, 'France');
 });

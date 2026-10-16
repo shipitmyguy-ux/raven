@@ -5,7 +5,7 @@
   const profileTerms = {
     firstName: ["first name", "given name"], lastName: ["last name", "surname", "family name"], fullName: ["full name", "name"],
     email: ["email", "email address"], phone: ["phone", "phone number", "mobile"], linkedin: ["linkedin"],
-    portfolio: ["portfolio", "website", "personal website", "previous work"], address1: ["address line 1", "street address", "address"],
+    portfolio: ["portfolio", "website", "personal website", "previous work"], discord: ["discord"], address1: ["address line 1", "street address", "address"],
     address2: ["address line 2", "apartment", "suite"], city: ["city"], region: ["state", "province", "region"],
     postalCode: ["zip", "postal code", "postcode"], country: ["country"]
   };
@@ -28,8 +28,19 @@
     const primary = [explicit?.innerText, el.closest("label")?.innerText, el.getAttribute("aria-label"), described].find(value => String(value || "").trim());
     return String(primary || (allowPlaceholder && el.getAttribute("placeholder")) || "").trim();
   }
+  function doverFieldContext(el) {
+    if (location.hostname.toLowerCase() !== "app.dover.com") return "";
+    const pieces = [];
+    for (let node = el.parentElement, depth = 0; node && node !== el.form && depth < 6; node = node.parentElement, depth++) {
+      const controls = node.querySelectorAll('input:not([type="file"]):not([type="hidden"]),textarea,select');
+      if (controls.length > 1) break;
+      const text = String(node.innerText || "").replace(/\s+/g, " ").trim().slice(0, 250);
+      if (text) pieces.push(text);
+    }
+    return pieces.join(" ").slice(0, 500);
+  }
   function sensitive(el, label) {
-    const metadata = [label, el.name, el.id, el.getAttribute("autocomplete"), el.getAttribute("placeholder"), el.getAttribute("data-testid")].filter(Boolean).join(" ");
+    const metadata = [label, doverFieldContext(el), el.name, el.id, el.getAttribute("autocomplete"), el.getAttribute("placeholder"), el.getAttribute("data-testid")].filter(Boolean).join(" ");
     return core.isSensitiveQuestion(metadata) || sensitiveRe.test(metadata);
   }
   function safeControl(el) {
@@ -198,6 +209,11 @@
       return normalized(label).includes(expected);
     });
   }
+  function visibleDoverCompanyRoute(company) {
+    if (location.hostname.toLowerCase() !== "app.dover.com") return false;
+    const match = location.pathname.match(/^\/apply\/([^/]+)\/([0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12})\/?$/i);
+    return Boolean(match && normalized(match[1]) === normalized(company));
+  }
   function inspection(context) {
     const path = location.pathname.toLowerCase();
     const text = String(document.body?.innerText || "").slice(0, 10000);
@@ -211,7 +227,8 @@
     const pageWords = normalized(text);
     if (!context?.title || !context?.company ||
         !pageWords.includes(normalized(context.title)) ||
-        !(pageWords.includes(normalized(context.company)) || visibleCompanyLabel(context.company)))
+        !(pageWords.includes(normalized(context.company)) || visibleCompanyLabel(context.company) ||
+          visibleDoverCompanyRoute(context.company)))
       return { status: "manual", retryable: true, reason: "Selected job title or company is not visible on the destination. Review the route manually." };
     if (/(^|\.)ingamejob\.com$/i.test(location.hostname))
       return { status: "manual", reason: "This listing does not expose a verified application form. Open its application route manually." };
@@ -225,12 +242,55 @@
   function valueFor(profile, key) { return key === "fullName" ? profile.fullName || [profile.firstName, profile.lastName].filter(Boolean).join(" ") : profile[key] || ""; }
   function matchesTerms(el, terms) {
     const field = el.closest(".form-group,.form-field,[role='group']");
-    const labels = [labelFor(el), String(field?.innerText || "").slice(0, 500)]
+    const labels = [labelFor(el), String(field?.innerText || "").slice(0, 500), doverFieldContext(el)]
       .map(normalized).filter(Boolean);
     if (terms === profileTerms.fullName)
       return labels.some(label => label === "name" || label === "full name");
     if (terms === profileTerms.address1 && labels.some(label => /\b(address line 2|apartment|suite)\b/.test(label))) return false;
     return labels.some(label => terms.some(term => label.includes(normalized(term))));
+  }
+  function doverCountryCandidate(value) {
+    if (location.hostname.toLowerCase() !== "app.dover.com" || !String(value || "").trim()) return null;
+    const wanted = normalized(value);
+    const aliases = {
+      us: "united states", usa: "united states", "united states of america": "united states",
+      "united states": "united states", uk: "united kingdom", "united kingdom": "united kingdom",
+      france: "france", ireland: "ireland"
+    };
+    const expected = aliases[wanted];
+    if (!expected) return null;
+    const radios = [...document.querySelectorAll('input[type="radio"]')];
+    const groups = new Map();
+    for (const radio of radios) {
+      const name = radio.name;
+      if (!name) continue;
+      if (!groups.has(name)) groups.set(name, []);
+      groups.get(name).push(radio);
+    }
+    const supported = new Set(["france", "ireland", "united kingdom", "united states"]);
+    for (const group of groups.values()) {
+      const labels = group.map(radio => normalized(radio.labels?.[0]?.innerText || radio.closest("label")?.innerText || ""));
+      if (group.length !== 4 || new Set(labels).size !== 4 || labels.some(label => !supported.has(label))) continue;
+      const scope = group[0].closest("label");
+      let labeled = false;
+      for (let node = scope, depth = 0; node && node !== group[0].form && depth < 8; node = node.parentElement, depth++) {
+        const text = normalized(node.innerText || "");
+        if (text.startsWith("your location country") &&
+            node.querySelectorAll('input[type="radio"]').length === 4) { labeled = true; break; }
+      }
+      if (!labeled) continue;
+      const matches = group.filter((radio, index) => labels[index] === expected && !radio.disabled && radio.getClientRects().length);
+      if (matches.length === 1) return matches[0];
+    }
+    return null;
+  }
+  function setDoverCountry(radio, localAuthority = () => true) {
+    if (!radio || radio.disabled || !localAuthority()) return false;
+    const peers = [...document.querySelectorAll('input[type="radio"]')].filter(peer =>
+      peer !== radio && peer.name === radio.name && peer.form === radio.form);
+    if (radio.checked || peers.some(peer => peer.checked)) return false;
+    radio.click();
+    return Boolean(localAuthority() && radio.checked);
   }
   function candidateFor(adapter, key, fields) {
     for (const selector of adapter?.id !== "generic" ? (adapter?.profile?.[key] || []) : []) {
@@ -249,10 +309,19 @@
   }
   function fileContext(el) {
     // A form-level fallback can include unrelated sensitive questions and suppress every upload.
-    // Use only a field-specific group; input metadata remains available when no group exists.
+    // Use only field-local context; Dover renders upload labels in short MUI wrappers rather than
+    // label/fieldset nodes, so walk only up to (never including) the form for that host.
     const field = el.closest(".form-group,.form-field,[role='group']");
+    const localDoverLabel = location.hostname.toLowerCase() === "app.dover.com" ? (() => {
+      for (let node = el.parentElement, depth = 0; node && node !== el.form && depth < 6; node = node.parentElement, depth++) {
+        if (node.querySelectorAll('input[type="file"]').length > 1) break;
+        const text = String(node.innerText || "").replace(/\s+/g, " ").trim().slice(0, 350);
+        if (text && /\b(?:autofill|resume|cv|cover letter)\b/i.test(text)) return text;
+      }
+      return "";
+    })() : "";
     return [labelFor(el, false), el.name, el.id, el.getAttribute("aria-label"),
-      String(field?.innerText || "").slice(0, 500)].filter(Boolean).join(" ");
+      String(field?.innerText || "").slice(0, 500), localDoverLabel].filter(Boolean).join(" ");
   }
   function isExcludedUpload(el) {
     const label = fileContext(el);
@@ -316,12 +385,15 @@
     for (const key of profileKeys) {
       const value = valueFor(packet.profile || {}, key);
       if (!value) continue;
-      const el = candidateFor(adapter, key, allFields());
-      if (!el || !safeControl(el) || sensitive(el, labelFor(el))) continue;
+      const el = key === "country" ? doverCountryCandidate(value) || candidateFor(adapter, key, allFields()) :
+        candidateFor(adapter, key, allFields());
+      const radioCountry = key === "country" && el?.type === "radio" && location.hostname.toLowerCase() === "app.dover.com";
+      if (!el || (!radioCountry && !safeControl(el)) || sensitive(el, labelFor(el))) continue;
       requested.add(key);
       if (used.has(el)) continue;
-      const changed = adapter.id === "greenhouse" && ["country", "city"].includes(key) && el.getAttribute("role") === "combobox"
-        ? await setLocationCombo(el, key, value, packet.profile || {}) : setValue(el, value);
+      const changed = radioCountry ? setDoverCountry(el) :
+        adapter.id === "greenhouse" && ["country", "city"].includes(key) && el.getAttribute("role") === "combobox"
+          ? await setLocationCombo(el, key, value, packet.profile || {}) : setValue(el, value);
       if (!changed) continue;
       used.add(el); filled.push(key);
     }
@@ -379,10 +451,14 @@
         if (!await authorize() || !localAuthority()) return aborted();
         const value = valueFor(profile, key);
         if (!value) continue;
-        const el = candidateFor(adapter, key, allFields());
+        const el = key === "country" ? doverCountryCandidate(value) || candidateFor(adapter, key, allFields()) :
+          candidateFor(adapter, key, allFields());
         if (!el) continue;
+        const radioCountry = key === "country" && el?.type === "radio" && location.hostname.toLowerCase() === "app.dover.com";
+        if (!radioCountry && !safeControl(el)) continue;
         if (!await authorize() || !localAuthority()) return aborted();
-        const changed = adapter.id === "greenhouse" && ["country", "city"].includes(key) &&
+        const changed = radioCountry ? setDoverCountry(el, localAuthority) :
+          adapter.id === "greenhouse" && ["country", "city"].includes(key) &&
           el.getAttribute("role") === "combobox" ? await setLocationCombo(el, key, value, profile, authorize) :
           setValue(el, value, false, localAuthority);
         if (!localAuthority()) return aborted();
