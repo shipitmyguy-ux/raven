@@ -2757,13 +2757,17 @@
     return result;
   }
   async function waitForApplyReady(api,attempt){
+    let lastReason="";
     for(let i=0;i<12;i++){
-      const result=await applyExtensionRequest(api,attempt,i===0?"inspect":"status",{},attempt.bindingRevision);
+      const payload=i===0?{allowEquivalentRoute:true}:{};
+      const result=await applyExtensionRequest(api,attempt,i===0?"inspect":"status",payload,attempt.bindingRevision);
+      if(typeof result.reason==="string"&&result.reason.trim())lastReason=result.reason.trim();
+      else if(typeof result.reason?.message==="string"&&result.reason.message.trim())lastReason=result.reason.message.trim();
       if(result.phase==="ready"||result.status==="ready")return result;
       if(result.phase==="needs_user"||result.phase==="closed")return result;
       await new Promise(resolve=>setTimeout(resolve,1000));
     }
-    return {phase:"needs_user",reason:{message:"Employer fields did not become ready. Check the employer tab."}};
+    return {phase:"needs_user",reason:{message:lastReason||"Employer fields did not become ready. Check the employer tab."}};
   }
   async function waitForApplyOperation(api,attempt,operationId,kind){
     for(let i=0;i<40;i++){
