@@ -104,6 +104,7 @@ jobs:
         if: steps.coverage.outputs.suite == 'focused'
         run: |
           npx playwright test e2e/studio-directory.spec.mjs e2e/studio-job-flow.spec.mjs e2e/job-dedup.spec.mjs e2e/extension-prepare.spec.mjs e2e/prepare-gate.spec.mjs e2e/prepare-contact-fields.spec.mjs e2e/prepare-required-fields.spec.mjs
+          npm run test:smoke
           npx playwright test e2e/raven.spec.mjs --grep "Apply on site|summary-only revision|listing and direct application remain available|generators save discovery jobs|application requires approval of both exact documents|review preserves approved document and revision invalidates approval|failed revision keeps the saved document and its approval|local master resume and track assignments persist through reload|offline resume fallback creates a local draft without network generation|generation cache prevents a duplicate resume model call|iPhone SE viewport keeps Raven usable without page overflow|refresh updates every job track and tabs are filter-only"
       - uses: actions/upload-artifact@v7
         if: failure()
