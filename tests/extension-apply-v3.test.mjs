@@ -495,3 +495,78 @@ test('protocol 3 fills a Breezy text-only cover field without a file input', asy
   assert.equal(fixture.field.value, 'Saved synthetic cover text');
   assert.equal(fixture.assignments(), 0);
 });
+
+
+function doverFixture() {
+  const form = { tagName: 'FORM' };
+  const radioLabels = ['United States', 'France', 'United Kingdom', 'Ireland'];
+  let selectedCountry = '';
+  const scope = { innerText: 'Your location (Country) *\n' + radioLabels.join('\n'), parentElement: form,
+    querySelectorAll: selector => selector === 'input[type="radio"]' ? radios : [] };
+  const radios = radioLabels.map(value => {
+    const label = { innerText: value, parentElement: scope };
+    const radio = { type: 'radio', name: 'country-group', value, checked: false, disabled: false, form,
+      labels: [label], getClientRects: () => [{ width: 1, height: 1 }],
+      closest: selector => selector === 'label' ? label : null,
+      getAttribute: () => null,
+      click() { for (const item of radios) item.checked = item === radio; selectedCountry = value; } };
+    return radio;
+  });
+  const autoContainer = { innerText: 'Autofill from resume\nDrag & drop or upload to autofill your application.\nUpload file', parentElement: form };
+  const resumeUpload = { innerText: 'Drag and drop file or browse computer\n(PDF, 5 MB maximum)', parentElement: null };
+  const resumeGroup = { innerText: 'Resume *\nDrag and drop file or browse computer\n(PDF, 5 MB maximum)', parentElement: form };
+  resumeUpload.parentElement = { innerText: 'Drag and drop file or browse computer\n(PDF, 5 MB maximum)', parentElement: resumeGroup };
+  const assigned = [0, 0], containers = [autoContainer, resumeUpload.parentElement];
+  const makeInput = index => ({
+    tagName: 'INPUT', type: 'file', name: '', id: '', accept: 'application/pdf', disabled: false,
+    parentElement: containers[index], form,
+    get files() { return this.currentFiles || []; },
+    set files(files) { assigned[index]++; this.currentFiles = [...files]; containers[index].innerText = (containers[index].innerText || '') + '\n' + files[0]?.name + ' attached'; },
+    getAttribute: name => name === 'aria-label' ? null : null,
+    closest: () => null, dispatchEvent() {}
+  });
+  const fileInputs = [makeInput(0), makeInput(1)];
+  const document = {
+    body: { innerText: 'Senior 3D Artist' },
+    querySelectorAll(selector) {
+      if (selector === 'input[type="file"]') return fileInputs;
+      if (selector === 'input[type="radio"]') return radios;
+      if (selector === 'input,textarea,select') return radios;
+      if (selector === 'input[type="password"]' || selector === 'iframe[src]' ||
+          selector === 'a[aria-label],img[alt],[role="img"][aria-label]') return [];
+      if (selector === 'input:not([type="file"]):not([type="hidden"]),textarea,select') return [];
+      return [];
+    },
+    querySelector: () => null
+  };
+  const context = {
+    chrome: { runtime: { sendMessage: (_message, callback) => callback(null),
+      onMessage: { addListener() {} }, lastError: null } },
+    document, location: { protocol: 'https:', hostname: 'app.dover.com',
+      pathname: '/apply/Warpfrog/908eb274-5ac8-4d37-9b0f-5108fd12a47c/',
+      href: 'https://app.dover.com/apply/Warpfrog/908eb274-5ac8-4d37-9b0f-5108fd12a47c/' },
+    HTMLTextAreaElement: class {}, HTMLInputElement: class {}, Event: class {},
+    File: class { constructor(_bytes, name, options) { this.name = name; this.type = options.type; } },
+    DataTransfer: class { constructor() { this.files = []; this.items = { add: file => this.files.push(file) }; } },
+    URL, Date, Object, String, Array, RegExp, Map, Set, atob, setTimeout, clearTimeout
+  };
+  vm.createContext(context);
+  vm.runInContext(coreSource, context);
+  vm.runInContext(adapterSource, context);
+  return { dom: context.RavenPrepareDom, assigned, get selectedCountry() { return selectedCountry; } };
+}
+
+test('Dover exact tenant route, country field, and Resume upload avoid the resume-autofill parser', async () => {
+  const fixture = doverFixture();
+  assert.deepEqual(fixture.dom.inspect({ title: 'Senior 3D Artist', company: 'Warpfrog' }), { status: 'ready' });
+  const profile = await fixture.dom.applyOperation('profile',
+    { profile: { country: 'United States' }, answers: {} });
+  assert.equal(profile.state, 'filled');
+  assert.deepEqual(profile.result.filled, ['country']);
+  assert.equal(fixture.selectedCountry, 'United States');
+  const upload = await fixture.dom.applyOperation('resume',
+    { document: { kind: 'resume', dataUrl: pdfData } });
+  assert.equal(upload.state, 'page_confirmed');
+  assert.equal(fixture.assigned[0], 0, 'Autofill from resume input must remain untouched');
+  assert.equal(fixture.assigned[1], 1, 'Resume attachment input must receive the PDF');
+});
