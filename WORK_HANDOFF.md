@@ -1,29 +1,33 @@
 # Raven execution handoff
 
-## Current state — October 16, 2026
+## Current task — Mad Head live application support — October 16, 2026
 
-Apply reliability PR #105 and smoke/docs PR #106 are merged on main at `49f05866dcf850325c6644a2d78db840ed316b8c`. The Pages release publishes extension v2.6.0.
+Main is at `49f05866dcf850325c6644a2d78db840ed316b8c`; PR #107 is open on `codex/madhead-live-form-support`. It updates the existing extension path and does not introduce a desktop app.
 
-## Live employer-page check
+## Real employer-page evidence
 
-From Raven, **Continue with Apply** opened the saved Lead Environment Artist role on the real Mad Head Games careers site: https://careers.madheadgames.com/jobs/lead-environment-artist-ckS9. The actual form has CV/resume and portfolio PDF upload controls, portfolio URL, contact fields and employer-specific questions.
+Chrome shows the actual Mad Head Games Lead Environment Artist application at https://careers.madheadgames.com/jobs/lead-environment-artist-ckS9/new. The installed Raven Application Assistant v2.6.0 injects on this page. Raven's bridge element is only on Raven's own web app, so checking for it on the employer page was the wrong signal.
 
-The page was reloaded after the attempted extension install. The Raven bridge/content script was still absent, so no autofill or upload occurred. No personal details were entered, no documents were transmitted, and the form was not submitted. The extension package's manifest allows all URLs; this points to the installed extension/profile or Chrome site-access state, but the exact cause is not verified.
+Calling the injected extension inspector with the job title and company returns `manual: No recognized application controls`. Inspection of the live form found:
+- first name, last name, and email are labeled through placeholders;
+- the CV control is named `Resume` inside a field group labeled CV / Resume;
+- a separate optional portfolio URL field is described by its surrounding field-group text;
+- a separate portfolio PDF input is present.
 
-The browser-control safety gate blocks interaction with `chrome://extensions`. The user cannot find Raven Application Assistant in the extension list and needs a guided manual install/check. Staged unpacked v2.6.0 package: `C:\Users\damsp\.codex\visualizations\2026\10\16\01a144e3-10d6-7d33-87ed-bdd5f1d5e822\raven-extension-2.6.0`. In the same Chrome profile, use **Load unpacked** for this folder (or Reload the extension if this exact folder is already loaded), verify the card is enabled and version 2.6.0, then refresh the Mad Head page and check that the Raven bridge appears.
+The current generic matcher ignored placeholders and could not associate the CV input with a label. PR #107 updates those matchers and adds a CI regression based on the observed live form structure. The regression confirms contact-field recognition, portfolio URL recognition, CV input targeting, leaves the distinct portfolio-file input untouched, and never submits. Core run 38924679490 and full browser run 38924678795 passed on commit 8b9af9f9eef17e39ea863654734a5f4ddb814257. These CI results are not live employer acceptance.
 
-## Existing verification
+## Safety and remaining work
 
-- Core CI 38920102857, browser regression 38920103042, Pages deploy 38920102689 and production smoke 38920178847 passed.
-- Production smoke passed all 14 cases; seven protocol 3 ATS fixtures passed in isolated Chrome with synthetic data.
-- These checks are not real employer-site acceptance; live autofill/upload remains blocked by missing extension injection.
-- Current Raven context menu action is **Save to Raven**. Applications start from Raven's **Apply job** button.
+No personal details were entered, no documents were transmitted, and the employer form was not submitted. After PR #107 merges and Pages publishes the new extension package, the unpacked installation will need one final reload. Then re-run the read-only inspector on the actual employer page. Before sending profile details or a PDF to Mad Head Games, confirm the exact fields/files at action time. Do not submit.
 
-## Remaining blockers
+The form requests a portfolio PDF as well as a portfolio URL. The current direct Apply packet supports resume and cover letter, not a portfolio-file document; keep that upload manual unless Raven adds verified portfolio-document support.
 
-- Verify/install extension in the user's Chrome profile and confirm bridge injection on the real employer page.
-- Before any real transmission, confirm the exact personal fields and resume/portfolio files to send to Mad Head Games. Do not submit the application.
-- Running helper is on `codex/apply-existing-drive-pdfs` at `661066e`, with 16 local branch commits. It rejects one-document requests; current main helper source accepts one or two. Preserve and integrate branch work before activation.
-- Determine whether right-click Apply is still a required product outcome.
+The helper branch `codex/apply-existing-drive-pdfs` remains separate and untouched. It has 16 local commits and its single-document request issue still needs careful integration. Do not overwrite its private state.
 
-GitHub remains the source of truth. No application was submitted.
+## Next
+
+1. Merge PR #107 after all checks for its latest commit pass.
+2. Verify the GitHub Pages package and production smoke.
+3. Reload the unpacked extension once, then run the live read-only form inspection.
+4. Ask for the exact action-time data/file approval before any real employer transmission. Leave the application unsubmitted.
+5. Handle the helper single-document integration as a separate tracked change.
