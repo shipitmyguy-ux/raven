@@ -2,26 +2,28 @@
 
 ## Current state — October 16, 2026
 
-Apply reliability PR #105 and follow-up PR #106 are merged on main at `49f05866dcf850325c6644a2d78db840ed316b8c`. The Pages release publishes extension v2.6.0.
+Apply reliability PR #105 and smoke/docs PR #106 are merged on main at `49f05866dcf850325c6644a2d78db840ed316b8c`. The Pages release publishes extension v2.6.0.
 
-The workflow starts from Raven's **Apply job** button. It opens a correlated employer tab, inspects the form, fills recognized safe profile fields, attaches verified documents, retains saved cover text for supported text-only controls, and never submits the application. The extension's Chrome context menu currently offers **Save to Raven**; it does not offer direct Apply from arbitrary employer pages.
+## Live employer-page check
 
-## Verified
+From Raven, **Continue with Apply** opened the saved Lead Environment Artist role on the real Mad Head Games careers site: https://careers.madheadgames.com/jobs/lead-environment-artist-ckS9. The actual form has CV/resume and portfolio PDF upload controls, portfolio URL, contact fields and employer-specific questions.
 
-- Reusable core CI run 38920102857 passed.
-- Browser regression run 38920103042 passed.
-- Pages deploy run 38920102689 passed.
-- Production smoke run 38920178847 passed all 14 cases.
-- Seven synthetic ATS protocol 3 fixtures passed in isolated Chrome; no personal data or application submission.
-- Published ZIP is https://shipitmyguy-ux.github.io/raven/extension/raven-capture-extension.zip. Manifest version is 2.6.0.
-- Extracted package is staged at `C:\Users\damsp\.codex\visualizations\2026\10\16\01a144e3-10d6-7d33-87ed-bdd5f1d5e822\raven-extension-2.6.0`.
+The page was reloaded after the attempted extension install. The Raven bridge/content script was still absent, so no autofill or upload occurred. No personal details were entered, no documents were transmitted, and the form was not submitted. The extension package's manifest allows all URLs; this points to the installed extension/profile or Chrome site-access state, but the exact cause is not verified.
 
-## Remaining acceptance work
+The browser-control safety gate blocks interaction with `chrome://extensions`. The user cannot find Raven Application Assistant in the extension list and needs a guided manual install/check. Staged unpacked v2.6.0 package: `C:\Users\damsp\.codex\visualizations\2026\10\16\01a144e3-10d6-7d33-87ed-bdd5f1d5e822\raven-extension-2.6.0`. In the same Chrome profile, use **Load unpacked** for this folder (or Reload the extension if this exact folder is already loaded), verify the card is enabled and version 2.6.0, then refresh the Mad Head page and check that the Raven bridge appears.
 
-- Install/reload v2.6.0 in Chrome. User approved this, but browser-control policy refused the `chrome://extensions` page. The user must manually choose **Load unpacked** for the staging folder (or replace files in the existing loaded folder and click **Reload**), then refresh the Raven tab.
-- The running helper is on branch `codex/apply-existing-drive-pdfs`, commit `661066e`; its request validation accepts exactly two documents. It has 16 branch commits. Preserve and integrate that work before activating the current main helper implementation, which accepts one or two documents.
-- After extension/helper activation, use a supported synthetic form or a specific user-approved employer/document combination to verify recognized values and visible file attachments. Stop before final submission. No live employer upload is currently claimed.
+## Existing verification
 
-## Source of truth
+- Core CI 38920102857, browser regression 38920103042, Pages deploy 38920102689 and production smoke 38920178847 passed.
+- Production smoke passed all 14 cases; seven protocol 3 ATS fixtures passed in isolated Chrome with synthetic data.
+- These checks are not real employer-site acceptance; live autofill/upload remains blocked by missing extension injection.
+- Current Raven context menu action is **Save to Raven**. Applications start from Raven's **Apply job** button.
 
-GitHub is canonical for Raven code and task state. The implementation and smoke fixes are merged. No employer received user data and no application was submitted in this session.
+## Remaining blockers
+
+- Verify/install extension in the user's Chrome profile and confirm bridge injection on the real employer page.
+- Before any real transmission, confirm the exact personal fields and resume/portfolio files to send to Mad Head Games. Do not submit the application.
+- Running helper is on `codex/apply-existing-drive-pdfs` at `661066e`, with 16 local branch commits. It rejects one-document requests; current main helper source accepts one or two. Preserve and integrate branch work before activation.
+- Determine whether right-click Apply is still a required product outcome.
+
+GitHub remains the source of truth. No application was submitted.
