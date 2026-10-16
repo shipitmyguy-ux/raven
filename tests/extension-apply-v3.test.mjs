@@ -388,7 +388,8 @@ function atsFixture({ hostname, selector = '', accept = 'application/pdf', exist
       container.innerText = chosen[0]?.name + ' attached';
     },
     getAttribute: name => name === 'aria-label' ? 'Resume' : null,
-    closest: () => null
+    closest: () => null,
+    dispatchEvent() {}
   } : null;
   class CoverTextArea {
     constructor() { this.tagName = 'TEXTAREA'; this.name = 'coverLetter'; this.id = '';
