@@ -1,12 +1,11 @@
-## Apply reliability audit — October 16, 2026
+## Apply attempt engine — October 16, 2026
 
-A deeper audit of main 9126d2c disproved the prior conclusion that only extension reload/live acceptance remained. Controlled execution of the primary version-1 Apply code reproduced same-host wrong-job filling, unrelated-tab packet deletion, acknowledgement timeout reported as success, and resume retrieval skipped when cover is missing. No personal data was transmitted. The stronger optional preparation engine is a separate code path; its checks do not prove direct Apply reliability. Read-only Raven UI inspection showed Panic Stations has neither document. See docs/qa/2026-10-16-apply-reliability-audit.md for evidence, limitations and the repair acceptance contract. Diagnosis complete; remediation and live acceptance are NOT complete.
-
-- [x] Reproduce primary Apply delivery failures with synthetic inputs.
-- [ ] Consolidate execution with exact request/job/tab ownership and truthful acknowledgement/upload results.
-- [ ] Support independent documents and continuation after missing-document preparation.
-- [ ] Verify one in-page fallback and actual installed capabilities.
-- [ ] Complete representative real-employer acceptance before claiming the Apply workflow works.
+- [x] Consolidate active Apply execution into protocol v3 with per-attempt/job/tab/document correlation and truthful acknowledgement/outcome handling.
+- [x] Deliver independently verified resume/cover PDFs as each becomes ready; retain canonical cover text; prevent delivery when the inspected employer form is not authorized.
+- [x] Add explicit recovery for extension absence, reload/navigation, stale bindings and closed tabs; retire legacy v1 mailbox and v2 dispatch while preserving saved metadata.
+- [x] Wire the v3 web/extension tests and syntax checks into core CI; exact branch checks passed on Linux and Windows.
+- [x] Run the full browser regression on the exact branch; 153 tests passed.
+- [ ] Merge and install the change, then verify a representative employer form in the user's browser before claiming live upload acceptance. Do not submit the application.
 
 ## Mad Head and Panic Stations direct Apply fixes — October 16, 2026
 
