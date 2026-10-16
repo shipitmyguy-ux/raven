@@ -1,6 +1,17 @@
+## Apply attempt engine — October 16, 2026
+
+Draft PR #105: https://github.com/shipitmyguy-ux/raven/pull/105
+Implementation head: `2f0a86452125fd165837daa6df9716e33d5e1715` (based on main `9fb3a6028da3e72e391f521bb1fa814f6d58c62f`).
+
+The direct Apply path now uses one extension-owned, per-attempt tab and job binding. It delivers profile data only after the current form is inspected and authorized, sends each verified document as it becomes ready, retains generated cover-letter text, stops stale in-flight work after navigation, and provides explicit same-tab recovery or a deliberate fresh attempt if the employer tab closes. If Raven's extension bridge is missing or outdated, Apply opens the saved employer listing during the click and routes to a resolved application destination when available. Legacy v1 mailbox and v2 dispatch are retired; historical application/document metadata remains.
+
+Exact-branch verification passed: reusable core CI (Linux and Windows recovery/concurrency jobs plus the test job, including both v3 Apply suites and extension syntax checks) and the full Playwright browser regression (153 passed). Planner review found no new blocker in the final test-harness corrections.
+
+Not live-verified: this PR is unmerged and the extension is not installed from this branch. Synthetic ATS fixtures do not prove employer-side file acceptance. No personal information was sent to an employer and no application was submitted. After merge/install, test one approved employer form with the user present; stop before final submission and confirm visible file selections/form values.
+
 ## Apply reliability audit — October 16, 2026
 
-A deeper audit of main 9126d2c disproved the prior conclusion that only extension reload/live acceptance remained. Controlled execution of the primary version-1 Apply code reproduced same-host wrong-job filling, unrelated-tab packet deletion, acknowledgement timeout reported as success, and resume retrieval skipped when cover is missing. No personal data was transmitted. The stronger optional preparation engine is a separate code path; its checks do not prove direct Apply reliability. Read-only Raven UI inspection showed Panic Stations has neither document. See docs/qa/2026-10-16-apply-reliability-audit.md for evidence, limitations and the repair acceptance contract. Diagnosis complete; remediation and live acceptance are NOT complete.
+A deeper audit of main 9126d2c disproved the prior conclusion that only extension reload/live acceptance remained. Controlled execution of the primary version-1 Apply code reproduced same-host wrong-job filling, unrelated-tab packet deletion, acknowledgement timeout reported as success, and resume retrieval skipped when cover is missing. No personal data was transmitted. The stronger optional preparation engine is a separate code path; its checks do not prove direct Apply reliability. Read-only Raven UI inspection showed Panic Stations has neither document. See docs/qa/2026-10-16-apply-reliability-audit.md for evidence, limitations and the repair acceptance contract. At the time of the audit, remediation and live acceptance were incomplete; see the current Apply attempt engine status above.
 
 ## Mad Head and Panic Stations direct Apply fixes — October 16, 2026
 
