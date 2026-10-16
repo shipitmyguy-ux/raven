@@ -9,6 +9,18 @@ Exact-branch verification passed: reusable core CI (Linux and Windows recovery/c
 
 Not live-verified: this PR is unmerged and the extension is not installed from this branch. Synthetic ATS fixtures do not prove employer-side file acceptance. No personal information was sent to an employer and no application was submitted. After merge/install, test one approved employer form with the user present; stop before final submission and confirm visible file selections/form values.
 
+## Apply attempt engine — October 16, 2026
+
+PR #105 merged as `c6127e7`; follow-up PR #106 merged as `49f0586`. The direct Apply path uses one extension-owned, per-attempt tab and job binding, inspects the employer form before releasing profile data, handles independently verified documents, retains saved cover-letter text, cancels stale work after navigation, and supports same-tab recovery or an explicit new attempt after tab closure. Missing or outdated extension fallback opens the saved listing during the click and routes to a verified application destination when available. Employer submission remains manual.
+
+PR #106 migrated the seven retired v1 production ATS fixtures to protocol 3, updated the Apply/review persistence smoke assertion, and documented extension installation/reload. Published package: v2.6.0 at https://shipitmyguy-ux.github.io/raven/extension/raven-capture-extension.zip. The Pages workflow packages the extension sources; unpacked installations do not update automatically.
+
+Verification on merged commit `49f05866dcf850325c6644a2d78db840ed316b8c`: reusable core CI passed (run 38920102857), browser regression passed (38920103042), Pages deployment passed (38920102689), and production smoke passed (38920178847, all 14 cases). The seven migrated ATS fixtures also passed in isolated Chrome using synthetic data and no submissions.
+
+Not live-verified: Chrome extension manager is unavailable to browser control, so v2.6.0 has not been installed or reloaded. The package is staged at `C:\Users\damsp\.codex\visualizations\2026\10\16\01a144e3-10d6-7d33-87ed-bdd5f1d5e822\raven-extension-2.6.0`; manual Chrome **Load unpacked** / **Reload** is still required. The running local helper is on `codex/apply-existing-drive-pdfs` at `661066e` and rejects one-document requests; it has 16 branch commits and was left untouched. The current main helper source accepts one or two documents, but that update has not been activated in the running helper. No personal information was sent to an employer and no application was submitted.
+
+The application workflow starts from Raven's **Apply job** action. The extension context menu currently saves a job to Raven; it does not start Apply directly from arbitrary employer pages. Unsupported ATS forms, fields and file rules still require manual handling.
+
 ## Apply reliability audit — October 16, 2026
 
 A deeper audit of main 9126d2c disproved the prior conclusion that only extension reload/live acceptance remained. Controlled execution of the primary version-1 Apply code reproduced same-host wrong-job filling, unrelated-tab packet deletion, acknowledgement timeout reported as success, and resume retrieval skipped when cover is missing. No personal data was transmitted. The stronger optional preparation engine is a separate code path; its checks do not prove direct Apply reliability. Read-only Raven UI inspection showed Panic Stations has neither document. See docs/qa/2026-10-16-apply-reliability-audit.md for evidence, limitations and the repair acceptance contract. At the time of the audit, remediation and live acceptance were incomplete; see the current Apply attempt engine status above.
