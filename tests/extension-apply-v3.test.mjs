@@ -128,6 +128,19 @@ test('same-host wrong job and unrelated tabs cannot inspect or receive personal 
   assert.equal(env.sent.at(-1).message.payload.profile.email, 'synthetic@example.invalid');
 });
 
+test('a different hash route on the same host is not the bound job', async () => {
+  const env = harness();
+  await env.open();
+  const hashRoute = firstUrl + '#another-job';
+  const context = await env.request({ type: 'raven-apply-v3-context', url: hashRoute },
+    employer(40, hashRoute));
+  assert.equal(context, null);
+  env.emit({ type: 'raven-apply-v3-inspection', requestId, attemptId, jobId,
+    revision: 1, status: 'ready' }, employer(40, hashRoute));
+  await env.tick(); await env.tick();
+  assert.equal((await env.request(envelope('status'))).status, 'opening');
+});
+
 test('operation ID replay never redispatches; changed payload is rejected', async () => {
   const env = harness();
   await env.open(); await env.inspectReady();

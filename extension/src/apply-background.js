@@ -7,7 +7,7 @@
   const serial = work => { const result = chain.then(work); chain = result.catch(() => {}); return result; };
   const reply = (send, value) => { try { send(value); } catch {} };
   const same = (a, b) => {
-    try { const x = new URL(a), y = new URL(b); x.hash = y.hash = ""; return x.href === y.href; } catch { return false; }
+    try { return new URL(a).href === new URL(b).href; } catch { return false; }
   };
   const trusted = sender => {
     try {

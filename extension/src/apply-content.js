@@ -5,7 +5,7 @@
   const dom = globalThis.RavenPrepareDom;
   let context = null;
   const same = (a, b) => {
-    try { const x = new URL(a), y = new URL(b); x.hash = y.hash = ""; return x.href === y.href; } catch { return false; }
+    try { return new URL(a).href === new URL(b).href; } catch { return false; }
   };
   function reportInspection() {
     if (!context || !same(location.href, context.expectedUrl)) return;
