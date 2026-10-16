@@ -657,7 +657,7 @@ test("Answer Memory stores only reusable non-sensitive answers",async({page})=>{
   await expect(page.locator("#syncStatus")).toContainText("not stored");
 });
 
-test("strong extension completion event marks only the matching job Applied",async({page})=>{
+test("legacy extension completion event cannot mark a job Applied",async({page})=>{
   const api=await mockRaven(page);
   await page.goto("/");
   await page.locator('[data-track="Professional"]').click();
@@ -674,8 +674,8 @@ test("strong extension completion event marks only the matching job Applied",asy
     });
     document.dispatchEvent(new CustomEvent("raven-application-complete"));
   });
-  await expect.poll(()=>api.getJob().status).toBe("Applied");
-  await expect(page.locator("#syncStatus")).toContainText("marked Applied");
+  await expect.poll(()=>api.getJob().status).toBe("Saved");
+  await expect(page.locator("#syncStatus")).not.toContainText("marked Applied");
 });
 
 test("completion event with host mismatch is ignored",async({page})=>{
