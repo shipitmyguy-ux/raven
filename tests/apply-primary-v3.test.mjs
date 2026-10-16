@@ -43,7 +43,7 @@ test('primary Apply does not deliver personal data when bound form is not ready'
 test('without a bridge, primary Apply opens employer listing during user gesture',async()=>{
  const h=harness({bridge:false});await h.apply();
  assert.equal(h.calls[0],'manual:https://example.test/listing');
- assert.ok(h.calls.includes('navigate:https://example.test/apply'));
+ assert.ok(h.calls.includes('navigate:https://example.test/apply'),JSON.stringify({calls:h.calls,statuses:h.statuses}));
 });
 
 test('stale version-two bridge opens listing immediately for manual Apply',async()=>{
@@ -74,7 +74,7 @@ test('closed employer tab preserves history and requires an explicit fresh Apply
  assert.equal(h.saved()[0].closed,true);
  assert.ok(h.statuses.some(x=>/previous employer tab closed/.test(x)));
  await h.apply();
- assert.equal(h.calls.filter(x=>x==='open').length,2);
+ assert.equal(h.calls.filter(x=>x==='open').length,2,JSON.stringify({calls:h.calls,statuses:h.statuses,saved:h.saved()}));
  assert.equal(h.saved().length,2);
  assert.equal(h.saved()[0].closed,true);
  assert.notEqual(h.saved()[0].attemptId,h.saved()[1].attemptId);
