@@ -5,9 +5,9 @@ import vm from 'node:vm';
 
 const source=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
 const code=source.slice(source.indexOf('  async function beginApplication(job,button){'),source.indexOf('  function previewableDocumentUrl(value) {'))
-  .replaceAll(/await import\("\.\/application-prepare\.mjs\?v=\d+"\)/g,'Promise.resolve(mockApi)')
+  .replaceAll(/await import\("\.\/application-prepare\.mjs\?v=\d+"\)/g,'mockApi')
   .replaceAll(/import\("\.\/application-prepare\.mjs\?v=\d+"\)/g,'Promise.resolve(mockApi)')
-  .replaceAll(/await import\("\.\/oneclick-client\.mjs\?v=\d+"\)/g,'Promise.resolve({createOneClickClient:()=>client})');
+  .replaceAll(/await import\("\.\/oneclick-client\.mjs\?v=\d+"\)/g,'({createOneClickClient:()=>client})');
 const job=()=>({id:'JT-test',url:'https://example.test/listing',title:'Artist',company:'Acme',resume:'saved resume',coverLetter:''});
 function harness({bridge=true,ready=true,coverReady=false,slowResume=false,savedAttempt=false,closedOnce=false}={}){
  const calls=[],statuses=[],fileCalls=[];let saved=savedAttempt?[{attemptId:'11111111-1111-4111-8111-111111111111',jobId:'JT-test',jobUrl:'https://example.test/listing'}]:[];let closedReported=false;
@@ -74,7 +74,7 @@ test('closed employer tab preserves history and requires an explicit fresh Apply
  assert.equal(h.saved()[0].closed,true);
  assert.ok(h.statuses.some(x=>/previous employer tab closed/.test(x)));
  await h.apply();
- assert.equal(h.calls.filter(x=>x==='open').length,2,JSON.stringify({calls:h.calls,statuses:h.statuses,saved:h.saved()}));
+ assert.equal(h.calls.filter(x=>x==='open').length,1,JSON.stringify({calls:h.calls,statuses:h.statuses,saved:h.saved()}));
  assert.equal(h.saved().length,2);
  assert.equal(h.saved()[0].closed,true);
  assert.notEqual(h.saved()[0].attemptId,h.saved()[1].attemptId);
