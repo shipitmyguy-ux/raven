@@ -51,7 +51,8 @@
     ok: true, kind: "snapshot", version: 3, requestId, attemptId: item.attemptId,
     jobId: item.jobId, status: item.status, phase: item.phase, bindingRevision: item.revision,
     sequence: item.sequence, observedUrl: item.observedUrl || item.expectedUrl || item.listingUrl,
-    tabId: item.tabId, documents: item.documents, operations: item.operations,
+    tabId: item.tabId, formReady: Boolean(item.formReady && item.readyRevision === item.revision &&
+      item.readyDocumentId === item.documentId), documents: item.documents, operations: item.operations,
     reason: item.reason || ""
   });
   const error = (message, reason) => ({
@@ -126,6 +127,9 @@
             !same(sender.tab?.url, item.expectedUrl) || !same(message.url, item.expectedUrl) ||
             !sender.documentId) return reply(sendResponse, null);
         if (item.documentId !== sender.documentId) {
+          item.formReady = false;
+          item.readyDocumentId = null;
+          item.readyRevision = null;
           item.documentId = sender.documentId;
           item.sequence++;
           await save(all);
@@ -144,6 +148,9 @@
           item.observedUrl = sender.url;
           item.phase = message.status === "ready" ? "ready" : message.status === "waiting_fields" ? "waiting_fields" : "needs_user";
           item.status = item.phase;
+          item.formReady = message.status === "ready";
+          item.readyRevision = item.formReady ? item.revision : null;
+          item.readyDocumentId = item.formReady ? item.documentId : null;
           item.reason = String(message.reason || "").slice(0, 240);
         } else {
           const op = item.operations[message.operationId];
@@ -197,7 +204,8 @@
         const item = {
           requestId: message.requestId, attemptId: message.attemptId, jobId: message.jobId,
           listingUrl, expectedUrl, title, company, createdAt: Date.now(), tabId: null,
-          documentId: null, revision: 1, sequence: 1, phase: expectedUrl ? "opening" : "reserved",
+          documentId: null, formReady: false, readyRevision: null, readyDocumentId: null,
+          revision: 1, sequence: 1, phase: expectedUrl ? "opening" : "reserved",
           status: expectedUrl ? "opening" : "reserved", observedUrl: expectedUrl || listingUrl, documents: { resume: { state: "not_requested" }, coverLetter: { state: "not_requested" } },
           operations: {}, reason: ""
         };
@@ -216,6 +224,7 @@
       if (message.action === "status") return reply(sendResponse, snapshot(item, message.requestId));
       if (message.action === "cancel") {
         item.phase = item.status = "cancelled"; item.revision++; item.documentId = null;
+        item.formReady = false; item.readyRevision = null; item.readyDocumentId = null;
         item.sequence++; await save(all); return reply(sendResponse, snapshot(item, message.requestId));
       }
       if (message.bindingRevision !== item.revision)
@@ -228,6 +237,7 @@
         item.expectedUrl = safeUrl(current.url);
         item.observedUrl = item.expectedUrl;
         item.documentId = null;
+        item.formReady = false; item.readyRevision = null; item.readyDocumentId = null;
         item.phase = item.status = "waiting_fields";
         item.reason = "Inspecting the current page in the same tab.";
         item.sequence++; await save(all);
@@ -235,15 +245,17 @@
         return reply(sendResponse, snapshot(item, message.requestId));
       }
       if (message.action === "inspect") {
+        item.formReady = false; item.readyRevision = null; item.readyDocumentId = null;
+        item.phase = item.status = "waiting_fields"; item.sequence++; await save(all);
         if (!item.documentId) return reply(sendResponse, snapshot(item, message.requestId));
         try { await send(item.tabId, { type: "raven-apply-v3-inspect", requestId: item.requestId,
           attemptId: item.attemptId, jobId: item.jobId, revision: item.revision }); }
         catch (e) { item.phase = item.status = "waiting_fields"; item.reason = e.message; item.sequence++; await save(all); }
         return reply(sendResponse, snapshot(item, message.requestId));
       }
-      if (item.phase !== "ready" && item.phase !== "page_confirmed" && item.phase !== "unconfirmed" && item.phase !== "needs_user")
-        throw Error("Inspect the bound application before delivery.");
-      if (!item.documentId) throw Error("No inspected top-frame document.");
+      if (!item.formReady || item.readyRevision !== item.revision ||
+          !item.documentId || item.readyDocumentId !== item.documentId)
+        throw Error("A ready inspection of the current bound form is required before delivery.");
       await digestDocument(message.payload?.document);
       const op = await operationOf(message.payload);
       const prior = item.operations[op.id];
@@ -289,6 +301,7 @@
         item.revision++;
         item.sequence++;
         item.documentId = null;
+        item.formReady = false; item.readyRevision = null; item.readyDocumentId = null;
         item.observedUrl = info.url || item.observedUrl;
         item.phase = item.status = "navigated";
         item.reason = "Page navigation requires inspection before further delivery.";
@@ -302,6 +315,7 @@
     const all = await read();
     for (const item of Object.values(all)) if (item.tabId === tabId) {
       item.revision++; item.sequence++; item.documentId = null;
+      item.formReady = false; item.readyRevision = null; item.readyDocumentId = null;
       item.phase = item.status = "needs_user"; item.reason = "Application tab closed.";
     }
     await save(all);

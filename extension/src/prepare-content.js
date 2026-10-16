@@ -369,8 +369,8 @@
         return { state: "no_control", result: { reason: "Cover text does not fit the employer field." } };
       return { state: setValue(el, text) ? "filled" : "no_control", result: { filled: ["cover letter"] } };
     }
-    const document = payload.document;
-    if (!document || document.kind !== kind) return { state: "failed", result: { reason: "Document identity mismatch." } };
+    const pdfDocument = payload.document;
+    if (!pdfDocument || pdfDocument.kind !== kind) return { state: "failed", result: { reason: "Document identity mismatch." } };
     const adapter = core.detectAdapter(location.hostname);
     const deadline = Date.now() + 10000;
     let input = fileCandidate(adapter, kind);
@@ -381,7 +381,7 @@
     if (!input) return { state: "no_control", result: { reason: "No matching file input on this page." } };
     if (input.files?.length) return { state: "no_control", result: { reason: "Existing attachment preserved." } };
     const packet = { company: payload.company || "Raven", title: payload.title || "Application" };
-    const file = makePdfFile(document.dataUrl, kind, packet);
+    const file = makePdfFile(pdfDocument.dataUrl, kind, packet);
     if (!file || !core.acceptsFile(input.accept, file.name, file.type))
       return { state: "rejected", result: { reason: "Employer file type does not accept PDF." } };
     const container = input.closest(".ashby-file-upload,.file-upload,.upload-field,[data-testid*='resume' i],[data-testid*='cover' i]") || input.parentElement;

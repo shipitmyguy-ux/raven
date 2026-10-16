@@ -233,6 +233,80 @@ test('selected, confirmed, and rejected uploads remain distinct', async () => {
   }
 });
 
+test('manual inspection cannot authorize profile, PDF, or cover-text delivery', async () => {
+  const env = harness();
+  await env.open();
+  const context = await env.request({ type: 'raven-apply-v3-context', url: firstUrl }, employer(40));
+  env.emit({ type: 'raven-apply-v3-inspection', requestId, attemptId, jobId,
+    revision: context.revision, status: 'manual', reason: 'Sign-in required.' }, employer(40));
+  await env.tick(); await env.tick();
+  const status = await env.request(envelope('status'));
+  assert.equal(status.status, 'needs_user');
+  assert.equal(status.formReady, false);
+  const document = { kind: 'resume', documentSha256: 'a'.repeat(64), pdfSha256,
+    filename: 'resume.pdf', dataUrl: pdfData };
+  for (const payload of [
+    { operationId: 'profile-1', profile: { email: 'synthetic@example.invalid' }, answers: {} },
+    { operationId: 'resume-1', document },
+    { operationId: 'cover-text-1', coverLetterText: { text: 'Saved text', documentSha256: 'a'.repeat(64) } }
+  ]) {
+    const response = await env.request(envelope('deliver', payload, { bindingRevision: 1 }));
+    assert.equal(response.ok, false);
+    assert.match(response.error, /ready inspection/);
+  }
+  assert.equal(env.sent.filter(call => call.message.type === 'raven-apply-v3-deliver').length, 0);
+});
+
+test('file outcomes do not revoke the ready form authority for profile fill', async () => {
+  const document = { kind: 'resume', documentSha256: 'a'.repeat(64), pdfSha256,
+    filename: 'resume.pdf', dataUrl: pdfData };
+  for (const outcome of ['selected', 'page_confirmed', 'rejected']) {
+    const env = harness();
+    await env.open(); await env.inspectReady();
+    await env.request(envelope('deliver', { operationId: 'resume-1', document }, { bindingRevision: 1 }));
+    env.emit({ type: 'raven-apply-v3-result', requestId, attemptId, jobId, revision: 1,
+      operationId: 'resume-1', kind: 'resume', state: outcome,
+      result: { evidence: outcome } }, employer(40));
+    await env.tick(); await env.tick();
+    assert.equal((await env.request(envelope('status'))).formReady, true);
+    const profile = await env.request(envelope('deliver', {
+      operationId: 'profile-1', profile: { email: 'synthetic@example.invalid' }, answers: {}
+    }, { bindingRevision: 1 }));
+    assert.equal(profile.ok, true);
+    assert.equal(env.sent.filter(call => call.message.type === 'raven-apply-v3-deliver').length, 2);
+  }
+});
+
+test('saved cover text fills one matching field without a TDZ error', async () => {
+  class TextArea {
+    constructor() { this.tagName = 'TEXTAREA'; this.name = 'coverLetter'; this.id = '';
+      this.maxLength = -1; this.current = ''; }
+    get value() { return this.current; }
+    set value(next) { this.current = next; }
+    getClientRects() { return [{ width: 1, height: 1 }]; }
+    getAttribute(name) { return name === 'aria-label' ? 'Cover letter' : null; }
+    closest() { return null; }
+    dispatchEvent() {}
+  }
+  const field = new TextArea();
+  const document = { querySelectorAll: selector => selector === 'textarea' ? [field] : [] };
+  const context = {
+    RavenAssistantCore: { normalizeQuestion: value => String(value || '').toLowerCase().trim(),
+      isSensitiveQuestion: () => false, detectAdapter: () => ({ id: 'generic' }),
+      GENERIC: { profile: {} } },
+    chrome: { runtime: { sendMessage: (message, callback) => callback(null),
+      onMessage: { addListener() {} }, lastError: null } },
+    document, location: { protocol: 'https:', hostname: 'jobs.example', href: firstUrl },
+    HTMLTextAreaElement: TextArea, HTMLInputElement: class {},
+    Event: class {}, URL, Date, Object, String, Array, RegExp, setTimeout, clearTimeout
+  };
+  vm.runInNewContext(adapterSource, context);
+  const result = await context.RavenPrepareDom.applyOperation('coverLetterText',
+    { coverLetterText: { text: 'Saved cover text', documentSha256: 'a'.repeat(64) } });
+  assert.equal(result.state, 'filled');
+  assert.equal(field.value, 'Saved cover text');
+});
+
 test('browser content never submits and keeps version 2 adapters available', () => {
   assert.match(adapterSource, /RavenPrepareDom/);
   assert.match(contentSource, /raven-apply-v3-context/);
