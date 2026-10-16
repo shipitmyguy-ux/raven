@@ -1,3 +1,13 @@
+## One-click Apply — Warpfrog blocker — 2026-10-16
+
+PR #110 merged as 9e819773124ba701cae903055368a2d15a6d86f5. Dover Apply now supports same-posting tracking-query redirects, exact tenant identity with title verification, bounded MUI field labels, the actual Resume input (excluding the resume-autofill parser), portfolio/Discord fields, and preserving any preselected country. Review also caught and fixed shared-wrapper upload misidentification and existing-country overwrite.
+
+PR core, Windows/Linux recovery, full browser regression, production smoke, and Pages deployment passed. A follow-up cache-bust commit da1e03580e3c05ce01a473a44f313ae83a95e7a2 changes index.html to load app.js?v=106; deployment passed. Other post-cache-bust browser/smoke checks were still running at handoff.
+
+The installed local package under the task visualization directory has the merged apply-background.js and prepare-content.js copied in. Backups with .before-dover suffix remain beside them. Chrome has not reloaded the package. The exact Warpfrog Dover form remains blank; no profile values or resume were transmitted and no application was submitted.
+
+Live acceptance is blocked because Chrome browser security policy rejected access to chrome://extensions (only HTTP(S) navigation is allowed) and prohibits alternative reload methods, CDP, or other browser surfaces. Owner must reload Raven Application Assistant from Chrome Extensions and refresh the Raven page. Then continue the already-approved Warpfrog fill/attach check, stop before Submit. Each additional employer upload needs action-time approval for that exact destination and file.
+
 ## Live employer-page support — October 16, 2026
 
 PR #107 added matching for the observed Mad Head Games form's placeholder-only contact fields, CV/Resume upload, and portfolio URL. Its first post-merge smoke exposed a regression: when an upload had no field group, the matcher used the full form text, so unrelated sensitive questions caused every upload to be excluded.
