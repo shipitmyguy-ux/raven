@@ -2830,14 +2830,14 @@
       return null;
     }
   }
-  async function beginApplication(job,button){
+  async function beginApplication(job,button,options={}){
     if(!job?.url||job.listing_state==="closed")return;
     let listing;
     try{listing=new URL(job.url);if(listing.protocol!=="https:")throw Error();}
     catch{setStatus("This listing does not have a secure HTTPS URL.");return;}
     const key=String(job.id||job.url);
     if(activeApplyAttempts.has(key)){setStatus("This application is already opening or preparing documents.");return;}
-    const savedAttempt=savedApplyAttempts().find(value=>!value.closed&&value.jobId===String(job.id)&&value.jobUrl===job.url);
+    const savedAttempt=options.fresh?null:savedApplyAttempts().find(value=>!value.closed&&value.jobId===String(job.id)&&value.jobUrl===job.url);
     const attempt={attemptId:savedAttempt?.attemptId||crypto.randomUUID(),jobId:String(job.id||""),bindingRevision:undefined,sequence:0};
     activeApplyAttempts.set(key,attempt);
     const bridge=document.getElementById("ravenExtensionBridge");
@@ -2850,6 +2850,7 @@
     // A missing bridge can use this click's pop-up permission immediately.
     const manualTab=bridgePresent?null:window.open(listing.href,"_blank");
     let reserved=null;
+    let reconnectFresh=false;
     if(bridgePresent&&!job._discovered){
       reserved=import("./application-prepare.mjs?v=10").then(async api=>({api,result:await applyExtensionRequest(api,attempt,savedAttempt?"status":"open",savedAttempt?{}:{listingUrl:job.url,title:job.title||"",company:job.company||""})}));
     }
@@ -2889,12 +2890,25 @@
       }
       rememberApplyAttempt(attempt,job.url);
       render();
-      if(opened.phase==="closed"||opened.phase==="cancelled"){closeSavedApplyAttempt(attempt.attemptId);setStatus("The previous employer tab closed. Click Apply job again to start a new attempt; saved documents remain unchanged.");return;}
+      if(opened.phase==="closed"||opened.phase==="cancelled"){
+        if(savedAttempt){closeSavedApplyAttempt(attempt.attemptId);reconnectFresh=true;setStatus("The previous employer tab expired; reconnecting automatically.");}
+        else setStatus("The employer tab closed before Raven could inspect it. Click Apply job again to retry; saved documents remain unchanged.");
+        return;
+      }
       const routed=savedAttempt
         ? await applyExtensionRequest(api,attempt,"inspect",{useCurrentPage:true},attempt.bindingRevision)
         : await applyExtensionRequest(api,attempt,"open",{listingUrl:job.url,targetUrl,title:job.title||"",company:job.company||""},attempt.bindingRevision);
-      if(routed.phase==="closed"||routed.phase==="cancelled"){closeSavedApplyAttempt(attempt.attemptId);setStatus("The previous employer tab closed. Click Apply job again to start a new attempt; saved documents remain unchanged.");return;}
+      if(routed.phase==="closed"||routed.phase==="cancelled"){
+        if(savedAttempt){closeSavedApplyAttempt(attempt.attemptId);reconnectFresh=true;setStatus("The previous employer tab expired; reconnecting automatically.");}
+        else setStatus("The employer tab closed before Raven could inspect it. Click Apply job again to retry; saved documents remain unchanged.");
+        return;
+      }
       const ready=await waitForApplyReady(api,attempt);
+      if(ready.phase==="closed"||ready.phase==="cancelled"){
+        if(savedAttempt){closeSavedApplyAttempt(attempt.attemptId);reconnectFresh=true;setStatus("The previous employer tab expired; reconnecting automatically.");}
+        else setStatus(applyOutcomeMessage(ready));
+        return;
+      }
       if(ready.phase!=="ready"){setStatus(applyOutcomeMessage(ready));return;}
       setStatus("Employer form opened; filling recognized fields. Submit the form yourself when ready.");
       try{
@@ -2932,12 +2946,26 @@
       console.warn("Apply could not be confirmed.",error);
       if(savedAttempt&&/tab closed|No tab with id|Attempt identity does not match|Application attempt is unavailable/i.test(error.message)){
         closeSavedApplyAttempt(attempt.attemptId);
-        setStatus("The previous employer tab is unavailable. Click Apply job again to start a new attempt; saved documents remain unchanged.");
+        reconnectFresh=true;
+        setStatus("The previous employer tab is unavailable; reconnecting automatically.");
       }else setStatus("Application could not be confirmed: "+error.message+" Review the saved employer link and Raven document status.");
     }finally{
       for(const [activeKey,value] of activeApplyAttempts)if(value===attempt)activeApplyAttempts.delete(activeKey);
       if(button){button.disabled=false;button.removeAttribute("aria-busy");}
       render();
+      if(reconnectFresh){
+        setTimeout(async()=>{
+          try{
+            const canonical=normalizeJobs(await window.RavenAPI.listJobs()).find(value=>String(value.id)===String(job.id));
+            if(!canonical||canonical.listing_state==="closed"||!canonical.url||new URL(canonical.url).href!==listing.href){
+              setStatus("The saved job link changed while reconnecting. Review the job and click Apply job again.");
+              return;
+            }
+            setStatus("Reopening the same employer application…");
+            await beginApplication(canonical,null,{fresh:true});
+          }catch(error){setStatus("Automatic reconnect stopped safely: "+error.message);}
+        },0);
+      }
     }
   }
 
