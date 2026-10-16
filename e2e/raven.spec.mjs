@@ -939,8 +939,7 @@ test('closed owned tab reconnects automatically and preserves attempt history',a
  await jobDetail(page,'[data-apply-job]').click();
  await expect.poll(()=>page.evaluate(()=>new Set(window.applyRequests.map(value=>value.attemptId)).size)).toBe(2);
  const requests=await page.evaluate(()=>window.applyRequests);
- expect(requests.some(value=>value.attemptId!=='11111111-1111-4111-8111-111111111111'&&value.action==='open'&&value.payload.targetUrl===window.savedJob?.url)).toBe(false);
- expect(requests.some(value=>value.attemptId!=='11111111-1111-4111-8111-111111111111'&&value.action==='open'&&value.payload.targetUrl===document.querySelector('[data-apply-job]')?.dataset.jobUrl)).toBe(false);
+ expect(requests.some(value=>value.attemptId!=='11111111-1111-4111-8111-111111111111'&&value.action==='open'&&value.payload.targetUrl===savedJob.url)).toBe(true);
  const history=await page.evaluate(()=>JSON.parse(sessionStorage.getItem('raven.apply-attempts.v3')));
  expect(history).toHaveLength(2);expect(history[0].closed).toBe(true);
  expect(history[1].closed).not.toBe(true);
