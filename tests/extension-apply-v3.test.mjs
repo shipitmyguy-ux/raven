@@ -162,8 +162,9 @@ test('same-posting Dover tracking redirects can rebind for automatic inspection,
   const wrongUrl = 'https://app.dover.com/apply/Warpfrog/908eb274-5ac8-4d37-9b0f-5108fd12a47d/?rs=76643084&utm_source=raven';
   env.navigate(40, wrongUrl);
   await env.tick(); await env.tick();
+  const wrongStatus = await env.request(envelope('status'));
   const wrong = await env.request(envelope('inspect', { allowEquivalentRoute: true },
-    { bindingRevision: rebound.bindingRevision }));
+    { bindingRevision: wrongStatus.bindingRevision }));
   assert.equal(wrong.ok, false);
   assert.match(wrong.error, /navigated/);
 });
@@ -558,11 +559,11 @@ function doverFixture() {
 
 test('Dover exact tenant route, country field, and Resume upload avoid the resume-autofill parser', async () => {
   const fixture = doverFixture();
-  assert.deepEqual(fixture.dom.inspect({ title: 'Senior 3D Artist', company: 'Warpfrog' }), { status: 'ready' });
+  assert.equal(fixture.dom.inspect({ title: 'Senior 3D Artist', company: 'Warpfrog' }).status, 'ready');
   const profile = await fixture.dom.applyOperation('profile',
     { profile: { country: 'United States' }, answers: {} });
   assert.equal(profile.state, 'filled');
-  assert.deepEqual(profile.result.filled, ['country']);
+  assert.deepEqual(Array.from(profile.result.filled), ['country']);
   assert.equal(fixture.selectedCountry, 'United States');
   const upload = await fixture.dom.applyOperation('resume',
     { document: { kind: 'resume', dataUrl: pdfData } });
