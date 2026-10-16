@@ -221,17 +221,25 @@
     return new File([bytes],stem+"-"+suffix+"."+ext,{type:mime,lastModified:Date.now()});
   }
 
-  function fileInputFor(kind){
-    const explicit=queryFirst(core.selectorsFor(adapter,"files",kind));
-    if(explicit) return explicit;
-    return findByTerms(kind==="resume"?["resume","cv"]:["cover letter","cover"],{files:true});
+  function fileInputFor(kind,file){
+    const terms=kind==="resume"?["resume","cv","curriculum vitae"]:["cover letter"];
+    const normalizeFileLabel=value=>core.normalizeQuestion(String(value||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,""));
+    const isUploadField=el=>{
+      const label=normalizeFileLabel(labelFor(el));
+      if(/\b(?:autofill|auto fill|import from|parse resume|resume parser)\b/.test(label))return false;
+      return terms.some(term=>label.includes(normalizeFileLabel(term)));
+    };
+    const candidates=[...document.querySelectorAll('input[type="file"]')].filter(el=>
+      !el.disabled&&!el.files?.length&&isUploadField(el)&&core.acceptsFile(el.accept,file.name,file.type));
+    const selectors=core.selectorsFor(adapter,"files",kind);
+    return candidates.find(el=>selectors.some(selector=>{try{return el.matches(selector);}catch{return false;}}))||candidates[0]||null;
   }
 
   function uploadAvailableDocument(packet,kind){
     const value=kind==="resume"?packet.resume:packet.coverLetter;
     const file=dataUrlToFile(value,kind,packet);
     if(!file) return {uploaded:false,reason:"unavailable"};
-    const input=fileInputFor(kind);
+    const input=fileInputFor(kind,file);
     if(!input) return {uploaded:false,reason:"missing-input"};
     if(input.files?.length) return {uploaded:false,reason:"already-filled"};
     if(!core.acceptsFile(input.accept,file.name,file.type)) return {uploaded:false,reason:"format"};
@@ -294,15 +302,15 @@
     setTimeout(()=>observer.disconnect(),30*60*1000);
   }
 
-  chrome.storage.local.get([PACKET_KEY,SESSION_KEY],async(values)=>{
-    let session=values[SESSION_KEY]||null;
-    const packet=values[PACKET_KEY];
+  async function consumeApplicationPacket(packet,session,{followUp=false}={}){
     if(packet?.version===1&&packet?.jobUrl){
       let target;
       try{target=new URL(packet.jobUrl);}catch{target=null;}
       const age=Date.now()-Date.parse(packet.createdAt||0);
-      if(!target||target.hostname!==location.hostname||!Number.isFinite(age)||age<0||age>2*60*60*1000){
+      const sameApplication=session&&String(session.jobId||"")===String(packet.jobId||"")&&session.host===location.hostname;
+      if(!target||target.hostname!==location.hostname||!Number.isFinite(age)||age<0||age>2*60*60*1000||(followUp&&!sameApplication)){
         if(!Number.isFinite(age)||age>2*60*60*1000) chrome.storage.local.remove(PACKET_KEY);
+        return session;
       }else{
         const profileCount=fillProfile(packet.profile||{});
         const answerCount=fillRememberedAnswers(packet.answers||{});
@@ -315,8 +323,7 @@
         const uploadCount=Number(resumeResult.uploaded)+Number(coverResult.uploaded);
         const skippedFormat=[resumeResult,coverResult].filter((result)=>result.reason==="format").length;
         session={version:1,createdAt:new Date().toISOString(),jobId:packet.jobId||"",jobUrl:packet.jobUrl||"",host:location.hostname,adapter:adapter.id};
-        chrome.storage.local.set({[SESSION_KEY]:session});
-        chrome.storage.local.remove(PACKET_KEY);
+        await new Promise(resolve=>chrome.storage.local.set({[SESSION_KEY]:session},resolve));
         const filled=profileCount+answerCount;
         let message="Raven application assistant: "+filled+" known field"+(filled===1?"":"s")+" filled";
         if(coverTextFilled) message+=" · saved cover letter added";
@@ -326,6 +333,18 @@
         banner(message);
       }
     }
+    return session;
+  }
+  chrome.storage.onChanged?.addListener?.(changes=>{
+    const packet=changes[PACKET_KEY]?.newValue;
+    if(!packet?.version||!packet?.jobUrl)return;
+    chrome.storage.local.get(SESSION_KEY,values=>{
+      void consumeApplicationPacket(packet,values[SESSION_KEY]||null,{followUp:true}).finally(()=>chrome.storage.local.remove(PACKET_KEY));
+    });
+  });
+  chrome.storage.local.get([PACKET_KEY,SESSION_KEY],async(values)=>{
+    const session=await consumeApplicationPacket(values[PACKET_KEY],values[SESSION_KEY]||null);
+    if(values[PACKET_KEY])chrome.storage.local.remove(PACKET_KEY);
     watchCompletion(session);
   });
 })();

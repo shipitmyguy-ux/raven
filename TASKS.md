@@ -1,9 +1,15 @@
+## Mad Head and Panic Stations direct Apply fixes — October 16, 2026
+
+- [x] Resolve Panic Stations Workable job-detail URLs directly to the `/apply/` form route; recognize Workable public job detail pages for existing verified Apply-link resolution.
+- [x] Send current saved PDF documents to the employer tab asynchronously after Apply, and match upload controls by semantic label and accepted file format.
+- [ ] Review diff, run whitespace check, commit/push, open PR, monitor required CI, merge under the owner's standing authorization, and confirm deployment/extension release status. No tests run locally.
+
 ## Apply without document gating — October 15, 2026
 
-- [~] Let the user open and autofill an employer application regardless of resume/cover-letter generation, approval, review, Drive export or paused-preparation state.
-- [~] Queue both missing documents for newly discovered feed jobs and generate them in the background without opening review.
+- [x] Let the user open and autofill an employer application regardless of resume/cover-letter generation, approval, review, Drive export or paused-preparation state.
+- [x] Queue both missing documents for newly discovered feed jobs and generate them in the background without opening review.
 - [x] Close unrelated draft PRs #58 and #61 unmerged at the owner's request.
-- [~] Replacement PR #100 is open; its first browser CI run exposed old UI expectations and startup timing. Updated the UI to keep verified-PDF prep optional and aligned affected browser expectations; core/recovery checks passed on the prior head. No tests have been run locally; `git diff --check` passed. Recheck CI, merge, and verify publication.
+- [x] Replacement PR #100 merged; the follow-up direct-Apply upload fixes are tracked above.
 
 ## Required-field warning fixed and short cover defaults published — October 15, 2026
 
