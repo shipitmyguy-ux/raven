@@ -1591,9 +1591,11 @@
     const savedPreparation=preparationRecovery?.load();
     const pausedElsewhere=savedPreparation&&!savedPreparation.expired&&savedPreparation.state!=="opened"&&String(savedPreparation.jobId)!==String(job.id);
     const pausedJobTitle=pausedElsewhere?(knownJobById(savedPreparation.jobId)?.title||"another job"):"";
-    const savedApply=savedApplyAttempts().some(value=>value.jobId===String(job.id)&&value.jobUrl===job.url);
+    const savedAttemptsForJob=savedApplyAttempts().filter(value=>value.jobId===String(job.id)&&value.jobUrl===job.url);
+    const savedApply=savedAttemptsForJob.some(value=>!value.closed);
+    const priorApplyClosed=!savedApply&&savedAttemptsForJob.some(value=>value.closed);
     const applyAction=job.url&&job.listing_state!=="closed"&&statusLower!=="closed"&&!postApplication
-      ? '<button class="workflow-action is-primary" type="button" data-apply-job><span>'+(savedApply?"Continue / inspect current employer tab":"Apply job")+'</span></button>':"";
+      ? '<button class="workflow-action is-primary" type="button" data-apply-job'+(activeApplyAttempts.has(String(job.id))?' disabled aria-busy="true"':'')+'><span>'+(savedApply?"Continue / inspect current employer tab":priorApplyClosed?"Start new application tab":"Apply job")+'</span></button>':"";
     const applyGate="";
     const prepareAction="";
     const postingUrl=/^https?:\/\//i.test(String(job.url||""))?job.url:"";
@@ -2706,18 +2708,24 @@
     try{const values=JSON.parse(sessionStorage.getItem(APPLY_ATTEMPTS_KEY)||"[]");return Array.isArray(values)?values.filter(value=>value&&/^[a-f0-9-]{36}$/i.test(value.attemptId||"")&&/^[A-Za-z0-9_-]{1,160}$/.test(value.jobId||"")&&/^https:\/\//.test(value.jobUrl||"")&&Date.now()-Date.parse(value.createdAt)<2*60*60*1000).slice(-8):[];}catch{return [];}
   }
   function rememberApplyAttempt(attempt,jobUrl){
-    const values=savedApplyAttempts().filter(value=>value.attemptId!==attempt.attemptId&&value.jobId!==String(attempt.jobId));
+    const values=savedApplyAttempts().filter(value=>value.attemptId!==attempt.attemptId);
     values.push({attemptId:attempt.attemptId,jobId:String(attempt.jobId),jobUrl,createdAt:new Date().toISOString()});
     try{sessionStorage.setItem(APPLY_ATTEMPTS_KEY,JSON.stringify(values.slice(-8)));}catch{}
+  }
+  function closeSavedApplyAttempt(attemptId){
+    const values=savedApplyAttempts().map(value=>value.attemptId===attemptId?{...value,closed:true}:value);
+    try{sessionStorage.setItem(APPLY_ATTEMPTS_KEY,JSON.stringify(values));}catch{}
+    render();
   }
   async function recoverApplyAttemptStatus(){
     const values=savedApplyAttempts();if(!values.length)return;
     try{
       const api=await import("./application-prepare.mjs?v=10");
       for(const value of values){
+        if(value.closed)continue;
         const attempt={attemptId:value.attemptId,jobId:value.jobId,bindingRevision:undefined,sequence:0};
         const result=await applyExtensionRequest(api,attempt,"status");
-        if(result.phase==="closed")continue;
+        if(result.phase==="closed"||result.phase==="cancelled"){closeSavedApplyAttempt(value.attemptId);continue;}
         setStatus("Saved application attempt for "+(knownJobById(value.jobId)?.title||"a job")+": "+applyOutcomeMessage(result));
       }
     }catch(error){console.warn("Saved Apply attempt status is unavailable.",error);}
@@ -2829,7 +2837,7 @@
     catch{setStatus("This listing does not have a secure HTTPS URL.");return;}
     const key=String(job.id||job.url);
     if(activeApplyAttempts.has(key)){setStatus("This application is already opening or preparing documents.");return;}
-    const savedAttempt=savedApplyAttempts().find(value=>value.jobId===String(job.id)&&value.jobUrl===job.url);
+    const savedAttempt=savedApplyAttempts().find(value=>!value.closed&&value.jobId===String(job.id)&&value.jobUrl===job.url);
     const attempt={attemptId:savedAttempt?.attemptId||crypto.randomUUID(),jobId:String(job.id||""),bindingRevision:undefined,sequence:0};
     activeApplyAttempts.set(key,attempt);
     const bridge=document.getElementById("ravenExtensionBridge");
@@ -2853,6 +2861,7 @@
         if(!saved?.id)throw Error("The job could not be saved.");
         Object.assign(job,window.RavenCore?.fromApiJob?window.RavenCore.fromApiJob(saved):saved,{_discovered:false});
         state.jobs.push(job);writeCache(CACHE_JOBS_KEY,state.jobs);
+        activeApplyAttempts.delete(key);activeApplyAttempts.set(String(job.id),attempt);
       }
       attempt.jobId=String(job.id);
       if(bridgePresent&&!reserved)reserved=import("./application-prepare.mjs?v=10").then(async api=>({api,result:await applyExtensionRequest(api,attempt,"open",{listingUrl:job.url,title:job.title||"",company:job.company||""})}));
@@ -2880,11 +2889,11 @@
       }
       rememberApplyAttempt(attempt,job.url);
       render();
-      if(opened.phase==="closed"||opened.phase==="cancelled"){setStatus("The saved employer tab is closed. Review the job and start a new attempt.");return;}
+      if(opened.phase==="closed"||opened.phase==="cancelled"){closeSavedApplyAttempt(attempt.attemptId);setStatus("The previous employer tab closed. Click Apply job again to start a new attempt; saved documents remain unchanged.");return;}
       const routed=savedAttempt
         ? await applyExtensionRequest(api,attempt,"inspect",{useCurrentPage:true},attempt.bindingRevision)
         : await applyExtensionRequest(api,attempt,"open",{listingUrl:job.url,targetUrl,title:job.title||"",company:job.company||""},attempt.bindingRevision);
-      if(routed.phase==="closed"||routed.phase==="cancelled"){setStatus(applyOutcomeMessage(routed));return;}
+      if(routed.phase==="closed"||routed.phase==="cancelled"){closeSavedApplyAttempt(attempt.attemptId);setStatus("The previous employer tab closed. Click Apply job again to start a new attempt; saved documents remain unchanged.");return;}
       const ready=await waitForApplyReady(api,attempt);
       if(ready.phase!=="ready"){setStatus(applyOutcomeMessage(ready));return;}
       setStatus("Employer form opened; filling recognized fields. Submit the form yourself when ready.");
@@ -2921,10 +2930,14 @@
       return {status:"opened",attemptId:attempt.attemptId};
     }catch(error){
       console.warn("Apply could not be confirmed.",error);
-      setStatus("Application could not be confirmed: "+error.message+" Review the saved employer link and Raven document status.");
+      if(savedAttempt&&/tab closed|No tab with id|Attempt identity does not match|Application attempt is unavailable/i.test(error.message)){
+        closeSavedApplyAttempt(attempt.attemptId);
+        setStatus("The previous employer tab is unavailable. Click Apply job again to start a new attempt; saved documents remain unchanged.");
+      }else setStatus("Application could not be confirmed: "+error.message+" Review the saved employer link and Raven document status.");
     }finally{
-      activeApplyAttempts.delete(key);
+      for(const [activeKey,value] of activeApplyAttempts)if(value===attempt)activeApplyAttempts.delete(activeKey);
       if(button){button.disabled=false;button.removeAttribute("aria-busy");}
+      render();
     }
   }
 
