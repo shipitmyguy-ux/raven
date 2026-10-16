@@ -142,6 +142,32 @@ test('a different hash route on the same host is not the bound job', async () =>
   assert.equal((await env.request(envelope('status'))).status, 'opening');
 });
 
+test('same-posting Dover tracking redirects can rebind for automatic inspection, but other route changes cannot', async () => {
+  const url = 'https://app.dover.com/apply/Warpfrog/908eb274-5ac8-4d37-9b0f-5108fd12a47c/';
+  const env = harness();
+  const opened = await env.request(envelope('open', { listingUrl: url, targetUrl: url,
+    title: 'Senior 3D Artist', company: 'Warpfrog' }));
+  assert.equal(opened.status, 'opening');
+  const redirected = url + '?rs=76643084&utm_source=raven';
+  env.navigate(40, redirected);
+  await env.tick(); await env.tick();
+  const moved = await env.request(envelope('status'));
+  assert.equal(moved.status, 'navigated');
+  const rebound = await env.request(envelope('inspect', { allowEquivalentRoute: true },
+    { bindingRevision: moved.bindingRevision }));
+  assert.equal(rebound.status, 'waiting_fields');
+  assert.equal(rebound.observedUrl, redirected);
+  assert.equal(env.sent.at(-1).message.type, 'raven-apply-v3-rebind');
+
+  const wrongUrl = 'https://app.dover.com/apply/Warpfrog/908eb274-5ac8-4d37-9b0f-5108fd12a47d/?rs=76643084&utm_source=raven';
+  env.navigate(40, wrongUrl);
+  await env.tick(); await env.tick();
+  const wrong = await env.request(envelope('inspect', { allowEquivalentRoute: true },
+    { bindingRevision: rebound.bindingRevision }));
+  assert.equal(wrong.ok, false);
+  assert.match(wrong.error, /navigated/);
+});
+
 test('operation ID replay never redispatches; changed payload is rejected', async () => {
   const env = harness();
   await env.open(); await env.inspectReady();
