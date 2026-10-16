@@ -6,7 +6,7 @@ import vm from 'node:vm';
 const source=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
 const code=source.slice(source.indexOf('  async function beginApplication(job,button){'),source.indexOf('  function previewableDocumentUrl(value) {'))
   .replaceAll(/await import\("\.\/application-prepare\.mjs\?v=\d+"\)/g,'Promise.resolve(mockApi)')
-  .replaceAll(/import\("\.\/application-prepare\.mjs\?v=\d+"\)/g,'Promise.resolve(api)')
+  .replaceAll(/import\("\.\/application-prepare\.mjs\?v=\d+"\)/g,'Promise.resolve(mockApi)')
   .replaceAll(/await import\("\.\/oneclick-client\.mjs\?v=\d+"\)/g,'Promise.resolve({createOneClickClient:()=>client})');
 const job=()=>({id:'JT-test',url:'https://example.test/listing',title:'Artist',company:'Acme',resume:'saved resume',coverLetter:''});
 function harness({bridge=true,ready=true,coverReady=false,slowResume=false,savedAttempt=false,closedOnce=false}={}){
