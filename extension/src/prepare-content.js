@@ -332,6 +332,81 @@
     banner("Raven prepared this application. Fields filled: " + filledText + ". PDFs accepted by form: " + attachedText + "." + unconfirmedText + requiredText + absentText + " Review every field and attachment, then submit manually.");
     chrome.runtime.sendMessage({ type: "raven-prepare-result", result });
   }
+
+  // Shared DOM adapter for protocol 3. The version 2 preparation path below remains intact.
+  async function applyAttemptOperation(kind, payload) {
+    if (kind === "profile") {
+      const profile = payload.profile || {}, answers = payload.answers || {};
+      const adapter = core.detectAdapter(location.hostname), filled = [];
+      for (const key of Object.keys(profileTerms)) {
+        const value = valueFor(profile, key);
+        if (!value) continue;
+        const el = candidateFor(adapter, key, allFields());
+        if (!el) continue;
+        const changed = adapter.id === "greenhouse" && ["country", "city"].includes(key) &&
+          el.getAttribute("role") === "combobox" ? await setLocationCombo(el, key, value, profile) : setValue(el, value);
+        if (changed) filled.push(key);
+      }
+      for (const el of allFields()) {
+        const label = labelFor(el), answer = answers[normalized(label)];
+        if (!safeControl(el) || sensitive(el, label) || answer == null ||
+            !Object.values(profileTerms).some(terms => terms.some(term => normalized(label) === normalized(term)))) continue;
+        if (setValue(el, answer)) filled.push("remembered answer");
+      }
+      return { state: "filled", result: { filled, requiredUnanswered: requiredLabels() } };
+    }
+    if (kind === "coverLetterText") {
+      const text = payload.coverLetterText?.text || "";
+      const adapter = core.detectAdapter(location.hostname);
+      const fields = [...document.querySelectorAll("textarea")].filter(el => safeControl(el) && !sensitive(el, labelFor(el)) &&
+        (/^cover letter$/i.test(labelFor(el)) || /^(?:cCoverLetter|cover[_-]?letter)$/i.test(el.name) ||
+         /^cover[_-]?letter$/i.test(el.id)));
+      if (fileCandidate(adapter, "coverLetter") || fields.length !== 1)
+        return { state: "no_control", result: { reason: "No unique cover-letter text field." } };
+      const el = fields[0];
+      if (el.value) return { state: "filled", result: { preserved: true } };
+      if (!text || text.length > 20000 || el.maxLength >= 0 && text.length > el.maxLength)
+        return { state: "no_control", result: { reason: "Cover text does not fit the employer field." } };
+      return { state: setValue(el, text) ? "filled" : "no_control", result: { filled: ["cover letter"] } };
+    }
+    const document = payload.document;
+    if (!document || document.kind !== kind) return { state: "failed", result: { reason: "Document identity mismatch." } };
+    const adapter = core.detectAdapter(location.hostname);
+    const deadline = Date.now() + 10000;
+    let input = fileCandidate(adapter, kind);
+    while (!input && Date.now() < deadline) {
+      await new Promise(resolve => setTimeout(resolve, 250));
+      input = fileCandidate(adapter, kind);
+    }
+    if (!input) return { state: "no_control", result: { reason: "No matching file input on this page." } };
+    if (input.files?.length) return { state: "no_control", result: { reason: "Existing attachment preserved." } };
+    const packet = { company: payload.company || "Raven", title: payload.title || "Application" };
+    const file = makePdfFile(document.dataUrl, kind, packet);
+    if (!file || !core.acceptsFile(input.accept, file.name, file.type))
+      return { state: "rejected", result: { reason: "Employer file type does not accept PDF." } };
+    const container = input.closest(".ashby-file-upload,.file-upload,.upload-field,[data-testid*='resume' i],[data-testid*='cover' i]") || input.parentElement;
+    try {
+      const transfer = new DataTransfer(); transfer.items.add(file); input.files = transfer.files;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      if (![...(input.files || [])].some(value => value.name === file.name && value.type === "application/pdf"))
+        return { state: "rejected", result: { reason: "Browser did not retain selected file." } };
+      const deadline = Date.now() + 15000;
+      while (Date.now() < deadline) {
+        const evidence = String(container?.innerText || "").slice(0, 500);
+        if (/\b(upload failed|file rejected|unsupported file|invalid file|could not upload)\b/i.test(evidence))
+          return { state: "rejected", result: { evidence } };
+        if (evidence.includes(file.name) && !/\b(uploading|upload in progress|processing upload|pending upload)\b/i.test(evidence))
+          return { state: "page_confirmed", result: { evidence: file.name } };
+        await new Promise(resolve => setTimeout(resolve, 250));
+      }
+      return { state: "selected", result: { evidence: "File selected; employer acceptance unconfirmed." } };
+    } catch (error) {
+      return { state: "rejected", result: { reason: error?.message || "File selection failed." } };
+    }
+  }
+  globalThis.RavenPrepareDom = { inspect: inspection, applyOperation: applyAttemptOperation };
+
   if (location.protocol !== "https:") return;
   let delivered = false;
   chrome.runtime.onMessage.addListener((message, sender, respond) => {
