@@ -1,6 +1,6 @@
 {
   "source": "https://docs.google.com/spreadsheets/d/1Kue4iGy1WNpItNyCpaMT9__A_228NmbQ9s_uUcc3wb8/edit",
-  "sheet_last_updated": "2026-10-18",
+  "sheet_last_updated": "2026-10-25",
   "jobs": [
     {
       "company": "Black Rose Studio",
@@ -41,16 +41,6 @@
       "remote_scope": "Worldwide",
       "url": "https://playrix.com/job/open/animation-vfx/senior-2d-animator",
       "added": "10.05.2026"
-    },
-    {
-      "company": "One Man Studio",
-      "category": "Outsourcer",
-      "job_category": "Animation",
-      "title": "Senior 3D Gameplay Animator",
-      "type": "Full-Time",
-      "remote_scope": "Worldwide",
-      "url": "https://theonemanstudio.com/jobs/senior-animator/",
-      "added": "17.05.2026"
     },
     {
       "company": "HyperHug",
@@ -171,16 +161,6 @@
       "remote_scope": "Worldwide",
       "url": "https://remotegamejobs.com/jobs/unfold-games-3d-character-animator-humanoid-animation-remote-job",
       "added": "23.08.2026"
-    },
-    {
-      "company": "Flix Interactive",
-      "category": "Developer",
-      "job_category": "Animation",
-      "title": "Principle Combat Animator",
-      "type": "Contract",
-      "remote_scope": "UK",
-      "url": "https://www.flixinteractive.com/vacancies/principle-combat-animator/",
-      "added": "30.08.2026"
     },
     {
       "company": "Insomniac Games",
@@ -373,6 +353,46 @@
       "added": "18.10.2026"
     },
     {
+      "company": "People Can Fly",
+      "category": "Developer",
+      "job_category": "Animation",
+      "title": "Senior Gameplay Animator",
+      "type": "Full-Time",
+      "remote_scope": "Canada",
+      "url": "https://jobs.smartrecruiters.com/PeopleCanFly/744000156551180-animateur-trice-de-jouabilite-senior-e-senior-gameplay-animator-remote",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Dead Mage",
+      "category": "Developer",
+      "job_category": "Animation",
+      "title": "Pixel Art Animator",
+      "type": "Part-Time",
+      "remote_scope": "Worldwide",
+      "url": "https://www.workwithindies.com/careers/dead-mage-pixel-art-animator",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "People Can Fly",
+      "category": "Developer",
+      "job_category": "Animation",
+      "title": "Senior Gameplay Animator",
+      "type": "Full-Time",
+      "remote_scope": "Europe",
+      "url": "https://jobs.smartrecruiters.com/PeopleCanFly/744000157141440-senior-gameplay-animator",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "CD PROJEKT RED",
+      "category": "Developer / Publisher",
+      "job_category": "Animation",
+      "title": "Senior Technical Animator",
+      "type": "Contract",
+      "remote_scope": "-/+ 3 hours away from Warsaw",
+      "url": "https://jobs.smartrecruiters.com/CDPROJEKTRED/744000156892640-senior-technical-animator-contract-",
+      "added": "25.10.2026"
+    },
+    {
       "company": "Playrix",
       "category": "Developer / Publisher",
       "job_category": "Art",
@@ -421,56 +441,6 @@
       "remote_scope": "Worldwide",
       "url": "https://playrix.com/job/open/animation-vfx/senior-vfx-artist",
       "added": "11.10.2025"
-    },
-    {
-      "company": "One Man Studio",
-      "category": "Outsourcer",
-      "job_category": "Art",
-      "title": "Senior | Mid-level Environment Artist",
-      "type": "Full-Time",
-      "remote_scope": "Worldwide",
-      "url": "https://theonemanstudio.com/jobs/environment-artist/",
-      "added": "13.10.2025"
-    },
-    {
-      "company": "One Man Studio",
-      "category": "Outsourcer",
-      "job_category": "Art",
-      "title": "Principal Environment Artist",
-      "type": "Full-Time",
-      "remote_scope": "Worldwide",
-      "url": "https://theonemanstudio.com/jobs/principal-environment-artist/",
-      "added": "13.10.2025"
-    },
-    {
-      "company": "One Man Studio",
-      "category": "Outsourcer",
-      "job_category": "Art",
-      "title": "Senior Weapons & Prop artist",
-      "type": "Full-Time",
-      "remote_scope": "Worldwide",
-      "url": "https://theonemanstudio.com/jobs/senior-weapons-prop-artist/",
-      "added": "13.10.2025"
-    },
-    {
-      "company": "One Man Studio",
-      "category": "Outsourcer",
-      "job_category": "Art",
-      "title": "Videogame – Realtime Senior VFX Artis",
-      "type": "Full-Time",
-      "remote_scope": "Worldwide",
-      "url": "https://theonemanstudio.com/jobs/senior-vfx-artist/",
-      "added": "13.10.2025"
-    },
-    {
-      "company": "One Man Studio",
-      "category": "Outsourcer",
-      "job_category": "Art",
-      "title": "Senior Character Artist",
-      "type": "Full-Time",
-      "remote_scope": "Worldwide",
-      "url": "https://theonemanstudio.com/jobs/senior-character-artist/",
-      "added": "13.10.2025"
     },
     {
       "company": "Room 8 Studio",
@@ -633,16 +603,6 @@
       "added": "09.05.2026"
     },
     {
-      "company": "One Man Studio",
-      "category": "Outsourcer",
-      "job_category": "Art",
-      "title": "Senior Environment Concept Artist",
-      "type": "Full-Time",
-      "remote_scope": "Worldwide",
-      "url": "https://theonemanstudio.com/jobs/senior-environment-concept-artist/",
-      "added": "17.05.2026"
-    },
-    {
       "company": "MaFi Games",
       "category": "Developer",
       "job_category": "Art",
@@ -743,16 +703,6 @@
       "added": "28.06.2026"
     },
     {
-      "company": "Torn Banner Studios",
-      "category": "Developer",
-      "job_category": "Art",
-      "title": "Character Rigging & Tools Artist",
-      "type": "Full-Time",
-      "remote_scope": "Canada (Ontario)",
-      "url": "https://tornbanner.bamboohr.com/careers/50",
-      "added": "05.07.2026"
-    },
-    {
       "company": "Tigerroll Studios",
       "category": "Developer",
       "job_category": "Art",
@@ -801,16 +751,6 @@
       "remote_scope": "GMT-3 to -5",
       "url": "https://www.workwithindies.com/careers/double-twizzle-games-2d-artist",
       "added": "26.07.2026"
-    },
-    {
-      "company": "Mob Entertainment",
-      "category": "Developer",
-      "job_category": "Art",
-      "title": "2D Art Lead",
-      "type": "Full-Time",
-      "remote_scope": "USA",
-      "url": "https://job-boards.greenhouse.io/mobentertainment/jobs/5200088007",
-      "added": "02.08.2026"
     },
     {
       "company": "Warpfrog",
@@ -943,16 +883,6 @@
       "added": "16.08.2026"
     },
     {
-      "company": "Room 8 Studio",
-      "category": "Outsourcer",
-      "job_category": "Art",
-      "title": "Realtime VFX Lead Artist",
-      "type": "Full-Time",
-      "remote_scope": "Argentina / Brazil / Mexico",
-      "url": "https://room8studio.com/talent/realtime-vfx-lead-artist/",
-      "added": "16.08.2026"
-    },
-    {
       "company": "DECK 13 Interactive",
       "category": "Developer",
       "job_category": "Art",
@@ -1063,16 +993,6 @@
       "added": "06.09.2026"
     },
     {
-      "company": "Mob Entertainment",
-      "category": "Developer",
-      "job_category": "Art",
-      "title": "Senior Environment Artist",
-      "type": "Full-Time",
-      "remote_scope": "USA",
-      "url": "https://job-boards.greenhouse.io/mobentertainment/jobs/5195729007",
-      "added": "06.09.2026"
-    },
-    {
       "company": "Visent Games",
       "category": "Developer",
       "job_category": "Art",
@@ -1151,16 +1071,6 @@
       "remote_scope": "Europe",
       "url": "https://gscgameworld.peopleforce.io/careers/v/228297-lead-lighting-artist",
       "added": "06.09.2026"
-    },
-    {
-      "company": "Mob Entertainment",
-      "category": "Developer",
-      "job_category": "Art",
-      "title": "Senior Hard Surface Artist",
-      "type": "Full-Time",
-      "remote_scope": "USA",
-      "url": "https://job-boards.greenhouse.io/mobentertainment/jobs/5233607007",
-      "added": "13.09.2026"
     },
     {
       "company": "Nekki",
@@ -1293,16 +1203,6 @@
       "added": "27.09.2026"
     },
     {
-      "company": "People Can Fly",
-      "category": "Developer",
-      "job_category": "Art",
-      "title": "Senior Level Artist",
-      "type": "Full-Time",
-      "remote_scope": "Canada",
-      "url": "https://jobs.smartrecruiters.com/PeopleCanFly/744000151377560-artiste-de-niveau-senior-senior-level-artist-remote-canada",
-      "added": "27.09.2026"
-    },
-    {
       "company": "Drop Fake Inc.",
       "category": "Developer",
       "job_category": "Art",
@@ -1373,16 +1273,6 @@
       "added": "04.10.2026"
     },
     {
-      "company": "CD PROJEKT RED",
-      "category": "Developer / Publisher",
-      "job_category": "Art",
-      "title": "Expert Illustrator",
-      "type": "Full-Time",
-      "remote_scope": "-/+ 3 hours away from Warsaw",
-      "url": "https://jobs.smartrecruiters.com/CDPROJEKTRED/744000154416981-expert-illustrator",
-      "added": "11.10.2026"
-    },
-    {
       "company": "Mob Entertainment",
       "category": "Developer",
       "job_category": "Art",
@@ -1406,7 +1296,7 @@
       "company": "Escape Velocity",
       "category": "Developer",
       "job_category": "Art",
-      "title": "Lead Outsourcing VFX Artist",
+      "title": "Principal Environment Artist/ Lead",
       "type": "Full-Time",
       "remote_scope": "USA / Canada / Spain / UK / Czech Republic",
       "url": "https://job-boards.greenhouse.io/escapevelocityentertainmentinc/jobs/4438551009",
@@ -1443,16 +1333,6 @@
       "added": "11.10.2026"
     },
     {
-      "company": "ArenaNet",
-      "category": "Developer / Publisher",
-      "job_category": "Art",
-      "title": "Art Outsourcing Lead",
-      "type": "Full-Time",
-      "remote_scope": "USA",
-      "url": "https://jobs.ashbyhq.com/arenanet/06506843-4908-48ca-ae17-c04060e79960",
-      "added": "11.10.2026"
-    },
-    {
       "company": "Blackbird Interactive",
       "category": "Developer",
       "job_category": "Art",
@@ -1463,16 +1343,6 @@
       "added": "11.10.2026"
     },
     {
-      "company": "Febucci",
-      "category": "Developer",
-      "job_category": "Art",
-      "title": "General Artist (3D)",
-      "type": "Freelance",
-      "remote_scope": "Worldwide",
-      "url": "https://febucci.com/careers/general-artist",
-      "added": "11.10.2026"
-    },
-    {
       "company": "Definitely Games",
       "category": "Developer",
       "job_category": "Art",
@@ -1480,36 +1350,6 @@
       "type": "Contract",
       "remote_scope": "Worldwide",
       "url": "https://pages.def.games/lead-game-artist",
-      "added": "11.10.2026"
-    },
-    {
-      "company": "IllFonic",
-      "category": "Developer",
-      "job_category": "Art",
-      "title": "Art & Animation Director",
-      "type": "Full-Time",
-      "remote_scope": "USA",
-      "url": "https://illfonic.breezy.hr/p/0024c6127d76-art-animation-director",
-      "added": "11.10.2026"
-    },
-    {
-      "company": "IllFonic",
-      "category": "Developer",
-      "job_category": "Art",
-      "title": "Principal Environment Artist",
-      "type": "Full-Time",
-      "remote_scope": "USA",
-      "url": "https://illfonic.breezy.hr/p/5c1600aa06b4-principal-environment-artist",
-      "added": "11.10.2026"
-    },
-    {
-      "company": "iLogos Game Studios",
-      "category": "Developer",
-      "job_category": "Art",
-      "title": "2D Artist - Casual Mobile Game",
-      "type": "Part-Time",
-      "remote_scope": "Worldwide",
-      "url": "https://careers.ilogos.biz/jobs/8500410-2d-artist-casual-mobile-game",
       "added": "11.10.2026"
     },
     {
@@ -1560,16 +1400,6 @@
       "type": "Contract",
       "remote_scope": "UK",
       "url": "https://apply.workable.com/panic-stations/j/64AFFA65B3/",
-      "added": "18.10.2026"
-    },
-    {
-      "company": "Chess.com",
-      "category": "Developer / Publisher",
-      "job_category": "Art",
-      "title": "2D Game Artist",
-      "type": "Full-Time / Contract",
-      "remote_scope": "Worldwide",
-      "url": "https://ats.rippling.com/de-DE/chess/jobs/3e0883b6-d9b7-41cf-81f7-57e85e18a802",
       "added": "18.10.2026"
     },
     {
@@ -1683,6 +1513,116 @@
       "added": "18.10.2026"
     },
     {
+      "company": "Daybreak Games",
+      "category": "Developer",
+      "job_category": "Art",
+      "title": "Senior Concept Artist / 2D Artist",
+      "type": "Full-Time",
+      "remote_scope": "USA (CA, WA, TX, NY)",
+      "url": "https://www.daybreakgames.com/careers?job=8901129002",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Conradical Games",
+      "category": "Developer",
+      "job_category": "Art",
+      "title": "Pixel Artist",
+      "type": "Contract",
+      "remote_scope": "Worldwide",
+      "url": "https://www.workwithindies.com/careers/conradical-games-pixel-artist",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Sony Interactive Entertainment / PlayStation",
+      "category": "Publisher",
+      "job_category": "Art",
+      "title": "Senior Materials Level Artist",
+      "type": "Contract",
+      "remote_scope": "Canada",
+      "url": "https://job-boards.greenhouse.io/sonyinteractiveentertainmentglobal/jobs/6229772004",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "CD PROJEKT RED",
+      "category": "Developer / Publisher",
+      "job_category": "Art",
+      "title": "Senior 2D Motion Designer",
+      "type": "Contract",
+      "remote_scope": "-/+ 3 hours away from Warsaw",
+      "url": "https://jobs.smartrecruiters.com/CDPROJEKTRED/744000156742869-senior-2d-motion-designer",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Ravenwake Games",
+      "category": "Developer",
+      "job_category": "Art",
+      "title": "Senior Concept Artist / 2D Artist",
+      "type": "Full-Time",
+      "remote_scope": "Canada (BC)",
+      "url": "https://job-boards.greenhouse.io/ravenwakegames/jobs/8901157002",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "ArenaNet",
+      "category": "Developer / Publisher",
+      "job_category": "Art",
+      "title": "Senior Outsourcing Character Concept Artist (Contract)",
+      "type": "Contract",
+      "remote_scope": "USA",
+      "url": "https://jobs.ashbyhq.com/arenanet/2e9d93ac-770a-45aa-ad00-c15ca3ca250b",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "ArenaNet",
+      "category": "Developer / Publisher",
+      "job_category": "Art",
+      "title": "Senior Outsourcing Prop Concept Artist (Contract)",
+      "type": "Contract",
+      "remote_scope": "USA",
+      "url": "https://jobs.ashbyhq.com/arenanet/cdbfb76d-bd10-4e22-878d-24034765879e",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "VRChat",
+      "category": "Platform",
+      "job_category": "Art",
+      "title": "2D Designer",
+      "type": "Contract",
+      "remote_scope": "Worldwide",
+      "url": "https://jobs.lever.co/vrchat/81cee3d5-6a0b-4f88-9f09-357eef400239",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "iLogos Game Studios",
+      "category": "Developer",
+      "job_category": "Art",
+      "title": "2D Props Concept Artist - Semi-Realistic Style",
+      "type": "Contract",
+      "remote_scope": "Worldwide",
+      "url": "https://careers.ilogos.biz/jobs/8586326-2d-props-concept-artist-semi-realistic-style",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Room 8 Studio",
+      "category": "Outsourcer",
+      "job_category": "Art",
+      "title": "Realistic 3D Environment, Middle",
+      "type": "Full-Time",
+      "remote_scope": "Europe (selected countries) / South America (selected countries) / Mexico",
+      "url": "https://room8studio.com/talent/realistic-3d-environment-middle/",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Room 8 Studio",
+      "category": "Outsourcer",
+      "job_category": "Art",
+      "title": "Realistic 3D Characters Art Director",
+      "type": "Full-Time",
+      "remote_scope": "Europe (selected countries) / South America (selected countries) / Mexico / Malaysia",
+      "url": "https://room8studio.com/talent/realistic-3d-characters-art-director/",
+      "added": "25.10.2026"
+    },
+    {
       "company": "Crater Studios",
       "category": "Developer",
       "job_category": "Audio",
@@ -1711,6 +1651,16 @@
       "remote_scope": "Worldwide",
       "url": "https://jobs.gusto.com/postings/dlvr-sound-designer-vr-unity-ea3195d1-46a9-4f83-9c9e-a86a457a00bb",
       "added": "27.09.2026"
+    },
+    {
+      "company": "SOFTGAMES",
+      "category": "Developer / Publisher",
+      "job_category": "Audio",
+      "title": "Freelance Sound Designer (Project Based)",
+      "type": "Freelance",
+      "remote_scope": "Worldwide",
+      "url": "https://jobs.softgames.de/o/freelance-sound-designer-project-based-fully-remote",
+      "added": "25.10.2026"
     },
     {
       "company": "Room 8 Group",
@@ -1780,16 +1730,6 @@
       "type": "Full-Time",
       "remote_scope": "USA",
       "url": "https://apply.workable.com/sideinc/j/D256E8DA85/",
-      "added": "06.09.2026"
-    },
-    {
-      "company": "Scopely",
-      "category": "Developer / Publisher",
-      "job_category": "BizDev / Sales",
-      "title": "Licensing Operations Coordinator",
-      "type": "Full-Time",
-      "remote_scope": "USA / Canada",
-      "url": "https://job-boards.greenhouse.io/scopely/jobs/5407344008?gh_jid=5407344008",
       "added": "06.09.2026"
     },
     {
@@ -1933,16 +1873,6 @@
       "added": "27.09.2026"
     },
     {
-      "company": "Naphora Games Group",
-      "category": "Developer",
-      "job_category": "Community Management / Support",
-      "title": "Player Experience Specialist",
-      "type": "Full-Time",
-      "remote_scope": "EMEA",
-      "url": "https://job-boards.eu.greenhouse.io/alemnafora/jobs/4949471101",
-      "added": "04.10.2026"
-    },
-    {
       "company": "Shockbyte",
       "category": "Tech / Middleware / Tools",
       "job_category": "Community Management / Support",
@@ -1991,6 +1921,16 @@
       "remote_scope": "Worldwide",
       "url": "https://career.paradoxplaza.com/jobs/8529356-community-ambassador-stellaris-freelance",
       "added": "18.10.2026"
+    },
+    {
+      "company": "MY.GAMES",
+      "category": "Developer / Publisher",
+      "job_category": "Community Management / Support",
+      "title": "Community Manager",
+      "type": "Full-Time",
+      "remote_scope": "Worldwide",
+      "url": "https://careers.my.games/de-DE/26126",
+      "added": "25.10.2026"
     },
     {
       "company": "Kano",
@@ -2073,16 +2013,6 @@
       "added": "11.10.2026"
     },
     {
-      "company": "ENVER",
-      "category": "Outsourcer",
-      "job_category": "Data / Analytics",
-      "title": "Data Analyst - Live Games",
-      "type": "Full-Time",
-      "remote_scope": "Worldwide",
-      "url": "https://enver.com/career/data-analyst-",
-      "added": "18.10.2026"
-    },
-    {
       "company": "Nex",
       "category": "Publisher",
       "job_category": "Data / Analytics",
@@ -2090,16 +2020,6 @@
       "type": "Full-Time",
       "remote_scope": "USA",
       "url": "https://job-boards.greenhouse.io/nex/jobs/5385458008",
-      "added": "18.10.2026"
-    },
-    {
-      "company": "Plarium",
-      "category": "Developer",
-      "job_category": "Data / Analytics",
-      "title": "Product Data Analyst",
-      "type": "Full-Time",
-      "remote_scope": "Poland / Ukraine / Spain",
-      "url": "https://company.plarium.com/en/career/product-data-analyst-56-1268/",
       "added": "18.10.2026"
     },
     {
@@ -2120,16 +2040,6 @@
       "type": "Full-Time",
       "remote_scope": "Worldwide",
       "url": "https://playrix.com/job/open/game-design/game-design-director",
-      "added": "11.10.2025"
-    },
-    {
-      "company": "Playrix",
-      "category": "Developer / Publisher",
-      "job_category": "Game Design",
-      "title": "Senior Game Designer",
-      "type": "Full-Time",
-      "remote_scope": "Worldwide",
-      "url": "https://playrix.com/job/open/game-design/feature-owner",
       "added": "11.10.2025"
     },
     {
@@ -2433,16 +2343,6 @@
       "added": "13.09.2026"
     },
     {
-      "company": "Digital Extremes",
-      "category": "Developer",
-      "job_category": "Game Design",
-      "title": "Senior Game Designer - Warframe",
-      "type": "Full-Time",
-      "remote_scope": "Canada",
-      "url": "https://job-boards.greenhouse.io/digitalextremes/jobs/5240933007",
-      "added": "20.09.2026"
-    },
-    {
       "company": "Bungie",
       "category": "Developer",
       "job_category": "Game Design",
@@ -2563,26 +2463,6 @@
       "added": "04.10.2026"
     },
     {
-      "company": "Cross Key Games",
-      "category": "Developer",
-      "job_category": "Game Design",
-      "title": "Experienced Technical Designer (Systems & Progression)",
-      "type": "Contract",
-      "remote_scope": "UK",
-      "url": "https://apply.workable.com/cross-key-games/j/40DBFE8971/",
-      "added": "11.10.2026"
-    },
-    {
-      "company": "Cross Key Games",
-      "category": "Developer",
-      "job_category": "Game Design",
-      "title": "Experienced Technical Designer (Player & Combat)",
-      "type": "Contract",
-      "remote_scope": "UK",
-      "url": "https://apply.workable.com/cross-key-games/j/7BBFC148BE/",
-      "added": "11.10.2026"
-    },
-    {
       "company": "Gardens Interactive",
       "category": "Developer",
       "job_category": "Game Design",
@@ -2636,16 +2516,6 @@
       "company": "Escape Velocity",
       "category": "Developer",
       "job_category": "Game Design",
-      "title": "Principal Systems Designer, Live Service (Social Systems, Events and Onboarding)",
-      "type": "Full-Time",
-      "remote_scope": "USA / Canada / Spain / UK / Czech Republic",
-      "url": "https://job-boards.greenhouse.io/escapevelocityentertainmentinc/jobs/4438470009",
-      "added": "11.10.2026"
-    },
-    {
-      "company": "Escape Velocity",
-      "category": "Developer",
-      "job_category": "Game Design",
       "title": "Senior Game AI Designer",
       "type": "Full-Time",
       "remote_scope": "USA / Canada / Spain / UK / Czech Republic",
@@ -2693,26 +2563,6 @@
       "added": "11.10.2026"
     },
     {
-      "company": "CD PROJEKT RED",
-      "category": "Developer / Publisher",
-      "job_category": "Game Design",
-      "title": "Senior Quest Designer",
-      "type": "Full-Time",
-      "remote_scope": "-/+ 3 hours away from Warsaw",
-      "url": "https://jobs.smartrecruiters.com/CDPROJEKTRED/744000154949289-senior-quest-designer",
-      "added": "18.10.2026"
-    },
-    {
-      "company": "North Mist Studios Ltd.",
-      "category": "Developer",
-      "job_category": "Game Design",
-      "title": "Game Designer - Missions and Levels",
-      "type": "Contract",
-      "remote_scope": "Canada",
-      "url": "https://www.linkedin.com/jobs/view/4479691810/",
-      "added": "18.10.2026"
-    },
-    {
       "company": "People Can Fly",
       "category": "Developer",
       "job_category": "Game Design",
@@ -2753,6 +2603,86 @@
       "added": "18.10.2026"
     },
     {
+      "company": "Play Theory / Red Games",
+      "category": "Developer",
+      "job_category": "Game Design",
+      "title": "Game Designer",
+      "type": "Full-Time",
+      "remote_scope": "USA",
+      "url": "https://redgamesco.applytojob.com/apply/2C3pqRoePG/Game-Designer-Strategy-Innovation",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "People Can Fly",
+      "category": "Developer",
+      "job_category": "Game Design",
+      "title": "Senior AI Designer",
+      "type": "Full-Time",
+      "remote_scope": "Europe",
+      "url": "https://jobs.smartrecruiters.com/PeopleCanFly/744000157444559-senior-ai-designer",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "CD PROJEKT RED",
+      "category": "Developer / Publisher",
+      "job_category": "Game Design",
+      "title": "Senior Gameplay Designer",
+      "type": "Full-Time",
+      "remote_scope": "USA / Canada",
+      "url": "https://jobs.smartrecruiters.com/CDPROJEKTRED/744000157224799-senior-gameplay-designer-",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Bungie",
+      "category": "Developer",
+      "job_category": "Game Design",
+      "title": "Senior Investment Designer (Rewards and Commerce)",
+      "type": "Full-Time",
+      "remote_scope": "USA",
+      "url": "https://job-boards.greenhouse.io/bungie/jobs/6223718004",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "SOFTGAMES",
+      "category": "Developer / Publisher",
+      "job_category": "Game Design",
+      "title": "Senior Game Designer - Systems & Economy",
+      "type": "Full-TIme",
+      "remote_scope": "Worldwide",
+      "url": "https://jobs.softgames.de/o/senior-game-designer-systems-fully-remote",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "MY.GAMES",
+      "category": "Developer / Publisher",
+      "job_category": "Game Design",
+      "title": "Game Designer",
+      "type": "Full-Time",
+      "remote_scope": "Worldwide",
+      "url": "https://careers.my.games/de-DE/26130",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Voodoo",
+      "category": "Developer / Publisher",
+      "job_category": "Game Design",
+      "title": "Senior System Designer - Mob Control",
+      "type": "Full-Time",
+      "remote_scope": "Europe",
+      "url": "https://jobs.ashbyhq.com/voodoo/cda1574a-83ec-4acd-ab19-8d3c2f22a4b4",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Room 8 Group",
+      "category": "Outsourcer",
+      "job_category": "Game Design",
+      "title": "Principal Game Designer",
+      "type": "Full-Time",
+      "remote_scope": "Europe",
+      "url": "https://room8group.com/join-the-team/principal-game-designer/",
+      "added": "25.10.2026"
+    },
+    {
       "company": "Beffio",
       "category": "Outsourcer",
       "job_category": "HR / Talent Acquisition",
@@ -2761,6 +2691,56 @@
       "remote_scope": "Europe",
       "url": "https://careers.beffio.com/jobs/7468348-talent-acquisition-specialist-gamedev-europe-remote",
       "added": "17.05.2026"
+    },
+    {
+      "company": "That's No Moon",
+      "category": "Developer",
+      "job_category": "HR / Talent Acquisition",
+      "title": "Senior Manager, People Operations",
+      "type": "Full-Time",
+      "remote_scope": "USA",
+      "url": "https://job-boards.greenhouse.io/thatsnomoonentertainment/jobs/6231076004",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Discord",
+      "category": "Platform",
+      "job_category": "HR / Talent Acquisition",
+      "title": "Senior Technical Sourcer",
+      "type": "Full-Time",
+      "remote_scope": "USA",
+      "url": "https://job-boards.greenhouse.io/discord/jobs/8822683002?gh_src=57e244b12us",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "VRChat",
+      "category": "Platform",
+      "job_category": "HR / Talent Acquisition",
+      "title": "Head of People",
+      "type": "Full-Time",
+      "remote_scope": "Worldwide",
+      "url": "https://jobs.lever.co/vrchat/5f8683d1-c30e-4e47-8bfa-540e96b04020",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "VRChat",
+      "category": "Platform",
+      "job_category": "HR / Talent Acquisition",
+      "title": "Head of Talent",
+      "type": "Full-Time",
+      "remote_scope": "Worldwide",
+      "url": "https://jobs.lever.co/vrchat/05229da3-4145-402d-b4ae-2d9a1157b796",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "VRChat",
+      "category": "Platform",
+      "job_category": "HR / Talent Acquisition",
+      "title": "Senior People Generalist",
+      "type": "Full-Time",
+      "remote_scope": "Worldwide",
+      "url": "https://jobs.lever.co/vrchat/3412acd1-729a-4a97-b980-cf15332380de",
+      "added": "25.10.2026"
     },
     {
       "company": "Scape",
@@ -2833,16 +2813,6 @@
       "added": "11.10.2026"
     },
     {
-      "company": "Cosmic Dog",
-      "category": "Developer",
-      "job_category": "Level Design",
-      "title": "Level Designer",
-      "type": "Contract",
-      "remote_scope": "USA",
-      "url": "https://www.workwithindies.com/careers/cosmic-dog-level-designer",
-      "added": "11.10.2026"
-    },
-    {
       "company": "Nekki",
       "category": "Developer",
       "job_category": "Level Design",
@@ -2881,6 +2851,16 @@
       "remote_scope": "Worldwide",
       "url": "https://veelpoot.com/job/level-designer-remote/",
       "added": "18.10.2026"
+    },
+    {
+      "company": "Side",
+      "category": "Business Services / Co-Dev",
+      "job_category": "Level Design",
+      "title": "Level Designer",
+      "type": "Contract",
+      "remote_scope": "UK / Portugal / Spain",
+      "url": "https://apply.workable.com/sideinc/j/2FB1BF9A59/",
+      "added": "25.10.2026"
     },
     {
       "company": "Nex",
@@ -2933,26 +2913,6 @@
       "added": "24.05.2026"
     },
     {
-      "company": "Armor Games Studios",
-      "category": "Developer",
-      "job_category": "Marketing",
-      "title": "Senior Marketing Manager",
-      "type": "Part-Time",
-      "remote_scope": "Worldwide",
-      "url": "https://www.workwithindies.com/careers/armor-games-studios-senior-marketing-manager",
-      "added": "24.05.2026"
-    },
-    {
-      "company": "CrazyLabs",
-      "category": "Developer",
-      "job_category": "Marketing",
-      "title": "AI-Native Motion Designer / Animator",
-      "type": "Full-Time",
-      "remote_scope": "Worldwide",
-      "url": "https://www.crazylabs.com/jobs/co/remote/A7.B69/ai-native-motion-designer-animator/all/",
-      "added": "31.05.2026"
-    },
-    {
       "company": "thatgamecompany",
       "category": "Developer",
       "job_category": "Marketing",
@@ -3003,16 +2963,6 @@
       "added": "26.07.2026"
     },
     {
-      "company": "Sony Interactive Entertainment / PlayStation",
-      "category": "Publisher",
-      "job_category": "Marketing",
-      "title": "Brand Manager - Live Content and Seasonal Marketing",
-      "type": "Full-Time",
-      "remote_scope": "USA",
-      "url": "https://job-boards.greenhouse.io/sonyinteractiveentertainmentglobal/jobs/6117167004",
-      "added": "26.07.2026"
-    },
-    {
       "company": "Digital Extremes",
       "category": "Developer",
       "job_category": "Marketing",
@@ -3041,16 +2991,6 @@
       "remote_scope": "Poland / Spain / Ukraine",
       "url": "https://company.plarium.com/en/career/creative-manager-797-1248/",
       "added": "02.08.2026"
-    },
-    {
-      "company": "BeamNG",
-      "category": "Developer",
-      "job_category": "Marketing",
-      "title": "Senior Marketing, PR and Communications Specialist",
-      "type": "Full-Time",
-      "remote_scope": "Worldwide",
-      "url": "https://apply.workable.com/beamng/j/CCC0F0A64C/",
-      "added": "16.08.2026"
     },
     {
       "company": "thatgamecompany",
@@ -3203,16 +3143,6 @@
       "added": "04.10.2026"
     },
     {
-      "company": "Homa",
-      "category": "Developer / Publisher",
-      "job_category": "Marketing",
-      "title": "Motion Designer - Mobile Games",
-      "type": "Freelance",
-      "remote_scope": "Spain / Poland / Turkey /Cyprus",
-      "url": "https://apply.workable.com/homa-games/j/409308F04C/",
-      "added": "04.10.2026"
-    },
-    {
       "company": "Scopely",
       "category": "Developer / Publisher",
       "job_category": "Marketing",
@@ -3240,16 +3170,6 @@
       "type": "Full-Time",
       "remote_scope": "UK",
       "url": "https://apply.workable.com/team-17-digital/j/0547B5A96D/",
-      "added": "11.10.2026"
-    },
-    {
-      "company": "Team17 Digital",
-      "category": "Developer / Publisher",
-      "job_category": "Marketing",
-      "title": "Performance Marketing Manager",
-      "type": "Full-Time",
-      "remote_scope": "UK",
-      "url": "https://apply.workable.com/team-17-digital/j/D6170E8AB2/",
       "added": "11.10.2026"
     },
     {
@@ -3353,16 +3273,6 @@
       "added": "18.10.2026"
     },
     {
-      "company": "Keywords Studios",
-      "category": "Business Services",
-      "job_category": "Marketing",
-      "title": "Mid- Level Game Capture Artist (Unity / Unreal)",
-      "type": "Full-Time",
-      "remote_scope": "UK",
-      "url": "https://jobs.workable.com/view/ssDBhk4UjaGKpUSMhXgnVc/remote-mid--level-game-capture-artist-(unity-%2F-unreal)-in-england-at-keywords-studios",
-      "added": "18.10.2026"
-    },
-    {
       "company": "Chess.com",
       "category": "Developer / Publisher",
       "job_category": "Marketing",
@@ -3393,6 +3303,26 @@
       "added": "18.10.2026"
     },
     {
+      "company": "Wooster Games",
+      "category": "Developer",
+      "job_category": "Marketing",
+      "title": "Steam Marketing Lead",
+      "type": "Contract / Full-Time",
+      "remote_scope": "Worldwide",
+      "url": "https://spatial.zohorecruit.com/jobs/Careers/758428000004054001/Steam-Marketing-Lead",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Atari",
+      "category": "Publisher",
+      "job_category": "Marketing",
+      "title": "Asset Designer: Platform Games",
+      "type": "Contract",
+      "remote_scope": "USA / Europe (requires core overlap with Europe/India time zones)",
+      "url": "https://job-boards.greenhouse.io/atariinc/jobs/5459410008",
+      "added": "25.10.2026"
+    },
+    {
       "company": "Yotta Games",
       "category": "Developer",
       "job_category": "Narrative / Writing",
@@ -3413,16 +3343,6 @@
       "added": "20.09.2026"
     },
     {
-      "company": "Fusebox Games",
-      "category": "Developer",
-      "job_category": "Narrative / Writing",
-      "title": "Writer - Big Brother The Game",
-      "type": "Contract",
-      "remote_scope": "UK",
-      "url": "https://www.linkedin.com/jobs/view/4469146210/",
-      "added": "20.09.2026"
-    },
-    {
       "company": "Nexters",
       "category": "Developer",
       "job_category": "Narrative / Writing",
@@ -3431,46 +3351,6 @@
       "remote_scope": "Worldwide",
       "url": "https://www.nexters.com/en/about/alljobs/?vacancy=narrative-designer-game-writer-1788357943",
       "added": "20.09.2026"
-    },
-    {
-      "company": "Longdue",
-      "category": "Developer",
-      "job_category": "Narrative / Writing",
-      "title": "Narrative Writer",
-      "type": "Full-Time",
-      "remote_scope": "South Africa",
-      "url": "https://apply.workable.com/longdue-games/j/E21B1FD069/",
-      "added": "27.09.2026"
-    },
-    {
-      "company": "Failbetter Games",
-      "category": "Developer",
-      "job_category": "Narrative / Writing",
-      "title": "Writer and Narrative Designer (Senior/Mid-Level)",
-      "type": "Full-Time",
-      "remote_scope": "Worldwide (available between 11:00 - 16:00 UTC/BST)",
-      "url": "https://www.failbettergames.com/jobs/writer-and-narrative-designer-senior-mid-level",
-      "added": "04.10.2026"
-    },
-    {
-      "company": "Room 8 Group",
-      "category": "Outsourcer",
-      "job_category": "Narrative / Writing",
-      "title": "Narrative Designer, Senior",
-      "type": "Full-Time",
-      "remote_scope": "Poland / Romania/ Czech Republic / Ukraine / Bulgaria / Latvia / Lithuania / Moldova",
-      "url": "https://room8group.com/join-the-team/narrative-designer-senior/",
-      "added": "04.10.2026"
-    },
-    {
-      "company": "Room 8 Group",
-      "category": "Outsourcer",
-      "job_category": "Narrative / Writing",
-      "title": "Quest Designer, Senior",
-      "type": "Full-Time",
-      "remote_scope": "Poland / Romania/ Czech Republic / Ukraine / Bulgaria / Latvia / Lithuania / Moldova",
-      "url": "https://room8group.com/join-the-team/quest-designer-senior/",
-      "added": "04.10.2026"
     },
     {
       "company": "Nekki",
@@ -3573,16 +3453,6 @@
       "added": "27.09.2026"
     },
     {
-      "company": "Sony Interactive Entertainment / PlayStation",
-      "category": "Publisher",
-      "job_category": "Other",
-      "title": "Senior Game Application Security Analyst",
-      "type": "Full-Time",
-      "remote_scope": "USA",
-      "url": "https://job-boards.greenhouse.io/sonyinteractiveentertainmentglobal/jobs/6208571004",
-      "added": "11.10.2026"
-    },
-    {
       "company": "Chess.com",
       "category": "Developer / Publisher",
       "job_category": "Other",
@@ -3631,26 +3501,6 @@
       "remote_scope": "Worldwide (Bonus if located in the United States/Canada or in similar time zones)",
       "url": "https://www.workwithindies.com/careers/optillusion-games-social-media-video-creator-editor",
       "added": "12.07.2026"
-    },
-    {
-      "company": "Keywords Studios",
-      "category": "Business Services",
-      "job_category": "PR / Social Media",
-      "title": "Social Media Manager with Chinese - Gaming",
-      "type": "Contract",
-      "remote_scope": "UK / Poland / Germany / Belgium / Spain",
-      "url": "https://apply.workable.com/keywords-intl1/j/B0C9816F4A/",
-      "added": "16.08.2026"
-    },
-    {
-      "company": "HoYoverse",
-      "category": "Publisher",
-      "job_category": "PR / Social Media",
-      "title": "Public Relations Manager",
-      "type": "Full-Time",
-      "remote_scope": "USA / UK",
-      "url": "https://jobs.ashbyhq.com/hoyoverse/2ff55a73-926b-4ad5-94b0-e13a2e73db85",
-      "added": "23.08.2026"
     },
     {
       "company": "Untitled Ad Labs",
@@ -3703,16 +3553,6 @@
       "added": "27.09.2026"
     },
     {
-      "company": "Team17 Digital",
-      "category": "Developer / Publisher",
-      "job_category": "PR / Social Media",
-      "title": "Social Media Content Creator - FTC 6 Months",
-      "type": "Contract",
-      "remote_scope": "UK",
-      "url": "https://apply.workable.com/team-17-digital/j/25DC33DCB9/",
-      "added": "11.10.2026"
-    },
-    {
       "company": "Unity Technologies",
       "category": "Tech / Middleware / Tools",
       "job_category": "PR / Social Media",
@@ -3743,6 +3583,36 @@
       "added": "18.10.2026"
     },
     {
+      "company": "Wooster Games",
+      "category": "Developer",
+      "job_category": "PR / Social Media",
+      "title": "Social Media Specialist",
+      "type": "Contract",
+      "remote_scope": "Worldwide",
+      "url": "https://spatial.zohorecruit.com/jobs/Careers/758428000002714990/Social-Media-Specialist",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "ArenaNet",
+      "category": "Developer / Publisher",
+      "job_category": "PR / Social Media",
+      "title": "Senior Social Media Marketing Specialist",
+      "type": "Full-Time",
+      "remote_scope": "USA",
+      "url": "https://jobs.ashbyhq.com/arenanet/9418a48b-2109-42dd-b26a-4ba97d61a3a1",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Reality Games",
+      "category": "Developer",
+      "job_category": "PR / Social Media",
+      "title": "Social Media & Community Live Ops Manager",
+      "type": "Full-Time",
+      "remote_scope": "Worldwide",
+      "url": "https://reality.co/careers/#social-media-and-community-live-ops-manager",
+      "added": "25.10.2026"
+    },
+    {
       "company": "Daybreak Games",
       "category": "Developer",
       "job_category": "Product / Project Management / Producing",
@@ -3751,16 +3621,6 @@
       "remote_scope": "USA (CA, WA, TX, NY)",
       "url": "https://www.daybreakgames.com/careers?job=6842912002",
       "added": "20.10.2025"
-    },
-    {
-      "company": "Devoted Studios",
-      "category": "Developer",
-      "job_category": "Product / Project Management / Producing",
-      "title": "Senior Game Producer - Full Cycle",
-      "type": "Full-Time",
-      "remote_scope": "Canada / Argentina / Brazil / Mexico",
-      "url": "https://apply.workable.com/devoted-studios-1/j/7048E2057B/",
-      "added": "21.10.2025"
     },
     {
       "company": "Plummy",
@@ -4313,6 +4173,36 @@
       "added": "18.10.2026"
     },
     {
+      "company": "Atari",
+      "category": "Publisher",
+      "job_category": "Product / Project Management / Producing",
+      "title": "Game Producer: Platform Games",
+      "type": "Contract",
+      "remote_scope": "USA / Europe / India (requires core overlap with Europe/India time zones)",
+      "url": "https://job-boards.greenhouse.io/atariinc/jobs/5459409008",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Escape Velocity",
+      "category": "Developer",
+      "job_category": "Product / Project Management / Producing",
+      "title": "Lead Producer",
+      "type": "Full-Time",
+      "remote_scope": "USA / Canada / Spain / UK / Czech Republic",
+      "url": "https://job-boards.greenhouse.io/escapevelocityentertainmentinc/jobs/4463890009",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Escape Velocity",
+      "category": "Developer",
+      "job_category": "Product / Project Management / Producing",
+      "title": "Lead Producer - Game Operations",
+      "type": "Full-Time",
+      "remote_scope": "USA / Canada / Spain / UK / Czech Republic",
+      "url": "https://job-boards.greenhouse.io/escapevelocityentertainmentinc/jobs/4463921009",
+      "added": "25.10.2026"
+    },
+    {
       "company": "Mythwright",
       "category": "Publisher",
       "job_category": "Publishing",
@@ -4456,7 +4346,7 @@
       "company": "Voldex",
       "category": "Developer",
       "job_category": "QA",
-      "title": "QA Tester - Brookhaven",
+      "title": "QA Tester - Driving Empire",
       "type": "Full-Time",
       "remote_scope": "UK / Canada / Brazil / Argentina / Colombia / Mexico",
       "url": "https://jobs.ashbyhq.com/voldex/8d8af60f-a9b2-489b-9d61-19ff33f202a0",
@@ -4481,26 +4371,6 @@
       "remote_scope": "USA",
       "url": "https://job-boards.greenhouse.io/teamlfg/jobs/6211050004",
       "added": "04.10.2026"
-    },
-    {
-      "company": "Testronic",
-      "category": "Outsourcer (QA)",
-      "job_category": "QA",
-      "title": "Global QA Director",
-      "type": "Full-Time",
-      "remote_scope": "UK",
-      "url": "https://apply.workable.com/testronic/j/10810BA45B/",
-      "added": "11.10.2026"
-    },
-    {
-      "company": "FuturLab",
-      "category": "Developer",
-      "job_category": "QA",
-      "title": "Senior QA Tester",
-      "type": "Full-Time",
-      "remote_scope": "UK",
-      "url": "https://www.futurlab.co.uk/careers/senior-qa-tester-uk-only-remotehybrid-brighton-ca7fc5124e",
-      "added": "11.10.2026"
     },
     {
       "company": "Escape Velocity",
@@ -4537,7 +4407,7 @@
       "category": "Developer",
       "job_category": "QA",
       "title": "QA Analyst (CQA)",
-      "type": "Full-Time",
+      "type": "Contract",
       "remote_scope": "Canada (Quebec)",
       "url": "https://www.useparallel.com/skymapgames/careers/6ac666fe96253d8c3beac7fa",
       "added": "18.10.2026"
@@ -4710,16 +4580,6 @@
       "type": "Full-Time",
       "remote_scope": "Worldwide",
       "url": "https://jobs.ashbyhq.com/hyperhug/0343c318-84bc-42b9-8981-39aecc5ba006",
-      "added": "09.05.2026"
-    },
-    {
-      "company": "teamLFG",
-      "category": "Developer",
-      "job_category": "Tech / Programming",
-      "title": "Senior Engineer - Build Systems",
-      "type": "Full-Time",
-      "remote_scope": "USA",
-      "url": "https://job-boards.greenhouse.io/teamlfg/jobs/5981474004",
       "added": "09.05.2026"
     },
     {
@@ -5373,16 +5233,6 @@
       "added": "06.09.2026"
     },
     {
-      "company": "Mad Head Games",
-      "category": "Developer",
-      "job_category": "Tech / Programming",
-      "title": "Lead UI Programmer",
-      "type": "Full-Time",
-      "remote_scope": "EMEA",
-      "url": "https://careers.madheadgames.com/jobs/lead-ui-programmer-ckS8",
-      "added": "06.09.2026"
-    },
-    {
       "company": "Nexus Mods",
       "category": "Tech / Middleware / Tools",
       "job_category": "Tech / Programming",
@@ -5563,26 +5413,6 @@
       "added": "27.09.2026"
     },
     {
-      "company": "Disney Experience",
-      "category": "Media Company",
-      "job_category": "Tech / Programming",
-      "title": "Senior Backend Engineer (Go)",
-      "type": "Full-Time",
-      "remote_scope": "Sweden / Denmark / Finland / Norway",
-      "url": "https://www.disneycareers.com/en/job/sweden/senior-backend-engineer-go/391/91300061952",
-      "added": "27.09.2026"
-    },
-    {
-      "company": "ArenaNet",
-      "category": "Developer / Publisher",
-      "job_category": "Tech / Programming",
-      "title": "Senior Engine Programmer (Contract)",
-      "type": "Contract",
-      "remote_scope": "USA",
-      "url": "https://jobs.ashbyhq.com/arenanet/8f5a5767-f22a-4aab-b6eb-c290eda1b5a2",
-      "added": "27.09.2026"
-    },
-    {
       "company": "Nexus Mods",
       "category": "Tech / Middleware / Tools",
       "job_category": "Tech / Programming",
@@ -5600,16 +5430,6 @@
       "type": "Freelance",
       "remote_scope": "Brazil",
       "url": "https://jobs.workable.com/view/632F1dd5TGpE4zpWbvGcAD/remote-pixijs-game-developer-in-s%C3%A3o-paulo-at-side",
-      "added": "04.10.2026"
-    },
-    {
-      "company": "Side",
-      "category": "Business Services / Co-Dev",
-      "job_category": "Tech / Programming",
-      "title": "Unreal Engine (UE) Engineer - Switch",
-      "type": "Freelance",
-      "remote_scope": "Brazil",
-      "url": "https://jobs.workable.com/view/qVdkpZeMLFHiakuzKBXJQV/remote-unreal-engine-(ue)-engineer---switch-in-s%C3%A3o-paulo-at-side",
       "added": "04.10.2026"
     },
     {
@@ -5723,16 +5543,6 @@
       "added": "11.10.2026"
     },
     {
-      "company": "Mob Entertainment",
-      "category": "Developer",
-      "job_category": "Tech / Programming",
-      "title": "Junior Gameplay Programmer",
-      "type": "Full-Time",
-      "remote_scope": "USA",
-      "url": "https://job-boards.greenhouse.io/mobentertainment/jobs/5253873007",
-      "added": "11.10.2026"
-    },
-    {
       "company": "teamLFG",
       "category": "Developer",
       "job_category": "Tech / Programming",
@@ -5740,16 +5550,6 @@
       "type": "Full-Time",
       "remote_scope": "USA",
       "url": "https://job-boards.greenhouse.io/teamlfg/jobs/6211046004",
-      "added": "11.10.2026"
-    },
-    {
-      "company": "Facepunch Studios",
-      "category": "Developer",
-      "job_category": "Tech / Programming",
-      "title": "Programmer",
-      "type": "Full-Time",
-      "remote_scope": "Worldwide",
-      "url": "https://facepunch.com/careers/programmer",
       "added": "11.10.2026"
     },
     {
@@ -5843,16 +5643,6 @@
       "added": "11.10.2026"
     },
     {
-      "company": "Third Kind Games",
-      "category": "Developer",
-      "job_category": "Tech / Programming",
-      "title": "Senior Unreal Programmer",
-      "type": "Full-Time",
-      "remote_scope": "UK",
-      "url": "https://thirdkindgames.com/careers/senior-unreal-programmer",
-      "added": "11.10.2026"
-    },
-    {
       "company": "DLVR",
       "category": "Developer",
       "job_category": "Tech / Programming",
@@ -5910,46 +5700,6 @@
       "type": "Full-Time",
       "remote_scope": "USA",
       "url": "https://job-boards.greenhouse.io/sonyinteractiveentertainmentglobal/jobs/6225845004",
-      "added": "18.10.2026"
-    },
-    {
-      "company": "Ghost Story Games",
-      "category": "Developer",
-      "job_category": "Tech / Programming",
-      "title": "Principal Game AI Engineer",
-      "type": "Full-Time",
-      "remote_scope": "USA",
-      "url": "https://job-boards.greenhouse.io/gsgcareers/jobs/7294446",
-      "added": "18.10.2026"
-    },
-    {
-      "company": "Nex",
-      "category": "Publisher",
-      "job_category": "Tech / Programming",
-      "title": "Frontend Engineer - Marketing & Digital Experience",
-      "type": "Full-Time",
-      "remote_scope": "Canada",
-      "url": "https://job-boards.greenhouse.io/nex/jobs/5451314008",
-      "added": "18.10.2026"
-    },
-    {
-      "company": "Nex",
-      "category": "Publisher",
-      "job_category": "Tech / Programming",
-      "title": "Frontend Engineer - Marketing & Digital Experience",
-      "type": "Full-Time",
-      "remote_scope": "USA",
-      "url": "https://job-boards.greenhouse.io/nex/jobs/5155205008",
-      "added": "18.10.2026"
-    },
-    {
-      "company": "31st Union",
-      "category": "Developer",
-      "job_category": "Tech / Programming",
-      "title": "Lead Backend Engineer",
-      "type": "Full-Time",
-      "remote_scope": "USA",
-      "url": "https://job-boards.greenhouse.io/2k/jobs/8035080003",
       "added": "18.10.2026"
     },
     {
@@ -6061,6 +5811,106 @@
       "remote_scope": "Europe / UK",
       "url": "https://jobs.workable.com/view/1SHuN2KkdHN68YPn1KMxhh/remote-senior-engineer-in-united-kingdom-at-mythwright",
       "added": "18.10.2026"
+    },
+    {
+      "company": "Discord",
+      "category": "Platform",
+      "job_category": "Tech / Programming",
+      "title": "Engineering Manager, Machine Learning (Safety)",
+      "type": "Full-Time",
+      "remote_scope": "USA",
+      "url": "https://job-boards.greenhouse.io/discord/jobs/8722538002?gh_src=57e244b12us",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Discord",
+      "category": "Platform",
+      "job_category": "Tech / Programming",
+      "title": "Engineering Manager, Notifications",
+      "type": "Full-Time",
+      "remote_scope": "USA",
+      "url": "https://job-boards.greenhouse.io/discord/jobs/8885940002?gh_src=57e244b12us",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Discord",
+      "category": "Platform",
+      "job_category": "Tech / Programming",
+      "title": "Staff Software Engineer, Machine Learning (Consumer Revenue)",
+      "type": "Full-Time",
+      "remote_scope": "USA",
+      "url": "https://job-boards.greenhouse.io/discord/jobs/8802354002?gh_src=57e244b12us",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Discord",
+      "category": "Platform",
+      "job_category": "Tech / Programming",
+      "title": "Staff Software Engineer - Consumer Revenue",
+      "type": "Full-Time",
+      "remote_scope": "USA",
+      "url": "https://job-boards.greenhouse.io/discord/jobs/8464570002?gh_src=57e244b12us",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Six Ton Axe Games",
+      "category": "Developer",
+      "job_category": "Tech / Programming",
+      "title": "Senior Gameplay Programmer",
+      "type": "Contract",
+      "remote_scope": "Worldwide",
+      "url": "https://www.workwithindies.com/careers/six-ton-axe-games-senior-gameplay-programmer",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Rushdown Studios",
+      "category": "Developer",
+      "job_category": "Tech / Programming",
+      "title": "DevOps Engineer",
+      "type": "Full-Time",
+      "remote_scope": "USA",
+      "url": "https://job-boards.greenhouse.io/rushdownstudios/jobs/4457371009",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "CD PROJEKT RED",
+      "category": "Developer / Publisher",
+      "job_category": "Tech / Programming",
+      "title": "Lead Quest Programmer",
+      "type": "Full-Time",
+      "remote_scope": "Canada",
+      "url": "https://jobs.smartrecruiters.com/CDPROJEKTRED/744000156839025-lead-quest-programmer-",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Devoted Studios",
+      "category": "Developer",
+      "job_category": "Tech / Programming",
+      "title": "Senior Unity Engineer (Full-Stack)",
+      "type": "Full-Time",
+      "remote_scope": "Brazil / Argentina",
+      "url": "https://apply.workable.com/devoted-studios-1/j/9FA9A5D7CA/",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "VRChat",
+      "category": "Platform",
+      "job_category": "Tech / Programming",
+      "title": "Staff Engineer - Recommendations",
+      "type": "Full-Time",
+      "remote_scope": "Worldwide",
+      "url": "https://jobs.lever.co/vrchat/93875494-9d42-446d-a069-9c14296e46ed",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "VRChat",
+      "category": "Platform",
+      "job_category": "Tech / Programming",
+      "title": "Engineer - Trust and Safety (Mid Level to Staff Level)",
+      "type": "Full-Time",
+      "remote_scope": "Worldwide",
+      "url": "https://jobs.lever.co/vrchat/cda69202-9770-4e3c-b476-f138e2a5b2c3",
+      "added": "25.10.2026"
     },
     {
       "company": "Crater Studios",
@@ -6213,6 +6063,36 @@
       "added": "18.10.2026"
     },
     {
+      "company": "People Can Fly",
+      "category": "Developer",
+      "job_category": "Tech Art",
+      "title": "Technical Artist",
+      "type": "Full-Time",
+      "remote_scope": "Canada",
+      "url": "https://jobs.smartrecruiters.com/PeopleCanFly/744000156306149-artiste-technique-technical-artist-",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Sunblink",
+      "category": "Developer",
+      "job_category": "Tech Art",
+      "title": "Technical Artist (AI Tools & Pipeline)",
+      "type": "Contract",
+      "remote_scope": "USA",
+      "url": "https://sunblink.breezy.hr/p/7d354a0b90fd-technical-artist-ai-tools-pipeline",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "VRChat",
+      "category": "Platform",
+      "job_category": "Tech Art",
+      "title": "Unity Technical Artist, Event Pipeline",
+      "type": "Full-Time",
+      "remote_scope": "Worldwide (overlap with U.S. time zones is needed)",
+      "url": "https://jobs.lever.co/vrchat/e9aecc1d-9e3f-4232-95ea-01fff6dfe222",
+      "added": "25.10.2026"
+    },
+    {
       "company": "Playrix",
       "category": "Developer / Publisher",
       "job_category": "UI / UX",
@@ -6263,16 +6143,6 @@
       "added": "17.05.2026"
     },
     {
-      "company": "MY.GAMES",
-      "category": "Developer / Publisher",
-      "job_category": "UI / UX",
-      "title": "User Interface Designer",
-      "type": "Full-Time",
-      "remote_scope": "Worldwide",
-      "url": "https://careers.my.games/de-DE/26095",
-      "added": "31.05.2026"
-    },
-    {
       "company": "Superbloom",
       "category": "Developer",
       "job_category": "UI / UX",
@@ -6290,16 +6160,6 @@
       "type": "Full-Time",
       "remote_scope": "Serbia / Romania / Portugal / Turkey / Poland / Brazil",
       "url": "https://apply.workable.com/userwise-services/j/6D605DC6A9/",
-      "added": "31.05.2026"
-    },
-    {
-      "company": "Devoted Studios",
-      "category": "Developer",
-      "job_category": "UI / UX",
-      "title": "Technical UI Designer",
-      "type": "Contract",
-      "remote_scope": "Canada",
-      "url": "https://apply.workable.com/devoted-studios-1/j/7483BF64D0/",
       "added": "31.05.2026"
     },
     {
@@ -6406,7 +6266,7 @@
       "company": "Moon Active",
       "category": "Developer",
       "job_category": "UI / UX",
-      "title": "Monetization Artist",
+      "title": "UI Artist",
       "type": "Full-Time",
       "remote_scope": "CET +/-3h",
       "url": "https://jobs.ashbyhq.com/moonactive/f177fdbb-a616-4111-8684-f8a556255442?workplaceType=Remote",
@@ -6561,6 +6421,36 @@
       "remote_scope": "UK",
       "url": "https://nexusmods.careers.hibob.com/jobs/ddaf9da6-abc1-4793-bfa3-2ff15bc10b86",
       "added": "18.10.2026"
+    },
+    {
+      "company": "Voldex",
+      "category": "Developer",
+      "job_category": "UI / UX",
+      "title": "Sr UX/UI Designer - Brookhaven",
+      "type": "Contract",
+      "remote_scope": "Canada / UK / Brazil",
+      "url": "https://jobs.ashbyhq.com/Voldex/75e0ff31-86e9-4403-b915-73ee2ac3442a",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Pipeworks Studios",
+      "category": "Developer",
+      "job_category": "UI / UX",
+      "title": "UI/UX Designer II",
+      "type": "Full-Time",
+      "remote_scope": "USA",
+      "url": "https://pipeworks.pinpointhq.com/en/postings/a3e25ecc-db53-46cb-b7ed-2fe462819789",
+      "added": "25.10.2026"
+    },
+    {
+      "company": "Frima",
+      "category": "Developer",
+      "job_category": "UI / UX",
+      "title": "Technical UI Designer",
+      "type": "Full-Time",
+      "remote_scope": "Canada (Quebec)",
+      "url": "https://jobs.smartrecruiters.com/FrimaStudio/744000153856724-technical-ui-designer",
+      "added": "25.10.2026"
     },
     {
       "company": "Drop Fake Inc.",
